@@ -18,6 +18,9 @@ interface HostTransportResponse<T> {
 interface HostTransportSession {
   readonly agentletId: string
   readonly sessionId: string
+  readonly externalSessionId?: string
+  readonly transportSessionId?: string
+  readonly threadId?: string
   readonly appId?: string
   readonly pid?: number
   readonly cwd?: string
@@ -34,6 +37,17 @@ interface HostTransportSpawn {
   readonly sessionId: string
   readonly pid: number
   readonly cwd?: string
+  readonly externalSessionId?: string
+  readonly transportSessionId?: string
+  readonly threadId?: string
+}
+
+interface HostTransportPrompt {
+  readonly externalSessionId: string
+  readonly transportSessionId: string
+  readonly threadId: string
+  readonly text?: string
+  readonly stopReason?: string
 }
 
 export interface HuabuAgentletHostTransportOptionsV1 {
@@ -68,7 +82,7 @@ export class HuabuAgentletHostTransportV1 implements HuabuAgentletTransportV1 {
         session: { status: claim(), recoverExisting: claim() },
         limitations: [
           'create/continue/cancel are delegated to Huabu Host but are not probed because they have external side effects',
-          'prompt send is unsupported until Huabu ACP session owner is exposed',
+          'prompt send requires a canonical ACP owner and is not side-effect probed',
         ],
       }
     } catch (error: unknown) {
@@ -79,7 +93,7 @@ export class HuabuAgentletHostTransportV1 implements HuabuAgentletTransportV1 {
     }
   }
 
-  async spawn(params: { readonly agentletId: string; readonly appId: string; readonly sessionId?: string }): Promise<{ readonly sessionId: string; readonly pid: number; readonly cwd?: string }> {
+  async spawn(params: { readonly agentletId: string; readonly appId: string; readonly threadId?: string; readonly runtimeScope?: string; readonly sessionId?: string; readonly externalSessionId?: string }): Promise<{ readonly sessionId: string; readonly pid: number; readonly cwd?: string; readonly externalSessionId?: string; readonly transportSessionId?: string }> {
     if (this.options.spawnCommand === undefined) {
       throw new Error('No spawn command configured (HUABU_AGENTLET_SPAWN_COMMAND); cannot spawn a real agent.')
     }
@@ -88,14 +102,23 @@ export class HuabuAgentletHostTransportV1 implements HuabuAgentletTransportV1 {
       'POST',
       {
         appId: params.appId,
+        ...(params.threadId === undefined ? {} : { threadId: params.threadId }),
+        ...(params.runtimeScope === undefined ? {} : { runtimeScope: params.runtimeScope }),
         ...(params.sessionId === undefined ? {} : { sessionId: params.sessionId }),
+        ...(params.externalSessionId === undefined ? {} : { externalSessionId: params.externalSessionId }),
         sessionSpec: {
           command: this.options.spawnCommand,
           ...(this.options.spawnCwd === undefined ? {} : { cwd: this.options.spawnCwd }),
         },
       },
     )
-    return { sessionId: result.sessionId, pid: result.pid, ...(result.cwd === undefined ? {} : { cwd: result.cwd }) }
+    return {
+      sessionId: result.transportSessionId ?? result.sessionId,
+      pid: result.pid,
+      ...(result.cwd === undefined ? {} : { cwd: result.cwd }),
+      ...(result.externalSessionId === undefined ? {} : { externalSessionId: result.externalSessionId }),
+      ...(result.transportSessionId === undefined ? {} : { transportSessionId: result.transportSessionId }),
+    }
   }
 
   async stop(params: { readonly agentletId: string; readonly sessionId: string }): Promise<{ readonly stopped: boolean }> {
@@ -123,6 +146,9 @@ export class HuabuAgentletHostTransportV1 implements HuabuAgentletTransportV1 {
       )
       return {
         sessionId: result.sessionId,
+        ...(result.externalSessionId === undefined ? {} : { externalSessionId: result.externalSessionId }),
+        ...(result.transportSessionId === undefined ? {} : { transportSessionId: result.transportSessionId }),
+        ...(result.threadId === undefined ? {} : { threadId: result.threadId }),
         ...(result.appId === undefined ? {} : { appId: result.appId }),
         ...(result.pid === undefined ? {} : { pid: result.pid }),
         ...(result.cwd === undefined ? {} : { cwd: result.cwd }),
@@ -141,6 +167,19 @@ export class HuabuAgentletHostTransportV1 implements HuabuAgentletTransportV1 {
    */
   async sendResource(_params: { readonly agentletId: string; readonly sessionId: string; readonly text?: string; readonly resourceRef?: string }): Promise<void> {
     throw new Error('prompt transport is not wired through the Huabu ACP session owner')
+  }
+
+  async sendPrompt(params: { readonly agentletId: string; readonly threadId: string; readonly runtimeScope?: string; readonly externalSessionId: string; readonly transportSessionId?: string; readonly text: string }): Promise<HostTransportPrompt> {
+    return this.request<HostTransportPrompt>(
+      `/api/acp/continuation/agentlets/${encodeURIComponent(params.agentletId)}/sessions/${encodeURIComponent(params.transportSessionId ?? params.externalSessionId)}/prompt`,
+      'POST',
+      {
+        threadId: params.threadId,
+        ...(params.runtimeScope === undefined ? {} : { runtimeScope: params.runtimeScope }),
+        externalSessionId: params.externalSessionId,
+        text: params.text,
+      },
+    )
   }
 
   private async request<T>(path: string, method: 'GET' | 'POST', body?: unknown): Promise<T> {

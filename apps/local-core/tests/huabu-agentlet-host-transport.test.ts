@@ -57,7 +57,7 @@ class HostProtocolServer {
     }
     const path = request.url ?? ''
     if (request.method === 'GET' && path.endsWith('/sessions')) {
-      response.end(JSON.stringify({ agentletId: 'machine-a', agents: [{ sessionId: 'session-1', appId: 'op-1', pid: 42, cwd: 'E:/work', status: 'running' }] }))
+      response.end(JSON.stringify({ agentletId: 'machine-a', agents: [{ sessionId: 'session-1', transportSessionId: 'session-1', externalSessionId: 'native-1', threadId: 'thread-1', appId: 'thread-1', pid: 42, cwd: 'E:/work', status: 'running' }] }))
       return
     }
     if (request.method === 'POST' && path.endsWith('/sessions')) {
@@ -65,11 +65,15 @@ class HostProtocolServer {
       return
     }
     if (request.method === 'GET' && path.endsWith('/sessions/session-1')) {
-      response.end(JSON.stringify({ agentletId: 'machine-a', sessionId: 'session-1', appId: 'op-1', pid: 42, cwd: 'E:/work', status: 'running' }))
+      response.end(JSON.stringify({ agentletId: 'machine-a', sessionId: 'session-1', transportSessionId: 'session-1', externalSessionId: 'native-1', threadId: 'thread-1', appId: 'thread-1', pid: 42, cwd: 'E:/work', status: 'running' }))
       return
     }
     if (request.method === 'POST' && path.endsWith('/sessions/session-1/stop')) {
       response.end(JSON.stringify({ agentletId: 'machine-a', sessionId: 'session-1', stopped: true }))
+      return
+    }
+    if (request.method === 'POST' && path.endsWith('/sessions/session-1/prompt')) {
+      response.end(JSON.stringify({ agentletId: 'machine-a', threadId: 'thread-1', externalSessionId: 'native-1', transportSessionId: 'session-1', text: 'continued', stopReason: 'end_turn' }))
       return
     }
     response.statusCode = 404
@@ -94,18 +98,24 @@ describe('HuabuAgentletHostTransportV1', () => {
       hostBaseUrl: server.url(), agentletId: 'machine-a', authToken: 'host-token', spawnCommand: 'codex --acp', spawnCwd: 'E:/work',
     })
 
-    const spawned = await transport.spawn({ agentletId: 'machine-a', appId: 'op-2' })
+    const spawned = await transport.spawn({
+      agentletId: 'machine-a', appId: 'op-2', threadId: 'thread-1',
+      sessionId: 'session-1', externalSessionId: 'native-1',
+    })
     const listed = await transport.list('machine-a')
     const status = await transport.getSession('machine-a', 'session-1')
     const stopped = await transport.stop({ agentletId: 'machine-a', sessionId: 'session-1' })
 
     expect(spawned).toMatchObject({ sessionId: 'session-2', pid: 43 })
-    expect(listed.agents[0]).toMatchObject({ sessionId: 'session-1', appId: 'op-1' })
-    expect(status).toMatchObject({ sessionId: 'session-1', pid: 42 })
+    expect(listed.agents[0]).toMatchObject({ sessionId: 'session-1', externalSessionId: 'native-1', transportSessionId: 'session-1', threadId: 'thread-1' })
+    expect(status).toMatchObject({ sessionId: 'session-1', externalSessionId: 'native-1', transportSessionId: 'session-1', threadId: 'thread-1', pid: 42 })
     expect(stopped.stopped).toBe(true)
     expect(server.requests).toHaveLength(4)
     expect(server.requests.every((request) => request.authorization === 'Bearer host-token')).toBe(true)
-    expect(server.requests[0]?.body).toMatchObject({ appId: 'op-2', sessionSpec: { command: 'codex --acp', cwd: 'E:/work' } })
+    expect(server.requests[0]?.body).toMatchObject({
+      appId: 'op-2', threadId: 'thread-1', sessionId: 'session-1', externalSessionId: 'native-1',
+      sessionSpec: { command: 'codex --acp', cwd: 'E:/work' },
+    })
   })
 
   it('does not treat sendResource as prompt transport', async () => {
@@ -120,6 +130,17 @@ describe('HuabuAgentletHostTransportV1', () => {
     expect(result.outcome).toBe('unsupported')
     expect(result.error?.code).toBe('prompt_transport_not_wired')
     expect(server.requests).toHaveLength(0)
+  })
+
+  it('sends prompt through the canonical transport session and preserves both identities', async () => {
+    server = new HostProtocolServer()
+    await server.start()
+    const transport = new HuabuAgentletHostTransportV1({ hostBaseUrl: server.url(), agentletId: 'machine-a' })
+    const receipt = await transport.sendPrompt({ agentletId: 'machine-a', threadId: 'thread-1', runtimeScope: 'project-1', externalSessionId: 'native-1', transportSessionId: 'session-1', text: '继续' })
+
+    expect(receipt).toMatchObject({ externalSessionId: 'native-1', transportSessionId: 'session-1', threadId: 'thread-1', text: 'continued' })
+    expect(server.requests).toHaveLength(1)
+    expect(server.requests[0]?.body).toEqual({ threadId: 'thread-1', runtimeScope: 'project-1', externalSessionId: 'native-1', text: '继续' })
   })
 
   it('classifies Host HTTP failures and timeout without pretending success', async () => {

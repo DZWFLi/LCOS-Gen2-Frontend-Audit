@@ -49,11 +49,15 @@ function parseSubmit(raw: unknown): { readonly input: Omit<ContinuationSubmitReq
   if (inputRaw.contextInheritance !== 'inherit' && inputRaw.contextInheritance !== 'none') return { error: "contextInheritance must be 'inherit' or 'none'." }
   if (inputRaw.checkout !== 'shared' && inputRaw.checkout !== 'isolated') return { error: "checkout must be 'shared' or 'isolated'." }
   if (typeof inputRaw.provider !== 'string' || inputRaw.provider.length < 1 || inputRaw.provider.length > 100) return { error: 'provider is required.' }
+  if (inputRaw.runtimeThreadId !== undefined
+    && (typeof inputRaw.runtimeThreadId !== 'string' || inputRaw.runtimeThreadId.trim() === '' || inputRaw.runtimeThreadId.length > 200)) {
+    return { error: 'runtimeThreadId must be a non-empty string within the length limit when present.' }
+  }
   if (inputRaw.connectedConversationId !== undefined
     && (typeof inputRaw.connectedConversationId !== 'string' || inputRaw.connectedConversationId.length < 1 || inputRaw.connectedConversationId.length > 200)) {
     return { error: 'connectedConversationId must be a string within the length limit when present.' }
   }
-  if (Object.keys(inputRaw).some((key) => !['operationId', 'connectedConversationId', 'mode', 'contextInheritance', 'checkout', 'provider', 'orderedReferences'].includes(key))) {
+  if (Object.keys(inputRaw).some((key) => !['operationId', 'connectedConversationId', 'runtimeThreadId', 'mode', 'contextInheritance', 'checkout', 'provider', 'orderedReferences'].includes(key))) {
     return { error: 'Unexpected field in continuation submit input.' }
   }
   if (inputRaw.orderedReferences !== undefined) {
@@ -66,6 +70,7 @@ function parseSubmit(raw: unknown): { readonly input: Omit<ContinuationSubmitReq
       contextInheritance: inputRaw.contextInheritance,
       checkout: inputRaw.checkout,
       provider: inputRaw.provider,
+      ...(inputRaw.runtimeThreadId === undefined ? {} : { runtimeThreadId: inputRaw.runtimeThreadId.trim() }),
       ...(inputRaw.connectedConversationId === undefined ? {} : { connectedConversationId: inputRaw.connectedConversationId }),
       orderedReferences: refs.value,
     }
@@ -78,6 +83,7 @@ function parseSubmit(raw: unknown): { readonly input: Omit<ContinuationSubmitReq
     contextInheritance: inputRaw.contextInheritance,
     checkout: inputRaw.checkout,
     provider: inputRaw.provider,
+    ...(inputRaw.runtimeThreadId === undefined ? {} : { runtimeThreadId: inputRaw.runtimeThreadId.trim() }),
     ...(inputRaw.connectedConversationId === undefined ? {} : { connectedConversationId: inputRaw.connectedConversationId }),
   }
   return { input, origin }
@@ -158,7 +164,13 @@ function parseExternalEvidence(raw: unknown): { readonly value: ContinuationExte
     || typeof raw.createdAt !== 'string' || raw.createdAt.trim() === '') {
     return { error: 'externalEvidence requires schemaVersion=1, provider, externalSessionId, correlationId and createdAt.' }
   }
-  if (Object.keys(raw).some((key) => !['schemaVersion', 'provider', 'externalSessionId', 'correlationId', 'createdAt', 'raw'].includes(key))) {
+  if (raw.threadId !== undefined && (typeof raw.threadId !== 'string' || raw.threadId.trim() === '' || raw.threadId.length > 200)) {
+    return { error: 'externalEvidence.threadId must be a non-empty string within the length limit when present.' }
+  }
+  if (raw.transportSessionId !== undefined && (typeof raw.transportSessionId !== 'string' || raw.transportSessionId.trim() === '' || raw.transportSessionId.length > 200)) {
+    return { error: 'externalEvidence.transportSessionId must be a non-empty string within the length limit when present.' }
+  }
+  if (Object.keys(raw).some((key) => !['schemaVersion', 'provider', 'externalSessionId', 'correlationId', 'createdAt', 'threadId', 'transportSessionId', 'raw'].includes(key))) {
     return { error: 'Unexpected field in externalEvidence.' }
   }
   return {
@@ -168,6 +180,8 @@ function parseExternalEvidence(raw: unknown): { readonly value: ContinuationExte
       externalSessionId: raw.externalSessionId,
       correlationId: raw.correlationId,
       createdAt: raw.createdAt,
+      ...(typeof raw.threadId === 'string' ? { threadId: raw.threadId } : {}),
+      ...(typeof raw.transportSessionId === 'string' ? { transportSessionId: raw.transportSessionId } : {}),
     },
   }
 }

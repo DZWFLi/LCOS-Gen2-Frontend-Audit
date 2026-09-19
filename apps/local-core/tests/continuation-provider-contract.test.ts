@@ -53,6 +53,8 @@ interface FakeTransportOverrides {
   readonly stopError?: Error
   readonly stopResult?: { readonly stopped: boolean }
   readonly sendError?: Error
+  readonly sendPromptError?: Error
+  readonly sendPromptResult?: { readonly externalSessionId: string; readonly transportSessionId: string; readonly threadId: string; readonly text?: string; readonly stopReason?: string }
   readonly getSessionResult?: HuabuAgentletSessionInfoV1 | undefined
   readonly listAgents?: readonly HuabuAgentletSessionInfoV1[]
   readonly probeClaims?: Readonly<Partial<Record<'createSession' | 'continueExisting' | 'send' | 'status' | 'cancel' | 'recoverExisting', CapabilityClaimV1>>>
@@ -61,19 +63,22 @@ interface FakeTransportOverrides {
 class FakeHuabuTransport implements HuabuAgentletTransportV1 {
   readonly kind = 'fake'
   spawnCalls = 0
+  readonly getSessionCalls: string[] = []
+  readonly stopCalls: string[] = []
   private readonly overrides: FakeTransportOverrides
 
   constructor(overrides: FakeTransportOverrides = {}) {
     this.overrides = overrides
   }
 
-  async spawn(_params: { readonly agentletId: string; readonly appId: string; readonly sessionId?: string }): Promise<{ readonly sessionId: string; readonly pid: number; readonly cwd?: string }> {
+  async spawn(_params: { readonly agentletId: string; readonly appId: string; readonly threadId?: string; readonly runtimeScope?: string; readonly sessionId?: string; readonly externalSessionId?: string }): Promise<{ readonly sessionId: string; readonly pid: number; readonly cwd?: string }> {
     this.spawnCalls += 1
     if (this.overrides.spawnError !== undefined) throw this.overrides.spawnError
     return { sessionId: this.overrides.spawnSessionId ?? 'fake-session-1', pid: 4242, cwd: '/tmp/fake' }
   }
 
-  async stop(_params: { readonly agentletId: string; readonly sessionId: string }): Promise<{ readonly stopped: boolean }> {
+  async stop(params: { readonly agentletId: string; readonly sessionId: string }): Promise<{ readonly stopped: boolean }> {
+    this.stopCalls.push(params.sessionId)
     if (this.overrides.stopError !== undefined) throw this.overrides.stopError
     return this.overrides.stopResult ?? { stopped: true }
   }
@@ -83,6 +88,7 @@ class FakeHuabuTransport implements HuabuAgentletTransportV1 {
   }
 
   async getSession(_agentletId: string, sessionId: string): Promise<HuabuAgentletSessionInfoV1 | undefined> {
+    this.getSessionCalls.push(sessionId)
     if (this.overrides.getSessionResult !== undefined) return this.overrides.getSessionResult
     const agents = this.overrides.listAgents ?? []
     return agents.find((agent) => agent.sessionId === sessionId)
@@ -90,6 +96,11 @@ class FakeHuabuTransport implements HuabuAgentletTransportV1 {
 
   async sendResource(_params: { readonly agentletId: string; readonly sessionId: string; readonly text?: string; readonly resourceRef?: string }): Promise<void> {
     if (this.overrides.sendError !== undefined) throw this.overrides.sendError
+  }
+
+  async sendPrompt(_params: { readonly agentletId: string; readonly threadId: string; readonly runtimeScope?: string; readonly externalSessionId: string; readonly transportSessionId?: string; readonly text: string }): Promise<{ readonly externalSessionId: string; readonly transportSessionId: string; readonly threadId: string; readonly text?: string; readonly stopReason?: string }> {
+    if (this.overrides.sendPromptError !== undefined) throw this.overrides.sendPromptError
+    return this.overrides.sendPromptResult ?? { externalSessionId: 'native-1', transportSessionId: 'transport-1', threadId: 'thread-1', text: '已继续', stopReason: 'end_turn' }
   }
 
   async probe(): Promise<{ readonly session: Readonly<Partial<Record<'createSession' | 'continueExisting' | 'send' | 'status' | 'cancel' | 'recoverExisting', CapabilityClaimV1>>>; readonly limitations?: readonly string[] }> {
@@ -189,6 +200,21 @@ describe('adapter create / continue / send / status / cancel / recover（unknown
     expect(receipt.error?.outcomeUnknown).toBe(false)
   })
 
+  it('prompt send preserves canonical owner identity and assembled text', async () => {
+    const transport = new FakeHuabuTransport({ sendPromptResult: { externalSessionId: 'native-1', transportSessionId: 'transport-1', threadId: 'core-thread-1', text: '答复' } })
+    const adapter = new HuabuAgentletContinuationAdapterV1(transport, { adapterId: 'adapter-a' })
+    const receipt = await adapter.send({ operationId: 'op-5b', correlationId: 'corr-5b', provider: 'codex', externalSessionId: 'native-1', transportSessionId: 'transport-1', threadId: 'core-thread-1', runtimeScope: 'project-1', payload: { kind: 'prompt', text: '继续' } })
+    expect(receipt).toMatchObject({ outcome: 'sent', externalSessionId: 'native-1', transportSessionId: 'transport-1', threadId: 'core-thread-1', responseText: '答复' })
+  })
+
+  it('prompt send timeout is outcome_unknown and reconcile, while resource stays unsupported', async () => {
+    const timeoutAdapter = new HuabuAgentletContinuationAdapterV1(new FakeHuabuTransport({ sendPromptError: new Error('prompt timed out') }), { adapterId: 'adapter-a' })
+    const unknown = await timeoutAdapter.send({ operationId: 'op-5c', correlationId: 'corr-5c', provider: 'codex', externalSessionId: 'native-1', threadId: 'core-thread-1', payload: { kind: 'prompt', text: '继续' } })
+    expect(unknown).toMatchObject({ outcome: 'outcome_unknown', retryAction: 'reconcile' })
+    const resource = await timeoutAdapter.send({ operationId: 'op-5d', correlationId: 'corr-5d', provider: 'codex', externalSessionId: 'native-1', threadId: 'core-thread-1', payload: { kind: 'resource', resourceRef: 'file:///tmp/a' } })
+    expect(resource).toMatchObject({ outcome: 'unsupported', error: { code: 'resource_transport_unsupported' } })
+  })
+
   it('status lookup miss is unresolved (not proof of termination); query error is outcome_unknown', async () => {
     const adapter = new HuabuAgentletContinuationAdapterV1(new FakeHuabuTransport(), { adapterId: 'adapter-a' })
     const miss = await adapter.status({ operationId: 'op-6', correlationId: 'corr-6', provider: 'codex', externalSessionId: 'ghost' })
@@ -199,6 +225,37 @@ describe('adapter create / continue / send / status / cancel / recover（unknown
     const hit = await found.status({ operationId: 'op-6', correlationId: 'corr-6', provider: 'codex', externalSessionId: 'ext-1' })
     expect(hit.outcome).toBe('accepted')
     expect(hit.pid).toBe(7)
+  })
+
+  it('status and cancel use the Gateway transport identity without replacing the ACP native identity', async () => {
+    const transport = new FakeHuabuTransport({
+      listAgents: [{
+        sessionId: 'transport-1',
+        transportSessionId: 'transport-1',
+        externalSessionId: 'native-1',
+        threadId: 'core-thread-1',
+        status: 'running',
+      }],
+    })
+    const adapter = new HuabuAgentletContinuationAdapterV1(transport, { adapterId: 'adapter-a' })
+
+    const status = await adapter.status({
+      operationId: 'op-distinct', correlationId: 'corr-distinct', provider: 'codex',
+      externalSessionId: 'native-1', transportSessionId: 'transport-1', threadId: 'core-thread-1',
+    })
+    expect(status).toMatchObject({
+      outcome: 'accepted', externalSessionId: 'native-1', transportSessionId: 'transport-1', threadId: 'core-thread-1',
+    })
+    expect(transport.getSessionCalls).toEqual(['transport-1'])
+
+    const cancelled = await adapter.cancel({
+      operationId: 'op-distinct', correlationId: 'corr-distinct', provider: 'codex',
+      externalSessionId: 'native-1', transportSessionId: 'transport-1', threadId: 'core-thread-1',
+    })
+    expect(cancelled).toMatchObject({
+      outcome: 'accepted', externalSessionId: 'native-1', transportSessionId: 'transport-1', threadId: 'core-thread-1',
+    })
+    expect(transport.stopCalls).toEqual(['transport-1'])
   })
 
   it('cancel timeout → cancel_unknown; confirmed stop → accepted', async () => {
@@ -229,6 +286,26 @@ describe('adapter create / continue / send / status / cancel / recover（unknown
     const receipt = await adapter.recoverExisting({ operationId: 'op-8', correlationId: 'corr-8', provider: 'codex', identityHints: ['app-1'] })
     expect(receipt.outcome).toBe('recovered')
     expect(receipt.externalSessionId).toBe('ext-1')
+  })
+
+  it('recoverExisting resolves a stable Core thread to distinct ACP and Gateway identities', async () => {
+    const transport = new FakeHuabuTransport({ listAgents: [{
+      sessionId: 'transport-1',
+      transportSessionId: 'transport-1',
+      externalSessionId: 'native-1',
+      threadId: 'core-thread-1',
+      appId: 'core-thread-1',
+      status: 'running',
+    }] })
+    const adapter = new HuabuAgentletContinuationAdapterV1(transport, { adapterId: 'adapter-a' })
+    const receipt = await adapter.recoverExisting({
+      operationId: 'op-distinct-recover', correlationId: 'corr-distinct', provider: 'codex',
+      threadId: 'core-thread-1', identityHints: ['core-thread-1'],
+    })
+    expect(receipt).toMatchObject({
+      outcome: 'recovered', externalSessionId: 'native-1', transportSessionId: 'transport-1', threadId: 'core-thread-1',
+    })
+    expect(transport.spawnCalls).toBe(0)
   })
 })
 

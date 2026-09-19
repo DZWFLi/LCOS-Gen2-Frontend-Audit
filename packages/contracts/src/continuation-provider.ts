@@ -35,6 +35,9 @@ export interface CreateSessionInputV1 {
   readonly correlationId: string
   readonly provider: string
   readonly agentletId?: string
+  readonly runtimeScope?: string
+  /** Stable Core runtime identity for the Huabu ACP owner; never an operation/correlation id guess. */
+  readonly threadId?: string
   readonly createVariant: ContinuationCreateVariantV1
   readonly bundle: ContinuityAttachBundleV1
 }
@@ -44,7 +47,10 @@ export interface ContinueExistingInputV1 {
   readonly correlationId: string
   readonly provider: string
   readonly agentletId?: string
+  readonly runtimeScope?: string
+  readonly threadId?: string
   readonly externalSessionId: string
+  readonly transportSessionId?: string
   readonly bundle: ContinuityAttachBundleV1
 }
 
@@ -80,7 +86,10 @@ export interface SendInputV1 {
   readonly correlationId: string
   readonly provider: string
   readonly agentletId?: string
+  readonly runtimeScope?: string
+  readonly threadId?: string
   readonly externalSessionId: string
+  readonly transportSessionId?: string
   readonly payload: ProviderSendPayloadV1
 }
 
@@ -90,6 +99,8 @@ export interface StatusInputV1 {
   readonly provider: string
   readonly agentletId?: string
   readonly externalSessionId?: string
+  readonly transportSessionId?: string
+  readonly threadId?: string
 }
 
 export interface CancelInputV1 {
@@ -98,6 +109,8 @@ export interface CancelInputV1 {
   readonly provider: string
   readonly agentletId?: string
   readonly externalSessionId?: string
+  readonly transportSessionId?: string
+  readonly threadId?: string
 }
 
 /** recoverExisting：凭 identity hints 定位同一外部 session，lookup miss 固定 unresolved，绝不隐式 create。 */
@@ -107,6 +120,8 @@ export interface RecoverExistingInputV1 {
   readonly provider: string
   readonly agentletId?: string
   readonly externalSessionId?: string
+  readonly transportSessionId?: string
+  readonly threadId?: string
   readonly identityHints: readonly string[]
   readonly bundle?: ContinuityAttachBundleV1
 }
@@ -151,11 +166,13 @@ export interface ProviderContinuationOperationResultV1 {
   readonly adapterId: string
   readonly action: ProviderContinuationActionKindV1
   readonly outcome: ProviderContinuationOutcomeV1
-  /** 只有 adapter 证明 provider-native identity 后才能填写；ACP/relay session 只放 transportSessionId。 */
+  /** Provider-native identity；ACP native session 属于该字段，Gateway/relay process session 只放 transportSessionId。 */
   readonly externalSessionId?: string
   readonly transportSessionId?: string
   readonly agentletId?: string
   readonly threadId?: string
+  /** Assistant text returned by a send operation. The Core caller decides how to persist it. */
+  readonly responseText?: string
   readonly pid?: number
   readonly cwd?: string
   readonly contextAttached: boolean
@@ -193,7 +210,8 @@ export function continuationExternalEvidenceFromReceiptV1(receipt: {
   readonly correlationId: string
   readonly observedAt: string
   readonly transportSessionId?: string
-}): { readonly schemaVersion: 1; readonly provider: string; readonly externalSessionId: string; readonly correlationId: string; readonly createdAt: string; readonly raw?: { readonly kind: 'provider_receipt'; readonly ref: string } } | undefined {
+  readonly threadId?: string
+}): { readonly schemaVersion: 1; readonly provider: string; readonly externalSessionId: string; readonly correlationId: string; readonly createdAt: string; readonly threadId?: string; readonly transportSessionId?: string; readonly raw?: { readonly kind: 'provider_receipt'; readonly ref: string } } | undefined {
   if (receipt.externalSessionId === undefined) return undefined
   return {
     schemaVersion: 1,
@@ -201,6 +219,8 @@ export function continuationExternalEvidenceFromReceiptV1(receipt: {
     externalSessionId: receipt.externalSessionId,
     correlationId: receipt.correlationId,
     createdAt: receipt.observedAt,
+    ...(receipt.threadId === undefined ? {} : { threadId: receipt.threadId }),
+    ...(receipt.transportSessionId === undefined ? {} : { transportSessionId: receipt.transportSessionId }),
     ...(receipt.transportSessionId === undefined ? {} : { raw: { kind: 'provider_receipt' as const, ref: `transport:${receipt.transportSessionId}` } }),
   }
 }

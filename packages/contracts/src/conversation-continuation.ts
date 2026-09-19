@@ -50,6 +50,10 @@ export interface ContinuationExternalEvidenceV1 {
   readonly externalSessionId: string
   /** 外部回执 correlation（provider create 的原生 id / threading key；失败恢复时凭它还原外部状态）。 */
   readonly correlationId: string
+  /** Stable Core runtime identity used to address the Huabu ACP owner. */
+  readonly threadId?: string
+  /** Gateway session identity; may equal externalSessionId today but is a separate contract field. */
+  readonly transportSessionId?: string
   readonly createdAt: string
   readonly raw?: { readonly kind: 'provider_receipt' | 'provider_error'; readonly ref: string }
 }
@@ -65,6 +69,8 @@ export interface ContinuationOperationJournalRowV1 {
   readonly contextInheritance: ContinuationContextInheritanceV1
   readonly checkout: ContinuationCheckoutV1
   readonly provider: string
+  /** Stable Core identity for the provider owner; generated once at submit and persisted. */
+  readonly runtimeThreadId?: string
   readonly steps: Readonly<Record<ContinuationStepKindV1, ContinuationStepStateV1>>
   readonly cancel: ContinuationCancelStateV1
   readonly externalEvidence?: ContinuationExternalEvidenceV1
@@ -87,6 +93,8 @@ export interface ContinuationSubmitRequestV1 {
   readonly contextInheritance: ContinuationContextInheritanceV1
   readonly checkout: ContinuationCheckoutV1
   readonly provider: string
+  /** Optional caller-owned stable Core identity; T6 generates one when omitted. */
+  readonly runtimeThreadId?: string
   /** 用户显式选择的有序引用（恢复发送时进入真实 context/manifest，不重建空上下文）。 */
   readonly orderedReferences?: readonly OrderedRunReferenceV2[]
 }
@@ -143,6 +151,7 @@ export interface ContinuationRecoveryProjectionV1 {
   readonly contextInheritance: ContinuationContextInheritanceV1
   readonly checkout: ContinuationCheckoutV1
   readonly provider: string
+  readonly runtimeThreadId?: string
   readonly status: ContinuationOperationStatusV1
   readonly steps: Readonly<Record<ContinuationStepKindV1, ContinuationStepStateV1>>
   readonly cancel: ContinuationCancelStateV1
@@ -281,6 +290,7 @@ export function projectContinuationRecoveryV1(
     contextInheritance: row.contextInheritance,
     checkout: row.checkout,
     provider: row.provider,
+    ...(row.runtimeThreadId === undefined ? {} : { runtimeThreadId: row.runtimeThreadId }),
     status,
     steps: row.steps,
     cancel: row.cancel,

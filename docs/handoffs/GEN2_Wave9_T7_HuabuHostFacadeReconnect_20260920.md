@@ -40,7 +40,7 @@ Local Core
   → existing ACP agentlet transport owner
 ```
 
-用户可见变化：T7 continuation 的 spawn/list/status/stop 在 Huabu Host 已有 Agentlet Gateway 且 agentlet connected 时具备 HTTP 入口；`send` 仍诚实返回 `unsupported / prompt_transport_not_wired`。不改变 Canvas、Conversation、Run 或 continuation journal truth。
+用户可见变化：T7 continuation 的 spawn/list/status/stop 已具备 Huabu Host HTTP 入口；本文件末尾记录的增量又接通了 canonical ACP owner 上的 prompt send。产品 UI caller 仍未落地，因此当前变化尚未形成前端可见的完整对话闭环。不改变 Canvas、Conversation 或 Run truth。
 
 ## 三方审查与采用
 
@@ -167,19 +167,67 @@ fixture 不是裸 Node idle process：它实现 ACP stdio `initialize` 与 `sess
 
 ## 风险、回滚、下一步
 
-风险：route 的真实成功态依赖 Huabu Host 内已有 connected agentlet；未连接时返回结构化 503，不自动创建 fallback session。`send` 继续保持 unsupported。
+风险：route 的真实成功态依赖 Huabu Host 内已有 connected agentlet；未连接时返回结构化 503，不自动创建 fallback session。prompt 只允许访问 registry 中已存在且 identity 匹配的 canonical ACP owner。
 
-## Prompt 接线审查（2026-09-20）
+## Prompt 接线完成增量（2026-09-20）
 
-本轮沿 `Local Core ContinuationProviderAdapter.send` → Host transport → Huabu ACP owner 反查，结论是 **PROMPT_TRANSPORT_UNWIRED / exact GAP**：当前 continuation 的 `externalSessionId` 不能唯一映射到 Huabu 现有 `AcpSessionEntry` owner。
+上一版审查识别的 identity GAP 已按最小纵切补齐。当前真实链路为：
 
-- Local Core `apps/local-core/src/huabu-agentlet-continuation-adapter.ts:221-243` 明确返回 `prompt_transport_not_wired`；`huabu-agentlet-host-transport.ts:142-144` 的 `sendResource` 也明确拒绝承担 prompt。
-- Host facade 的 spawn 返回的是 `AgentletGateway.spawnOnAgentlet` 创建的 Gateway transport `sessionId`；状态查询只走 `gateway.getSession(agentletId, sessionId)`（`continuation-transport.route.ts:172-188`）。这条路径没有 Huabu `threadId`，也没有向 `acpSessionRegistry` 注册 entry。
-- Huabu ACP registry 的唯一 owner key 是 `(agentletId, threadId)`（`acp-driver/src/session-registry.ts:44-53` 与 `threads.route.ts:226-234`）；entry 才持有共享 `AcpAgentClient` 和 ACP native `sessionId`。registry 没有按 `externalSessionId` 的反查 API。
-- `AcpAgentClient.prompt()`（`acp-driver/src/client.ts:496-532`）是可复用的真实发送入口，但只能安全地从已有 entry/client 调用。直接 `new AcpAgentClient(gateway.getSession(...))` 会创建第二 owner；直接 `AgentletConnection.send({method:'session/prompt'})` 会绕过 ACP client 的 update/permission/receipt 管理。两者都会制造第二 message truth，故未实现。
+```text
+Core continuation journal.runtimeThreadId
+  → Local Core ContinuationProviderAdapter.send
+  → Huabu continuation Host facade
+  → acpSessionRegistry(agentletId, threadId)
+  → existing shared AcpAgentClient
+  → ACP native session/prompt
+```
 
-最小可行接线缺口是由 Huabu ACP owner 先建立并保留一个 canonical continuation binding（至少包含 `agentletId + threadId + ACP sessionId + shared AcpAgentClient`），并提供按该 binding 取回现有 entry/client 的 Host API；随后 facade 才能增加 prompt route，Local Core receipt 也必须同时区分 `externalSessionId`（ACP native session）与 Gateway `transportSessionId`。在这个 owner contract 获得前，capability probe 不得把 prompt 宣称为可用，真实 fixture 只验证了 initialize/session-new 与 spawn/list/status/stop，未伪造 prompt receipt。
+实现没有创建第二 Gateway、第二 ACP client 或第二 Conversation truth：
 
-回滚：删除新增的 `continuation-transport.route.ts` / `.test.ts`，并撤销 `app.ts` import/register 与 `acp/index.ts` export 三处增量即可；不恢复旧 Local Core WebSocket 假 peer。
+- `ConversationContinuationService` 在首次 submit 时生成并持久化稳定 `runtimeThreadId`；重复 submit 复用同一 identity。
+- provider contract 分开保存 `externalSessionId`（ACP native session）、`transportSessionId`（Gateway transport）和 `threadId`（Core runtime identity），即便当前 fixture 下两个 session id 相同也不合并字段。
+- Huabu create/continue 通过现有 `ensureAcpSession()` 建立 canonical owner；重复 create 使用相同 `(agentletId, threadId)`，不重复 spawn。
+- `promptExistingAcpSession()` 只接收 registry 中已有 `AcpSessionEntry`，等待 selections replay、聚合 agent text、沿现有持久化/report path 更新 owner；不允许 raw frame send。
+- continuation 没有交互式 permission UI，因此 permission request 明确 cancel，绝不自动授权。
+- timeout 由 Local Core 投影为 `outcome_unknown + reconcile`；resource send 继续返回 unsupported，没有伪装成 prompt。
+- 独立复核后补齐了 identity 分离路径：`status/cancel/recover` 使用 `transportSessionId` 寻址 Gateway，同时保留 ACP `externalSessionId`；测试显式让两者取不同值。
+- “外部创建成功、Core 回执丢失”时，reconcile hints 会携带持久化 `runtimeThreadId`、transport/native session、correlation 和 operation id，查回原 owner，绝不再次 create。
 
-下一步：由 Huabu ACP owner 设计并落地 canonical continuation binding 后，再补 prompt route、receipt contract、fixture prompt smoke；在此之前保持 `send` unsupported，避免偷换 transport session 与 ACP session identity。
+### 真实 daemon / session / prompt smoke
+
+临时 Huabu Host 运行在 `127.0.0.1:38127`，使用仓库内合法 ACP fixture 与 bundled agentlet daemon：
+
+```text
+agentletId: LAPTOP-U3TJP352
+threadId: core-continuation-smoke
+externalSessionId: t7-fixture-session
+transportSessionId: t7-fixture-session
+pid: 25764
+
+prompt response text: fixture continued
+stopReason: end_turn
+duplicate create: same pid/session, list count remains 1
+stop: true, agent exited code 0
+```
+
+服务已停止，端口、进程和临时 workspace/data 均已清理。
+
+### 验证
+
+```text
+contracts typecheck: PASS
+local-core typecheck: PASS
+ACP driver build: PASS
+Huabu server typecheck: PASS
+
+Local Core continuation targeted suite: 4 files / 56 tests PASS
+ACP continuation prompt helper: 1 file / 2 tests PASS
+Huabu continuation route: 1 file / 5 tests PASS
+git diff --check: PASS
+```
+
+### 仍未完成
+
+基础设施已能真实发送并返回 assistant text，但产品层还没有公开的 Local Core HTTP/UI caller 去调用 `ConversationContinuationService.sendPrompt()`，也没有 caller 把 `responseText` 写入 Core Conversation。当前因此是 **transport/runtime closed，product-visible conversation loop pending**，不能宣称用户已经能在前端完成整轮续工对话。
+
+回滚：回退本批 prompt/identity commit；不恢复旧 Local Core WebSocket 假 peer，也不删除此前已验证的 spawn/list/status/stop Host facade。

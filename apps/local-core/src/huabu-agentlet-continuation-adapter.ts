@@ -31,6 +31,9 @@ import { unknownCapabilityClaimV1, type CapabilityEvidenceSourceV1 } from '@loca
 /** transport seam：镜像 donor gateway 的最小方法面（Fake 可替换）。 */
 export interface HuabuAgentletSessionInfoV1 {
   readonly sessionId: string
+  readonly externalSessionId?: string
+  readonly transportSessionId?: string
+  readonly threadId?: string
   readonly appId?: string
   readonly pid?: number
   readonly cwd?: string
@@ -40,11 +43,13 @@ export interface HuabuAgentletSessionInfoV1 {
 export interface HuabuAgentletTransportV1 {
   readonly kind: string
   /** spawn（sessionId 缺省）或 resume/load（sessionId 提供时，resume 优先、load fallback）。 */
-  spawn(params: { readonly agentletId: string; readonly appId: string; readonly sessionId?: string }): Promise<{ readonly sessionId: string; readonly pid: number; readonly cwd?: string; readonly loaded?: boolean }>
+  spawn(params: { readonly agentletId: string; readonly appId: string; readonly threadId?: string; readonly runtimeScope?: string; readonly sessionId?: string; readonly externalSessionId?: string }): Promise<{ readonly sessionId: string; readonly pid: number; readonly cwd?: string; readonly loaded?: boolean; readonly externalSessionId?: string; readonly transportSessionId?: string }>
   stop(params: { readonly agentletId: string; readonly sessionId: string }): Promise<{ readonly stopped: boolean }>
   list(agentletId: string): Promise<{ readonly agents: readonly HuabuAgentletSessionInfoV1[] }>
   getSession(agentletId: string, sessionId: string): Promise<HuabuAgentletSessionInfoV1 | undefined>
   sendResource(params: { readonly agentletId: string; readonly sessionId: string; readonly text?: string; readonly resourceRef?: string }): Promise<void>
+  /** Shared ACP client/handle prompt seam. Raw gateway send is forbidden. */
+  sendPrompt?(params: { readonly agentletId: string; readonly threadId: string; readonly runtimeScope?: string; readonly externalSessionId: string; readonly transportSessionId?: string; readonly text: string }): Promise<{ readonly externalSessionId: string; readonly transportSessionId: string; readonly threadId: string; readonly text?: string; readonly stopReason?: string }>
   /** 真实 donor probe；未知字段不得猜 true。 */
   probe(): Promise<{ readonly session: Readonly<Partial<Record<'createSession' | 'continueExisting' | 'send' | 'status' | 'cancel' | 'recoverExisting', CapabilityClaimV1>>>; readonly limitations?: readonly string[] }>
 }
@@ -127,7 +132,9 @@ export class HuabuAgentletContinuationAdapterV1 implements ContinuationProviderA
 
   async createSession(input: CreateSessionInputV1): Promise<ProviderContinuationOperationResultV1> {
     try {
-      const spawned = await this.transport.spawn({ agentletId: this.agentletId, appId: input.correlationId })
+      const spawned = await this.transport.spawn({ agentletId: this.agentletId, appId: input.correlationId, ...(input.threadId === undefined ? {} : { threadId: input.threadId }), ...(input.runtimeScope === undefined ? {} : { runtimeScope: input.runtimeScope }) })
+      const externalSessionId = spawned.externalSessionId ?? spawned.sessionId
+      const transportSessionId = spawned.transportSessionId ?? spawned.sessionId
       return {
         schemaVersion: 1,
         operationId: input.operationId,
@@ -136,7 +143,9 @@ export class HuabuAgentletContinuationAdapterV1 implements ContinuationProviderA
         adapterId: this.adapterId,
         action: 'create',
         outcome: 'external_created',
-        externalSessionId: spawned.sessionId,
+        externalSessionId,
+        transportSessionId,
+        ...(input.threadId === undefined ? {} : { threadId: input.threadId }),
         agentletId: this.agentletId,
         ...(spawned.cwd === undefined ? {} : { cwd: spawned.cwd }),
         ...(spawned.pid === undefined ? {} : { pid: spawned.pid }),
@@ -154,7 +163,9 @@ export class HuabuAgentletContinuationAdapterV1 implements ContinuationProviderA
 
   async continueExisting(input: ContinueExistingInputV1): Promise<ProviderContinuationOperationResultV1> {
     try {
-      const resumed = await this.transport.spawn({ agentletId: this.agentletId, appId: input.correlationId, sessionId: input.externalSessionId })
+      const resumed = await this.transport.spawn({ agentletId: this.agentletId, appId: input.correlationId, ...(input.threadId === undefined ? {} : { threadId: input.threadId }), ...(input.runtimeScope === undefined ? {} : { runtimeScope: input.runtimeScope }), ...(input.transportSessionId === undefined ? {} : { sessionId: input.transportSessionId }), externalSessionId: input.externalSessionId })
+      const externalSessionId = resumed.externalSessionId ?? input.externalSessionId
+      const transportSessionId = resumed.transportSessionId ?? resumed.sessionId
       return {
         schemaVersion: 1,
         operationId: input.operationId,
@@ -163,7 +174,9 @@ export class HuabuAgentletContinuationAdapterV1 implements ContinuationProviderA
         adapterId: this.adapterId,
         action: 'continue_existing',
         outcome: 'resumed',
-        externalSessionId: resumed.sessionId,
+        externalSessionId,
+        transportSessionId,
+        ...(input.threadId === undefined ? {} : { threadId: input.threadId }),
         agentletId: this.agentletId,
         ...(resumed.cwd === undefined ? {} : { cwd: resumed.cwd }),
         ...(resumed.pid === undefined ? {} : { pid: resumed.pid }),
@@ -219,32 +232,64 @@ export class HuabuAgentletContinuationAdapterV1 implements ContinuationProviderA
   }
 
   async send(input: SendInputV1): Promise<ProviderContinuationOperationResultV1> {
-    return {
-      schemaVersion: 1,
-      operationId: input.operationId,
-      correlationId: input.correlationId,
-      provider: input.provider,
-      adapterId: this.adapterId,
-      action: 'send',
-      outcome: 'unsupported',
-      externalSessionId: input.externalSessionId,
-      agentletId: this.agentletId,
-      contextAttached: false,
-      nativeFork: false,
-      degradedFromNativeFork: false,
-      retryAction: 'none',
-      error: {
-        code: 'prompt_transport_not_wired',
-        message: 'Huabu host prompt transport is not wired through the ACP session owner.',
-        retryable: false,
-        outcomeUnknown: false,
-      },
-      observedAt: new Date().toISOString(),
+    if (input.payload.kind !== 'prompt' || typeof input.payload.text !== 'string' || input.payload.text.trim() === '' || input.threadId === undefined || this.transport.sendPrompt === undefined) {
+      return {
+        schemaVersion: 1,
+        operationId: input.operationId,
+        correlationId: input.correlationId,
+        provider: input.provider,
+        adapterId: this.adapterId,
+        action: 'send',
+        outcome: 'unsupported',
+        externalSessionId: input.externalSessionId,
+        ...(input.transportSessionId === undefined ? {} : { transportSessionId: input.transportSessionId }),
+        ...(input.threadId === undefined ? {} : { threadId: input.threadId }),
+        agentletId: this.agentletId,
+        contextAttached: false,
+        nativeFork: false,
+        degradedFromNativeFork: false,
+        retryAction: 'none',
+        error: { code: input.payload.kind === 'resource' ? 'resource_transport_unsupported' : 'prompt_transport_not_wired', message: input.payload.kind === 'resource' ? 'Resource delivery remains unsupported.' : 'Huabu ACP prompt owner is unavailable.', retryable: false, outcomeUnknown: false },
+        observedAt: new Date().toISOString(),
+      }
+    }
+    try {
+      const sent = await this.transport.sendPrompt({
+        agentletId: this.agentletId,
+        threadId: input.threadId,
+        ...(input.runtimeScope === undefined ? {} : { runtimeScope: input.runtimeScope }),
+        externalSessionId: input.externalSessionId,
+        ...(input.transportSessionId === undefined ? {} : { transportSessionId: input.transportSessionId }),
+        text: input.payload.text,
+      })
+      return {
+        schemaVersion: 1,
+        operationId: input.operationId,
+        correlationId: input.correlationId,
+        provider: input.provider,
+        adapterId: this.adapterId,
+        action: 'send',
+        outcome: 'sent',
+        externalSessionId: sent.externalSessionId,
+        transportSessionId: sent.transportSessionId,
+        threadId: sent.threadId,
+        ...(sent.text === undefined ? {} : { responseText: sent.text }),
+        agentletId: this.agentletId,
+        contextAttached: false,
+        nativeFork: false,
+        degradedFromNativeFork: false,
+        retryAction: 'none',
+        observedAt: new Date().toISOString(),
+      }
+    } catch (error: unknown) {
+      const classified = classifyHuabuTransportErrorV1(error)
+      return this.#failure('send', input.operationId, input.correlationId, input.provider, classified, input.externalSessionId, classified.outcomeUnknown ? 'reconcile' : 'none')
     }
   }
 
   async status(input: StatusInputV1): Promise<ProviderContinuationOperationResultV1> {
-    if (input.externalSessionId === undefined) {
+    const lookupSessionId = input.transportSessionId ?? input.externalSessionId
+    if (lookupSessionId === undefined) {
       return {
         schemaVersion: 1,
         operationId: input.operationId,
@@ -262,7 +307,7 @@ export class HuabuAgentletContinuationAdapterV1 implements ContinuationProviderA
       }
     }
     try {
-      const session = await this.transport.getSession(this.agentletId, input.externalSessionId)
+      const session = await this.transport.getSession(this.agentletId, lookupSessionId)
       if (session === undefined) {
         return {
           schemaVersion: 1,
@@ -272,7 +317,9 @@ export class HuabuAgentletContinuationAdapterV1 implements ContinuationProviderA
           adapterId: this.adapterId,
           action: 'status',
           outcome: 'unresolved',
-          externalSessionId: input.externalSessionId,
+          ...(input.externalSessionId === undefined ? {} : { externalSessionId: input.externalSessionId }),
+          ...(input.transportSessionId === undefined ? {} : { transportSessionId: input.transportSessionId }),
+          ...(input.threadId === undefined ? {} : { threadId: input.threadId }),
           contextAttached: false,
           nativeFork: false,
           degradedFromNativeFork: false,
@@ -281,6 +328,8 @@ export class HuabuAgentletContinuationAdapterV1 implements ContinuationProviderA
           observedAt: new Date().toISOString(),
         }
       }
+      const externalSessionId = session.externalSessionId ?? input.externalSessionId
+      const threadId = session.threadId ?? input.threadId
       return {
         schemaVersion: 1,
         operationId: input.operationId,
@@ -289,7 +338,9 @@ export class HuabuAgentletContinuationAdapterV1 implements ContinuationProviderA
         adapterId: this.adapterId,
         action: 'status',
         outcome: 'accepted',
-        externalSessionId: session.sessionId,
+        ...(externalSessionId === undefined ? {} : { externalSessionId }),
+        transportSessionId: session.transportSessionId ?? session.sessionId,
+        ...(threadId === undefined ? {} : { threadId }),
         agentletId: this.agentletId,
         ...(session.pid === undefined ? {} : { pid: session.pid }),
         ...(session.cwd === undefined ? {} : { cwd: session.cwd }),
@@ -306,7 +357,8 @@ export class HuabuAgentletContinuationAdapterV1 implements ContinuationProviderA
   }
 
   async cancel(input: CancelInputV1): Promise<ProviderContinuationOperationResultV1> {
-    if (input.externalSessionId === undefined) {
+    const transportSessionId = input.transportSessionId ?? input.externalSessionId
+    if (transportSessionId === undefined) {
       return {
         schemaVersion: 1,
         operationId: input.operationId,
@@ -324,7 +376,7 @@ export class HuabuAgentletContinuationAdapterV1 implements ContinuationProviderA
       }
     }
     try {
-      const stopped = await this.transport.stop({ agentletId: this.agentletId, sessionId: input.externalSessionId })
+      const stopped = await this.transport.stop({ agentletId: this.agentletId, sessionId: transportSessionId })
       return {
         schemaVersion: 1,
         operationId: input.operationId,
@@ -333,7 +385,9 @@ export class HuabuAgentletContinuationAdapterV1 implements ContinuationProviderA
         adapterId: this.adapterId,
         action: 'cancel',
         outcome: stopped.stopped ? 'accepted' : 'outcome_unknown',
-        externalSessionId: input.externalSessionId,
+        ...(input.externalSessionId === undefined ? {} : { externalSessionId: input.externalSessionId }),
+        transportSessionId,
+        ...(input.threadId === undefined ? {} : { threadId: input.threadId }),
         agentletId: this.agentletId,
         contextAttached: false,
         nativeFork: false,
@@ -350,12 +404,18 @@ export class HuabuAgentletContinuationAdapterV1 implements ContinuationProviderA
 
   async recoverExisting(input: RecoverExistingInputV1): Promise<ProviderContinuationOperationResultV1> {
     try {
-      if (input.externalSessionId !== undefined) {
-        const session = await this.transport.getSession(this.agentletId, input.externalSessionId)
+      const directLookupId = input.transportSessionId ?? input.externalSessionId
+      if (directLookupId !== undefined) {
+        const session = await this.transport.getSession(this.agentletId, directLookupId)
         if (session !== undefined) return this.#recovered(input, session)
       }
       const listed = await this.transport.list(this.agentletId)
-      const hit = listed.agents.find((agent) => input.identityHints.some((hint) => agent.sessionId === hint || agent.appId === hint))
+      const hit = listed.agents.find((agent) => input.identityHints.some((hint) =>
+        agent.sessionId === hint
+        || agent.transportSessionId === hint
+        || agent.externalSessionId === hint
+        || agent.threadId === hint
+        || agent.appId === hint))
       if (hit === undefined) {
         // lookup miss：固定 unresolved，绝不隐式 create（T7 V2 §7.1）。
         return {
@@ -382,6 +442,9 @@ export class HuabuAgentletContinuationAdapterV1 implements ContinuationProviderA
   }
 
   #recovered(input: RecoverExistingInputV1, session: HuabuAgentletSessionInfoV1): ProviderContinuationOperationResultV1 {
+    const externalSessionId = session.externalSessionId ?? input.externalSessionId ?? session.sessionId
+    const transportSessionId = session.transportSessionId ?? session.sessionId
+    const threadId = session.threadId ?? input.threadId
     return {
       schemaVersion: 1,
       operationId: input.operationId,
@@ -390,7 +453,9 @@ export class HuabuAgentletContinuationAdapterV1 implements ContinuationProviderA
       adapterId: this.adapterId,
       action: 'recover_existing',
       outcome: 'recovered',
-      externalSessionId: session.sessionId,
+      externalSessionId,
+      transportSessionId,
+      ...(threadId === undefined ? {} : { threadId }),
       agentletId: this.agentletId,
       ...(session.pid === undefined ? {} : { pid: session.pid }),
       ...(session.cwd === undefined ? {} : { cwd: session.cwd }),

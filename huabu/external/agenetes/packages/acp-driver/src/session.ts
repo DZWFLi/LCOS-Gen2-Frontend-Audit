@@ -165,6 +165,8 @@ export interface EnsureAcpSessionOptions {
   /** Explicit execution-node placement for this session. */
   agentletId: string;
   threadId: string;
+  /** Optional transport session to resume when the canonical owner is rebuilt. */
+  priorSessionId?: string;
   /** External binding for the thread (see {@link RunAcpAgentOptions.binding}). */
   binding: { alias: string; profileId: string };
   /**
@@ -903,7 +905,8 @@ async function ensureAcpSessionInner(
       '[acp] bypassing closed session state after native recovery failed',
     );
   }
-  const priorSessionId = priorState?.driverState.sessionId;
+  const priorSessionId =
+    opts.priorSessionId ?? priorState?.driverState.sessionId;
 
   // Resolve the thread to a live agentlet agent. Each thread owns its
   // own CLI process — the orchestrator either returns the cached spawn

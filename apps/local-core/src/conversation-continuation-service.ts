@@ -11,6 +11,7 @@ import type {
   ContinuationStepKindV1,
   ContinuationStepStateV1,
   ContinuationSubmitRequestV1,
+  ProviderSendPayloadV1,
   ContinuityAttachBundleV1,
   OrderedRunReferenceV2,
   ProjectEventOrigin,
@@ -87,6 +88,11 @@ export class ConversationContinuationService {
     }
 
     const now = new Date().toISOString()
+    const runtimeThreadId = input.runtimeThreadId?.trim() || (
+      input.connectedConversationId === undefined
+        ? `core-continuation-${randomUUID()}`
+        : `core-conversation-${input.connectedConversationId}`
+    )
     const row: ContinuationOperationJournalRowV1 = {
       schemaVersion: 1,
       operationId: input.operationId,
@@ -96,6 +102,7 @@ export class ConversationContinuationService {
       contextInheritance: input.contextInheritance,
       checkout: input.checkout,
       provider: input.provider,
+      runtimeThreadId,
       steps: { external_create: 'not_started', core_bind: 'not_started', attach: 'not_started', projection: 'not_started' },
       cancel: 'none',
       ...(input.orderedReferences === undefined ? {} : { orderedReferences: input.orderedReferences }),
@@ -332,6 +339,46 @@ export class ConversationContinuationService {
     }
   }
 
+  /** Send one prompt through the canonical owner bound to this continuation. */
+  async sendPrompt(
+    projectId: string,
+    operationId: string,
+    payload: ProviderSendPayloadV1,
+    adapter: ContinuationProviderAdapterV1,
+  ): Promise<ProviderContinuationOperationResultV1> {
+    const row = this.metadata.getContinuationOperationJournal(projectId, operationId)
+    if (row === undefined) throw new Error('Continuation operation not found.')
+    const externalSessionId = row.externalEvidence?.externalSessionId
+    if (externalSessionId === undefined) {
+      return {
+        schemaVersion: 1,
+        operationId,
+        correlationId: operationId,
+        provider: row.provider,
+        adapterId: adapter.adapterId,
+        action: 'send',
+        outcome: 'unresolved',
+        ...(row.runtimeThreadId === undefined ? {} : { threadId: row.runtimeThreadId }),
+        contextAttached: false,
+        nativeFork: false,
+        degradedFromNativeFork: false,
+        retryAction: 'reconcile',
+        error: { code: 'no_external_identity', message: 'No external session identity to send to.', retryable: false, outcomeUnknown: true },
+        observedAt: new Date().toISOString(),
+      }
+    }
+    return adapter.send({
+      operationId,
+      correlationId: operationId,
+      provider: row.provider,
+      runtimeScope: projectId,
+      ...(row.runtimeThreadId === undefined ? {} : { threadId: row.runtimeThreadId }),
+      externalSessionId,
+      ...(row.externalEvidence?.transportSessionId === undefined ? {} : { transportSessionId: row.externalEvidence.transportSessionId }),
+      payload,
+    })
+  }
+
   async #recoverExternal(
     projectId: string,
     operationId: string,
@@ -362,6 +409,8 @@ export class ConversationContinuationService {
             operationId,
             correlationId: operationId,
             provider: row.provider,
+            runtimeScope: projectId,
+            ...(row.runtimeThreadId === undefined ? {} : { threadId: row.runtimeThreadId }),
             createVariant: 'long_lived',
             bundle: continuationBundleForRowV1(row),
           })
@@ -387,6 +436,8 @@ export class ConversationContinuationService {
       operationId,
       correlationId: operationId,
       provider: row.provider,
+      runtimeScope: projectId,
+      ...(row.runtimeThreadId === undefined ? {} : { threadId: row.runtimeThreadId }),
       createVariant: row.mode === 'blank_new' ? 'blank' : 'long_lived',
       bundle: continuationBundleForRowV1(row),
     })
@@ -437,7 +488,10 @@ export class ConversationContinuationService {
       operationId,
       correlationId: operationId,
       provider: row.provider,
+      runtimeScope: projectId,
+      ...(row.runtimeThreadId === undefined ? {} : { threadId: row.runtimeThreadId }),
       externalSessionId,
+      ...(row.externalEvidence?.transportSessionId === undefined ? {} : { transportSessionId: row.externalEvidence.transportSessionId }),
       bundle: continuationBundleForRowV1(row),
     })
     if (receipt.outcome === 'resumed') {
@@ -517,7 +571,15 @@ export class ConversationContinuationService {
       correlationId: operationId,
       provider: row.provider,
       ...(row.externalEvidence?.externalSessionId === undefined ? {} : { externalSessionId: row.externalEvidence.externalSessionId }),
-      identityHints: [operationId, row.externalEvidence?.correlationId ?? ''],
+      ...(row.externalEvidence?.transportSessionId === undefined ? {} : { transportSessionId: row.externalEvidence.transportSessionId }),
+      ...(row.runtimeThreadId === undefined ? {} : { threadId: row.runtimeThreadId }),
+      identityHints: Array.from(new Set([
+        row.runtimeThreadId,
+        row.externalEvidence?.transportSessionId,
+        row.externalEvidence?.externalSessionId,
+        row.externalEvidence?.correlationId,
+        operationId,
+      ].filter((value): value is string => value !== undefined && value !== ''))),
     })
     if (receipt.outcome === 'recovered') {
       const evidence = continuationExternalEvidenceFromReceiptV1(receipt)
@@ -553,7 +615,14 @@ export class ConversationContinuationService {
     const requested = this.requestCancel(projectId, operationId, expectedRevision)
     const externalSessionId = requested.externalEvidence?.externalSessionId
     if (externalSessionId === undefined) return requested
-    const receipt = await adapter.cancel({ operationId, correlationId: operationId, provider: row.provider, externalSessionId })
+    const receipt = await adapter.cancel({
+      operationId,
+      correlationId: operationId,
+      provider: row.provider,
+      externalSessionId,
+      ...(requested.externalEvidence?.transportSessionId === undefined ? {} : { transportSessionId: requested.externalEvidence.transportSessionId }),
+      ...(requested.runtimeThreadId === undefined ? {} : { threadId: requested.runtimeThreadId }),
+    })
     if (receipt.outcome === 'accepted') return requested
     return this.applyProviderCancelReceipt(projectId, operationId, {
       outcome: receipt.outcome === 'outcome_unknown' || receipt.outcome === 'unresolved' ? receipt.outcome : 'outcome_unknown',
@@ -583,12 +652,18 @@ export class ConversationContinuationService {
 }
 
 function sameContinuationSubmit(existing: ContinuationOperationJournalRowV1, input: ContinuationSubmitRequestV1): boolean {
+  const runtimeThreadId = input.runtimeThreadId?.trim() || (
+    input.connectedConversationId === undefined
+      ? undefined
+      : `core-conversation-${input.connectedConversationId}`
+  )
   return existing.projectId === input.projectId
     && existing.connectedConversationId === (input.connectedConversationId ?? null)
     && existing.mode === input.mode
     && existing.contextInheritance === input.contextInheritance
     && existing.checkout === input.checkout
     && existing.provider === input.provider
+    && (runtimeThreadId === undefined || existing.runtimeThreadId === runtimeThreadId)
     && JSON.stringify(existing.orderedReferences ?? []) === JSON.stringify(input.orderedReferences ?? [])
 }
 

@@ -48,6 +48,8 @@ export type { AcpBindingRecipe } from './binding-recipe.js';
 
 export { acpSessionRegistry } from './session-registry.js';
 export type { AcpSessionEntry } from './session-registry.js';
+export { promptExistingAcpSession } from './continuation-prompt.js';
+export type { AcpContinuationPromptReceipt } from './continuation-prompt.js';
 
 export {
   mergeToolExtension,

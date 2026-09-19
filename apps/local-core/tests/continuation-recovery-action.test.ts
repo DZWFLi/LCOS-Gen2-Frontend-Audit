@@ -1,9 +1,9 @@
 import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import type { ContinuationSubmitRequestV1 } from '@local-creative-os/contracts'
+import type { ContinuationProviderAdapterV1, ContinuationSubmitRequestV1 } from '@local-creative-os/contracts'
 import { ContinuationStaleRevisionError, ConversationContinuationService, RecoveryActionUnsupportedError } from '../src/conversation-continuation-service.js'
 import { HuabuAgentletContinuationAdapterV1 } from '../src/huabu-agentlet-continuation-adapter.js'
 import { DevFakeAgentletTransportV1 } from '../src/dev-fake-agentlet-transport.js'
@@ -100,6 +100,52 @@ describe('executeRecoveryAction（intent → T6 service → T7 adapter → recei
     const second = service.submit(submitInput(projectId, conversationId, 'op-dup'))
     expect(second.created).toBe(false)
     expect(second.projection.operationId).toBe('op-dup')
+    expect(second.projection.runtimeThreadId).toBe(first.projection.runtimeThreadId)
+  })
+
+  it('sendPrompt reuses the persisted owner identities instead of inventing a new session', async () => {
+    const { service, projectId, conversationId, adapter } = await setup()
+    service.submit(submitInput(projectId, conversationId, 'op-send'))
+    const created = await service.executeRecoveryAction(projectId, 'op-send', 'recover_external', adapter)
+    const send = vi.fn(async (input: Parameters<ContinuationProviderAdapterV1['send']>[0]) => ({
+      schemaVersion: 1 as const,
+      operationId: input.operationId,
+      correlationId: input.correlationId,
+      provider: input.provider,
+      adapterId: 'send-probe',
+      action: 'send' as const,
+      outcome: 'sent' as const,
+      externalSessionId: input.externalSessionId,
+      ...(input.transportSessionId === undefined ? {} : { transportSessionId: input.transportSessionId }),
+      ...(input.threadId === undefined ? {} : { threadId: input.threadId }),
+      responseText: '已续工',
+      contextAttached: false,
+      nativeFork: false,
+      degradedFromNativeFork: false,
+      retryAction: 'none' as const,
+      observedAt: new Date().toISOString(),
+    }))
+    const sendAdapter = {
+      adapterId: 'send-probe',
+      provider: 'huabu-agentlet',
+      send,
+    } as unknown as ContinuationProviderAdapterV1
+
+    const receipt = await service.sendPrompt(
+      projectId,
+      'op-send',
+      { kind: 'prompt', text: '继续' },
+      sendAdapter,
+    )
+
+    expect(receipt).toMatchObject({ outcome: 'sent', responseText: '已续工' })
+    expect(send).toHaveBeenCalledWith(expect.objectContaining({
+      runtimeScope: projectId,
+      threadId: created.runtimeThreadId,
+      externalSessionId: created.externalEvidence?.externalSessionId,
+      transportSessionId: created.externalEvidence?.transportSessionId,
+      payload: { kind: 'prompt', text: '继续' },
+    }))
   })
 
   it('同一 operationId 复用不同 payload → 拒绝 idempotency conflict', async () => {
@@ -116,6 +162,62 @@ describe('executeRecoveryAction（intent → T6 service → T7 adapter → recei
     const fresh = await service.executeRecoveryAction(projectId, 'op-reconcile-miss', 'reconcile', adapter)
     expect(fresh.steps.external_create).toBe('outcome_unknown')
     expect(fresh.allowedActions.map((a) => a.action)).toEqual(['reconcile', 'cancel_request'])
+  })
+
+  it('create receipt 丢失后用 persisted runtimeThreadId 找回同一 session，不重复 create', async () => {
+    const { service, projectId } = await setup()
+    const submitted = service.submit({
+      schemaVersion: 1, operationId: 'op-lost-receipt', projectId,
+      mode: 'blank_new', contextInheritance: 'none', checkout: 'shared', provider: 'codex',
+    })
+    const runtimeThreadId = submitted.projection.runtimeThreadId
+    expect(runtimeThreadId).toBeTruthy()
+    service.advanceStep(projectId, 'op-lost-receipt', {
+      step: 'external_create', outcome: 'outcome_unknown', errorEvidence: 'Core did not receive create receipt',
+    })
+    const recoverExisting = vi.fn(async (input: Parameters<ContinuationProviderAdapterV1['recoverExisting']>[0]) => ({
+      schemaVersion: 1 as const,
+      operationId: input.operationId,
+      correlationId: input.correlationId,
+      provider: input.provider,
+      adapterId: 'recovery-probe',
+      action: 'recover_existing' as const,
+      outcome: 'recovered' as const,
+      externalSessionId: 'native-recovered-1',
+      transportSessionId: 'transport-recovered-1',
+      threadId: runtimeThreadId!,
+      contextAttached: false,
+      nativeFork: false,
+      degradedFromNativeFork: false,
+      retryAction: 'none' as const,
+      observedAt: new Date().toISOString(),
+    }))
+    const recoveryAdapter = {
+      adapterId: 'recovery-probe',
+      provider: 'huabu-agentlet',
+      recoverExisting,
+    } as unknown as ContinuationProviderAdapterV1
+
+    const recovered = await service.executeRecoveryAction(
+      projectId,
+      'op-lost-receipt',
+      'reconcile',
+      recoveryAdapter,
+    )
+
+    expect(recoverExisting).toHaveBeenCalledWith(expect.objectContaining({
+      threadId: runtimeThreadId!,
+      identityHints: expect.arrayContaining([
+        runtimeThreadId!,
+        'op-lost-receipt',
+      ]),
+    }))
+    expect(recovered.steps.external_create).toBe('confirmed')
+    expect(recovered.externalEvidence).toMatchObject({
+      externalSessionId: 'native-recovered-1',
+      transportSessionId: 'transport-recovered-1',
+      threadId: runtimeThreadId!,
+    })
   })
 
   it('并发 recover_external 只允许一个 SQLite pending claim 调 provider create', async () => {
