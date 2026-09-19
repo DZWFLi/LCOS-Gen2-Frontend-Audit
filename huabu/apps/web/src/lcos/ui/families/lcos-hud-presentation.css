@@ -183,6 +183,74 @@
   outline: 2px solid var(--lcos-pin-violet);
   outline-offset: 1px;
 }
+[data-lcos-railway-entry] {
+  position: relative;
+  display: block;
+  width: 36px;
+  height: 36px;
+  flex: none;
+}
+[data-lcos-railway-peek],
+[data-lcos-railway-more] {
+  position: absolute;
+  left: 46px;
+  z-index: 3;
+  display: flex;
+  width: max-content;
+  max-width: min(320px, 72vw);
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px;
+  border: 1px solid var(--lcos-rail-selected-border);
+  border-radius: var(--lcos-radius-medium);
+  background: var(--lcos-surface-elevated);
+  color: var(--gen2-text);
+  box-shadow: var(--lcos-rail-selected-shadow);
+  font: 400 12px/16px var(--lcos-hud-font);
+}
+[data-lcos-railway-peek] {
+  top: 0;
+}
+[data-lcos-railway-more] {
+  top: 100%;
+  margin-top: 4px;
+}
+[data-lcos-railway-destination-ref],
+[data-lcos-railway-receive-state],
+[data-lcos-railway-more-reason] {
+  max-width: 280px;
+  color: var(--gen2-muted);
+  overflow-wrap: anywhere;
+}
+[data-lcos-railway-actions] {
+  display: flex;
+  gap: 4px;
+}
+[data-lcos-railway-action],
+[data-lcos-railway-more-action] {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 28px;
+  padding: 4px 7px;
+  border: 0;
+  border-radius: 7px;
+  background: var(--gen2-raised);
+  color: var(--gen2-text);
+  cursor: pointer;
+  font: inherit;
+  white-space: nowrap;
+}
+[data-lcos-railway-action]:hover:not(:disabled),
+[data-lcos-railway-more-action]:hover:not(:disabled) {
+  background: var(--gen2-accent);
+  color: var(--lcos-color-text-on-inverse);
+}
+[data-lcos-railway-action]:disabled,
+[data-lcos-railway-more-action]:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
 [data-lcos-railway-reorder-target='true'] {
   outline: 2px solid var(--gen2-accent);
   outline-offset: 1px;

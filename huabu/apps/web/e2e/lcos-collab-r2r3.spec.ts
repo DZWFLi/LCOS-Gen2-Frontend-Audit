@@ -433,6 +433,26 @@ test('R3-2. Navigate：点击 destination 真正进入该 child workspace，不�
   expect(new URL(url).pathname.endsWith('/context')).toBe(true);
 });
 
+test('R3-2A. Peek / Receive / More：真实 destination projection 显示 capability，刷新后仍回读同一目标', async ({ page }) => {
+  await enterRailProject(page, fixture);
+  const targetKey = `scene:${fixture.destIds[0]!}`;
+  const item = page.locator(`[data-lcos-railway-item="${targetKey}"]`);
+  await item.hover();
+
+  const peek = page.locator(`[data-lcos-railway-peek="${targetKey}"]`);
+  await expect(peek).toBeVisible();
+  await expect(peek.locator('[data-lcos-railway-destination-ref]')).toContainText(targetKey);
+  await expect(peek.locator('[data-lcos-railway-action="receive"]')).toBeDisabled();
+  await peek.locator('[data-lcos-railway-action="more"]').click();
+  await expect(page.locator('[data-lcos-railway-more]')).toBeVisible();
+  await expect(page.locator('[data-lcos-railway-more-action="open"]')).toBeEnabled();
+  await expect(page.locator('[data-lcos-railway-more-action="remove"]')).toBeEnabled();
+
+  await page.reload();
+  await expect(page.locator(`[data-lcos-railway-item="${targetKey}"]`)).toBeVisible({ timeout: 45_000 });
+  await expect(page.locator('[data-lcos-railway]')).toHaveAttribute('data-lcos-railway-version');
+});
+
 test('R3-3. Receive：Assembly 原生 drag → Railway destination → preview=该目的地 → canonical apply 落账', async ({ page }) => {
   await enterRailProject(page, fixture);
   const changeSetsBefore = await changeSetIds(fixture.projectId);

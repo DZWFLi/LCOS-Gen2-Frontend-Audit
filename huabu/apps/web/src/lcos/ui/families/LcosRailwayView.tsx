@@ -6,7 +6,7 @@
 import { FigmaShellGlyph } from '../FigmaShellGlyph';
 
 import type { FigmaShellGlyphName } from '../FigmaShellGlyph';
-import type { ComponentType, DragEvent } from 'react';
+import type { ComponentType, DragEvent, ReactNode } from 'react';
 
 export interface LcosRailwayViewItem {
   readonly key: string;
@@ -25,6 +25,15 @@ export interface LcosRailwayViewItem {
   readonly onDrop?: (event: DragEvent<HTMLButtonElement>) => void;
   readonly onDragEnd?: (event: DragEvent<HTMLButtonElement>) => void;
   readonly reorderDropTarget?: boolean;
+  /** Opens the canonical destination peek while the pointer/focus is on this item. */
+  readonly onPeekEnter?: () => void;
+  readonly onPeekLeave?: () => void;
+  readonly peekOpen?: boolean;
+  /** Peek content is supplied by the Railway container from its Core projection. */
+  readonly peek?: ReactNode;
+  readonly moreOpen?: boolean;
+  /** More content is supplied by the Railway container; it never owns truth. */
+  readonly more?: ReactNode;
 }
 
 export interface LcosRailwayViewProps {
@@ -56,27 +65,42 @@ export function LcosRailwayView({ items, onSelect, footer }: LcosRailwayViewProp
           const Icon = item.icon;
           const variant = item.disabled ? 'disabled' : item.selected ? 'selected' : 'resting';
           return (
-            <button
+            <div
               key={item.key}
-              ref={item.onElement}
-              type="button"
-              draggable={item.draggable}
-              data-lcos-railway-item={item.key}
-              data-lcos-railway-reorder-target={item.reorderDropTarget ? 'true' : undefined}
-              data-lcos-variant={variant}
-              aria-current={item.selected ? 'page' : undefined}
-              disabled={item.disabled}
-              title={item.label}
-              aria-label={item.label}
-              onClick={() => onSelect?.(item.key)}
-              onDragStart={item.onDragStart}
-              onDragOver={item.onDragOver}
-              onDrop={item.onDrop}
-              onDragEnd={item.onDragEnd}
+              data-lcos-railway-entry={item.key}
+              onMouseEnter={item.onPeekEnter}
+              onMouseLeave={item.onPeekLeave}
+              onBlur={(event) => {
+                const next = event.relatedTarget;
+                if (!(next instanceof Node) || !event.currentTarget.contains(next)) {
+                  item.onPeekLeave?.();
+                }
+              }}
             >
-              {item.glyph === undefined ? <Icon className="h-[21px] w-[21px]" />
-                : <FigmaShellGlyph name={item.glyph} size={21} />}
-            </button>
+              <button
+                ref={item.onElement}
+                type="button"
+                draggable={item.draggable}
+                data-lcos-railway-item={item.key}
+                data-lcos-railway-reorder-target={item.reorderDropTarget ? 'true' : undefined}
+                data-lcos-variant={variant}
+                aria-current={item.selected ? 'page' : undefined}
+                disabled={item.disabled}
+                title={item.label}
+                aria-label={item.label}
+                onFocus={item.onPeekEnter}
+                onClick={() => onSelect?.(item.key)}
+                onDragStart={item.onDragStart}
+                onDragOver={item.onDragOver}
+                onDrop={item.onDrop}
+                onDragEnd={item.onDragEnd}
+              >
+                {item.glyph === undefined ? <Icon className="h-[21px] w-[21px]" />
+                  : <FigmaShellGlyph name={item.glyph} size={21} />}
+              </button>
+              {item.peekOpen && item.peek}
+              {item.moreOpen && item.more}
+            </div>
           );
         })}
       </div>

@@ -6,23 +6,25 @@
 import {
   CoreProjectClient,
   CoreRailwayClient,
+  removeRailwayRefV1,
   railwayRefKeyV1,
   reorderRailwayRefV1,
 } from '@local-creative-os/web-gen2';
-import { FolderOpen, Layers, ListTree, PanelsTopLeft } from 'lucide-react';
+import { Eye, FolderOpen, Inbox, Layers, ListTree, MoreHorizontal, PanelsTopLeft, Trash2 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState, type DragEvent } from 'react';
 
-import { useLcosShellStore, type LcosSurfaceKey } from './lcosShellStore';
 import { lcosHudEdgeOffsets, lcosHudSafeCenterY } from './lcosHudPlacement';
+import { useLcosShellStore, type LcosSurfaceKey } from './lcosShellStore';
 import { createLcosCoreSession } from '../app/lcosCoreClient';
-import { useLcosDropStore } from '../lcosDropState';
 import { rectFromDomRect } from '../drop/dropTargetRegistry';
+import { useLcosDropStore } from '../lcosDropState';
 import {
   projectRailwaySnapshot,
   type RailwayUiSnapshot,
   type RailwayDestinationProjection,
 } from '../navigation/railwayProjection';
 import { LcosRailwayView, type LcosRailwayViewItem } from '../ui/families';
+import { lcosGlassStyle, lcosTokens } from '../ui/lcosTokens';
 
 import type { DropTargetRegistration } from '../drop/dropTypes';
 import type { ProjectViewRailOrderV0 } from '@local-creative-os/contracts';
@@ -80,6 +82,9 @@ export function LcosRailway({
   const [dragKey, setDragKey] = useState<string | undefined>(undefined);
   const [reorderTargetKey, setReorderTargetKey] = useState<string | undefined>(undefined);
   const [reordering, setReordering] = useState(false);
+  const [peekKey, setPeekKey] = useState<string | undefined>(undefined);
+  const [moreKey, setMoreKey] = useState<string | undefined>(undefined);
+  const [notice, setNotice] = useState<string | undefined>(undefined);
   const session = useMemo(() => createLcosCoreSession(), []);
   const railway = useMemo(() => new CoreRailwayClient(session.http), [session]);
   const projects = useMemo(
@@ -128,7 +133,10 @@ export function LcosRailway({
     };
   }, [projectId, projects, railway, surfaceByWorkspace]);
 
-  const destinations: readonly RailwayDestinationProjection[] = snapshot?.destinations ?? [];
+  const destinations = useMemo(
+    () => snapshot?.destinations ?? [],
+    [snapshot],
+  );
 
   const publishReceiveTarget = useCallback((
     destination: RailwayDestinationProjection,
@@ -213,12 +221,45 @@ export function LcosRailway({
         })),
         surfaceByWorkspace,
       }));
+      setNotice(undefined);
       setError('Railway 已在别处更新，已回读最新顺序');
     } catch {
       setSnapshot(previous);
       setError('Railway 已在别处更新，但最新顺序暂时读取失败');
     }
   }, [projectId, projects, railway, surfaceByWorkspace]);
+
+  const removeDestination = useCallback((destination: RailwayDestinationProjection): void => {
+    const previous = snapshot;
+    if (previous === undefined || reordering) return;
+    const orderedRefs = removeRailwayRefV1(previous.order.orderedRefs, destination.key);
+    if (orderedRefs === previous.order.orderedRefs) return;
+    setReordering(true);
+    setError(undefined);
+    setNotice(undefined);
+    void railway.write({
+      projectId,
+      orderedRefs,
+      expectedVersion: previous.order.version,
+    })
+      .then((serverOrder) => {
+        setSnapshot({
+          order: serverOrder,
+          destinations: destinationsForOrder(serverOrder, previous.destinations),
+        });
+        setPeekKey(undefined);
+        setMoreKey(undefined);
+        setNotice(`目的地已移出 Railway · v${serverOrder.version}`);
+      })
+      .catch(async (cause: unknown) => {
+        if ((cause as { status?: number }).status === 409) {
+          await refreshAfterConflict(previous);
+          return;
+        }
+        setError(cause instanceof Error ? cause.message : 'Railway 目的地移除失败');
+      })
+      .finally(() => setReordering(false));
+  }, [projectId, refreshAfterConflict, railway, reordering, snapshot]);
 
   const reorder = useCallback((movedKey: string, targetKey: string, placement: 'before' | 'after'): void => {
     const previous = snapshot;
@@ -237,6 +278,7 @@ export function LcosRailway({
           order: serverOrder,
           destinations: destinationsForOrder(serverOrder, previous.destinations),
         });
+        setNotice(`Railway 顺序已保存 · v${serverOrder.version}`);
         setError(undefined);
       })
       .catch(async (cause: unknown) => {
@@ -267,6 +309,101 @@ export function LcosRailway({
       disabled: !destination.available || activatingKey !== undefined || reordering,
       draggable: destination.available && !reordering,
       reorderDropTarget: reorderTargetKey === destination.key,
+      peekOpen: peekKey === destination.key,
+      onPeekEnter: () => {
+        setPeekKey(destination.key);
+        setMoreKey(undefined);
+      },
+      onPeekLeave: () => {
+        setPeekKey((current) => current === destination.key ? undefined : current);
+        setMoreKey((current) => current === destination.key ? undefined : current);
+      },
+      peek: peekKey === destination.key ? (
+        <div
+          data-lcos-railway-peek={destination.key}
+          role="dialog"
+          aria-label={`${destination.label} 目的地预览`}
+          style={{ ...lcosGlassStyle, color: lcosTokens.color.text }}
+        >
+          <strong data-lcos-railway-peek-label>{destination.label}</strong>
+          <span data-lcos-railway-destination-ref>
+            {destination.kind}:{destination.viewId}
+          </span>
+          <span data-lcos-railway-receive-state>
+            {destination.available
+              ? 'Receive：拖入可接收素材后由 Assembly apply 提交'
+              : `Receive：不可用 · ${destination.reason ?? '缺少目的地能力'}`}
+          </span>
+          <div data-lcos-railway-actions>
+            <button
+              type="button"
+              data-lcos-railway-action="peek"
+              aria-pressed="true"
+              onClick={() => {
+                setPeekKey(destination.key);
+                setMoreKey(undefined);
+              }}
+            >
+              <Eye size={14} aria-hidden />
+              Peek
+            </button>
+            <button
+              type="button"
+              data-lcos-railway-action="receive"
+              disabled
+              title="Receive 需要从 Assembly 或 Canvas 拖入素材"
+            >
+              <Inbox size={14} aria-hidden />
+              Receive
+            </button>
+            <button
+              type="button"
+              data-lcos-railway-action="more"
+              aria-expanded={moreKey === destination.key}
+              onClick={() => setMoreKey((current) => current === destination.key ? undefined : destination.key)}
+            >
+              <MoreHorizontal size={14} aria-hidden />
+              More
+            </button>
+          </div>
+        </div>
+      ) : undefined,
+      moreOpen: moreKey === destination.key,
+      more: moreKey === destination.key ? (
+        <div data-lcos-railway-more role="menu" aria-label={`${destination.label} 更多操作`}>
+          <button
+            type="button"
+            role="menuitem"
+            data-lcos-railway-more-action="open"
+            disabled={!destination.available || activatingKey !== undefined || reordering}
+            onClick={() => {
+              if (!destination.available || activatingKey !== undefined) return;
+              setActivatingKey(destination.key);
+              void Promise.resolve(activateDestination(destination))
+                .catch((cause: unknown) => setError(cause instanceof Error ? cause.message : String(cause)))
+                .finally(() => setActivatingKey(undefined));
+            }}
+          >
+            <Eye size={14} aria-hidden />
+            进入目的地
+          </button>
+          <button
+            type="button"
+            role="menuitem"
+            data-lcos-railway-more-action="remove"
+            disabled={reordering}
+            onClick={() => removeDestination(destination)}
+          >
+            <Trash2 size={14} aria-hidden />
+            移出 Railway
+          </button>
+          {!destination.available && (
+            <span data-lcos-railway-more-reason>
+              {destination.reason ?? '当前目的地缺少可用能力'}
+            </span>
+          )}
+        </div>
+      ) : undefined,
       onDragStart: (event: DragEvent<HTMLButtonElement>) => {
         if (!destination.available || reordering) return;
         setDragKey(destination.key);
@@ -335,7 +472,7 @@ export function LcosRailway({
             })
             .finally(() => setActivatingKey(undefined));
         }}
-        footer={error}
+        footer={error ?? notice}
       />
     </div>
   );

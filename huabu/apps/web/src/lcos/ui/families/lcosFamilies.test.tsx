@@ -4,7 +4,7 @@
 
 import { createRoot, type Root } from 'react-dom/client';
 import { act } from 'react-dom/test-utils';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { createLcosNodePresentationSeam } from '../../nodes/createLcosNodePresentationSeam';
 import { LcosSurfaceFeedback } from '../LcosSurfaceFeedback';
@@ -122,6 +122,48 @@ describe('R1 共享组件族', () => {
     expect(four?.querySelectorAll('[data-lcos-railway-item]')).toHaveLength(4);
     expect(four?.querySelector('[data-lcos-railway-item="a"]')?.getAttribute('data-lcos-variant')).toBe('selected');
     expect(four?.querySelector<HTMLButtonElement>('[data-lcos-railway-item="d"]')?.disabled).toBe(true);
+  });
+
+  it('Railway destination entry keeps Peek / Receive / More outside the 36px receive target', () => {
+    const onPeekEnter = vi.fn();
+    const onPeekLeave = vi.fn();
+    const el = render(
+      <LcosRailwayView
+        items={[{
+          key: 'context:ctx-1',
+          label: '研究现场',
+          icon: () => <span />,
+          onPeekEnter,
+          onPeekLeave,
+          peekOpen: true,
+          peek: (
+            <div data-lcos-railway-peek="context:ctx-1">
+              <button type="button" data-lcos-railway-action="peek">Peek</button>
+              <button type="button" data-lcos-railway-action="receive" disabled>Receive</button>
+              <button type="button" data-lcos-railway-action="more">More</button>
+            </div>
+          ),
+          moreOpen: true,
+          more: <div data-lcos-railway-more>进入目的地</div>,
+        }]}
+      />,
+    );
+    expect(el.querySelector('[data-lcos-railway-item="context:ctx-1"]')).not.toBeNull();
+    expect(el.querySelector('[data-lcos-railway-peek="context:ctx-1"]')).not.toBeNull();
+    expect(el.querySelector('[data-lcos-railway-action="receive"]')?.hasAttribute('disabled')).toBe(true);
+    expect(el.querySelector('[data-lcos-railway-more]')?.textContent).toContain('进入目的地');
+
+    const item = el.querySelector<HTMLButtonElement>('[data-lcos-railway-item="context:ctx-1"]');
+    const peekAction = el.querySelector<HTMLButtonElement>('[data-lcos-railway-action="peek"]');
+    const outside = document.createElement('button');
+    document.body.appendChild(outside);
+    act(() => item?.focus());
+    expect(onPeekEnter).toHaveBeenCalledTimes(1);
+    act(() => peekAction?.focus());
+    expect(onPeekLeave).not.toHaveBeenCalled();
+    act(() => outside.focus());
+    expect(onPeekLeave).toHaveBeenCalledTimes(1);
+    outside.remove();
   });
 
   it('ProfessionalWindowChrome 覆盖 浮动/停靠/分组，并渲染窗口标题与 tab', () => {
