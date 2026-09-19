@@ -3,6 +3,7 @@
 // 不是全局 overlay；child canvas 复用同一 Huabu kernel（Portal/Surface 机制 Wave 8 精化）。
 
 import { Layers } from 'lucide-react';
+import { AnimatePresence } from 'motion/react';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
@@ -95,7 +96,7 @@ export function ContextWorksite({
           data-lcos-context-instrument="atlas"
           onClick={() => setAtlasOpen(true)}
           className="lcos-context-instrument-trigger"
-          aria-label="打开集合总览 Atlas"
+          aria-label="打开集合总览"
           title="集合总览"
         >
           <Layers className="h-4 w-4" aria-hidden />
@@ -104,14 +105,17 @@ export function ContextWorksite({
 
       <TemporalRail />
 
-      {atlasOpen && (
-        <ContextAtlasStage
-          projectId={projectId}
-          workspaces={workspaces}
-          onClose={() => setAtlasOpen(false)}
-          onEnterSurface={enterItem}
-        />
-      )}
+      <AnimatePresence key={projectId} initial={false} mode="sync">
+        {atlasOpen && (
+          <ContextAtlasStage
+            key="context-atlas"
+            projectId={projectId}
+            workspaces={workspaces}
+            onClose={() => setAtlasOpen(false)}
+            onEnterSurface={enterItem}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 }

@@ -1,7 +1,8 @@
 /*
  * 1D fisheye scale adapted from Mike Bostock's d3-plugins fisheye implementation.
  * Original algorithm: d3/d3-plugins/fisheye/fisheye.js (BSD-3-Clause).
- * LCOS keeps it presentation-only: it warps screen-space tick positions, never time truth.
+ * Historical presentation helper only. Stage7 TemporalRail no longer calls this warp:
+ * approved Figma 5156:3080 keeps vertical cadence fixed and expands widths inward.
  */
 export function fisheye1d(input: {
   value: number;

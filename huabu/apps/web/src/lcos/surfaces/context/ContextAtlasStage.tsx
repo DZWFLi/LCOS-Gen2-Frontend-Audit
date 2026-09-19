@@ -6,6 +6,7 @@
 
 import { CoreAssemblyClient, HttpError } from '@local-creative-os/web-gen2';
 import { ArrowRight, X } from 'lucide-react';
+import { useIsPresent } from 'motion/react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { DropdownMenu, DropdownMenuItem } from '@/components/Common/DropdownMenu';
@@ -15,6 +16,7 @@ import { buildAtlasGroups, canAtlasLocate, isAtlasItem } from './contextAtlasSem
 import { createLcosCoreSession } from '../../app/lcosCoreClient';
 import { useLcosReferenceStore } from '../../lcosReferenceState';
 import { workspaceTargetsForItem } from '../../navigation/workspaceTargets';
+import { ContextAtlasView } from '../../ui/context/ContextAtlasView';
 import { ContextCollectionView } from '../../ui/context/ContextCollectionView';
 import { LcosSurfaceFeedback } from '../../ui/LcosSurfaceFeedback';
 import { lcosTokens } from '../../ui/lcosTokens';
@@ -37,7 +39,8 @@ export function ContextAtlasStage({ projectId, workspaces, onClose, onEnterSurfa
   const [state, setState] = useState<'loading' | 'ready' | 'error'>('loading');
   const [errorDetail, setErrorDetail] = useState<string | undefined>(undefined);
   const requestSequence = useRef(0);
-  useCloseOnEscape(true, onClose);
+  const present = useIsPresent();
+  useCloseOnEscape(present, onClose);
 
   useEffect(() => {
     const sequence = requestSequence.current + 1;
@@ -72,33 +75,38 @@ export function ContextAtlasStage({ projectId, workspaces, onClose, onEnterSurfa
   const focusOnCanvas = (item: WarehouseItemV1): boolean => onEnterSurface(item);
   const projected = (item: WarehouseItemV1): boolean => canAtlasLocate(item, useLcosReferenceStore.getState().nodeEntityRefs.values());
 
-  const kindLabel = (item: WarehouseItemV1): string => item.kind === 'scene' ? '现场' : item.kind === 'collection' ? '集合' : 'Context';
+  const kindLabel = (item: WarehouseItemV1): string => item.kind === 'scene' ? '现场' : item.kind === 'collection' ? '集合' : '上下文';
 
   return (
-    <div data-lcos-context-atlas className="lcos-atlas-light-curtain">
-      <div className="lcos-atlas-light-curtain-inner">
-        <div className="lcos-atlas-light-curtain-head">
+    <ContextAtlasView onClose={onClose} header={<>
           <span>{items.length} 个集合</span>
-          <button type="button" aria-label="收回 Atlas" onClick={onClose} className="lcos-atlas-close">
+          <button type="button" aria-label="收回集合总览" onClick={onClose} className="lcos-atlas-close">
             <X className="h-[22px] w-[22px]" aria-hidden />
           </button>
-        </div>
-        {state === 'loading' && <div className="py-16"><LcosSurfaceFeedback presentation="loading" message="正在读取 Atlas…" /></div>}
+        </>}
+    >
+        {state === 'loading' && <div className="py-16"><LcosSurfaceFeedback presentation="loading" message="正在读取集合…" /></div>}
         {state === 'error' && (
-          <div className="py-16"><LcosSurfaceFeedback presentation="error" message={`Atlas 读取失败${errorDetail ? `（${errorDetail}）` : ''}`} /></div>
+          <div className="py-16"><LcosSurfaceFeedback presentation="error" message={`集合读取失败${errorDetail ? `（${errorDetail}）` : ''}`} /></div>
         )}
-        {state === 'ready' && (
+        {state === 'ready' && items.length === 0 ? <LcosSurfaceFeedback presentation="empty" message="还没有集合" /> : null}
+        {state === 'ready' && items.length > 0 && (
           <div className="lcos-atlas-grid">
             {groups.map((group) => (
               <section key={group.key} style={{ display: 'contents' }}>
                 <div style={{ display: 'contents' }}>
                   {group.list.map((item) => {
                     const childTargets = workspaceTargetsForItem(item, workspaces);
+                    const soleTarget = childTargets.length === 1 ? childTargets[0] : undefined;
+                    const activate = soleTarget?.canvasId
+                      ? () => { onEnterSurface(item, soleTarget); }
+                      : childTargets.length === 0 && projected(item) ? () => { focusOnCanvas(item); } : undefined;
                     return (
                       <ContextCollectionView
                         key={`${item.kind}:${item.entityRef.id}`}
                         title={item.title ?? '未命名'}
                         organization="未指定"
+                        {...(activate === undefined ? {} : { onActivate: activate, activationLabel: soleTarget?.canvasId ? `进入集合 · ${item.title ?? '未命名'}` : `定位集合 · ${item.title ?? '未命名'}` })}
                         {...(item.previewRef === undefined ? {} : { previewUrl: item.previewRef })}
                         disabled={!projected(item) && childTargets.length === 0}
                         action={
@@ -126,7 +134,6 @@ export function ContextAtlasStage({ projectId, workspaces, onClose, onEnterSurfa
             ))}
           </div>
         )}
-      </div>
-    </div>
+    </ContextAtlasView>
   );
 }

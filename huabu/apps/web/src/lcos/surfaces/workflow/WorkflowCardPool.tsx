@@ -5,7 +5,7 @@
 
 
 import { CoreAssemblyClient, HttpError } from '@local-creative-os/web-gen2';
-import { MessageCircle, PlusCircle } from 'lucide-react';
+import { MessageCircle, PlusCircle, Search } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 
 
@@ -16,6 +16,7 @@ import { sameEntityRef } from '../../referenceBridge';
 import { useLcosShellStore } from '../../shell/lcosShellStore';
 import { LcosSurfaceFeedback } from '../../ui/LcosSurfaceFeedback';
 import { lcosTokens } from '../../ui/lcosTokens';
+import { filterWorkflowTitles } from '../../ui/workflow/filterWorkflowTitles';
 import { WorkflowTaskCardView, type WorkflowTaskCardVisualState } from '../../ui/workflow/WorkflowTaskCardView';
 
 import type { LcosComposerTarget } from '../../shell/lcosShellStore';
@@ -104,6 +105,7 @@ export function WorkflowCardPool({ projectId }: { readonly projectId: string }):
   const [cards, setCards] = useState<readonly WorkflowHandCard[]>([]);
   const [state, setState] = useState<'loading' | 'ready' | 'error'>('loading');
   const [errorDetail, setErrorDetail] = useState<string | undefined>(undefined);
+  const [query, setQuery] = useState('');
   const [skillErrorDetail, setSkillErrorDetail] = useState<string | undefined>(undefined);
   // 草稿引用 = 真实 presentation state（Selection ≠ Reference）；用于卡面「草稿中」
   const draftRefs = useLcosReferenceStore((s) => s.draft.orderedEntityRefs);
@@ -140,7 +142,7 @@ export function WorkflowCardPool({ projectId }: { readonly projectId: string }):
     };
   }, [projectId, assembly, session]);
 
-  const filtered = cards;
+  const filtered = useMemo(() => filterWorkflowTitles(cards, query), [cards, query]);
 
   /**
    * 7 状态里生产可达的三种（其余 悬停/键盘焦点 由 CSS 表达；预览/已选目标 归属 R5）：
@@ -167,7 +169,11 @@ export function WorkflowCardPool({ projectId }: { readonly projectId: string }):
   };
 
   return (
-    <div data-lcos-workflow-pool className="lcos-workflow-hand-pool">
+    <div data-lcos-workflow-pool className="lcos-workflow-hand-pool" data-has-search="true">
+      <label className="lcos-workflow-hand-search">
+        <Search size={18} aria-hidden />
+        <input type="search" aria-label="搜索工作流" placeholder="搜索工作流" value={query} onChange={(event) => setQuery(event.target.value)} />
+      </label>
       {state === 'loading' && <div className="py-8"><LcosSurfaceFeedback presentation="loading" message="读取卡池…" /></div>}
       {state === 'error' && (
         <div className="py-8"><LcosSurfaceFeedback presentation="error" message={`卡池读取失败${errorDetail ? `（${errorDetail}）` : ''}`} /></div>
@@ -179,7 +185,7 @@ export function WorkflowCardPool({ projectId }: { readonly projectId: string }):
       )}
       {state === 'ready' && filtered.length === 0 && (
         <div className="py-8">
-          <LcosSurfaceFeedback presentation="empty" message="还没有工作流卡片" />
+          <LcosSurfaceFeedback presentation="empty" message={query.trim() ? '没有匹配项' : '还没有工作流卡片'} />
         </div>
       )}
 

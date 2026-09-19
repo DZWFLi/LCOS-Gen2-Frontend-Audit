@@ -97,7 +97,7 @@ describe('ContextAtlasStage warehouse ownership', () => {
     });
     await act(async () => {});
 
-    expect(host.textContent).toContain('正在读取 Atlas');
+    expect(host.textContent).toContain('正在读取集合');
     expect(host.textContent).not.toContain('project-a');
     expect(mocks.getWarehouse.mock.calls[0]?.[1]).toBeInstanceOf(AbortSignal);
     expect((mocks.getWarehouse.mock.calls[0]?.[1] as AbortSignal).aborted).toBe(
