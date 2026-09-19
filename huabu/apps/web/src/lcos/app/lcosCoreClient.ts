@@ -13,6 +13,7 @@ import {
   CoreSkillCatalogClient,
   CoreColorPinClient,
   CoreNavigationClient,
+  CoreTemporalClient,
   HttpClient,
   type CoreEnvelopeError,
 } from '@local-creative-os/web-gen2';
@@ -37,6 +38,8 @@ export interface LcosCoreSession {
   readonly colorPins: CoreColorPinClient;
   /** R6 导航目标解析（canonical NavigationMarkerService；unresolved 是合法结果）。 */
   readonly navigation: CoreNavigationClient;
+  /** R4 Context Temporal Rail：durable canonical facts 的只读投影。 */
+  readonly temporal: CoreTemporalClient;
 }
 
 export interface LcosCoreSessionOptions {
@@ -65,6 +68,7 @@ export function createLcosCoreSession(
     skills: new CoreSkillCatalogClient(http),
     colorPins: new CoreColorPinClient(http),
     navigation: new CoreNavigationClient(http),
+    temporal: new CoreTemporalClient(http),
   };
 }
 

@@ -42,6 +42,7 @@ export function ContextWorksite({
 }: ContextWorksiteProps): React.JSX.Element {
   const navigate = useNavigate();
   const [atlasOpen, setAtlasOpen] = useState(false);
+  const activeWorkspaceId = useLcosShellStore((state) => state.activeWorkspaceId);
   useLcosWorksiteNav({ projectId, canvasBySurface, ensureCanvas });
 
   const enterItem = (item: WarehouseItemV1, selectedWorkspace?: Workspace): boolean => {
@@ -102,7 +103,7 @@ export function ContextWorksite({
         </button>
       </div>
 
-      <TemporalRail />
+      <TemporalRail projectId={projectId} workspaceId={activeWorkspaceId ?? undefined} />
 
       {atlasOpen && (
         <ContextAtlasStage

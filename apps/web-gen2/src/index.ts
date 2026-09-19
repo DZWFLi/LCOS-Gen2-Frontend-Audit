@@ -202,6 +202,7 @@ export type { ColorPinAssignInputV1, ColorPinMutationReceiptV1, ColorPinRemoveRe
 export { CoreNavigationClient } from './backend/navigation.js';
 export { CoreConnectorClient } from './backend/connectors.js';
 export { CoreHealthClient } from './backend/health.js';
+export { CoreTemporalClient } from './backend/temporal.js';
 
 export { composerViewStateV1, COMPOSER_VIEW_STATES_V1 } from './composer/composerSubmitMapper.js';
 export type { ComposerViewStateV1, ComposerSubmitOutcomeV1, ComposerViewInputV1 } from './composer/composerSubmitMapper.js';

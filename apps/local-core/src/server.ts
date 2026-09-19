@@ -91,6 +91,7 @@ import { handleCollaborationRoute } from './routes/collaboration.js'
 import { handleRunsRoute } from './routes/runs.js'
 import { handlePresentationsRoute } from './routes/presentations.js'
 import { handleProjectEventsRoute, handleRealtimeDebugRoute } from './routes/project-events.js'
+import { handleTemporalIndexRoute } from './routes/temporal-index.js'
 import { handleWorkflowRoute } from './routes/workflow.js'
 import { handleCurationRoute } from './routes/curation.js'
 import { handleSpaceRoute } from './routes/space.js'
@@ -1168,6 +1169,7 @@ export function createLocalCoreServer(options: LocalCoreServerOptions = {}): Loc
 
       if (handleRealtimeDebugRoute({ method, pathname, url, request, response, controller, metadata, presentation, activeContext, projectEvents, projectMutations, helpers: routeHelpers })) return
       if (await handleProjectEventsRoute({ method, pathname, url, request, response, controller, metadata, presentation, activeContext, projectEvents, projectMutations, helpers: routeHelpers })) return
+      if (handleTemporalIndexRoute({ method, pathname, url, request, response, metadata, helpers: routeHelpers })) return
       if (await handleProjectsRoute({
         method,
         pathname,
