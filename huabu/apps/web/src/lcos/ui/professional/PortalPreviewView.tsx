@@ -13,18 +13,23 @@ export interface PortalPreviewViewProps {
   /** Provider detail remains available to keyboard and assistive-technology users. */
   readonly detail?: string;
   readonly onOpen?: () => void;
+  /** Production caller may know that the preview has no resolvable Workspace. */
+  readonly openDisabled?: boolean;
+  readonly openDisabledReason?: string;
   readonly onRetry?: () => void;
   readonly onZoom?: () => void;
   readonly children?: ReactNode;
 }
 
-export function PortalPreviewView({ state, title, detail, onOpen, onRetry, onZoom, children }: PortalPreviewViewProps): React.JSX.Element {
+export function PortalPreviewView({ state, title, detail, onOpen, openDisabled, openDisabledReason, onRetry, onZoom, children }: PortalPreviewViewProps): React.JSX.Element {
   const presentation = portalPreviewPresentation(state);
   const descriptionId = useId();
   const hasSceneSlot = children !== null && children !== undefined && children !== false;
   const showsScene = presentation.showsScene && hasSceneSlot;
   const showsRetry = presentation.showsRetry && onRetry !== undefined;
   const showsZoom = presentation.showsZoom && showsScene && onZoom !== undefined;
+  const showsOpen = onOpen !== undefined || openDisabledReason !== undefined;
+  const openIsDisabled = presentation.openDisabled || openDisabled === true || onOpen === undefined;
   return (
     <section
       data-lcos-portal-preview-view
@@ -41,10 +46,12 @@ export function PortalPreviewView({ state, title, detail, onOpen, onRetry, onZoo
     >
       <div className="lcos-portal-preview-frame">
         <strong className="lcos-portal-preview-title" title={title}>{title}</strong>
-        {onOpen ? <button
+        {showsOpen ? <button
           type="button" className="lcos-portal-open" onClick={onOpen}
-          disabled={presentation.openDisabled}
+          disabled={openIsDisabled}
+          title={openDisabledReason}
         >打开现场</button> : null}
+        {openDisabledReason ? <span className="lcos-portal-open-reason" role="status">{openDisabledReason}</span> : null}
         <div className="lcos-portal-preview-stage" data-lcos-portal-stage={state}>
           {showsScene ? children : <div className="lcos-portal-state-copy" role="status">
             <strong>{presentation.stageTitle ?? '预览内容尚未就绪'}</strong>

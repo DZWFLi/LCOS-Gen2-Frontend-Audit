@@ -53,6 +53,48 @@ it('renders the existing viewport and zooms locally without moving Main', async 
   expect(mocks.camera).not.toHaveBeenCalled();
 });
 
+it('opens the exact resolved Workspace target and delegates zoom to the local preview viewport', async () => {
+  const open = vi.fn();
+  await render({ scene, loading: false, stale: false, error: null });
+  await act(async () => root.render(
+    <PortalPreviewBody
+      projectId="p"
+      target="canvas-target"
+      targetKind="canvas"
+      portalTargetResolution={{ canvasId: 'canvas-target', workspaceId: 'workspace-target', targetSurface: 'context' }}
+      onOpenPortalTarget={open}
+    />,
+  ));
+  const openButton = host.querySelector<HTMLButtonElement>('.lcos-portal-open');
+  if (!openButton) throw new Error('Portal open action missing');
+  await act(async () => openButton.click());
+  expect(open).toHaveBeenCalledOnce();
+  expect(open).toHaveBeenCalledWith({ canvasId: 'canvas-target', workspaceId: 'workspace-target', targetSurface: 'context' });
+  const viewport = host.querySelector('[aria-label="spacePreview.viewport"]');
+  const svg = viewport?.querySelector('svg');
+  const before = svg?.getAttribute('viewBox');
+  const zoomButton = host.querySelector<HTMLButtonElement>('.lcos-portal-zoom');
+  if (!zoomButton || !svg) throw new Error('Portal zoom action missing');
+  await act(async () => zoomButton.click());
+  expect(svg.getAttribute('viewBox')).not.toBe(before);
+  expect(mocks.camera).not.toHaveBeenCalled();
+});
+
+it('keeps entering the target disabled when the Core Workspace identity is unavailable', async () => {
+  await act(async () => root.render(
+    <PortalPreviewBody
+      projectId="p"
+      target="canvas-target"
+      targetKind="canvas"
+      portalTargetResolution={null}
+    />,
+  ));
+  const openButton = host.querySelector<HTMLButtonElement>('.lcos-portal-open');
+  if (!openButton) throw new Error('Portal disabled action missing');
+  expect(openButton.disabled).toBe(true);
+  expect(host.textContent).toContain('Workspace');
+});
+
 it('derives loading, partial, cached, failure and missing states from the donor snapshot', async () => {
   await render({ scene: null, loading: true, stale: false, error: null }); expect(variant()).toBe('加载中');
   await render({ scene: { ...scene, truncated: { nodes: true, edges: false } }, loading: false, stale: false, error: null }); expect(variant()).toBe('部分预览');

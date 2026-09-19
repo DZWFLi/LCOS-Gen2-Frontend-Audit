@@ -12,7 +12,9 @@ import { LcosGlobalHud } from './LcosGlobalHud';
 import { useLcosShellStore, type LcosSurfaceKey } from './lcosShellStore';
 import { LcosWorksiteStage } from './LcosWorksiteStage';
 import { useLcosReferenceStore } from '../lcosReferenceState';
+import { beginChildWorksiteNavigation } from '../navigation/childWorksiteNavigation';
 import { waitForProjectedEntity } from '../navigation/waitForProjectedEntity';
+import { childSurfaceForItem } from '../navigation/workspaceTargets';
 import { ProfessionalWindowStage } from '../professional/ProfessionalWindowStage';
 import { ContextWorksite } from '../surfaces/context/ContextWorksite';
 import { MainWorksite } from '../surfaces/main/MainWorksite';
@@ -22,6 +24,7 @@ import { FigmaShellGlyph } from '../ui/FigmaShellGlyph';
 import { LcosSurfaceFeedback } from '../ui/LcosSurfaceFeedback';
 import { lcosGlassStyle, lcosTokens } from '../ui/lcosTokens';
 
+import type { PortalTargetResolution } from '../professional/PortalPreviewBody';
 import type { Workspace } from '@local-creative-os/domain';
 
 export interface LcosProjectShellProps {
@@ -73,6 +76,33 @@ export function LcosProjectShell({
   const [mainHandOpen, setMainHandOpen] = useState(false);
   const [returning, setReturning] = useState(false);
   const [returnError, setReturnError] = useState<string | undefined>(undefined);
+
+  const resolvePortalTarget = (canvasId: string): PortalTargetResolution | undefined => {
+    const workspace = workspaces.find((candidate) => candidate.canvasId === canvasId);
+    if (workspace === undefined) return undefined;
+    const targetSurface = childSurfaceForItem({ kind: 'scene' }, workspace);
+    return targetSurface === undefined
+      ? undefined
+      : { canvasId, workspaceId: String(workspace.id), targetSurface };
+  };
+
+  const openPortalTarget = (target: PortalTargetResolution): void => {
+    const workspace = workspaces.find(
+      (candidate) => String(candidate.id) === target.workspaceId && candidate.canvasId === target.canvasId,
+    );
+    if (workspace === undefined) return;
+    const resolvedSurface = childSurfaceForItem({ kind: 'scene' }, workspace);
+    if (resolvedSurface !== target.targetSurface) return;
+    beginChildWorksiteNavigation({
+      projectId,
+      sourceSurface: surface,
+      ...(activeWorkspaceId === null ? {} : { sourceWorkspaceId: activeWorkspaceId }),
+      sourceWasChild: childWorkspaceId !== undefined,
+      targetSurface: target.targetSurface,
+      targetWorkspace: workspace,
+      navigate,
+    });
+  };
 
   const childWorkspace = childWorkspaceId === undefined
     ? undefined
@@ -285,7 +315,11 @@ export function LcosProjectShell({
           />
 
           {/* 专业窗口舞台；Composer 由 canvas-local 明确命令挂载。 */}
-          <ProfessionalWindowStage projectId={projectId} />
+          <ProfessionalWindowStage
+            projectId={projectId}
+            resolvePortalTarget={resolvePortalTarget}
+            onOpenPortalTarget={openPortalTarget}
+          />
           {active === 'main' && (
             <>
               <button

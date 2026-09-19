@@ -16,7 +16,7 @@ import { useCloseOnEscape } from '@/hooks/useCloseOnEscape';
 import { ArtifactReaderBody } from './ArtifactReaderBody';
 import { AssemblyBody } from './AssemblyBody';
 import { ConversationWorkViewBody } from './ConversationWorkViewBody';
-import { PortalPreviewBody } from './PortalPreviewBody';
+import { PortalPreviewBody, type PortalTargetResolution } from './PortalPreviewBody';
 import {
   deriveProfessionalStageRegionPlacementsV1,
   professionalFloatingBoundsV1,
@@ -46,6 +46,10 @@ const RESIZE_HANDLES: readonly ProfessionalResizeHandleV1[] = ['n', 'ne', 'e', '
 
 export interface ProfessionalWindowStageProps {
   readonly projectId: string;
+  /** Core-derived resolver; absent in isolated tests/legacy callers. */
+  readonly resolvePortalTarget?: (canvasId: string) => PortalTargetResolution | undefined;
+  /** Shell-owned navigation into an already resolved Workspace. */
+  readonly onOpenPortalTarget?: (target: PortalTargetResolution) => void;
 }
 
 interface ProfessionalRegionEntry {
@@ -142,7 +146,7 @@ function materializeRegionEntries(
   });
 }
 
-export function ProfessionalWindowStage({ projectId }: ProfessionalWindowStageProps): React.JSX.Element {
+export function ProfessionalWindowStage({ projectId, resolvePortalTarget, onOpenPortalTarget }: ProfessionalWindowStageProps): React.JSX.Element {
   const windows = useLcosShellStore((s) => s.windows);
   const windowRegions = useLcosShellStore((s) => s.windowRegions);
   const activateWindow = useLcosShellStore((s) => s.activateWindow);
@@ -375,6 +379,11 @@ export function ProfessionalWindowStage({ projectId }: ProfessionalWindowStagePr
         // 显式分组的目标：前一个区域（2 个区域时即“另一个”）；不存在则按钮 disabled。
         const groupTarget = regionIndex > 0 ? regionEntries[regionIndex - 1] : undefined;
         const docked = region.layout === 'docked-right';
+        const portalTargetResolution = resolvePortalTarget === undefined || activeWindow.bodyKey !== 'portal-preview'
+          ? undefined
+          : activeWindow.targetKind === 'canvas' && activeWindow.target !== undefined
+            ? resolvePortalTarget(activeWindow.target) ?? null
+            : null;
         return (
           <div
             key={region.id}
@@ -508,6 +517,8 @@ export function ProfessionalWindowStage({ projectId }: ProfessionalWindowStagePr
                 {...(activeWindow.assemblyTargetRef === undefined
                   ? {}
                   : { assemblyTargetRef: activeWindow.assemblyTargetRef })}
+                {...(portalTargetResolution === undefined ? {} : { portalTargetResolution })}
+                {...(onOpenPortalTarget === undefined ? {} : { onOpenPortalTarget })}
               />
             </div>
           </div>
@@ -523,12 +534,16 @@ function ProfessionalBody({
   target,
   targetKind,
   assemblyTargetRef,
+  portalTargetResolution,
+  onOpenPortalTarget,
 }: {
   projectId: string;
   bodyKey: string;
   target?: string;
   targetKind?: 'canvas';
   assemblyTargetRef?: AssemblyTargetRefV1;
+  portalTargetResolution?: PortalTargetResolution | null;
+  onOpenPortalTarget?: (target: PortalTargetResolution) => void;
 }): React.JSX.Element {
   switch (bodyKey) {
     case 'assembly':
@@ -543,7 +558,15 @@ function ProfessionalBody({
     case 'conversation':
       return <ConversationWorkViewBody projectId={projectId} connectedConversationId={target} />;
     case 'portal-preview':
-      return <PortalPreviewBody projectId={projectId} target={target} {...(targetKind ? { targetKind } : {})} />;
+      return (
+        <PortalPreviewBody
+          projectId={projectId}
+          target={target}
+          {...(targetKind ? { targetKind } : {})}
+          {...(portalTargetResolution === undefined ? {} : { portalTargetResolution })}
+          {...(onOpenPortalTarget === undefined ? {} : { onOpenPortalTarget })}
+        />
+      );
     case 'runtime-doctor':
     case 'capture-inbox':
     case 'connector-source':

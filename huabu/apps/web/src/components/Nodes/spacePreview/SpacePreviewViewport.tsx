@@ -84,11 +84,14 @@ export const SpacePreviewViewport = memo(
     hostCanvasId,
     previewNodeId,
     hostZoom,
+    zoomRequest,
   }: {
     scene: GetSpacePreviewSceneResponse;
     hostCanvasId: string;
     previewNodeId: string;
     hostZoom: number;
+    /** Caller intent; this viewport remains the sole owner of local zoom state. */
+    zoomRequest?: number;
   }) => {
     const { t } = useTranslation();
     const clipPrefix = useId().replaceAll(':', '');
@@ -112,6 +115,7 @@ export const SpacePreviewViewport = memo(
       width: 0,
       height: 0,
     });
+    const appliedZoomRequest = useRef<number | undefined>(undefined);
 
     const reset = useCallback(() => {
       setViewport({ x: scene.bounds.x, y: scene.bounds.y, zoom: 1 });
@@ -124,6 +128,12 @@ export const SpacePreviewViewport = memo(
       }, 150);
       return () => window.clearTimeout(timeout);
     }, [hostCanvasId, previewNodeId, viewport]);
+
+    useEffect(() => {
+      if (zoomRequest === undefined || zoomRequest === appliedZoomRequest.current) return;
+      appliedZoomRequest.current = zoomRequest;
+      setViewport((current) => ({ ...current, zoom: clampZoom(current.zoom * 1.2) }));
+    }, [zoomRequest]);
 
     useEffect(
       () => () => {

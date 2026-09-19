@@ -11,7 +11,23 @@ vi.mock('./ArtifactReaderBody', () => ({
   ArtifactReaderBody: ({ artifactId }: { artifactId?: string }) => <div data-reader-artifact={artifactId} />,
 }));
 vi.mock('./AssemblyBody', () => ({ AssemblyBody: () => null }));
-vi.mock('./PortalPreviewBody', () => ({ PortalPreviewBody: () => null }));
+vi.mock('./PortalPreviewBody', () => ({
+  PortalPreviewBody: ({
+    portalTargetResolution,
+    onOpenPortalTarget,
+  }: {
+    portalTargetResolution?: { canvasId: string; workspaceId: string; targetSurface: string } | null;
+    onOpenPortalTarget?: (target: { canvasId: string; workspaceId: string; targetSurface: string }) => void;
+  }) => (
+    <button
+      data-portal-target-resolution={portalTargetResolution === null ? 'missing' : portalTargetResolution?.workspaceId}
+      type="button"
+      onClick={() => {
+        if (portalTargetResolution && onOpenPortalTarget) onOpenPortalTarget(portalTargetResolution);
+      }}
+    />
+  ),
+}));
 vi.mock('./ConversationWorkViewBody', () => ({ ConversationWorkViewBody: InlineComposerFixture }));
 
 // Reproduce the production child's Escape registration using the real Huabu hook.
@@ -79,4 +95,23 @@ it('does not let a hidden Composer for another conversation block closing the cu
   await act(async () => root.render(<ProfessionalWindowStage projectId="p" />));
   await escape();
   expect(useLcosShellStore.getState().windows).toHaveLength(0);
+});
+
+it('passes the Core-resolved Portal Workspace to the production open caller', async () => {
+  const store = useLcosShellStore.getState();
+  store.openWindow('portal-preview', '入口', 'canvas-target', 'canvas');
+  const open = vi.fn();
+  await act(async () => root.render(
+    <ProfessionalWindowStage
+      projectId="p"
+      resolvePortalTarget={(canvasId) => canvasId === 'canvas-target'
+        ? { canvasId, workspaceId: 'workspace-target', targetSurface: 'context' }
+        : undefined}
+      onOpenPortalTarget={open}
+    />,
+  ));
+  const portal = host.querySelector<HTMLButtonElement>('[data-portal-target-resolution="workspace-target"]');
+  if (!portal) throw new Error('Resolved Portal target was not passed to the body');
+  await act(async () => portal.click());
+  expect(open).toHaveBeenCalledWith({ canvasId: 'canvas-target', workspaceId: 'workspace-target', targetSurface: 'context' });
 });
