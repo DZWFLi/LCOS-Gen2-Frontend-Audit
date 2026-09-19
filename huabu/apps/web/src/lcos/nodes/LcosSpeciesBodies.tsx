@@ -13,25 +13,30 @@ import {
   Bookmark,
   CircleDot,
   Folder,
-  Grip,
   Puzzle,
   Router,
   ShieldCheck,
   Sparkles,
 } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 import { resolveArtifactUrl } from '@/api/artifact';
+import { createLcosCoreSession } from '../app/lcosCoreClient';
 import { useLcosNodePresentation } from '@/lcos-seam/nodePresentation';
 import useCanvasStore from '@/store/canvasStore';
 
 import { SourceMorphology } from './source/SourceMorphology';
 import { useLcosDensity } from './useLcosDensity';
 import { useLcosReferenceStore } from '../lcosReferenceState';
+import { beginChildWorksiteNavigation } from '../navigation/childWorksiteNavigation';
 import { useLcosShellStore } from '../shell/lcosShellStore';
 import { lcosTokens } from '../ui/lcosTokens';
+import { WorkflowCollectionView } from '../ui/workflow/WorkflowCollectionView';
 
 import type { CanvasNodeBodySlotInput } from '@/lcos-seam/types';
 import type { ComponentType, JSX } from 'react';
+import type { Workspace } from '@local-creative-os/domain';
 
 /** 物种 → 主识别色（边缘/角标；浓度统一收敛，不作为唯一区分）。 */
 export const SPECIES_ACCENT: Readonly<Record<LcosNodeSpecies, string>> = {
@@ -104,6 +109,9 @@ export function LcosSpeciesBodyContent({
   mediaSrc,
   durationSec,
   worldWidth,
+  workflowAction,
+  workflowDisabled,
+  workflowDisabledReason,
 }: {
   species: LcosNodeSpecies;
   title: string;
@@ -112,6 +120,9 @@ export function LcosSpeciesBodyContent({
   mediaSrc?: string;
   durationSec?: number;
   worldWidth?: number;
+  workflowAction?: JSX.Element;
+  workflowDisabled?: boolean;
+  workflowDisabledReason?: string;
   /**
    * 真实次级行（来自 Core 元数据：kind/受管/可用性/revision）。
    * 有真实事实就显示真实事实；没有就退回该物种的**形态说明**（说清这是什么，不假装有数据）。
@@ -240,12 +251,14 @@ export function LcosSpeciesBodyContent({
 
     case 'workflow-collection':
       return (
-        <div style={root} data-lcos-species="workflow-collection">
-          <div className="flex items-center gap-1.5">
-            <Grip className="h-4 w-4" style={{ color: SPECIES_ACCENT['workflow-collection'] }} aria-hidden />
-            <SpeciesChip label="工作流" accent={SPECIES_ACCENT['workflow-collection']} />
-          </div>
-          <TitleLine text={title} density={density} />
+        <div style={{ ...root, overflow: 'visible' }} data-lcos-species="workflow-collection">
+          <WorkflowCollectionView
+            title={title}
+            rendition="主画布"
+            action={workflowAction}
+            disabled={workflowDisabled}
+            disabledReason={workflowDisabledReason}
+          />
         </div>
       );
 
@@ -296,12 +309,17 @@ function LcosSpeciesBody({
   input: CanvasNodeBodySlotInput;
 }): JSX.Element {
   const density = useLcosDensity();
+  const navigate = useNavigate();
   const presentation = useLcosNodePresentation();
   const canvasId = useCanvasStore((state) => state.canvasId);
   const title = titleOf(input.data as Readonly<Record<string, unknown>> | undefined);
   // Core facts are read from the single reference store. The visual family is
   // resolved from those facts, never from a title or node id guess.
   const ref = useLcosReferenceStore((s) => s.nodeEntityRefs.get(input.nodeId));
+  const projectId = useLcosReferenceStore((s) => s.projectId);
+  const workflowSession = useMemo(() => createLcosCoreSession(), []);
+  const [workflowTarget, setWorkflowTarget] = useState<Workspace | undefined>(undefined);
+  const [workflowTargetStatus, setWorkflowTargetStatus] = useState<'idle' | 'loading' | 'ready' | 'missing'>('idle');
   const descriptor = ref?.descriptor;
   const visualFamily = species === 'source'
     ? resolveVisualFamily({
@@ -323,6 +341,61 @@ function LcosSpeciesBody({
   const rawDuration = input.data.presentationDurationSec;
   const durationSec = typeof rawDuration === 'number' && Number.isFinite(rawDuration) ? rawDuration : undefined;
   const isFreeformSource = species === 'source';
+  useEffect(() => {
+    if (species !== 'workflow-collection' || projectId === null || ref?.entityType !== 'scope' || ref.entityId === '') {
+      setWorkflowTarget(undefined);
+      setWorkflowTargetStatus('idle');
+      return;
+    }
+    let active = true;
+    setWorkflowTarget(undefined);
+    setWorkflowTargetStatus('loading');
+    void workflowSession.projects.getWorkspaces(projectId)
+      .then((workspaces) => {
+        if (!active) return;
+        const target = workspaces.find((workspace) => String(workspace.scopeId) === ref.entityId);
+        setWorkflowTarget(target);
+        setWorkflowTargetStatus(target === undefined ? 'missing' : 'ready');
+      })
+      .catch(() => {
+        if (!active) return;
+        setWorkflowTarget(undefined);
+        setWorkflowTargetStatus('missing');
+      });
+    return () => { active = false; };
+  }, [projectId, ref?.entityId, ref?.entityType, species, workflowSession]);
+  const workflowUnavailableReason = projectId === null
+    ? '项目身份尚未就绪'
+    : ref?.entityType !== 'scope'
+      ? '缺少 Workflow scope 身份'
+      : workflowTargetStatus === 'loading'
+        ? '正在读取 Workflow 现场'
+        : workflowTargetStatus === 'missing'
+          ? '该 Workflow 尚未关联现场'
+          : workflowTarget?.canvasId === undefined
+            ? '该 Workflow 现场尚未就绪'
+            : undefined;
+  const workflowAction = species === 'workflow-collection' && workflowUnavailableReason === undefined && workflowTarget !== undefined && projectId !== null
+    ? (
+      <button
+        type="button"
+        aria-label={`进入 Workflow · ${title}`}
+        title="进入 Workflow 现场"
+        onClick={() => {
+          beginChildWorksiteNavigation({
+            projectId,
+            sourceSurface: 'main',
+            sourceWasChild: false,
+            targetSurface: 'workflow',
+            targetWorkspace: workflowTarget,
+            navigate,
+          });
+        }}
+      >
+        ↗
+      </button>
+    )
+    : undefined;
   return (
     <div
       data-lcos-species-body
@@ -357,6 +430,9 @@ function LcosSpeciesBody({
         mediaSrc={mediaSrc}
         durationSec={durationSec}
         worldWidth={presentation?.worldWidth}
+        workflowAction={workflowAction}
+        workflowDisabled={species === 'workflow-collection' && workflowUnavailableReason !== undefined}
+        workflowDisabledReason={workflowUnavailableReason}
       />
     </div>
   );

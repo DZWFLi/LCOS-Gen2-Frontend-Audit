@@ -33,6 +33,7 @@ import {
   type LcosWindowLayout,
 } from '../ui/families';
 import { LcosSurfaceFeedback } from '../ui/LcosSurfaceFeedback';
+import { WorkflowCollectionView } from '../ui/workflow/WorkflowCollectionView';
 
 const NAV_STATES: readonly LcosNavigatorIslandState[] = [
   '静息',
@@ -251,12 +252,11 @@ export default function LcosFamiliesGalleryPage(): React.JSX.Element {
               />
             ))}
             {(['工作流现场', '主画布', '装配'] as const).map((rendition) => (
-              <LcosCollectionSurface
+              <WorkflowCollectionView
                 key={`wf-${rendition}`}
-                organize="事情"
                 rendition={rendition}
                 title="工作流集合"
-                meta={`工作流跨视图 · 呈现=${rendition}`}
+                action={<button type="button" aria-label="进入工作流">↗</button>}
               />
             ))}
           </div>

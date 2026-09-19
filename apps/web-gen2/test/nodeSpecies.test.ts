@@ -31,6 +31,10 @@ describe('resolveNodeSpecies', () => {
     assert.equal(resolveNodeSpecies({ entityType: 'artifact', artifactKind: 'question' }), 'prompt-frame');
   });
 
+  it('Core scope 的 workflow sourceKind 也进入同一个 workflow collection junction', () => {
+    assert.equal(resolveNodeSpecies({ entityType: 'scope', sourceKind: 'workflow' }), 'workflow-collection');
+  });
+
   it('reference 语义 → context-reference', () => {
     assert.equal(resolveNodeSpecies({ entityType: 'artifact', artifactKind: 'reference' }), 'context-reference');
     assert.equal(resolveNodeSpecies({ entityType: 'artifact', sourceKind: 'context' }), 'context-reference');

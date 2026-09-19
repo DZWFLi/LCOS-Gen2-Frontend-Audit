@@ -310,6 +310,22 @@ export class Gen2Host {
       map.set(`artifact:${facts.entityId}`, facts);
     }
 
+    // Scope presentation facts stay derived from the Core graph. Workflow
+    // scopes are the Main collection entries; the projector owns their spatial
+    // identity, while this descriptor lets the single node junction choose the
+    // workflow-collection body without inventing a second store.
+    for (const scope of graph?.scopes ?? []) {
+      if (scope.kind !== 'workflow') continue;
+      const entityId = String(scope.id);
+      map.set(`scope:${entityId}`, {
+        entityType: 'scope',
+        entityId,
+        title: String(scope.name ?? entityId),
+        artifactKind: 'workflow',
+        sourceKind: 'workflow',
+      });
+    }
+
     // 承接会话 → Glyth 的真实身份/运行态（读不到就退回 entityType 降级，不编造）。
     try {
       for (const conversation of await this.conversations.listConnectedConversations(this.projectId)) {

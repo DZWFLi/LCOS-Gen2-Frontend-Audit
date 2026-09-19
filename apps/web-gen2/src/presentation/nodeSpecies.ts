@@ -62,7 +62,7 @@ export function resolveNodeSpecies(source: NodeSpeciesSource): LcosNodeSpecies {
   }
 
   if (kind === 'collection' || kind === 'context') return 'collection';
-  if (kind === 'workflow') return 'workflow-collection';
+  if (kind === 'workflow' || source.sourceKind === 'workflow') return 'workflow-collection';
   if (kind === 'portal') return 'portal';
   if (kind === 'decision' || kind === 'checkpoint') return 'decision';
   if (kind === 'question' || kind === 'prompt') return 'prompt-frame';

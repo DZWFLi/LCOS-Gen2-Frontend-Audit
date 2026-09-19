@@ -20,6 +20,8 @@ export interface ReconciliationResult {
   artifactsProjected: number;
   conversationsScanned: number;
   conversationsProjected: number;
+  workflowScopesScanned: number;
+  workflowScopesProjected: number;
   relationsScanned: number;
   reconciledEdges: number;
   removedOrphanEdges: number;
@@ -32,6 +34,7 @@ export interface ReconciliationResult {
 export interface ReconciliationFailureSummary {
   artifactProjection: number;
   conversationProjection: number;
+  workflowScopeProjection: number;
   relationProjection: number;
   orphanCleanup: number;
 }
@@ -273,6 +276,7 @@ export class ReconciliationRunner {
     const failures: ReconciliationFailureSummary = {
       artifactProjection: artifactReport.failures.length,
       conversationProjection: 0,
+      workflowScopeProjection: 0,
       relationProjection: 0,
       orphanCleanup: 0,
     };
@@ -282,6 +286,37 @@ export class ReconciliationRunner {
     for (const binding of artifactBindings) {
       nodeIdByEntity.set(entityKey(String(binding.entityType), binding.entityId), binding.spatialId);
     }
+
+    // Workflow scopes are real Core scope identities, projected through the
+    // same binding/projector as every other entity. Only the root/Main canvas
+    // receives them; Context/Workflow canvases remain their own worksite
+    // projections rather than duplicating the collection entry everywhere.
+    const targetScope = targetWorkspace?.scopeId === undefined
+      ? undefined
+      : graph?.scopes?.find((scope) => String(scope.id) === String(targetWorkspace.scopeId));
+    const isMainCanvas = targetWorkspace === undefined || targetScope?.kind === 'root';
+    const workflowScopes = isMainCanvas
+      ? (graph?.scopes ?? []).filter((scope) => scope.kind === 'workflow')
+      : [];
+    const workflowScopeReport = workflowScopes.length === 0
+      ? { bindings: [], failures: [] }
+      : await this.deps.nodeProjector.projectBatchWithReport(
+        workflowScopes.map((scope) => ({
+          projectId,
+          entityType: 'scope' as const,
+          entityId: String(scope.id),
+          // scope kind is presentation metadata; the native host remains note,
+          // while the LCOS junction resolves the workflow collection body.
+          kind: 'file' as const,
+          sourceKind: 'workflow',
+          title: String(scope.name ?? scope.id),
+          size: { width: 248, height: 244 },
+        })),
+      );
+    for (const binding of workflowScopeReport.bindings) {
+      nodeIdByEntity.set(entityKey(String(binding.entityType), binding.entityId), binding.spatialId);
+    }
+    failures.workflowScopeProjection = workflowScopeReport.failures.length;
 
     // 承接会话 → Glyth 节点：与 artifact 走同一条投影/落位/绑定路径（没有第二套 projector）。
     // 只投影**已确认身份**的会话（`pending-*` 不是身份，绝不伪造 Glyth）。
@@ -424,6 +459,8 @@ export class ReconciliationRunner {
       artifactsProjected: artifactBindings.length,
       conversationsScanned,
       conversationsProjected,
+      workflowScopesScanned: workflowScopes.length,
+      workflowScopesProjected: workflowScopeReport.bindings.length,
       relationsScanned: relations.length,
       reconciledEdges,
       removedOrphanEdges,
@@ -433,6 +470,7 @@ export class ReconciliationRunner {
       degraded:
         failures.artifactProjection > 0 ||
         failures.conversationProjection > 0 ||
+        failures.workflowScopeProjection > 0 ||
         failures.relationProjection > 0 ||
         failures.orphanCleanup > 0,
     };

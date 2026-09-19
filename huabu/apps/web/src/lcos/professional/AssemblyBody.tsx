@@ -36,6 +36,7 @@ import { lcosTokens } from '../ui/lcosTokens';
 import { AssemblyMasonryView } from '../ui/professional/AssemblyMasonryView';
 import { AssemblyMaterialView } from '../ui/professional/AssemblyMaterialView';
 import { AssemblySourceTabsView } from '../ui/professional/AssemblySourceTabsView';
+import { WorkflowCollectionView } from '../ui/workflow/WorkflowCollectionView';
 
 import type { LcosComposerTarget } from '../shell/lcosShellStore';
 import type {
@@ -729,6 +730,16 @@ export function AssemblyBody({
                     const card = assemblyCardViewV1(item, referencedKeySet);
                     const itemKey = `${item.kind}:${item.entityRef.id}`;
                     const previewUrl = previewUrlOf(item);
+                    const workflowTargets = item.kind === 'workflow'
+                      ? workspaceTargetsForItem(item, workspaces)
+                      : [];
+                    const workflowDisabledReason = item.kind === 'workflow'
+                      ? workspaceError
+                        ? '现场信息读取失败，请重试'
+                        : workflowTargets.length === 0
+                          ? '尚未关联 Workflow 现场'
+                          : undefined
+                      : undefined;
                     return (
                       <div
                         key={itemKey}
@@ -745,12 +756,33 @@ export function AssemblyBody({
                         onMouseEnter={() => setActiveItemKey(itemKey)}
                         onMouseLeave={() => setActiveItemKey((current) => current === itemKey ? null : current)}
                       >
-                        <AssemblyMaterialView
-                          title={item.title ?? '未命名'}
-                          familyLabel={materialFamily(item)}
-                          {...(previewUrl === undefined ? {} : { previewUrl })}
-                          fallbackGlyph={<MaterialGlyph item={item} />}
-                        />
+                        {item.kind === 'workflow' ? (
+                          <WorkflowCollectionView
+                            title={item.title ?? '未命名'}
+                            rendition="装配"
+                            {...(previewUrl === undefined ? {} : { previewUrl })}
+                            disabled={workflowDisabledReason !== undefined}
+                            disabledReason={workflowDisabledReason}
+                            active={activeItemKey === itemKey}
+                            action={workflowTargets.length === 1 && workflowDisabledReason === undefined ? (
+                              <button
+                                type="button"
+                                aria-label={`进入 ${item.title ?? '工作流'}`}
+                                title="进入 Workflow 现场"
+                                onClick={() => enterChildWorkspace(item, workflowTargets[0]!) }
+                              >
+                                ↗
+                              </button>
+                            ) : undefined}
+                          />
+                        ) : (
+                          <AssemblyMaterialView
+                            title={item.title ?? '未命名'}
+                            familyLabel={materialFamily(item)}
+                            {...(previewUrl === undefined ? {} : { previewUrl })}
+                            fallbackGlyph={<MaterialGlyph item={item} />}
+                          />
+                        )}
                         <div className="flex items-start justify-between gap-2">
                           <span className="min-w-0 text-sm font-medium" style={{ color: lcosTokens.color.text }}>
                             {item.title ?? '未命名'}
