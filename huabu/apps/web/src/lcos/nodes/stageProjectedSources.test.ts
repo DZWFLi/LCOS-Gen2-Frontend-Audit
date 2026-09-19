@@ -11,14 +11,16 @@ const deferred = <T>(): {
   return { promise, resolve };
 };
 
-const { getBlob, uploadImage, uploadAudio, canvasStore } = vi.hoisted(() => {
+const { getBlob, getNodeContent, uploadImage, uploadAudio, canvasStore } = vi.hoisted(() => {
   const state = {
     canvasId: 'canvas-a',
     nodes: [{ id: 'node-a', type: 'image', data: { src: '' } }],
+    seedNodeContentRevisions: vi.fn(),
     updateNodeData: vi.fn(),
   };
   return {
     getBlob: vi.fn(),
+    getNodeContent: vi.fn(),
     uploadImage: vi.fn(),
     uploadAudio: vi.fn(),
     canvasStore: {
@@ -35,6 +37,7 @@ vi.mock('@local-creative-os/web-gen2', () => ({
   },
 }));
 vi.mock('@/api/artifact', () => ({ uploadImage, uploadAudio }));
+vi.mock('@/api/canvas', () => ({ getNodeContent }));
 vi.mock('@/lcos/lcosHost', () => ({
   readLcosHostConfig: vi.fn(() => ({
     coreUrl: 'http://core',
@@ -74,6 +77,8 @@ describe('stageProjectedSources ownership guard', () => {
   });
   beforeEach(() => {
     getBlob.mockReset();
+    getNodeContent.mockReset();
+    getNodeContent.mockResolvedValue({ rev: 'rev-current' });
     uploadImage.mockReset();
     uploadAudio.mockReset();
     canvasStore.state.canvasId = 'canvas-a';
@@ -81,6 +86,7 @@ describe('stageProjectedSources ownership guard', () => {
       { id: 'node-a', type: 'image', data: { src: '' } },
     ];
     canvasStore.state.updateNodeData.mockReset();
+    canvasStore.state.seedNodeContentRevisions.mockReset();
   });
 
   it('does not update the new project after Core fetch resolves from the old project', async () => {
@@ -118,5 +124,20 @@ describe('stageProjectedSources ownership guard', () => {
 
     await expect(pending).resolves.toBe(0);
     expect(canvasStore.state.updateNodeData).not.toHaveBeenCalled();
+  });
+
+  it('refreshes the authoritative content revision before staging src', async () => {
+    getBlob.mockResolvedValueOnce(new Blob(['image'], { type: 'image/png' }));
+    uploadImage.mockResolvedValueOnce('artifact-key.png');
+
+    await expect(stageProjectedSources('project-a', [imageBinding])).resolves.toBe(1);
+
+    expect(getNodeContent).toHaveBeenCalledExactlyOnceWith('canvas-a', 'node-a');
+    expect(canvasStore.state.seedNodeContentRevisions).toHaveBeenCalledExactlyOnceWith([
+      { nodeId: 'node-a', rev: 'rev-current' },
+    ]);
+    expect(canvasStore.state.updateNodeData).toHaveBeenCalledExactlyOnceWith('node-a', {
+      src: 'artifact-key.png',
+    });
   });
 });

@@ -177,6 +177,29 @@ export type NodeContentQueue = {
    * already reflected in the user's view.
    */
   seedBaselines(nodes: readonly Node[]): void;
+
+  /**
+   * Seed the CAS baseline from an **authoritative revision receipt** instead of
+   * from the node's own content fields — e.g. the RFS execute response's
+   * `revisions` (`{ nodeId, rev }`), which the LCOS projection already holds at
+   * the moment it creates a node.
+   *
+   * Why this is needed: a projected node reaches the browser through the sync
+   * `update` delta, whose structural payload strips the authored content. So
+   * {@link revOfNode} hashes nothing and yields {@link REV_EMPTY} ("I believe
+   * this is a fresh create") — while the server has in fact already authored the
+   * body. The client's first content write (e.g. the LCOS `data.src` staging)
+   * then trips a false `NODE_CONTENT_CONFLICT` against a write the client never
+   * made. The receipt rev is the exact value the server compares against:
+   * `nodeRevision(node)` and `nodeRevisionOf({ content, src })` are a single
+   * shared source of truth in `@huabu/shared/canvas-engine` (`change.ts`).
+   *
+   * Unlike {@link seedBaselines} this does NOT require the node to be in the
+   * store yet — receipts arrive before the sync delta that carries the node.
+   */
+  seedBaselinesFromRevisions(
+    revisions: readonly { nodeId: string; rev: string }[],
+  ): void;
 };
 
 /**
@@ -814,6 +837,18 @@ export function createNodeContentQueue(opts: {
     });
   }
 
+  /**
+   * Adopt an authoritative baseline revision for one node. A fresh authoritative
+   * baseline means any prior conflict for this node is resolved — drop the toast
+   * guard and unfreeze it so a later divergence alerts again and writes resume.
+   */
+  const adoptBaseline = (nodeId: string, rev: string): void => {
+    baselineRev.set(nodeId, rev);
+    contentConflictToasted.delete(nodeId);
+    frozen.delete(nodeId);
+    failed.delete(nodeId);
+  };
+
   return {
     scheduleChanges(canvasId, prevNodes, nextNodes) {
       if (!canvasId || prevNodes === nextNodes) return;
@@ -893,13 +928,22 @@ export function createNodeContentQueue(opts: {
       for (const node of nodes) {
         const nodeType = typeof node.type === 'string' ? node.type : '';
         if (!MD_BACKED_NODE_TYPES.has(nodeType)) continue;
-        baselineRev.set(node.id, revOfNode(node));
-        // A fresh authoritative baseline means any prior conflict for this
-        // node is resolved — drop the toast guard and unfreeze it so a
-        // later divergence alerts again and writes resume.
-        contentConflictToasted.delete(node.id);
-        frozen.delete(node.id);
-        failed.delete(node.id);
+        adoptBaseline(node.id, revOfNode(node));
+      }
+    },
+
+    seedBaselinesFromRevisions(revisions) {
+      // Deliberately NOT gated on the node being in the store yet: a receipt is
+      // produced the moment the projection authors the body server-side, which
+      // is BEFORE the sync delta puts that node into the browser store (the same
+      // ordering `stageProjectedSources` handles with its own
+      // `waitForNodesInStore`). A "node must be present" gate would therefore
+      // drop the receipt exactly when it is needed. Seeding a revision for a
+      // non-authored node type is harmless — the server drops `expectRev` for
+      // those (`canvas.route.ts`: `expectRev: isAuthored ? expectRev : undefined`).
+      for (const { nodeId, rev } of revisions) {
+        if (nodeId === '' || rev === '') continue;
+        adoptBaseline(nodeId, rev);
       }
     },
 

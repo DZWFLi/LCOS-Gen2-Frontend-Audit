@@ -257,14 +257,20 @@ class CanvasHistoryManager {
    *
    * @returns `true` if a new snapshot was pushed, `false` if deduped.
    */
-  takeSnapshot(nodes: Node[], edges: Edge[]): boolean {
+  takeSnapshot(nodes: Node[], edges: Edge[], label?: string): boolean {
     const candidate = createSnapshot(nodes, edges);
     const top = this.undoStack[this.undoStack.length - 1];
     if (top && snapshotsEqual(top, candidate)) return false;
 
     this.undoStack.push(candidate);
     if (this.undoStack.length > MAX_HISTORY) this.undoStack.shift();
+    const clearedRedo = this.redoStack.length;
     this.redoStack.length = 0;
+    if (import.meta.env.DEV) {
+      console.info(
+        `[history] takeSnapshot label=${label ?? '?'} undo=${this.undoStack.length} clearedRedo=${clearedRedo}`,
+      );
+    }
     return true;
   }
 
@@ -277,9 +283,19 @@ class CanvasHistoryManager {
    */
   undo(currentNodes: Node[], currentEdges: Edge[]): CanvasSnapshot | null {
     const snapshot = this.undoStack.pop();
-    if (!snapshot) return null;
+    if (!snapshot) {
+      if (import.meta.env.DEV) {
+        console.info('[history] undo MISS (empty undo stack)');
+      }
+      return null;
+    }
 
     this.redoStack.push(createSnapshot(currentNodes, currentEdges));
+    if (import.meta.env.DEV) {
+      console.info(
+        `[history] undo hit undoLeft=${this.undoStack.length} redo=${this.redoStack.length}`,
+      );
+    }
     return {
       ...snapshot,
       nodes: preserveLiveTransient(
@@ -296,9 +312,19 @@ class CanvasHistoryManager {
    */
   redo(currentNodes: Node[], currentEdges: Edge[]): CanvasSnapshot | null {
     const snapshot = this.redoStack.pop();
-    if (!snapshot) return null;
+    if (!snapshot) {
+      if (import.meta.env.DEV) {
+        console.info('[history] redo MISS (empty redo stack)');
+      }
+      return null;
+    }
 
     this.undoStack.push(createSnapshot(currentNodes, currentEdges));
+    if (import.meta.env.DEV) {
+      console.info(
+        `[history] redo hit undo=${this.undoStack.length} redoLeft=${this.redoStack.length}`,
+      );
+    }
     return {
       ...snapshot,
       nodes: preserveLiveTransient(
@@ -363,11 +389,13 @@ class CanvasHistoryManager {
           .catch((error) => {
             if (error instanceof DOMException && error.name === 'AbortError')
               return;
-            console.error(
-              'Failed to delete node after undo/redo:',
-              node.id,
-              error,
-            );
+            if (import.meta.env.DEV) {
+              console.error(
+                'Failed to delete node after undo/redo:',
+                node.id,
+                error,
+              );
+            }
             toast(describeDeleteFailure(error), { tone: 'danger' });
           })
           .finally(() => {
@@ -396,7 +424,9 @@ class CanvasHistoryManager {
       .catch((error) => {
         if (error instanceof DOMException && error.name === 'AbortError')
           return;
-        console.error('Failed to delete node:', nodeId, error);
+        if (import.meta.env.DEV) {
+          console.error('Failed to delete node:', nodeId, error);
+        }
         toast(describeDeleteFailure(error), { tone: 'danger' });
       })
       .finally(() => {
@@ -459,8 +489,8 @@ export class CanvasHistoryRegistry {
     this.active.rollbackGestureSnapshot();
   }
 
-  takeSnapshot(nodes: Node[], edges: Edge[]): boolean {
-    return this.active.takeSnapshot(nodes, edges);
+  takeSnapshot(nodes: Node[], edges: Edge[], label?: string): boolean {
+    return this.active.takeSnapshot(nodes, edges, label);
   }
 
   undo(nodes: Node[], edges: Edge[]): CanvasSnapshot | null {

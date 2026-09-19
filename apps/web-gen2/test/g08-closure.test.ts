@@ -117,7 +117,7 @@ function createdResponse(nodes?: { nodeId: string }[], edges?: { edgeId: string 
 
 test('ReconciliationRunner.runOnce: projects artifacts, reconciles relations, prunes orphans', async () => {
   const nodes = new Set<string>();
-  const edges = new Set<string>();
+  const edges = new Map<string, { id: string; source: string; target: string }>();
   let nodeSeq = 0;
   let edgeSeq = 0;
 
@@ -136,12 +136,19 @@ test('ReconciliationRunner.runOnce: projects artifacts, reconciles relations, pr
         return jsonResponse(createdResponse(created));
       }
       if (type === 'INSPECT_EDGES') {
-        const ids = (body as { ids: string[] }).ids;
-        return jsonResponse({ type: 'INSPECT_EDGES', result: { count: 0, total: 0, truncated: false, edges: ids.filter((id) => edges.has(id)).map((id) => ({ id, source: 'a', target: 'b' })) } });
+        const q = body as { ids?: string[]; bySource?: string };
+        const found = [...edges.values()].filter((edge) =>
+          q.ids ? q.ids.includes(edge.id) : edge.source === q.bySource);
+        return jsonResponse({ type: 'INSPECT_EDGES', result: { count: found.length, total: found.length, truncated: false, edges: found } });
       }
       if (type === 'CONNECT_NODES') {
-        const created = [{ edgeId: `edge-${++edgeSeq}` }];
-        created.forEach((e) => edges.add(e.edgeId));
+        // Faithful to the RFS contract: echo every requested edge's endpoints with
+        // its server-assigned id (canvas-executor builds `{ edgeId, source, target }`).
+        // The old stub returned a single id-less edge, so it only satisfied callers
+        // that blindly read `results[0].edges[0].edgeId` once per execute.
+        const requested = (body as { commands: { edges: { source: string; target: string }[] }[] }).commands[0].edges;
+        const created = requested.map((e) => ({ edgeId: `edge-${++edgeSeq}`, source: e.source, target: e.target }));
+        created.forEach((e) => edges.set(e.edgeId, { id: e.edgeId, source: e.source, target: e.target }));
         return jsonResponse(createdResponse(undefined, created));
       }
       if (type === 'DISCONNECT_EDGES') {
@@ -245,6 +252,12 @@ test('ReconciliationRunner: relation lookup keeps same-id artifact and conversat
     removeOrphanNode: async () => undefined,
   } as never;
   const relationProjector = {
+    reconcileRelationEdges: async (
+      entries: { fromNodeId: string; toNodeId: string }[],
+    ) => {
+      for (const entry of entries) endpoints.push({ from: entry.fromNodeId, to: entry.toNodeId });
+      return { projected: entries.length, skipped: 0 };
+    },
     reconcileRelationEdge: async (_relation: unknown, fromNode: string, toNode: string) => {
       endpoints.push({ from: fromNode, to: toNode });
     },
@@ -274,6 +287,7 @@ test('ReconciliationRunner: relation lookup keeps same-id artifact and conversat
 
   const result = await runner.runOnce();
   assert.deepEqual(endpoints, [{ from: 'node-artifact', to: 'node-conversation' }]);
+  assert.equal(result.reconciledEdges, 1);
   assert.equal(result.skippedRelations, 0);
   assert.equal(result.degraded, false);
 });

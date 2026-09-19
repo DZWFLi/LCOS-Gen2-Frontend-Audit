@@ -43,6 +43,7 @@ export type {
   SpaceEntityProjectionSource,
   ProjectionItemFailure,
   ProjectionBatchReport,
+  ProjectedNodeContentRevision,
 } from './spatial/projectToSpaceProjection.js';
 
 export { RelationProjection } from './spatial/relationProjection.js';

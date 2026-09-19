@@ -89,6 +89,42 @@ describe('nodeContentQueue baseline lifecycle', () => {
     expect(putMock.mock.calls[1][2].expectRev).toBe('SRV1');
   });
 
+  it('seeds from a receipt, then advances normally after the first write', async () => {
+    const node = noteNode('projected');
+    const { queue, state } = makeQueue(node);
+    // No seedBaselines(): a projected node reaches the client through a sync
+    // delta whose structural payload strips the authored content, so the client's
+    // own rev computation would be `nodeRevisionOf({})` — the false conflict.
+    queue.seedBaselinesFromRevisions([{ nodeId: 'n1', rev: 'RECEIPT' }]);
+
+    putMock.mockResolvedValueOnce({ nodeId: 'n1', label: 'Note', rev: 'SRV1' });
+    await queue.flushNow('c1', 'n1');
+
+    expect(putMock).toHaveBeenCalledTimes(1);
+    expect(putMock.mock.calls[0][2].expectRev).toBe('RECEIPT');
+
+    state.nodes = [noteNode('projected-follow-up')];
+    putMock.mockResolvedValueOnce({ nodeId: 'n1', label: 'Note', rev: 'SRV2' });
+    await queue.flushNow('c1', 'n1');
+
+    expect(putMock).toHaveBeenCalledTimes(2);
+    expect(putMock.mock.calls[1][2].expectRev).toBe('SRV1');
+  });
+
+  it('accepts a revision receipt before the node arrives in the store', async () => {
+    const node = noteNode('not-yet-delivered');
+    const { queue, state } = makeQueue(node);
+    // Projection authors the node server-side BEFORE the sync delta delivers it.
+    state.nodes = [];
+    queue.seedBaselinesFromRevisions([{ nodeId: 'n1', rev: 'RECEIPT' }]);
+    state.nodes = [node];
+
+    putMock.mockResolvedValueOnce({ nodeId: 'n1', label: 'Note', rev: 'SRV1' });
+    await queue.flushNow('c1', 'n1');
+
+    expect(putMock.mock.calls[0][2].expectRev).toBe('RECEIPT');
+  });
+
   it('sends the empty-content rev for a node with no seeded baseline', async () => {
     const node = noteNode('fresh');
     const { queue } = makeQueue(node);
@@ -113,7 +149,7 @@ describe('nodeContentQueue baseline lifecycle', () => {
   it('on NODE_CONTENT_CONFLICT: no throw, keeps text, freezes, toasts once', async () => {
     const node = noteNode('v1');
     const { queue, state } = makeQueue(node);
-    queue.seedBaselines([node]);
+    queue.seedBaselinesFromRevisions([{ nodeId: 'n1', rev: 'RECEIPT' }]);
 
     const conflict = new CanvasConflictError({
       code: 'NODE_CONTENT_CONFLICT',
@@ -130,6 +166,7 @@ describe('nodeContentQueue baseline lifecycle', () => {
     expect(state._setStateNoAutosave).not.toHaveBeenCalled();
     expect(toastMock).toHaveBeenCalledTimes(1);
     expect(putMock).toHaveBeenCalledTimes(1);
+    expect(putMock.mock.calls[0][2].expectRev).toBe('RECEIPT');
 
     // The node is now frozen: a subsequent flush (autosave / keepalive)
     // must NOT issue another PUT — nothing can clobber the newer server

@@ -203,7 +203,7 @@ function isWorldReferenceTopologyDelta(delta: Delta): boolean {
  * itself — so that stays a single source of truth here.
  */
 function armGestureSnapshot(nodes: Node[], edges: Edge[]): void {
-  const pushed = canvasHistoryManager.takeSnapshot(nodes, edges);
+  const pushed = canvasHistoryManager.takeSnapshot(nodes, edges, 'gesture-arm');
   canvasHistoryManager.markGestureSnapshot(pushed);
 }
 
@@ -919,6 +919,16 @@ type RFState = {
    * `loadCanvas` on a version gap that would clobber a mid-edit (C3).
    */
   pendingContentNodeIds: () => string[];
+  /**
+   * Adopt authoritative content-CAS baselines from revision receipts
+   * (`{ nodeId, rev }`) — used by the LCOS projection seam after a projected
+   * node is created, because the sync delta's structural payload strips the
+   * authored content and would otherwise leave the baseline at `REV_EMPTY`,
+   * tripping a false `NODE_CONTENT_CONFLICT` on the first content write.
+   */
+  seedNodeContentRevisions: (
+    revisions: readonly { nodeId: string; rev: string }[],
+  ) => void;
   /** @internal Resolve a web-only UiIntent and execute the resulting commands. */
   dispatchUiIntent: (intent: CanvasUiIntent) => void;
   /**
@@ -1629,7 +1639,7 @@ const useCanvasStore = create<RFState>()(
       if (isPortalPinMutation) {
         canvasHistoryManager.clear();
       } else {
-        canvasHistoryManager.takeSnapshot(prevNodes, prevEdges);
+        canvasHistoryManager.takeSnapshot(prevNodes, prevEdges, 'agent-delta');
       }
 
       // Replay the structural diff. The shared helper tolerates
@@ -1712,6 +1722,9 @@ const useCanvasStore = create<RFState>()(
     },
 
     pendingContentNodeIds: () => nodeContentQueue.pendingNodeIds(),
+
+    seedNodeContentRevisions: (revisions) =>
+      nodeContentQueue.seedBaselinesFromRevisions(revisions),
 
     /** Resolve a web-only UiIntent and execute the resulting commands. */
     dispatchUiIntent: (intent) => {

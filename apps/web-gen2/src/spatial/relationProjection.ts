@@ -135,6 +135,175 @@ export class RelationProjection {
   }
 
   /**
+   * Batch form of {@link reconcileRelationEdge}: reconcile a whole reconcile-pass
+   * worth of relations in **one** `CONNECT_NODES` execute instead of one execute
+   * per relation.
+   *
+   * Why this is not just an optimization: every `rfs.execute` persists a canvas
+   * version and broadcasts a sync `update`, and each broadcast re-enters the live
+   * client's undo history (`canvasStore.applyDeltasFromAgent` → `takeSnapshot`,
+   * which also clears the redo stack). Projecting one relation per execute made a
+   * seconds-long write trickle (`CREATE_NODES`/`CONNECT_NODES` at ~1 write/s) that
+   * interleaved with the user's own gestures — the user's next `Ctrl+Z` then undid
+   * a remote projection instead of their own move, and the following projection
+   * wiped their redo stack. One batched write is atomic from the client's point of
+   * view, so a reconcile pass no longer straddles a user gesture.
+   *
+   * Huabu can only keep one directed edge for a source/target pair, while Core may
+   * contain more than one semantic relation for that pair. The server also assigns
+   * ids before execution and echoes those ids even when CONNECT_NODES de-duplicates
+   * the edge. Therefore an echoed id is only a candidate: it is bound after an
+   * INSPECT_EDGES query proves that exact id and endpoints exist.
+   *
+   * At most one unbound relation per endpoint pair is projected. Additional Core
+   * relations stay canonical but are reported as skipped; sharing one Huabu edge
+   * would make deleting either relation incorrectly delete the other's projection.
+   */
+  async reconcileRelationEdges(
+    entries: { relation: SemanticRelation; fromNodeId: string; toNodeId: string }[],
+  ): Promise<{ projected: number; skipped: number }> {
+    if (entries.length === 0) return { projected: 0, skipped: 0 };
+
+    type Entry = (typeof entries)[number];
+    const endpointKey = (entry: Entry): string => JSON.stringify([entry.fromNodeId, entry.toNodeId]);
+    const groups = new Map<string, Entry[]>();
+    for (const entry of entries) {
+      const key = endpointKey(entry);
+      const group = groups.get(key);
+      if (group) group.push(entry);
+      else groups.set(key, [entry]);
+    }
+
+    // 1) Keep exact, present bindings. For an endpoint pair without a present
+    //    owner, choose one deterministic Core relation as the projection owner.
+    const pending: Entry[] = [];
+    let skipped = 0;
+    for (const group of groups.values()) {
+      let hasPresentProjection = false;
+      const unbound: Entry[] = [];
+      const seenSpatialIds = new Set<string>();
+      for (const entry of group) {
+        const binding = await this.bindings.findEdge(
+          this.projectId,
+          this.rfs.config.canvasId,
+          entry.relation.id,
+        );
+        if (!binding) {
+          unbound.push(entry);
+          continue;
+        }
+        const res = await this.rfs.query({ type: 'INSPECT_EDGES', ids: [binding.spatialId] });
+        const edge =
+          res.type === 'INSPECT_EDGES'
+            ? res.result.edges.find((candidate) => candidate.id === binding.spatialId)
+            : undefined;
+        const exact = edge?.source === entry.fromNodeId && edge.target === entry.toNodeId;
+        if (!exact || seenSpatialIds.has(binding.spatialId)) {
+          // Missing/wrong edges and legacy shared bindings are not safe owners.
+          await this.bindings.unbindByEntity(
+            this.projectId,
+            this.rfs.config.canvasId,
+            'edge',
+            'relation',
+            entry.relation.id,
+          );
+          unbound.push(entry);
+          continue;
+        }
+        seenSpatialIds.add(binding.spatialId);
+        hasPresentProjection = true;
+      }
+
+      if (hasPresentProjection) {
+        skipped += unbound.length;
+        continue;
+      }
+      const owner = unbound[0];
+      if (owner) pending.push(owner);
+      skipped += Math.max(0, unbound.length - 1);
+    }
+    if (pending.length === 0) return { projected: 0, skipped };
+
+    // 2) ONE write for the whole batch (`executeRelaxed` so a partially
+    //    committed batch still hands back the edges it did create).
+    const response = await this.rfs.executeRelaxed([
+      {
+        type: 'CONNECT_NODES',
+        edges: pending.map((entry) => ({
+          source: entry.fromNodeId,
+          target: entry.toNodeId,
+          style: this.edgeStyleFor(entry.relation.kind),
+        })),
+      },
+    ]);
+    const echoed = response.results?.[0]?.edges ?? [];
+    const echoedIds = [...new Set(echoed.map((edge) => edge.edgeId).filter(Boolean))];
+    const inspected = echoedIds.length > 0
+      ? await this.rfs.query({ type: 'INSPECT_EDGES', ids: echoedIds })
+      : undefined;
+    const verifiedById = new Map(
+      inspected?.type === 'INSPECT_EDGES'
+        ? inspected.result.edges.flatMap((edge) => edge.id ? [[edge.id, edge] as const] : [])
+        : [],
+    );
+    const claimedSpatialIds = new Set(
+      (await this.bindings.list())
+        .filter((binding) =>
+          binding.projectId === this.projectId &&
+          binding.canvasId === this.rfs.config.canvasId &&
+          binding.spatialKind === 'edge' &&
+          binding.entityType === 'relation')
+        .map((binding) => binding.spatialId),
+    );
+    let projected = 0;
+    for (const entry of pending) {
+      const echoedEdge = echoed.find(
+        (candidate) => candidate.source === entry.fromNodeId && candidate.target === entry.toNodeId,
+      );
+      const verifiedEcho = echoedEdge ? verifiedById.get(echoedEdge.edgeId) : undefined;
+      let edgeId =
+        verifiedEcho?.source === entry.fromNodeId && verifiedEcho.target === entry.toNodeId
+          ? verifiedEcho.id
+          : undefined;
+
+      // A missing echoed id commonly means Huabu de-duplicated against an edge
+      // that already existed before this pass. Adopt only one exact, unclaimed
+      // edge; ambiguity is a GAP, not permission to guess.
+      if (!edgeId) {
+        const bySource = await this.rfs.query({ type: 'INSPECT_EDGES', bySource: entry.fromNodeId });
+        const adoptable = bySource.type === 'INSPECT_EDGES'
+          ? bySource.result.edges.filter((candidate) =>
+            candidate.id &&
+            candidate.target === entry.toNodeId &&
+            !claimedSpatialIds.has(candidate.id))
+          : [];
+        if (adoptable.length === 1) edgeId = adoptable[0]?.id;
+      }
+
+      if (!edgeId) {
+        skipped += 1;
+        console.warn('[lcos] 关系投影未获得可验证的 Huabu edge，本轮保留 Core relation 并跳过绑定', {
+          relationId: entry.relation.id,
+          fromNodeId: entry.fromNodeId,
+          toNodeId: entry.toNodeId,
+        });
+        continue;
+      }
+      await this.bindings.bind({
+        projectId: this.projectId,
+        canvasId: this.rfs.config.canvasId,
+        spatialKind: 'edge',
+        spatialId: edgeId,
+        entityType: 'relation',
+        entityId: entry.relation.id,
+      });
+      claimedSpatialIds.add(edgeId);
+      projected += 1;
+    }
+    return { projected, skipped };
+  }
+
+  /**
    * Reconciliation: remove a leftover Huabu Edge whose Core Relation no longer
    * exists (orphan projection). Disconnects + unbinds. Destructive RFS only.
    *
@@ -143,8 +312,7 @@ export class RelationProjection {
   async removeOrphanRelationEdge(relationId: string): Promise<void> {
     const edgeBinding = await this.bindings.findEdge(this.projectId, this.rfs.config.canvasId, relationId);
     if (!edgeBinding) return;
-    await this.disconnectIfPresent(edgeBinding.spatialId);
-    await this.bindings.unbindByEntity(this.projectId, this.rfs.config.canvasId, 'edge', 'relation', relationId);
+    await this.releaseRelationEdge(relationId, edgeBinding.spatialId);
   }
 
   /** Delete relation from Core AND its Edge projection; repair both sides. */
@@ -152,9 +320,32 @@ export class RelationProjection {
     const edgeBinding = await this.bindings.findEdge(this.projectId, this.rfs.config.canvasId, relationId);
     await this.core.deleteRelation(relationId);
     if (edgeBinding) {
-      await this.disconnectIfPresent(edgeBinding.spatialId);
-      await this.bindings.unbindByEntity(this.projectId, this.rfs.config.canvasId, 'edge', 'relation', relationId);
+      await this.releaseRelationEdge(relationId, edgeBinding.spatialId);
     }
+  }
+
+  /**
+   * Release one relation binding without deleting an edge still referenced by a
+   * legacy shared binding. New reconciliation never creates shared bindings, but
+   * old data can contain them and deleting either relation must not break the
+   * surviving relation's projection.
+   */
+  private async releaseRelationEdge(relationId: string, edgeId: string): Promise<void> {
+    const shared = (await this.bindings.list()).some((binding) =>
+      binding.projectId === this.projectId &&
+      binding.canvasId === this.rfs.config.canvasId &&
+      binding.spatialKind === 'edge' &&
+      binding.entityType === 'relation' &&
+      binding.spatialId === edgeId &&
+      binding.entityId !== relationId);
+    if (!shared) await this.disconnectIfPresent(edgeId);
+    await this.bindings.unbindByEntity(
+      this.projectId,
+      this.rfs.config.canvasId,
+      'edge',
+      'relation',
+      relationId,
+    );
   }
 
   /** 断开一条**确实存在**的边；已不存在则视为已收敛，不发命令（避免 `not-found` 打断整批）。 */

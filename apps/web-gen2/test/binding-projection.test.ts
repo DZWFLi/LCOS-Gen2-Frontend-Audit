@@ -30,7 +30,11 @@ function nodeBinding(overrides: Partial<ProjectionBinding> = {}): ProjectionBind
   };
 }
 
-function createdResponse(nodes?: { nodeId: string }[], edges?: { edgeId: string }[]): RfsExecuteResponse {
+function createdResponse(
+  nodes?: { nodeId: string }[],
+  edges?: { edgeId: string }[],
+  revisions: RfsExecuteResponse['revisions'] = [],
+): RfsExecuteResponse {
   return {
     canvasId: CANVAS,
     runId: 'run-1',
@@ -46,7 +50,7 @@ function createdResponse(nodes?: { nodeId: string }[], edges?: { edgeId: string 
         edges,
       },
     ],
-    revisions: [],
+    revisions,
     affected: { nodeIds: nodes?.map((n) => n.nodeId) ?? [], edgeIds: edges?.map((e) => e.edgeId) ?? [], deletedNodeIds: [], deletedEdgeIds: [] },
   };
 }
@@ -164,6 +168,33 @@ test('project: new artifact issues CREATE_NODES and binds the real nodeId', asyn
   assert.equal(out[0]?.spatialId, 'nX');
   assert.equal(out[0]?.entityType, 'artifact');
   assert.equal(await reg.findNode('p1', CANVAS, 'artifact', 'a1').then((b) => b?.spatialId), 'nX');
+});
+
+test('project: forwards the authoritative CREATE_NODES revision receipt to the content-CAS sink', async () => {
+  const reg = new ProjectionBindingRegistry(new MemoryBindingStore());
+  const received: { nodeId: string; rev: string }[][] = [];
+  const { client } = makeRfs((req) => {
+    if (req.body?.type === 'GET_SPACE_OUTLINE') {
+      return jsonResponse({
+        type: 'GET_SPACE_OUTLINE',
+        result: { version: 1, bbox: null, nodes: [], edges: [], spatial: { clusters: [] } },
+      });
+    }
+    return jsonResponse(createdResponse(
+      [{ nodeId: 'n-receipt' }],
+      undefined,
+      [{ nodeId: 'n-receipt', rev: 'REV_FROM_RECEIPT' }],
+    ));
+  });
+
+  const proj = new ProjectToSpaceProjection(client, reg, (revisions) => {
+    received.push([...revisions]);
+  });
+  await proj.projectArtifacts([
+    { projectId: 'p1', artifactId: 'a-receipt', kind: 'text', title: 'Receipt' },
+  ]);
+
+  assert.deepEqual(received, [[{ nodeId: 'n-receipt', rev: 'REV_FROM_RECEIPT' }]]);
 });
 
 test('project: 空画布一批新项落位互不重叠（不再 index*40 级联）', async () => {

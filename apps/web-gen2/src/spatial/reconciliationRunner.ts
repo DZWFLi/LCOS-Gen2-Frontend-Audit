@@ -318,6 +318,13 @@ export class ReconciliationRunner {
     const relations = await this.deps.relations.listRelations(projectId);
     let reconciledEdges = 0;
     let skippedRelations = 0;
+    // Resolve endpoints first, then reconcile the whole pass in ONE
+    // `CONNECT_NODES` write. One execute per relation produced a seconds-long
+    // write trickle, and every write broadcasts a sync `update` that lands in
+    // the live client's undo history — a pass that straddles a user gesture
+    // then hijacks the user's Ctrl+Z (and clears their redo). See
+    // `RelationProjection.reconcileRelationEdges`.
+    const relationEntries: { relation: SemanticRelation; fromNodeId: string; toNodeId: string }[] = [];
     for (const rel of relations) {
       const fromNode = nodeIdByEntity.get(entityKey(String(rel.sourceEntityType), String(rel.sourceEntityId)));
       const toNode = nodeIdByEntity.get(entityKey(String(rel.targetEntityType), String(rel.targetEntityId)));
@@ -326,14 +333,19 @@ export class ReconciliationRunner {
         failures.relationProjection += 1;
         continue;
       }
+      relationEntries.push({ relation: toSemanticRelation(rel), fromNodeId: fromNode, toNodeId: toNode });
+    }
+    if (relationEntries.length > 0) {
       try {
-        await this.deps.relationProjector.reconcileRelationEdge(toSemanticRelation(rel), fromNode, toNode);
-        reconciledEdges += 1;
+        const reconciled = await this.deps.relationProjector.reconcileRelationEdges(relationEntries);
+        reconciledEdges += relationEntries.length - reconciled.skipped;
+        skippedRelations += reconciled.skipped;
+        failures.relationProjection += reconciled.skipped;
       } catch (error) {
-        failures.relationProjection += 1;
+        failures.relationProjection += relationEntries.length;
         // A malformed or conflicting relation must not discard valid node
         // projections or the remaining relations in this reconciliation pass.
-        console.warn('[lcos] 单项关系投影失败，继续处理其余关系', { relationId: String(rel.id), error });
+        console.warn('[lcos] 关系投影批次失败，本轮跳过（不丢弃节点投影）', error);
       }
     }
 

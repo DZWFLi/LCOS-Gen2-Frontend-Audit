@@ -24,6 +24,7 @@
 import { HttpClient } from '@local-creative-os/web-gen2';
 
 import { uploadAudio, uploadImage } from '@/api/artifact';
+import { getNodeContent } from '@/api/canvas';
 import { readLcosHostConfig } from '@/lcos/lcosHost';
 import useCanvasStore from '@/store/canvasStore';
 
@@ -227,6 +228,22 @@ export async function stageProjectedSources(
         release();
         continue;
       }
+      // CREATE_NODES and the node preprocess queue are separate writers. The
+      // latter may create/update the markdown sidecar after the projection
+      // receipt was issued, so that receipt is no longer a valid content-CAS
+      // baseline by the time the source artifact is ready. Refresh the exact
+      // node revision immediately before this intentional src write; a real
+      // concurrent change after this read is still rejected by the existing
+      // PUT CAS.
+      const contentSnapshot = await getNodeContent(canvasId, node.id);
+      if (!ownsCanvas()) { release(); break; }
+      if (!contentSnapshot) {
+        release();
+        continue;
+      }
+      useCanvasStore.getState().seedNodeContentRevisions([
+        { nodeId: node.id, rev: contentSnapshot.rev },
+      ]);
       useCanvasStore.getState().updateNodeData(node.id, { src: artifactKey });
       stagedSources.set(dedupeKey, () => true);
       staged += 1;

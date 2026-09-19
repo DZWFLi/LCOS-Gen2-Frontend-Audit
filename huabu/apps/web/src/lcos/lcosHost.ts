@@ -16,6 +16,7 @@ import {
   type HostSeam,
   type LcosEndpointConfig,
   type LcosHostRuntime as Gen2SessionRuntime,
+  type ProjectedNodeContentRevision,
 } from '@local-creative-os/web-gen2';
 
 export interface LcosHostConfig {
@@ -26,6 +27,14 @@ export interface LcosHostConfig {
   rfsToken: string;
   canvasId: string;
   projectId: string;
+  /**
+   * Canvas-host hook for the authoritative content revisions of projected nodes.
+   * The app supplies it (it owns the canvas store); the host builder stays
+   * React-free and store-free.
+   */
+  onNodeContentRevisions?: (
+    revisions: readonly ProjectedNodeContentRevision[],
+  ) => void;
 }
 
 export interface LcosHostRuntime {
@@ -56,7 +65,14 @@ export function createLcosHost(config: LcosHostConfig): LcosHostRuntime {
     baseUrl: config.rfsUrl,
     bearerToken: config.rfsToken,
   });
-  const host = new Gen2Host({ http, rfs, projectId: config.projectId });
+  const host = new Gen2Host({
+    http,
+    rfs,
+    projectId: config.projectId,
+    ...(config.onNodeContentRevisions === undefined
+      ? {}
+      : { onNodeContentRevisions: config.onNodeContentRevisions }),
+  });
   return { host, seam: createHostSeam(host) };
 }
 

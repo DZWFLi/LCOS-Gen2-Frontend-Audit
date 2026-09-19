@@ -25,6 +25,19 @@ import {
 
 export type ArtifactKind = 'text' | 'markdown' | 'image' | 'pdf' | 'file' | 'presentation' | 'other';
 
+/**
+ * Authoritative content revision of a projected node, taken from the RFS execute
+ * receipt (`RfsExecuteResponse.revisions`). The server's `nodeRevision(node)` and
+ * the browser's `nodeRevisionOf({ content, src })` are a single shared source of
+ * truth (`@huabu/shared/canvas-engine`, `change.ts`), so this is exactly the
+ * content-CAS baseline the browser must adopt after the projection authored the
+ * node's body.
+ */
+export interface ProjectedNodeContentRevision {
+  readonly nodeId: string;
+  readonly rev: string;
+}
+
 export interface ArtifactProjectionSource {
   projectId: string;
   artifactId: string;
@@ -170,6 +183,22 @@ export class ProjectToSpaceProjection {
   constructor(
     private readonly rfs: HuabuRfsClient,
     private readonly bindings: ProjectionBindingRegistry,
+    /**
+     * Receives the **authoritative content revision** of every node this
+     * projector creates, taken from the RFS receipt it already holds
+     * (`RfsExecuteResponse.revisions`). The LCOS seam forwards this into Huabu's
+     * content-CAS baseline.
+     *
+     * Why it is required: the browser otherwise learns a projected node only
+     * from the sync delta, whose structural payload strips the authored content.
+     * `revOfNode` then hashes nothing and yields `REV_EMPTY` ("fresh create"),
+     * while the server has already authored the body — so the client's first
+     * content write (e.g. the LCOS `data.src` staging) trips a false
+     * `NODE_CONTENT_CONFLICT` against a write the client never made.
+     */
+    private readonly onNodeContentRevisions?: (
+      revisions: readonly ProjectedNodeContentRevision[],
+    ) => void,
   ) {}
 
   /**
@@ -445,6 +474,15 @@ export class ProjectToSpaceProjection {
     const nodeId = HuabuRfsClient.firstCreatedNodeId(response);
     if (!nodeId) {
       throw new Error(`CREATE_NODES did not return a node id for ${input.entityType}:${input.entityId}`);
+    }
+    // Report the authoritative content revision BEFORE any consumer writes this
+    // node's content — the LCOS `data.src` staging writes as soon as the node
+    // appears in the browser store. This receipt is the same value the server
+    // compares against on the next content PUT's CAS check, and it does not
+    // survive the sync delta (whose structural payload strips authored content).
+    const receiptRev = response.revisions?.find((entry) => entry.nodeId === nodeId)?.rev;
+    if (typeof receiptRev === 'string' && receiptRev !== '') {
+      this.onNodeContentRevisions?.([{ nodeId, rev: receiptRev }]);
     }
     const createdNode = response.results?.[0]?.nodes?.[0];
     const size: PlacementItem =

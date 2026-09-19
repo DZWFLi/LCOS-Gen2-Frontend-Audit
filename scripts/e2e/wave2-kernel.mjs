@@ -32,6 +32,11 @@ const evidence = {};
 const check = (ok, message) => {
   if (ok !== true) failures.push(message);
 };
+// B1/B3/B5 are kernel-owner regressions. Stop at the first concrete failure so
+// a later interaction cannot turn a broken run into a misleading partial pass.
+const failFast = (ok, message) => {
+  if (ok !== true) throw new Error(`[fail-fast] ${message}`);
+};
 
 async function coreGet(path) {
   const res = await fetch(`${CORE}${path}`, { headers: { Authorization: `Bearer ${CORE_TOKEN}` } });
@@ -45,10 +50,43 @@ const page = await browser.newPage({ viewport: { width: 1366, height: 768 } });
 const consoleErrors = [];
 const consoleWarns = [];
 const consoleLcos = [];
+const consoleSync = [];
+const consoleHistory = [];
+// 最近一次**画布侧应用活动**（打开序列 / 服务端增量 / 历史压栈）的时刻。
+//
+// 打开项目会跑一整套异步物化：`reconcile('project-open')` 先逐条投影节点与边
+//（LCOS Core → workspace canvas，每写一次就 broadcast 一次 sync `update`），
+// 返回后再由 `stageProjectedSources` 把 image/audio 字节搬进画布资产区、
+// 写节点 `data.src`。后者是**本地命令**（不发 broadcast、不出 `[canvasSync]`），
+// 所以只盯服务端增量是看不见它的 —— 而它同样会压历史栈并清空 redo。
+//
+// 在物化还在跑的时候测拖拽/撤销/重做，测到的是「应用正在初始化」而不是产品手感：
+// 用户的快照会被物化快照压在栈顶，Ctrl+Z 去撤销一次投影/落成而不是自己的拖拽。
+// 因此这里等**全部三类活动**都静默，才认为现场就绪。
+let lastCanvasActivityAt = 0;
+// 打开序列的确定性完成信号计数（见 useLcosCanvasProps：DEV 信号是 R2 e2e 的确定性等待点）。
+let openSequenceStarts = 0;
+let openSequenceCompletions = 0;
+// 统一时间线：谁在什么时刻写画布 / 压栈 / 跑 reconcile，以及门禁的每个动作标记。
+// 没有这条时间线就无法把「投影写入」和「用户手势」的先后关系钉死。
+const T0 = Date.now();
+const timeline = [];
+const mark = (label) => timeline.push(`${Date.now() - T0}| MARK ${label}`);
 page.on('console', (m) => {
   if (m.type() === 'error') consoleErrors.push(m.text().slice(0, 240));
   if (m.type() === 'warning' || m.type() === 'warn') consoleWarns.push(m.text().slice(0, 400));
-  if (m.type() === 'info' && /\[lcos\]/.test(m.text())) consoleLcos.push(m.text().slice(0, 200));
+  const text = m.text();
+  if (m.type() === 'info' && /\[lcos\]/.test(text)) consoleLcos.push(text.slice(0, 200));
+  if (/\[lcos\]|\[canvasSync\]|\[history\]/.test(text)) {
+    lastCanvasActivityAt = Date.now();
+    timeline.push(`${Date.now() - T0}| ${text.slice(0, 160)}`);
+  }
+  if (/\[lcos\] reconcile start/.test(text)) openSequenceStarts += 1;
+  if (/\[lcos\] node sources staged:/.test(text)) openSequenceCompletions += 1;
+  // `[canvasSync]`：哪条分支在重载并 `resetHistory`（清 undo/redo 栈）——B1 的直接证据。
+  if (/\[canvasSync\]/.test(text)) consoleSync.push(text.slice(0, 240));
+  // `[history]`：历史栈的压栈 / 命中 / 清 redo —— 谁在污染用户手势的 undo/redo。
+  if (/\[history\]/.test(text)) consoleHistory.push(text.slice(0, 200));
 });
 page.on('pageerror', (e) => consoleErrors.push(`pageerror: ${String(e.message).slice(0, 240)}`));
 const failedResponses = [];
@@ -213,7 +251,52 @@ const waitForStableNodeCount = async (settleMs = 2500, capMs = 30000) => {
       stableSince = Date.now();
     }
     if (Date.now() - stableSince >= settleMs) return count;
-    if (Date.now() - started > capMs) return last;
+    if (Date.now() - started > capMs) {
+      throw new Error(`[fail-fast] 节点计数在 ${capMs}ms 内未稳定（last=${last}）`);
+    }
+    await page.waitForTimeout(400);
+  }
+};
+
+/**
+ * 等打开序列真的跑完（**确定性**，不靠"安静一段时间"）。
+ *
+ * 为什么不能只等静默：`reconcile('project-open')` 的读阶段（`listRelations` /
+ * `INSPECT_EDGES` / `listNodeBindings`）不写画布，会制造 5~10 秒的静默假象，
+ * 随后仍会再落一次投影写；`stageProjectedSources` 又在 reconcile 返回之后才写
+ * `data.src`。实测三轮：只等静默的窗口分别被「边投影」「内容落成」各跨过一次。
+ *
+ * 完成信号用仓库既有约定 —— `[lcos] node sources staged:`（DEV），
+ * `useLcosCanvasProps` 注释明确写着它是 e2e 的确定性等待点。它之后还要求
+ * 一段安静窗口，确保同一轮里没有后续写。
+ */
+const waitForOpenSequence = async (capMs = 120000) => {
+  const started = Date.now();
+  for (;;) {
+    const quietFor = lastCanvasActivityAt === 0 ? 0 : Date.now() - lastCanvasActivityAt;
+    if (openSequenceCompletions >= 1 && quietFor >= 4000) {
+      return { starts: openSequenceStarts, completions: openSequenceCompletions, quietFor };
+    }
+    if (Date.now() - started > capMs)
+      throw new Error(
+        `[fail-fast] 打开序列在 ${capMs}ms 内未完成（starts=${openSequenceStarts} completions=${openSequenceCompletions} quietFor=${quietFor}）`,
+      );
+    await page.waitForTimeout(500);
+  }
+};
+
+/**
+ * 等画布侧应用活动静默：`quietMs` 内没有任何 `[lcos]` 打开序列进度、没有
+ * `[canvasSync]` 服务端增量、也没有 `[history]` 压栈/命中。
+ */
+const waitForCanvasQuiescence = async (quietMs = 3000, capMs = 90000) => {
+  const started = Date.now();
+  for (;;) {
+    const idleFor = lastCanvasActivityAt === 0 ? 0 : Date.now() - lastCanvasActivityAt;
+    if (lastCanvasActivityAt !== 0 && idleFor >= quietMs) return idleFor;
+    if (Date.now() - started > capMs) {
+      throw new Error(`[fail-fast] 画布活动在 ${capMs}ms 内未静默（idleFor=${idleFor}）`);
+    }
     await page.waitForTimeout(400);
   }
 };
@@ -247,6 +330,16 @@ const probeBindings = async (projectIdToQuery) => {
   } catch (error) {
     return { projectId: projectIdToQuery, status: 'threw', error: String(error), body: '' };
   }
+};
+
+const assertNoNodeContentConflict = (stage) => {
+  const conflicts = failedResponses.filter((entry) =>
+    /409\s+PUT\s+.*\/nodes\/[^/]+\/content(?:$|\?)/.test(entry),
+  );
+  failFast(
+    conflicts.length === 0,
+    `B3 ${stage} 出现 NODE_CONTENT_CONFLICT：${conflicts.join(' | ')}`,
+  );
 };
 
 try {
@@ -377,9 +470,21 @@ try {
     Array.from(document.querySelectorAll('.react-flow__node')).map((el) => el.getAttribute('data-id')),
   );
   const dragNodeId = hasNodes ? await firstNode.getAttribute('data-id') : null;
-  const dragNodeBox = hasNodes ? await firstNode.boundingBox() : null;
-  evidence.dragNode = { id: dragNodeId, box: dragNodeBox };
   check(!!dragNodeId, 'ReactFlow 节点上没有 data-id，无法稳定锁定拖拽目标');
+  // 等首屏物化（投影 + 内容落成）**确定性地跑完**：否则用户的拖拽快照会被仍在飞的
+  // 物化快照压在 undo 栈顶 —— 那不是产品缺陷，是测量窗口不对。
+  evidence.openSequenceBeforeDrag = await waitForOpenSequence();
+  // `waitForOpenSequence` also releases LCOS's deferred initial viewport fit.
+  // Read the box only after that fit: the locator's node element can exist at
+  // (0, 0) during the pending frame and then move into the visible canvas.
+  // Holding the pre-fit box made the mouse drag land on the Shell overlay while
+  // the assertion still inspected the real node by id, producing a false B1
+  // failure with an unchanged transform.
+  const dragNodeLocator = dragNodeId
+    ? page.locator(`.react-flow__node[data-id="${dragNodeId}"]`)
+    : null;
+  const dragNodeBox = dragNodeLocator ? await dragNodeLocator.boundingBox() : null;
+  evidence.dragNode = { id: dragNodeId, box: dragNodeBox };
   const readDraggedTransform = async () =>
     dragNodeId
       ? ((await page.locator(`.react-flow__node[data-id="${dragNodeId}"]`).getAttribute('style')) ?? '')
@@ -388,44 +493,61 @@ try {
   if (dragNodeBox) {
     const cx = dragNodeBox.x + dragNodeBox.width / 2;
     const cy = dragNodeBox.y + dragNodeBox.height / 2;
+    mark('drag:begin');
     await page.mouse.move(cx, cy);
     await page.mouse.down();
     await page.mouse.move(cx + 140, cy + 70, { steps: 12 });
     await page.mouse.up();
+    mark('drag:end');
     await page.waitForTimeout(2500); // 让 autosave 落盘，避免把落盘竞态误判成功能缺陷
   }
   const transformAfterDrag = await readDraggedTransform();
   evidence.drag = { before: transformBefore.slice(0, 70), after: transformAfterDrag.slice(0, 70) };
-  check(transformBefore !== transformAfterDrag, 'drag 未改变节点 transform');
+  failFast(transformBefore !== transformAfterDrag, 'B1 drag 未改变节点 transform');
+  assertNoNodeContentConflict('drag');
 
   // 拖拽后立刻看有没有版本冲突 toast —— 它会把后续 undo/redo 一起带偏，
   // 必须先单独断言，才能把「第二写 owner」和「history 失效」分开归因。
   evidence.conflictToastAfterDrag = await readConflictToast();
-  check(
+  failFast(
     evidence.conflictToastAfterDrag === null,
-    `画布出现版本冲突 toast（409 CANVAS_VERSION_MISMATCH = 第二写 owner）：${evidence.conflictToastAfterDrag ? evidence.conflictToastAfterDrag.text : ''}`,
+    `B5 drag 后出现版本冲突 toast（409 CANVAS_VERSION_MISMATCH = 第二写 owner）：${evidence.conflictToastAfterDrag ? evidence.conflictToastAfterDrag.text : ''}`,
   );
   if (evidence.conflictToastAfterDrag) await dismissConflictToast();
 
+  mark('undo:key');
   await page.keyboard.press('Control+z');
   await page.waitForTimeout(2500);
   const transformAfterUndo = await readDraggedTransform();
   evidence.undo = { after: transformAfterUndo.slice(0, 70) };
   evidence.conflictToastAfterUndo = await readConflictToast();
-  check(transformAfterUndo !== transformAfterDrag, 'Ctrl+Z 撤销未生效');
+  failFast(transformAfterUndo !== transformAfterDrag, 'B1 Ctrl+Z 撤销未生效');
+  failFast(
+    evidence.conflictToastAfterUndo === null,
+    `B5 undo 后出现版本冲突 toast（409 CANVAS_VERSION_MISMATCH = 第二写 owner）：${evidence.conflictToastAfterUndo ? evidence.conflictToastAfterUndo.text : ''}`,
+  );
+  assertNoNodeContentConflict('undo');
   if (evidence.conflictToastAfterUndo) await dismissConflictToast();
 
   // 先让 undo 的 autosave 与 SSE 回显结算，再按 redo：拖拽/撤销各自都会触发一次
   // 结构落盘，落盘回显若在 redo 之前落地会重排 history 栈。
   await page.waitForTimeout(6000);
+  evidence.quiescenceBeforeRedoMs = await waitForCanvasQuiescence();
+  mark('redo:key');
   await page.keyboard.press('Control+Shift+z');
   await page.waitForTimeout(3000);
   const transformAfterRedo = await readDraggedTransform();
   evidence.redo = { after: transformAfterRedo.slice(0, 70) };
-  check(
+  failFast(
     transformAfterRedo === transformAfterDrag,
-    `Ctrl+Shift+Z 重做未回到拖后几何（undo=${transformAfterUndo.slice(0, 40)} redo=${transformAfterRedo.slice(0, 40)} want=${transformAfterDrag.slice(0, 40)}）`,
+    `B1 Ctrl+Shift+Z 重做未回到拖后几何（undo=${transformAfterUndo.slice(0, 40)} redo=${transformAfterRedo.slice(0, 40)} want=${transformAfterDrag.slice(0, 40)}）`,
   );
+  evidence.conflictToastAfterRedo = await readConflictToast();
+  failFast(
+    evidence.conflictToastAfterRedo === null,
+    `B5 redo 后出现版本冲突 toast（409 CANVAS_VERSION_MISMATCH = 第二写 owner）：${evidence.conflictToastAfterRedo ? evidence.conflictToastAfterRedo.text : ''}`,
+  );
+  assertNoNodeContentConflict('redo');
   await snap('wave2_step3_drag_undo_1366.png');
 
   // ── 7) zoom：LCOS camera 浮岛（唯一 Huabu camera） ───────────────────────
@@ -540,10 +662,20 @@ try {
   evidence.consoleErrors = consoleErrors;
   evidence.consoleWarns = consoleWarns;
   evidence.consoleLcos = consoleLcos;
+  evidence.consoleSync = consoleSync;
+  evidence.consoleHistory = consoleHistory;
+  evidence.timeline = timeline;
   evidence.failedResponses = failedResponses;
 } catch (error) {
   failures.push(`脚本异常：${error instanceof Error ? error.message : String(error)}`);
 } finally {
+  evidence.consoleErrors = consoleErrors;
+  evidence.consoleWarns = consoleWarns;
+  evidence.consoleLcos = consoleLcos;
+  evidence.consoleSync = consoleSync;
+  evidence.consoleHistory = consoleHistory;
+  evidence.timeline = timeline;
+  evidence.failedResponses = failedResponses;
   await browser.close().catch(() => undefined);
 }
 

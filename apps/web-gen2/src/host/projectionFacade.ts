@@ -24,7 +24,7 @@ import { CoreSearchClient } from '../backend/search.js';
 import { SqliteBindingStore } from '../backend/sqliteBindingStore.js';
 import { HuabuRfsClient } from '../spatial/huabuRfsClient.js';
 import { ProjectionBindingRegistry, type EntityType, type ProjectionBinding } from '../spatial/projectionBinding.js';
-import { ProjectToSpaceProjection, type ArtifactProjectionSource } from '../spatial/projectToSpaceProjection.js';
+import { ProjectToSpaceProjection, type ArtifactProjectionSource, type ProjectedNodeContentRevision } from '../spatial/projectToSpaceProjection.js';
 import { viewPresentationByArtifact } from '../spatial/reconciliationRunner.js';
 import { RelationProjection, type CoreEntityRef, type CoreRelationWriter, type RelationKind } from '../spatial/relationProjection.js';
 import { ReconciliationRunner } from '../spatial/reconciliationRunner.js';
@@ -45,6 +45,15 @@ export interface Gen2HostDeps {
   /** HuabuRfsClient pointed at a Huabu canvas (Spatial Truth). */
   rfs: HuabuRfsClient;
   projectId: string;
+  /**
+   * Sink for the authoritative content revisions of projected nodes (RFS
+   * receipt `revisions`). The host seam forwards them into the canvas host's
+   * content-CAS baseline, so the first content write to a freshly projected node
+   * does not trip a false `NODE_CONTENT_CONFLICT`.
+   */
+  onNodeContentRevisions?: (
+    revisions: readonly ProjectedNodeContentRevision[],
+  ) => void;
 }
 
 export class Gen2Host {
@@ -89,7 +98,11 @@ export class Gen2Host {
     this.railway = new CoreRailwayClient(deps.http);
     this.bindings = new ProjectionBindingRegistry(new SqliteBindingStore(deps.http, deps.projectId));
 
-    this.nodeProjector = new ProjectToSpaceProjection(deps.rfs, this.bindings);
+    this.nodeProjector = new ProjectToSpaceProjection(
+      deps.rfs,
+      this.bindings,
+      deps.onNodeContentRevisions,
+    );
 
     const writer: CoreRelationWriter = {
       createRelation: async (input) => {

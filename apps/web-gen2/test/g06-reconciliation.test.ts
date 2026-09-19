@@ -64,8 +64,8 @@ function inspectEdgesFound(found: string[]): Response {
   });
 }
 
-function edgeBinding(edgeId: string): ProjectionBinding {
-  return { projectId: 'p1', canvasId: CANVAS, spatialKind: 'edge', spatialId: edgeId, entityType: 'relation', entityId: 'rel-1' };
+function edgeBinding(edgeId: string, entityId = 'rel-1'): ProjectionBinding {
+  return { projectId: 'p1', canvasId: CANVAS, spatialKind: 'edge', spatialId: edgeId, entityType: 'relation', entityId };
 }
 
 const noopWriter: CoreRelationWriter = { async createRelation() { return { id: 'rel-1' }; }, async deleteRelation() {} };
@@ -151,6 +151,172 @@ test('reconcileRelationEdge: binding + edge gone -> unbind stale, re-CONNECT, re
   assert.equal((await reg.findEdge('p1', CANVAS, 'rel-1'))?.spatialId, 'edge-NEW');
 });
 
+test('reconcileRelationEdges: N relations -> ONE CONNECT_NODES execute (no write trickle)', async () => {
+  const reg = new ProjectionBindingRegistry(new MemoryBindingStore());
+  const executes: unknown[] = [];
+  const liveEdges = new Map<string, { id: string; source: string; target: string }>();
+  const { client } = makeRfs((req) => {
+    if (req.body?.type === 'INSPECT_EDGES') {
+      const query = req.body as { ids?: string[]; bySource?: string };
+      const found = [...liveEdges.values()].filter((edge) =>
+        query.ids ? query.ids.includes(edge.id) : edge.source === query.bySource);
+      return jsonResponse({ type: 'INSPECT_EDGES', result: { count: found.length, total: found.length, truncated: false, edges: found } });
+    }
+    if (cmdType(req.body) === 'CONNECT_NODES') {
+      executes.push(req.body);
+      const edges = (req.body as { commands: { edges: { source: string; target: string }[] }[] }).commands[0].edges;
+      const created = edges.map((edge, index) => ({ edgeId: `edge-${index + 1}`, ...edge }));
+      created.forEach((edge) => liveEdges.set(edge.edgeId, { id: edge.edgeId, source: edge.source, target: edge.target }));
+      return jsonResponse(
+        createdResponse(undefined, created),
+      );
+    }
+    return jsonResponse({});
+  });
+  const proj = new RelationProjection(client, noopWriter, reg, 'p1');
+  const entries = [
+    { relation: { id: 'rel-1', kind: 'references' as const, from: { entityType: 'artifact' as const, entityId: 'a1' }, to: { entityType: 'artifact' as const, entityId: 'a2' } }, fromNodeId: 'nA', toNodeId: 'nB' },
+    { relation: { id: 'rel-2', kind: 'references' as const, from: { entityType: 'artifact' as const, entityId: 'a1' }, to: { entityType: 'artifact' as const, entityId: 'a3' } }, fromNodeId: 'nA', toNodeId: 'nC' },
+    { relation: { id: 'rel-3', kind: 'references' as const, from: { entityType: 'artifact' as const, entityId: 'a4' }, to: { entityType: 'artifact' as const, entityId: 'a2' } }, fromNodeId: 'nD', toNodeId: 'nB' },
+  ];
+  const out = await proj.reconcileRelationEdges(entries);
+  assert.deepEqual(out, { projected: 3, skipped: 0 });
+  // 一次画布写入 = 一个版本 = 一次 broadcast —— 撤销栈不再被逐条投影污染。
+  assert.equal(executes.length, 1, 'N 条关系必须合并为一次 execute');
+  assert.equal((await reg.findEdge('p1', CANVAS, 'rel-1'))?.spatialId, 'edge-1');
+  assert.equal((await reg.findEdge('p1', CANVAS, 'rel-3'))?.spatialId, 'edge-3');
+});
+
+test('reconcileRelationEdges: same endpoints project one relation and never share an edge binding', async () => {
+  const reg = new ProjectionBindingRegistry(new MemoryBindingStore());
+  const liveEdges = new Map<string, { id: string; source: string; target: string }>();
+  let requestedEdges = 0;
+  const { client } = makeRfs((req) => {
+    if (req.body?.type === 'INSPECT_EDGES') {
+      const query = req.body as { ids?: string[]; bySource?: string };
+      const found = [...liveEdges.values()].filter((edge) =>
+        query.ids ? query.ids.includes(edge.id) : edge.source === query.bySource);
+      return jsonResponse({ type: 'INSPECT_EDGES', result: { count: found.length, total: found.length, truncated: false, edges: found } });
+    }
+    if (cmdType(req.body) === 'CONNECT_NODES') {
+      const requested = (req.body as { commands: { edges: { source: string; target: string }[] }[] }).commands[0].edges;
+      requestedEdges += requested.length;
+      const edge = { edgeId: 'edge-only', source: requested[0]?.source ?? '', target: requested[0]?.target ?? '' };
+      liveEdges.set(edge.edgeId, { id: edge.edgeId, source: edge.source, target: edge.target });
+      return jsonResponse(createdResponse(undefined, [edge]));
+    }
+    return jsonResponse({});
+  });
+  const proj = new RelationProjection(client, noopWriter, reg, 'p1');
+  const entries = ['rel-1', 'rel-2', 'rel-3'].map((id) => ({
+    relation: { id, kind: 'references' as const, from: { entityType: 'artifact' as const, entityId: 'a1' }, to: { entityType: 'artifact' as const, entityId: 'a2' } },
+    fromNodeId: 'nA',
+    toNodeId: 'nB',
+  }));
+
+  const out = await proj.reconcileRelationEdges(entries);
+
+  assert.deepEqual(out, { projected: 1, skipped: 2 });
+  assert.equal(requestedEdges, 1, 'Huabu endpoint de-duplication must be mirrored before execute');
+  assert.equal((await reg.findEdge('p1', CANVAS, 'rel-1'))?.spatialId, 'edge-only');
+  assert.equal(await reg.findEdge('p1', CANVAS, 'rel-2'), undefined);
+  assert.equal(await reg.findEdge('p1', CANVAS, 'rel-3'), undefined);
+  assert.equal((await reg.list()).filter((binding) => binding.spatialKind === 'edge').length, 1);
+});
+
+test('reconcileRelationEdges: verifies echoed ids and adopts the real edge after Huabu de-duplicates', async () => {
+  const reg = new ProjectionBindingRegistry(new MemoryBindingStore());
+  const liveEdges = new Map<string, { id: string; source: string; target: string }>([
+    ['edge-existing', { id: 'edge-existing', source: 'nA', target: 'nB' }],
+  ]);
+  const { client } = makeRfs((req) => {
+    if (req.body?.type === 'INSPECT_EDGES') {
+      const query = req.body as { ids?: string[]; bySource?: string };
+      const found = [...liveEdges.values()].filter((edge) =>
+        query.ids ? query.ids.includes(edge.id) : edge.source === query.bySource);
+      return jsonResponse({ type: 'INSPECT_EDGES', result: { count: found.length, total: found.length, truncated: false, edges: found } });
+    }
+    if (cmdType(req.body) === 'CONNECT_NODES') {
+      // Real executor pre-assigns and echoes this id, but CONNECT_NODES drops it
+      // because edge-existing already owns nA -> nB.
+      return jsonResponse(createdResponse(undefined, [{ edgeId: 'edge-ghost', source: 'nA', target: 'nB' }]));
+    }
+    return jsonResponse({});
+  });
+  const proj = new RelationProjection(client, noopWriter, reg, 'p1');
+
+  const out = await proj.reconcileRelationEdges([
+    { relation: { id: 'rel-1', kind: 'references', from: { entityType: 'artifact', entityId: 'a1' }, to: { entityType: 'artifact', entityId: 'a2' } }, fromNodeId: 'nA', toNodeId: 'nB' },
+  ]);
+
+  assert.deepEqual(out, { projected: 1, skipped: 0 });
+  assert.equal((await reg.findEdge('p1', CANVAS, 'rel-1'))?.spatialId, 'edge-existing');
+  assert.equal((await reg.list()).some((binding) => binding.spatialId === 'edge-ghost'), false);
+});
+
+test('reconcileRelationEdges: all bound and present -> zero writes', async () => {
+  const reg = new ProjectionBindingRegistry(new MemoryBindingStore());
+  await reg.bind(edgeBinding('edge-1'));
+  let executes = 0;
+  const { client } = makeRfs((req) => {
+    if (req.body?.type === 'INSPECT_EDGES') {
+      const ids = (req.body as { ids: string[] }).ids;
+      return jsonResponse({
+        type: 'INSPECT_EDGES',
+        result: {
+          count: ids.length,
+          total: ids.length,
+          truncated: false,
+          edges: ids.map((id) => ({ id, source: 'nA', target: 'nB' })),
+        },
+      });
+    }
+    if (cmdType(req.body) === 'CONNECT_NODES') { executes += 1; return jsonResponse(createdResponse()); }
+    return jsonResponse({});
+  });
+  const proj = new RelationProjection(client, noopWriter, reg, 'p1');
+  const out = await proj.reconcileRelationEdges([
+    { relation: { id: 'rel-1', kind: 'references' as const, from: { entityType: 'artifact' as const, entityId: 'a1' }, to: { entityType: 'artifact' as const, entityId: 'a2' } }, fromNodeId: 'nA', toNodeId: 'nB' },
+  ]);
+  assert.deepEqual(out, { projected: 0, skipped: 0 });
+  assert.equal(executes, 0);
+});
+
+test('reconcileRelationEdges: repairs a legacy shared binding without deleting or duplicating its edge', async () => {
+  const reg = new ProjectionBindingRegistry(new MemoryBindingStore());
+  await reg.bind(edgeBinding('edge-shared', 'rel-1'));
+  await reg.bind(edgeBinding('edge-shared', 'rel-2'));
+  let executes = 0;
+  const { client } = makeRfs((req) => {
+    if (req.body?.type === 'INSPECT_EDGES') {
+      return jsonResponse({
+        type: 'INSPECT_EDGES',
+        result: {
+          count: 1,
+          total: 1,
+          truncated: false,
+          edges: [{ id: 'edge-shared', source: 'nA', target: 'nB' }],
+        },
+      });
+    }
+    executes += 1;
+    return jsonResponse(createdResponse());
+  });
+  const proj = new RelationProjection(client, noopWriter, reg, 'p1');
+  const entries = ['rel-1', 'rel-2'].map((id) => ({
+    relation: { id, kind: 'references' as const, from: { entityType: 'artifact' as const, entityId: 'a1' }, to: { entityType: 'artifact' as const, entityId: 'a2' } },
+    fromNodeId: 'nA',
+    toNodeId: 'nB',
+  }));
+
+  const out = await proj.reconcileRelationEdges(entries);
+
+  assert.deepEqual(out, { projected: 0, skipped: 1 });
+  assert.equal(executes, 0);
+  assert.equal((await reg.findEdge('p1', CANVAS, 'rel-1'))?.spatialId, 'edge-shared');
+  assert.equal(await reg.findEdge('p1', CANVAS, 'rel-2'), undefined);
+});
+
 test('removeOrphanRelationEdge: disconnects + unbinds a leftover edge with no Core relation', async () => {
   const reg = new ProjectionBindingRegistry(new MemoryBindingStore());
   await reg.bind(edgeBinding('edge-ORPHAN'));
@@ -180,6 +346,26 @@ test('removeOrphanRelationEdge: 边已不在时视为已收敛，不发 DISCONNE
   await proj.removeOrphanRelationEdge('rel-1');
   assert.equal(executed, 0, '已不存在的边不应再发 DISCONNECT_EDGES');
   assert.equal(await reg.findEdge('p1', CANVAS, 'rel-1'), undefined);
+});
+
+test('removeOrphanRelationEdge: legacy shared edge remains while another relation still owns it', async () => {
+  const reg = new ProjectionBindingRegistry(new MemoryBindingStore());
+  await reg.bind(edgeBinding('edge-shared', 'rel-orphan'));
+  await reg.bind(edgeBinding('edge-shared', 'rel-live'));
+  let disconnects = 0;
+  const { client } = makeRfs((req) => {
+    if (cmdType(req.body) === 'DISCONNECT_EDGES') disconnects += 1;
+    return req.body?.type === 'INSPECT_EDGES'
+      ? inspectEdgesFound(['edge-shared'])
+      : jsonResponse(createdResponse());
+  });
+  const proj = new RelationProjection(client, noopWriter, reg, 'p1');
+
+  await proj.removeOrphanRelationEdge('rel-orphan');
+
+  assert.equal(disconnects, 0);
+  assert.equal(await reg.findEdge('p1', CANVAS, 'rel-orphan'), undefined);
+  assert.equal((await reg.findEdge('p1', CANVAS, 'rel-live'))?.spatialId, 'edge-shared');
 });
 
 // ---- G0.6: createRelation client (minimal POST) ----

@@ -173,6 +173,13 @@ export const useCanvasSyncStore = create<CanvasSyncState>((set, get) => ({
                 // meaningful once we've settled.
                 if (canvasStore.isLoading) return;
                 if (event.data.version !== canvasStore.version) {
+                  // dev-only：这条分支会 `resetHistory: true`（清 undo/redo 栈）。
+                  // 记下触发时的版本差，用来区分「自己落盘的回显」与「真的远端变更」。
+                  if (import.meta.env.DEV) {
+                    console.info(
+                      `[canvasSync] snapshot mismatch local=${canvasStore.version} server=${event.data.version} -> reload(resetHistory)`,
+                    );
+                  }
                   void canvasStore
                     .loadCanvas(canvasId, { resetHistory: true })
                     .then((loaded) => {
@@ -194,6 +201,11 @@ export const useCanvasSyncStore = create<CanvasSyncState>((set, get) => ({
                 event.data;
               let skippedNodeIds: string[] = [];
               if (fromVersion === canvasStore.version) {
+                if (import.meta.env.DEV) {
+                  console.info(
+                    `[canvasSync] apply from=${fromVersion} to=${toVersion} local=${canvasStore.version} deltas=${deltas.length}`,
+                  );
+                }
                 skippedNodeIds = canvasStore.applyDeltasFromAgent(
                   deltas as Delta[],
                   toVersion,
@@ -205,6 +217,11 @@ export const useCanvasSyncStore = create<CanvasSyncState>((set, get) => ({
                 // is mid-editing and let autosave's 409 path arbitrate (C3).
                 // Incremental gap-heal (delta-log backfill) is deferred to P2.
                 if (canvasStore.pendingContentNodeIds().length === 0) {
+                  if (import.meta.env.DEV) {
+                    console.info(
+                      `[canvasSync] update gap from=${fromVersion} to=${toVersion} local=${canvasStore.version} -> reload(resetHistory)`,
+                    );
+                  }
                   void canvasStore
                     .loadCanvas(canvasId, { resetHistory: true })
                     .then((loaded) => {
@@ -260,7 +277,9 @@ export const useCanvasSyncStore = create<CanvasSyncState>((set, get) => ({
           }
         } catch (error) {
           if (signal.aborted || get().canvasId !== canvasId) return;
-          console.warn('[canvasSync] reconnecting after stream failure', error);
+          if (import.meta.env.DEV) {
+            console.warn('[canvasSync] reconnecting after stream failure', error);
+          }
         }
 
         await new Promise<void>((resolve) => {

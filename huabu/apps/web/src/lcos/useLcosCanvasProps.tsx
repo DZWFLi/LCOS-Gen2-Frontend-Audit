@@ -69,7 +69,18 @@ export function useLcosCanvasProps(projectId: string): LcosCanvasProps {
     const cfg = readLcosHostConfig(
       import.meta.env as Record<string, string | undefined>,
     );
-    const rt = createLcosRuntime({ ...cfg, projectId });
+    const rt = createLcosRuntime({
+      ...cfg,
+      projectId,
+      // B3：把投影**已经持有**的权威内容 rev（RFS 回执 `revisions`）种回画布内容
+      // CAS 基线。投影写的是服务端，浏览器只会从同步 delta 学到该节点——而 delta 的
+      // 结构化载荷剥掉了 authored content，基线会停在 REV_EMPTY。节点一亮相，LCOS
+      // 的 `data.src` 落成就开始写内容，于是撞出一个客户端从未写过的假
+      // NODE_CONTENT_CONFLICT。种子必须在落成之前到位，所以挂在 host 构造上。
+      onNodeContentRevisions: (revisions) => {
+        useCanvasStore.getState().seedNodeContentRevisions(revisions);
+      },
+    });
     runtimeRef.current = rt;
     // 当前会话 host 透传：overlay/控制器读取 store，retarget 后不冻结在初始 host。
     useLcosHostStore.getState().setHost(rt.host);
