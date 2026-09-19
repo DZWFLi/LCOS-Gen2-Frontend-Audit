@@ -3,8 +3,8 @@
 // 静息=搜索键(36) hug 52；彩色标=+N 个 Pin(36)；搜索=+输入(210) hug 402。
 // 真实搜索、到达、切现场由 container（LcosNavigatorIsland）负责，本组件只做呈现。
 
-import { LoaderCircle, Pin, Plus, Search, SearchX } from 'lucide-react';
-
+import { FigmaPinMark, FigmaShellGlyph } from '../FigmaShellGlyph';
+import { LcosSurfaceFeedbackView } from '../LcosSurfaceFeedbackView';
 import { lcosTokens } from '../lcosTokens';
 
 import type { RefObject } from 'react';
@@ -38,6 +38,8 @@ export interface LcosNavigatorPin {
 
 export interface LcosNavigatorIslandViewProps {
   readonly state: LcosNavigatorIslandState;
+  /** 只控制输入槽是否可见；由现有搜索 container 提供，不从异步状态猜测。 */
+  readonly expanded?: boolean;
   readonly pins?: readonly LcosNavigatorPin[];
   readonly query?: string;
   readonly onQueryChange?: (next: string) => void;
@@ -53,103 +55,50 @@ export interface LcosNavigatorIslandViewProps {
 }
 
 export function LcosNavigatorIslandView({
-  state,
-  pins = [],
-  query = '',
-  onQueryChange,
-  onToggleSearch,
-  onActivatePin,
-  onCreatePin,
-  createPinDisabled = false,
-  message,
-  inputRef,
+  state, expanded: expandedProp, pins = [], query = '', onQueryChange,
+  onToggleSearch, onActivatePin, onCreatePin, createPinDisabled = false,
+  message, inputRef,
 }: LcosNavigatorIslandViewProps): React.JSX.Element {
-  const expanded = state === '搜索';
+  const expanded = expandedProp ?? state === '搜索';
   const disabled = state === 'disabled';
+  const feedback = state === 'loading' ? 'loading' : state === 'error' ? 'error'
+    : state === 'degraded' ? 'recovery' : undefined;
+  const tones: Readonly<Record<LcosPinTone, string>> = {
+    violet: lcosTokens.color.pinViolet, teal: lcosTokens.color.pinTeal, amber: lcosTokens.color.pinAmber,
+  };
   return (
-    <div
-      data-lcos-family="navigator-island"
-      data-lcos-variant={state}
-      aria-busy={state === 'loading'}
-    >
-      <button
-        type="button"
-        data-lcos-nav-part="search"
-        aria-label={expanded ? '收起搜索（Esc）' : '搜索项目中的内容（Ctrl/Cmd+F）'}
-        aria-expanded={expanded}
-        disabled={disabled}
-        onClick={onToggleSearch}
-      >
-        <Search size={19} aria-hidden />
-      </button>
-
-      {expanded && (
-        <input
-          ref={inputRef}
-          data-lcos-nav-part="input"
-          value={query}
-          onChange={(event) => onQueryChange?.(event.target.value)}
-          placeholder="搜索项目中的内容"
-          aria-label="项目搜索"
-          style={{ color: lcosTokens.color.text }}
-        />
-      )}
-
-      {pins.map((pin) => (
-        <button
-          key={pin.id}
-          type="button"
-          data-lcos-nav-part="pin"
-          data-lcos-pin-tone={pin.tone}
-          data-lcos-pin-color={pin.color ?? ''}
-          data-lcos-pin-count={pin.count ?? 0}
-          aria-label={pin.label}
-          title={pin.label}
-          disabled={disabled}
-          onClick={() => onActivatePin?.(pin)}
-        >
-          <span
-            data-lcos-pin-mark
-            style={pin.color === undefined ? undefined : { color: pin.color }}
-          >
-            <Pin size={14} aria-hidden />
-            {pin.count !== undefined && pin.count > 0 && (
-              <span data-lcos-pin-count-mark className="text-[9px] leading-none">{pin.count}</span>
-            )}
-          </span>
+    <div data-lcos-nav-view>
+      <div data-lcos-family="navigator-island" data-lcos-variant={state}
+        data-lcos-expanded={expanded ? 'true' : 'false'} aria-busy={state === 'loading'}>
+        <button type="button" data-lcos-nav-part="search"
+          aria-label={expanded ? '收起搜索（Esc）' : '搜索项目中的内容（Ctrl/Cmd+F）'}
+          aria-expanded={expanded} disabled={disabled} onClick={onToggleSearch}>
+          <FigmaShellGlyph name="search" size={19} />
         </button>
-      ))}
-
-      {onCreatePin !== undefined && (
-        <button
-          type="button"
-          data-lcos-nav-part="pin-add"
-          aria-label="新建颜色组"
-          title="把当前现场标为颜色组"
-          disabled={disabled || createPinDisabled}
-          onClick={onCreatePin}
-        >
-          <Plus size={16} aria-hidden />
-        </button>
-      )}
-
-      {state === 'loading' && (
-        <span aria-hidden className="lcos-static-pulse" style={{ color: lcosTokens.color.muted, display: 'inline-flex' }}>
-          <LoaderCircle size={16} />
-        </span>
-      )}
-      {(state === 'error' || state === 'degraded') && (
-        <span
-          data-lcos-nav-message
-          role="status"
-          aria-live="polite"
-          className="truncate text-xs"
-          style={{ color: state === 'error' ? lcosTokens.color.danger : lcosTokens.color.muted, maxWidth: 180 }}
-        >
-          <SearchX size={12} aria-hidden style={{ display: 'inline', verticalAlign: '-2px', marginRight: 4 }} />
-          {message ?? (state === 'error' ? '搜索失败 · 请重试' : '降级读取')}
-        </span>
-      )}
+        {expanded && <input ref={inputRef} data-lcos-nav-part="input" value={query}
+          disabled={disabled} onChange={(event) => onQueryChange?.(event.target.value)}
+          placeholder="搜索项目中的内容" aria-label="项目搜索" />}
+        {pins.map((pin) => (
+          <button key={pin.id} type="button" data-lcos-nav-part="pin"
+            data-lcos-pin-tone={pin.tone} data-lcos-pin-color={pin.color ?? ''}
+            data-lcos-pin-count={pin.count ?? 0} aria-label={pin.label}
+            title={pin.count === undefined ? pin.label : `${pin.label} · ${pin.count} 项`}
+            disabled={disabled} onClick={() => onActivatePin?.(pin)}>
+            <FigmaPinMark color={pin.color ?? tones[pin.tone]} />
+            {pin.count !== undefined && pin.count > 0 &&
+              <span data-lcos-pin-count-mark>{pin.count}</span>}
+          </button>
+        ))}
+        {onCreatePin !== undefined && <button type="button" data-lcos-nav-part="pin-add"
+          aria-label="新建颜色组" title="把当前现场标为颜色组"
+          disabled={disabled || createPinDisabled} onClick={onCreatePin}>
+          <FigmaShellGlyph name="plus" size={16} />
+        </button>}
+      </div>
+      {feedback !== undefined && <div data-lcos-nav-feedback>
+        <LcosSurfaceFeedbackView presentation={feedback}
+          message={message ?? (state === 'loading' ? '正在读取…' : state === 'error' ? '搜索失败 · 请重试' : '降级读取')} />
+      </div>}
     </div>
   );
 }

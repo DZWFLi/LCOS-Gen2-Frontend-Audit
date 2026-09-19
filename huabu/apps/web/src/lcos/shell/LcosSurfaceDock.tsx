@@ -2,8 +2,6 @@
 // 三现场切换驱动真实 worksite canvasId（切换 = switchCanvas / 首次 = createCanvas + 回写）。
 // Assembly 有独立入口；Dock 只呈现三个一级 Surface。
 
-import { GitBranch, Network, PanelsTopLeft } from 'lucide-react';
-
 import {
   LCOS_SURFACES,
   useLcosShellStore,
@@ -11,7 +9,10 @@ import {
 } from './lcosShellStore';
 import { lcosHudEdgeOffsets } from './lcosHudPlacement';
 import { useLcosWorksiteNav } from '../app/useLcosWorksiteNav';
-import { lcosGlassStyle, lcosTokens } from '../ui/lcosTokens';
+import { LcosSurfaceDockView } from '../ui/families/LcosSurfaceDockView';
+import { lcosTokens } from '../ui/lcosTokens';
+
+import type { FigmaShellGlyphName } from '../ui/FigmaShellGlyph';
 
 export interface LcosSurfaceDockProps {
   readonly projectId: string;
@@ -22,16 +23,9 @@ export interface LcosSurfaceDockProps {
   ) => Promise<string | undefined>;
 }
 
-function surfaceIcon(surface: LcosSurfaceKey): React.JSX.Element {
-  switch (surface) {
-    case 'main':
-      return <PanelsTopLeft className="h-[18px] w-[18px]" aria-hidden />;
-    case 'context':
-      return <Network className="h-[18px] w-[18px]" aria-hidden />;
-    case 'workflow':
-      return <GitBranch className="h-[18px] w-[18px]" aria-hidden />;
-  }
-}
+const SURFACE_GLYPH: Readonly<Record<LcosSurfaceKey, FigmaShellGlyphName>> = {
+  main: 'root', context: 'context', workflow: 'workflow',
+};
 
 export function LcosSurfaceDock({
   projectId,
@@ -56,71 +50,25 @@ export function LcosSurfaceDock({
   const safeCenteredLeft = (edgeOffsets.left + (viewport.width - edgeOffsets.right)) / 2;
 
   return (
-    <div
-      data-lcos-family="surface-dock"
-      data-lcos-variant={activeSurface}
-      data-lcos-surface-dock
-      className="pointer-events-auto fixed z-40 rounded-full px-2 py-1.5"
-      style={{
-        ...lcosGlassStyle,
-        left: safeCenteredLeft,
-        bottom: edgeOffsets.bottom,
-        transform: 'translateX(-50%)',
-        maxWidth: 'calc(100vw - 24px)',
-        borderRadius: lcosTokens.radius.capsule,
-      }}
-    >
-      <div className="flex items-center gap-1 overflow-x-auto">
-      {LCOS_SURFACES.map(({ key, label }) => {
-        const active = activeSurface === key;
-        const creating = busySurface === key;
-        return (
-          <button
-            key={key}
-            type="button"
-            disabled={creating}
-            data-lcos-surface={key}
-            data-lcos-surface-active={active ? 'true' : 'false'}
-            onClick={() => handleSwitch(key)}
-            title={`${label} · ${canvasBySurface[key] !== undefined ? '现场画布' : '首次进入会建立现场画布'}`}
-            aria-label={label}
-            aria-pressed={active}
-            className="flex h-11 w-11 items-center justify-center rounded-xl transition-colors disabled:opacity-60"
-            style={{
-              minHeight: 44,
-              minWidth: 44,
-              color: active ? lcosTokens.color.text : lcosTokens.color.muted,
-              background: active ? lcosTokens.color.raised : 'transparent',
-            }}
-          >
-            {creating ? (
-              <span
-                className="h-4 w-4 animate-pulse rounded-full"
-                style={{ background: lcosTokens.color.muted }}
-                aria-hidden
-              />
-            ) : (
-              surfaceIcon(key)
-            )}
-          </button>
-        );
-      })}
-      </div>
-
-      {transitionError && (
-        <div
-          role="alert"
+    <LcosSurfaceDockView
+      className="pointer-events-auto fixed z-40"
+      style={{ left: safeCenteredLeft, bottom: edgeOffsets.bottom,
+        transform: 'translateX(-50%)', maxWidth: 'calc(100vw - 24px)' }}
+      items={LCOS_SURFACES.map(({ key, label }) => ({
+        key, label, glyph: SURFACE_GLYPH[key], selected: activeSurface === key,
+        busy: busySurface === key, disabled: busySurface === key,
+        title: `${label} · ${canvasBySurface[key] !== undefined ? '现场画布' : '首次进入会建立现场画布'}`,
+      }))}
+      onSelect={handleSwitch}
+      feedback={transitionError && (
+        <div role="alert" data-lcos-dock-error
           className="absolute bottom-full left-1/2 mb-3 w-max -translate-x-1/2 rounded-2xl px-3 py-1.5 text-xs"
-          style={{
-            maxWidth: 'min(400px, calc(100vw - 32px))',
-            background: lcosTokens.color.inverse,
-            color: lcosTokens.color.textOnInverse,
-            boxShadow: lcosTokens.glass.shadow,
-          }}
-        >
+          style={{ maxWidth: 'min(400px, calc(100vw - 32px))',
+            background: lcosTokens.color.inverse, color: lcosTokens.color.textOnInverse,
+            boxShadow: lcosTokens.glass.shadow }}>
           {transitionError}
         </div>
       )}
-    </div>
+    />
   );
 }

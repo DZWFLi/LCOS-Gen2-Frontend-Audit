@@ -3,12 +3,17 @@
 // 4 目的地 hug 178（8+36×4+6×3+8），与 Figma 两个变体尺寸都能对上，故不写死高度。
 // 目的地数量是唯一变体轴；hover 预览 / Enter 进入 / 拖动重排由 container 负责。
 
+import { FigmaShellGlyph } from '../FigmaShellGlyph';
+
+import type { FigmaShellGlyphName } from '../FigmaShellGlyph';
 import type { ComponentType, DragEvent } from 'react';
 
 export interface LcosRailwayViewItem {
   readonly key: string;
   readonly label: string;
   readonly icon: ComponentType<{ className?: string }>;
+  /** 仅视觉替换。未映射时保留 container 已提供的真实图标。 */
+  readonly glyph?: FigmaShellGlyphName;
   readonly selected?: boolean;
   readonly disabled?: boolean;
   /** Container-owned ref used to publish live receive geometry. */
@@ -49,7 +54,7 @@ export function LcosRailwayView({ items, onSelect, footer }: LcosRailwayViewProp
       >
         {items.map((item) => {
           const Icon = item.icon;
-          const variant = item.disabled ? 'disabled' : item.selected ? 'selected' : 'hover';
+          const variant = item.disabled ? 'disabled' : item.selected ? 'selected' : 'resting';
           return (
             <button
               key={item.key}
@@ -69,7 +74,8 @@ export function LcosRailwayView({ items, onSelect, footer }: LcosRailwayViewProp
               onDrop={item.onDrop}
               onDragEnd={item.onDragEnd}
             >
-              <Icon className="h-[21px] w-[21px]" />
+              {item.glyph === undefined ? <Icon className="h-[21px] w-[21px]" />
+                : <FigmaShellGlyph name={item.glyph} size={21} />}
             </button>
           );
         })}

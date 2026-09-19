@@ -1,5 +1,5 @@
 // LcosWindowChrome — 共享组件族 ProfessionalWindowChrome（Figma 5387:331，布局 浮动/停靠/分组）。
-// 几何取自 structures/window-chrome：h48 · pad 8/24 · gap 8 · 标题 22px 行高 · 图标键 32×32 r999。
+// 几何取自 structures/window-chrome：h48 · pad 8/24 · gap 8 · 标题 12px / 18px（22px 内容框） · 图标键 32×32 r999。
 // body 不拥有窗口位置：拓扑（浮动/停靠/分组）由 ProfessionalWindowStage 决定，本组件只呈现顶栏。
 
 import type { ReactNode } from 'react';
@@ -24,6 +24,11 @@ export interface LcosWindowChromeProps {
   readonly onSelectTab?: (value: string) => void;
   /** 右侧图标键（关闭 / 更多：停靠、分组）。 */
   readonly actions?: ReactNode;
+  /** 可选稳定插槽；不提供时完整保留旧 actions，绝不根据 children 顺序猜关闭按钮。 */
+  readonly primaryActions?: ReactNode;
+  readonly overflowTrigger?: ReactNode;
+  /** body 读取不禁用 Chrome；此属性仅呈现忙碌反馈。 */
+  readonly busy?: boolean;
 }
 
 export function LcosWindowChrome({
@@ -32,11 +37,14 @@ export function LcosWindowChrome({
   tabs = [],
   onSelectTab,
   actions,
+  primaryActions,
+  overflowTrigger,
+  busy = false,
 }: LcosWindowChromeProps): React.JSX.Element {
   return (
-    <div data-lcos-family="window-chrome" data-lcos-variant={layout}>
+    <div data-lcos-family="window-chrome" data-lcos-variant={layout} data-lcos-window-busy={busy ? 'true' : undefined}>
       {tabs.length > 0 ? (
-        tabs.map((tab) => (
+        <div data-lcos-window-tabs aria-label={title}>{tabs.map((tab) => (
           <button
             key={tab.value ?? tab.key}
             type="button"
@@ -48,16 +56,17 @@ export function LcosWindowChrome({
           >
             {tab.label}
           </button>
-        ))
+        ))}</div>
       ) : (
         <span data-lcos-window-title title={title}>
           {title}
         </span>
       )}
-      <span className="flex-1" />
-      <span data-lcos-window-actions role="group" aria-label="窗口操作">
+      <div data-lcos-window-actions role="group" aria-label="窗口操作">
         {actions}
-      </span>
+        {overflowTrigger}
+        {primaryActions}
+      </div>
     </div>
   );
 }

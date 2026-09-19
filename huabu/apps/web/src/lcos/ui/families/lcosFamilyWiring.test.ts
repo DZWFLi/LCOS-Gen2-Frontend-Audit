@@ -41,7 +41,7 @@ const FAMILIES: Readonly<
   },
   SurfaceFeedback: {
     galleryUsage: '<LcosSurfaceFeedback',
-    owner: 'ui/LcosSurfaceFeedback.tsx',
+    owner: 'ui/LcosSurfaceFeedbackView.tsx',
     ownerMarker: 'data-lcos-family="surface-feedback"',
   },
   Collection: {
@@ -74,7 +74,10 @@ describe('R1 共享族接线', () => {
   }
 
   it('族根一律带 data-lcos-family（e2e 契约）', () => {
-    const familiesSource = read(join(LCOS_ROOT, 'ui', 'families', 'lcos-families.css'));
+    const familiesSource = [
+      read(join(LCOS_ROOT, 'ui', 'families', 'lcos-families.css')),
+      read(join(LCOS_ROOT, 'ui', 'families', 'lcos-hud-presentation.css')),
+    ].join('\n');
     for (const family of [
       'navigator-island',
       'railway',

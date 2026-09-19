@@ -2,23 +2,9 @@
 // 只作宿主附近的短态反馈；normal 由真实回执消费，不用定时器假装成功。
 // reduced-motion 保留文案与轮廓；loading 用静态符号代替旋转。
 
-import {
-  AlertTriangle,
-  CheckCircle2,
-  Focus,
-  Inbox,
-  LoaderCircle,
-  Lock,
-  RefreshCw,
-} from 'lucide-react';
-import {
-  useState,
-  type CSSProperties,
-  type JSX,
-  type ReactNode,
-} from 'react';
+import { useState, type CSSProperties, type JSX } from 'react';
 
-import { lcosTokens } from './lcosTokens';
+import { LcosSurfaceFeedbackView } from './LcosSurfaceFeedbackView';
 
 export type LcosFeedbackPresentation =
   | 'loading'
@@ -28,16 +14,6 @@ export type LcosFeedbackPresentation =
   | 'disabled'
   | 'error'
   | 'recovery';
-
-const PRESENTATION_ICON: Readonly<Record<LcosFeedbackPresentation, ReactNode>> = {
-  loading: <LoaderCircle className="h-4 w-4" />,
-  empty: <Inbox className="h-4 w-4" />,
-  normal: <CheckCircle2 className="h-4 w-4" />,
-  focus: <Focus className="h-4 w-4" />,
-  disabled: <Lock className="h-4 w-4" />,
-  error: <AlertTriangle className="h-4 w-4" />,
-  recovery: <RefreshCw className="h-4 w-4" />,
-};
 
 export interface LcosSurfaceFeedbackProps {
   readonly presentation: LcosFeedbackPresentation;
@@ -69,40 +45,15 @@ export function LcosSurfaceFeedback({
   const text = message ?? DEFAULT_MESSAGE[presentation];
 
   return (
-    <div
-      role="status"
-      data-lcos-family="surface-feedback"
-      data-lcos-variant={presentation}
-      data-lcos-surface-feedback={presentation}
-      style={style}
-    >
-      <span aria-hidden className={presentation === 'loading' ? 'lcos-static-pulse' : undefined}>
-        {PRESENTATION_ICON[presentation]}
-      </span>
-      <span className="truncate">{text}</span>
-      {onAction && (
-        <button
-          type="button"
-          disabled={actionPending || presentation === 'loading'}
-          onClick={() => {
-            setActionPending(true);
-            try {
-              onAction();
-            } finally {
-              window.setTimeout(() => setActionPending(false), 600);
-            }
-          }}
-          className="shrink-0 rounded-full font-medium"
-          style={{
-            color: lcosTokens.color.text,
-            padding: '2px 8px',
-            minHeight: 28,
-            fontSize: lcosTokens.fontSize.xs,
-          }}
-        >
-          {actionLabel ?? '重试'}
-        </button>
-      )}
-    </div>
+    <LcosSurfaceFeedbackView presentation={presentation} message={text} style={style}
+      actionLabel={actionLabel} actionDisabled={actionPending || presentation === 'loading'}
+      onAction={onAction === undefined ? undefined : () => {
+        setActionPending(true);
+        try {
+          onAction();
+        } finally {
+          window.setTimeout(() => setActionPending(false), 600);
+        }
+      }} />
   );
 }

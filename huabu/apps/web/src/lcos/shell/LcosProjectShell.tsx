@@ -2,7 +2,7 @@
 // 组成：项目身份胶囊（顶左）+ 三现场舞台（唯一 Canvas）+ GlobalHud（Navigator/Railway/Dock/camera）。
 // Professional Stage 常驻；Composer 仅由 canvas-local 明确命令按需挂载。
 
-import { ArrowLeft, Boxes, Hand, PanelsTopLeft } from 'lucide-react';
+import { ArrowLeft, Hand } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 
@@ -16,6 +16,8 @@ import { ProfessionalWindowStage } from '../professional/ProfessionalWindowStage
 import { ContextWorksite } from '../surfaces/context/ContextWorksite';
 import { MainWorksite } from '../surfaces/main/MainWorksite';
 import { WorkflowHandOverlay, WorkflowWorksite } from '../surfaces/workflow/WorkflowWorksite';
+import { FigmaShellGlyph } from '../ui/FigmaShellGlyph';
+import { LcosProjectIdentityView } from '../ui/families/LcosProjectIdentityView';
 import { LcosSurfaceFeedback } from '../ui/LcosSurfaceFeedback';
 import { lcosGlassStyle, lcosTokens } from '../ui/lcosTokens';
 
@@ -192,7 +194,7 @@ export function LcosProjectShell({
           </div>
 
           {/* 项目身份胶囊（顶左；点击返回项目列表） */}
-          <div className="pointer-events-auto fixed top-6 left-6 z-40 flex items-center gap-2">
+          <div data-lcos-shell-project-cluster className="pointer-events-auto fixed top-6 left-6 z-40 flex items-center gap-2">
             {childWorkspaceId !== undefined && (
               <button
                 type="button"
@@ -207,23 +209,8 @@ export function LcosProjectShell({
                 {returning ? '返回中…' : '返回来源现场'}
               </button>
             )}
-            <Link
-              to="/projects"
-              className="line-clamp-1 inline-flex max-w-[42vw] items-center gap-2 rounded-full py-2 pr-4 text-sm font-medium transition-colors hover:opacity-90"
-              style={{
-                ...lcosGlassStyle,
-                minHeight: 44,
-                color: lcosTokens.color.text,
-              }}
-              title="返回项目列表"
-            >
-              <PanelsTopLeft
-                className="h-4 w-4 shrink-0"
-                style={{ color: lcosTokens.color.muted }}
-              />
-              <span className="truncate font-semibold">
-                {projectName ?? projectId.slice(0, 12)}
-              </span>
+            <Link to="/projects" data-lcos-project-identity title="返回项目列表">
+              <LcosProjectIdentityView name={projectName ?? projectId.slice(0, 12)} />
             </Link>
             <button
               type="button"
@@ -247,7 +234,7 @@ export function LcosProjectShell({
               className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full transition-colors hover:opacity-90"
               style={{ ...lcosGlassStyle, color: lcosTokens.color.text }}
             >
-              <Boxes className="h-[18px] w-[18px]" aria-hidden />
+              <FigmaShellGlyph name="bench" size={20} />
             </button>
           </div>
           {returnError && (
