@@ -43,6 +43,10 @@ export interface CollaborationCapabilitiesV1 {
   readonly canDelegate: boolean
   readonly canResume: boolean
   readonly canFork: boolean
+  /** Create a new provider session with only explicitly selected references. */
+  readonly canSelectedContext: boolean
+  /** Create a new provider session with no inherited context. */
+  readonly canBlankNew: boolean
   readonly canHandoff: boolean
   readonly canAnswerInput: boolean
   readonly canApprove: boolean
@@ -66,6 +70,8 @@ export function unavailableCollaborationCapabilitiesV1(
       canDelegate: false,
       canResume: false,
       canFork: false,
+      canSelectedContext: false,
+      canBlankNew: false,
       canHandoff: false,
       canAnswerInput: false,
       canApprove: false,
@@ -78,6 +84,8 @@ export function unavailableCollaborationCapabilitiesV1(
       canDelegate: reason,
       canResume: reason,
       canFork: reason,
+      canSelectedContext: reason,
+      canBlankNew: reason,
       canHandoff: reason,
       canAnswerInput: reason,
       canApprove: reason,
@@ -231,6 +239,7 @@ export type CollaborationCommandKindV1 =
   | 'send'
   | 'delegate'
   | 'resume'
+  | 'new_session'
   | 'fork'
   | 'handoff'
   | 'answerInput'
@@ -255,6 +264,14 @@ export interface CollaborationDelegateInputV1 {
 
 export interface CollaborationResumeInputV1 {
   readonly conversationId: string
+}
+
+export interface CollaborationNewSessionInputV1 {
+  /** Caller-owned idempotency key; reuse it when a submit/recovery result is uncertain. */
+  readonly operationId: string
+  readonly conversationId: string
+  readonly orderedReferences?: readonly import('./run-assembly.js').OrderedRunReferenceV2[]
+  readonly checkout?: import('./conversation-continuation.js').ContinuationCheckoutV1
 }
 
 export interface CollaborationForkInputV1 {
@@ -301,6 +318,7 @@ export type CollaborationCommandInputV1 =
   | { readonly kind: 'send'; readonly input: CollaborationSendInputV1 }
   | { readonly kind: 'delegate'; readonly input: CollaborationDelegateInputV1 }
   | { readonly kind: 'resume'; readonly input: CollaborationResumeInputV1 }
+  | { readonly kind: 'new_session'; readonly input: CollaborationNewSessionInputV1 }
   | { readonly kind: 'fork'; readonly input: CollaborationForkInputV1 }
   | { readonly kind: 'handoff'; readonly input: CollaborationHandoffInputV1 }
   | { readonly kind: 'answerInput'; readonly input: CollaborationAnswerInputV1 }

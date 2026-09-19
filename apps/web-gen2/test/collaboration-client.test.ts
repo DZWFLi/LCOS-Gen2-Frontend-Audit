@@ -201,6 +201,76 @@ test('resume：会话不存在 → unavailable，不发起 submit', async () => 
   assert.equal(calls.length, 1);
 });
 
+test('newSession(selected_context)：能力允许时只创建一个 T6 operation，并保留显式引用', async () => {
+  const { http, calls } = stubHttp({
+    'GET http://core.test/projects/p-1/connected-conversations/c-1/collaboration-session': {
+      value: { capabilities: { canSelectedContext: true, canBlankNew: true } },
+    },
+    'GET http://core.test/projects/p-1/connected-conversations': { value: [{ id: 'c-1', provider: 'codex' }] },
+    'POST http://core.test/projects/p-1/conversation-continuations': { value: { created: true } },
+  });
+  const collaboration = new CoreCollaborationClient(http);
+  const result = await collaboration.newSession('p-1', 'selected_context', {
+    operationId: 'op-selected-1',
+    conversationId: 'c-1',
+    checkout: 'shared',
+    orderedReferences: [{ order: 0, ref: { type: 'artifact', artifactId: 'artifact-1' } }],
+  });
+  assert.equal(result.ok, true);
+  if (result.ok) {
+    assert.equal(result.receipt.command, 'new_session');
+    assert.equal(result.receipt.conversationId, 'c-1');
+    assert.equal(result.receipt.continuationOperationId, 'op-selected-1');
+  }
+  const submit = calls[2];
+  assert.equal(submit?.method, 'POST');
+  const input = (submit?.body as { input: { operationId: string; mode: string; contextInheritance: string; provider: string; orderedReferences: unknown[] } }).input;
+  assert.equal(input.mode, 'selected_context');
+  assert.equal(input.operationId, 'op-selected-1');
+  assert.equal(input.contextInheritance, 'none');
+  assert.equal(input.provider, 'codex');
+  assert.deepEqual(input.orderedReferences, [{ order: 0, ref: { type: 'artifact', artifactId: 'artifact-1' } }]);
+});
+
+test('newSession(blank_new)：能力未确认时 fail-closed，不提交 continuation、不创建外部会话', async () => {
+  const { http, calls } = stubHttp({
+    'GET http://core.test/projects/p-1/connected-conversations/c-1/collaboration-session': {
+      value: {
+        capabilities: { canSelectedContext: false, canBlankNew: false },
+        capabilityReasons: { canBlankNew: 'create probe 未完成' },
+      },
+    },
+  });
+  const collaboration = new CoreCollaborationClient(http);
+  const result = await collaboration.newSession('p-1', 'blank_new', { operationId: 'op-blank-1', conversationId: 'c-1' });
+  assert.equal(result.ok, false);
+  if (!result.ok) {
+    assert.equal(result.error.code, 'unavailable');
+    assert.equal(result.error.userMessage, 'create probe 未完成');
+  }
+  assert.equal(calls.length, 1);
+});
+
+test('newSession 重试复用 caller-owned operationId：两次 submit 的 journal identity 完全相同', async () => {
+  const { http, calls } = stubHttp({
+    'GET http://core.test/projects/p-1/connected-conversations/c-1/collaboration-session': {
+      value: { capabilities: { canSelectedContext: true, canBlankNew: true } },
+    },
+    'GET http://core.test/projects/p-1/connected-conversations': { value: [{ id: 'c-1', provider: 'codex' }] },
+    'POST http://core.test/projects/p-1/conversation-continuations': { value: { created: true } },
+  });
+  const collaboration = new CoreCollaborationClient(http);
+  const input = { operationId: 'op-retry-stable', conversationId: 'c-1', checkout: 'shared' as const };
+  const first = await collaboration.newSession('p-1', 'blank_new', input);
+  const second = await collaboration.newSession('p-1', 'blank_new', input);
+  assert.equal(first.ok, true);
+  assert.equal(second.ok, true);
+  const submits = calls.filter((call) => call.method === 'POST');
+  assert.equal(submits.length, 2);
+  assert.deepEqual(submits[0]?.body, submits[1]?.body);
+  assert.equal((submits[0]?.body as { input: { operationId: string } }).input.operationId, 'op-retry-stable');
+});
+
 test('handoff：完整 receiver 切换事务未接通前 fail-closed，不把 prepareHandoff 冒充完成态', async () => {
   const { http, calls } = stubHttp({});
   const collaboration = new CoreCollaborationClient(http);

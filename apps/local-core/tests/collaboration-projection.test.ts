@@ -134,6 +134,8 @@ describe('CollaborationProjectionService（Gate 2 read path）', () => {
     expect(session?.capabilities.canSend).toBe(false)
     expect(session?.capabilities.canResume).toBe(false)
     expect(session?.capabilities.canFork).toBe(false)
+    expect(session?.capabilities.canSelectedContext).toBe(false)
+    expect(session?.capabilities.canBlankNew).toBe(false)
     expect(session?.capabilities.canOpenDiagnostics).toBe(true)
     expect(session?.capabilityReasons?.canSend).toBeTruthy()
     expect(session?.capabilityReasons?.canFork).toBeTruthy()
@@ -146,6 +148,8 @@ describe('CollaborationProjectionService（Gate 2 read path）', () => {
     expect(session?.capabilities.canSend).toBe(true)
     expect(session?.capabilities.canResume).toBe(true)
     expect(session?.capabilities.canFork).toBe(false)
+    expect(session?.capabilities.canSelectedContext).toBe(true)
+    expect(session?.capabilities.canBlankNew).toBe(true)
     expect(session?.capabilityReasons?.canFork).toContain('native fork')
   })
 

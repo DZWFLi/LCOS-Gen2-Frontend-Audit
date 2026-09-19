@@ -42,7 +42,7 @@ export interface ResolvedCollaborationCapabilitiesV1 {
 
 function probeReason(
   snapshot: ProviderContinuationCapabilitySnapshotV1 | undefined,
-  field: 'send' | 'continueExisting' | 'nativeFullHistoryFork',
+  field: 'send' | 'continueExisting' | 'nativeFullHistoryFork' | 'createSession',
   label: string,
 ): string {
   if (snapshot === undefined) return `${label}未完成能力探测，暂时不可用`
@@ -66,6 +66,7 @@ export function resolveCollaborationCapabilitiesV1(
   const canSend = snapshot?.session.send.value === true
   const canResume = snapshot?.session.continueExisting.value === true
   const canFork = snapshot?.session.nativeFullHistoryFork.value === true
+  const canCreate = snapshot?.session.createSession.value === true
   const canAnswerInput = hasPendingInput
   const canApprove = hasPendingReview
   const canCancel =
@@ -79,6 +80,8 @@ export function resolveCollaborationCapabilitiesV1(
     canDelegate: true,
     canResume,
     canFork,
+    canSelectedContext: canCreate,
+    canBlankNew: canCreate,
     canHandoff: facts.handoffOwnerAvailable,
     canAnswerInput,
     canApprove,
@@ -91,6 +94,11 @@ export function resolveCollaborationCapabilitiesV1(
   if (!canSend) capabilityReasons.canSend = probeReason(snapshot, 'send', '「发送」')
   if (!canResume) capabilityReasons.canResume = probeReason(snapshot, 'continueExisting', '「继续原会话」')
   if (!canFork) capabilityReasons.canFork = probeReason(snapshot, 'nativeFullHistoryFork', '「分叉」')
+  if (!canCreate) {
+    const reason = probeReason(snapshot, 'createSession', '「新建会话」')
+    capabilityReasons.canSelectedContext = reason
+    capabilityReasons.canBlankNew = reason
+  }
   if (!facts.handoffOwnerAvailable) capabilityReasons.canHandoff = '交接 owner 未配置'
   if (!canAnswerInput) capabilityReasons.canAnswerInput = '当前没有等待回答的问题'
   if (!canApprove) capabilityReasons.canApprove = '当前没有待复核的产出'

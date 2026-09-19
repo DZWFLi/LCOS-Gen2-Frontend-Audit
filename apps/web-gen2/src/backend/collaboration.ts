@@ -3,7 +3,7 @@
 // V0（25f97a2）只验证 delegate()；V1 增加：
 // - read path：readSession / readTimeline / subscribe（复用既有 SSE 事件总线
 //   GET /projects/:pid/events，不新建第二 Event Bus）
-// - command seam：delegate / answerInput / approve / cancel / recover / resume / handoff
+// - command seam：delegate / answerInput / approve / cancel / recover / resume / newSession / handoff
 //   全部 receipt-or-error（CollaborationCommandResultV1），真实 owner 已在 Core 落线；
 //   send / fork 保持 fail-closed（无真实 transport，禁止 fake 成功、禁止 fallback 到 createRun）。
 //
@@ -16,6 +16,7 @@ import type {
   CollaborationCancelInputV1,
   CollaborationCommandResultV1,
   CollaborationForkInputV1,
+  CollaborationNewSessionInputV1,
   CollaborationHandoffInputV1,
   CollaborationDiagnosticsV1,
   CollaborationPendingInputV1,
@@ -500,6 +501,50 @@ export class CoreCollaborationClient {
       return receipt('resume', { continuationOperationId: operationId, conversationId: input.conversationId });
     } catch (error: unknown) {
       return toProductError(error, '续走提交失败');
+    }
+  }
+
+  /**
+   * Start one of the two honest "new session" modes through the existing T6
+   * continuation journal. This only records the intent and returns the
+   * operation receipt; provider side effects happen later through the existing
+   * recovery action path, so a retry cannot create a second external session.
+   */
+  async newSession(
+    projectId: string,
+    mode: 'selected_context' | 'blank_new',
+    input: CollaborationNewSessionInputV1,
+    signal?: AbortSignal,
+  ): Promise<CollaborationCommandResultV1> {
+    try {
+      const session = await this.readSession(projectId, input.conversationId, signal);
+      if (session === undefined) return unavailable('当前会话不存在或已断开');
+      const capability = mode === 'selected_context'
+        ? session.capabilities.canSelectedContext
+        : session.capabilities.canBlankNew;
+      if (!capability) {
+        return unavailable(
+          session.capabilityReasons?.[mode === 'selected_context' ? 'canSelectedContext' : 'canBlankNew']
+            ?? '当前协作方式暂不支持新建会话',
+        );
+      }
+      const conversations = await this.conversations.listConnectedConversations(projectId, signal);
+      const conversation = conversations.find((item: ConnectedConversationV1) => item.id === input.conversationId);
+      if (conversation === undefined) return unavailable('当前会话不存在或已断开');
+      await this.continuations.submit(projectId, {
+        operationId: input.operationId,
+        mode,
+        // New-session modes never inherit the source conversation history;
+        // selected references are carried explicitly in orderedReferences.
+        contextInheritance: 'none',
+        checkout: input.checkout ?? 'shared',
+        provider: conversation.provider,
+        connectedConversationId: input.conversationId,
+        ...(input.orderedReferences === undefined ? {} : { orderedReferences: input.orderedReferences }),
+      }, signal);
+      return receipt('new_session', { continuationOperationId: input.operationId, conversationId: input.conversationId });
+    } catch (error: unknown) {
+      return toProductError(error, '新建会话提交失败');
     }
   }
 

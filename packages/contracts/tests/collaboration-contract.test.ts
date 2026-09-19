@@ -44,6 +44,8 @@ describe('CollaborationCapabilitiesV1', () => {
       'canDelegate',
       'canResume',
       'canFork',
+      'canSelectedContext',
+      'canBlankNew',
       'canHandoff',
       'canAnswerInput',
       'canApprove',
@@ -154,11 +156,12 @@ describe('CollaborationProductErrorV1', () => {
 })
 
 describe('CollaborationCommandInputV1', () => {
-  it('9 种产品动作可按 kind 分发（send 与 delegate 不混）', () => {
+  it('产品动作可按 kind 分发（send、delegate、new session 不混）', () => {
     const inputs: readonly CollaborationCommandInputV1[] = [
       { kind: 'send', input: { conversationId: 'c-1', text: '继续' } },
       { kind: 'delegate', input: { projectId: 'p-1', instruction: '整理画布' } },
       { kind: 'resume', input: { conversationId: 'c-1' } },
+      { kind: 'new_session', input: { conversationId: 'c-1' } },
       { kind: 'fork', input: { conversationId: 'c-1' } },
       { kind: 'handoff', input: { conversationId: 'c-1' } },
       { kind: 'answerInput', input: { pendingInputId: 'pi-1', answer: '是' } },
@@ -171,6 +174,7 @@ describe('CollaborationCommandInputV1', () => {
       'send',
       'delegate',
       'resume',
+      'new_session',
       'fork',
       'handoff',
       'answerInput',
