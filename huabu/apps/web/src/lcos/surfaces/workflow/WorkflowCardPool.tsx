@@ -1,42 +1,131 @@
-// WorkflowCardPool — 材料/任务卡池（Figma 卡 5335:110 取用卡 7 状态；3:4 竖卡）。
-// 真实数据：warehouse 中真正的 workflow；普通 artifact/conversation 走 Assembly/会话入口，不伪装成任务卡。
-// 「打开/续接」真实动作 Wave 8（当前标注）。不把卡复制进 Main。
+// WorkflowCardPool — Workflow/Skill 任务卡 + 独立材料引用/会话接收者 lanes。
+// 只有 workflow/skill 使用 Figma TaskCard 物种；普通材料和 conversation 不任务卡化。
+// 所有 lane 只引用 canonical identity，不复制正文或创建第二 truth。
+// send/fork/handoff 仍由 Wave 8 负责；当前只走既有 Composer/Conversation Work View。
 
 
 import { CoreAssemblyClient, HttpError } from '@local-creative-os/web-gen2';
-import { PlusCircle, Search } from 'lucide-react';
+import { MessageCircle, PlusCircle, Search } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 
 
-import { isWorkflowCardItem } from './workflowCardSemantics';
+import { isWorkflowCardItem, isWorkflowMaterialItem, isWorkflowReceiverItem, workflowCardMeta } from './workflowCardSemantics';
 import { createLcosCoreSession } from '../../app/lcosCoreClient';
 import { useLcosReferenceStore } from '../../lcosReferenceState';
 import { sameEntityRef } from '../../referenceBridge';
+import { useLcosShellStore } from '../../shell/lcosShellStore';
 import { LcosTaskCard, type LcosTaskCardState } from '../../ui/families';
 import { LcosSurfaceFeedback } from '../../ui/LcosSurfaceFeedback';
 import { lcosTokens } from '../../ui/lcosTokens';
 
-import type { WarehouseItemV1 } from '@local-creative-os/contracts';
+import type { LcosComposerTarget } from '../../shell/lcosShellStore';
+import type { SkillCatalogEntryV1, WarehouseItemV1 } from '@local-creative-os/contracts';
+
+export type WorkflowHandCardLane = 'task' | 'material' | 'receiver';
+
+export interface WorkflowHandCard {
+  readonly cardId: string;
+  readonly entityType: string;
+  readonly entityId: string;
+  readonly title: string;
+  readonly meta: string;
+  readonly source: 'warehouse' | 'skill';
+  readonly lane: WorkflowHandCardLane;
+  readonly conversationReceiver: boolean;
+}
+
+export function toWorkflowHandCards(
+  warehouse: readonly WarehouseItemV1[],
+  skills: readonly SkillCatalogEntryV1[],
+): readonly WorkflowHandCard[] {
+  const workflowCards = warehouse.filter(isWorkflowCardItem).map((item): WorkflowHandCard => ({
+    cardId: `${item.kind}:${item.entityRef.id}`,
+    entityType: item.kind,
+    entityId: item.entityRef.id,
+    title: item.title,
+    meta: workflowCardMeta(item),
+    source: 'warehouse',
+    lane: 'task',
+    conversationReceiver: false,
+  }));
+  const materialCards = warehouse.filter(isWorkflowMaterialItem).map((item): WorkflowHandCard => ({
+    cardId: `${item.kind}:${item.entityRef.id}`,
+    entityType: item.kind,
+    entityId: item.entityRef.id,
+    title: item.title,
+    meta: workflowCardMeta(item),
+    source: 'warehouse',
+    lane: 'material',
+    conversationReceiver: false,
+  }));
+  const receiverCards = warehouse.filter(isWorkflowReceiverItem).map((item): WorkflowHandCard => ({
+    cardId: `${item.kind}:${item.entityRef.id}`,
+    entityType: item.kind,
+    entityId: item.entityRef.id,
+    title: item.title,
+    meta: '会话 · 接收者',
+    source: 'warehouse',
+    lane: 'receiver',
+    conversationReceiver: true,
+  }));
+  const skillCards = skills.map((skill): WorkflowHandCard => ({
+    cardId: `skill:${skill.id}`,
+    entityType: 'skill',
+    entityId: skill.id,
+    title: skill.name,
+    meta: `技能 · ${skill.source}`,
+    source: 'skill',
+    lane: 'task',
+    conversationReceiver: false,
+  }));
+  return [...workflowCards, ...skillCards, ...materialCards, ...receiverCards];
+}
+
+export function workflowComposerTarget(
+  card: WorkflowHandCard,
+  activeWorkspaceId: string | null,
+): LcosComposerTarget {
+  return {
+    nodeId: `${card.entityType}:${card.entityId}`,
+    title: card.title,
+    anchor: { x: 0, y: 0, width: 0, height: 0 },
+    ...(activeWorkspaceId === null ? {} : { workspaceId: activeWorkspaceId }),
+    ...(card.conversationReceiver
+      ? { receiverConversationId: card.entityId }
+      : { receiverBlockedReason: '已加入草稿；请先从卡池选择一个会话作为接收者' }),
+  };
+}
 
 export function WorkflowCardPool({ projectId }: { readonly projectId: string }): React.JSX.Element {
   const session = useMemo(() => createLcosCoreSession(), []);
   const assembly = useMemo(() => new CoreAssemblyClient(session.http), [session]);
-  const [items, setItems] = useState<readonly WarehouseItemV1[]>([]);
+  const [cards, setCards] = useState<readonly WorkflowHandCard[]>([]);
   const [state, setState] = useState<'loading' | 'ready' | 'error'>('loading');
   const [errorDetail, setErrorDetail] = useState<string | undefined>(undefined);
+  const [skillErrorDetail, setSkillErrorDetail] = useState<string | undefined>(undefined);
   const [query, setQuery] = useState('');
   // 草稿引用 = 真实 presentation state（Selection ≠ Reference）；用于卡面「草稿中」
   const draftRefs = useLcosReferenceStore((s) => s.draft.orderedEntityRefs);
+  const activeWorkspaceId = useLcosShellStore((s) => s.activeWorkspaceId);
+  const openComposer = useLcosShellStore((s) => s.openComposer);
+  const openWindow = useLcosShellStore((s) => s.openWindow);
 
   useEffect(() => {
     const controller = new AbortController();
     let active = true;
     setState('loading');
-    void assembly
-      .getWarehouse(projectId, controller.signal)
-      .then((snapshot) => {
+    setSkillErrorDetail(undefined);
+    void Promise.allSettled([
+      assembly.getWarehouse(projectId, controller.signal),
+      session.skills.list(projectId, undefined, controller.signal),
+    ]).then(([warehouseResult, skillResult]) => {
         if (!active || controller.signal.aborted) return;
-        setItems(snapshot.items.filter(isWorkflowCardItem));
+        if (warehouseResult.status === 'rejected') throw warehouseResult.reason;
+        const skills = skillResult.status === 'fulfilled' ? skillResult.value : [];
+        if (skillResult.status === 'rejected') {
+          setSkillErrorDetail(skillResult.reason instanceof Error ? skillResult.reason.message : String(skillResult.reason));
+        }
+        setCards(toWorkflowHandCards(warehouseResult.value.items, skills));
         setState('ready');
       })
       .catch((error: unknown) => {
@@ -48,23 +137,36 @@ export function WorkflowCardPool({ projectId }: { readonly projectId: string }):
       active = false;
       controller.abort();
     };
-  }, [projectId, assembly]);
+  }, [projectId, assembly, session]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (q === '') return items;
-    return items.filter((item) => (item.title ?? '').toLowerCase().includes(q));
-  }, [items, query]);
+    if (q === '') return cards;
+    return cards.filter((card) => `${card.title} ${card.meta}`.toLowerCase().includes(q));
+  }, [cards, query]);
 
   /**
    * 7 状态里生产可达的三种（其余 悬停/键盘焦点 由 CSS 表达；预览/已选目标 归属 R5）：
    * 草稿中 = 该实体已在 Composer 草稿；不可用 = 没有可引用的实体身份；其余为静息。
    */
-  const cardState = (item: WarehouseItemV1): LcosTaskCardState => {
-    const entityId = item.entityRef?.id;
-    if (!entityId) return '不可用';
-    const ref = { entityType: item.kind, entityId };
+  const cardState = (card: WorkflowHandCard): LcosTaskCardState => {
+    if (!card.entityId) return '不可用';
+    const ref = { entityType: card.entityType, entityId: card.entityId };
     return draftRefs.some((x) => sameEntityRef(x, ref)) ? '草稿中' : '静息';
+  };
+
+  const takeCard = (card: WorkflowHandCard): void => {
+    useLcosReferenceStore.getState().addEntityToDraft({
+      entityType: card.entityType,
+      entityId: card.entityId,
+      displayLabel: card.title,
+    });
+    openComposer(workflowComposerTarget(card, activeWorkspaceId));
+  };
+
+  const openConversation = (card: WorkflowHandCard): void => {
+    if (!card.conversationReceiver) return;
+    openWindow('conversation', `会话 · ${card.title}`, card.entityId);
   };
 
   return (
@@ -75,7 +177,7 @@ export function WorkflowCardPool({ projectId }: { readonly projectId: string }):
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="搜索工作流"
+            placeholder="搜索工作流、材料或技能"
             className="w-full bg-transparent text-sm outline-none"
             style={{ color: lcosTokens.color.text }}
           />
@@ -86,44 +188,130 @@ export function WorkflowCardPool({ projectId }: { readonly projectId: string }):
       {state === 'error' && (
         <div className="py-8"><LcosSurfaceFeedback presentation="error" message={`卡池读取失败${errorDetail ? `（${errorDetail}）` : ''}`} /></div>
       )}
+      {state === 'ready' && skillErrorDetail && (
+        <div data-lcos-skill-unavailable className="rounded-lg px-3 py-2 text-[10px]" style={{ background: lcosTokens.color.raised, color: lcosTokens.color.muted }}>
+          技能卡暂不可用（Core skill producer 未就绪，材料卡仍可取用）
+        </div>
+      )}
       {state === 'ready' && filtered.length === 0 && (
         <div className="py-8">
-          <LcosSurfaceFeedback presentation="empty" message={query ? '没有匹配项' : '还没有工作流卡片'} />
+          <LcosSurfaceFeedback presentation="empty" message={query ? '没有匹配项' : '还没有可取用的工作流、材料或技能'} />
         </div>
       )}
 
       {state === 'ready' && filtered.length > 0 && (
-        <div className="flex max-h-[46vh] flex-wrap gap-3 overflow-y-auto pr-1">
-          {filtered.map((item) => (
-            <LcosTaskCard
-              key={`${item.kind}:${item.entityRef.id}`}
-              state={cardState(item)}
-              title={item.title ?? '未命名'}
-              meta="工作流 · 卡牌（3:4）"
-              legacyWorkflowKind="workflow"
-              footer={
-                <>
-                  <button
-                    type="button"
-                    data-lcos-card-take
-                    onClick={() => useLcosReferenceStore.getState().addEntityToDraft({ entityType: item.kind, entityId: item.entityRef.id })}
-                    className="flex items-center gap-1 rounded-full px-2 py-1 text-[11px] font-medium"
-                    style={{ color: lcosTokens.color.text }}
-                    title="取用 → 加入 Composer 草稿（未发送）"
-                  >
-                    <PlusCircle className="h-3 w-3" aria-hidden /> 取用
-                  </button>
-                  <span className="text-[9px]" style={{ color: lcosTokens.color.muted }} title="打开/续接尚未接入">
-                    打开（尚未接入）
-                  </span>
-                </>
-              }
-            >
-              <span data-lcos-card-preview className="text-[10px] opacity-60">
-                工作流装备
-              </span>
-            </LcosTaskCard>
-          ))}
+        <div className="max-h-[46vh] space-y-4 overflow-y-auto pr-1">
+          {(['task', 'material', 'receiver'] as const).map((lane) => {
+            const laneCards = filtered.filter((card) => card.lane === lane);
+            if (laneCards.length === 0) return null;
+            const heading = lane === 'task' ? '工作流 / 技能任务' : lane === 'material' ? '材料引用' : '会话接收者';
+            return (
+              <section key={lane} data-lcos-card-lane={lane} className="space-y-2">
+                <div className="px-1 text-[10px] font-semibold tracking-[0.14em]" style={{ color: lcosTokens.color.muted }}>{heading}</div>
+                <div className="flex flex-wrap gap-3">
+                  {laneCards.map((card) => {
+                    if (card.lane === 'task') {
+                      return (
+                        <LcosTaskCard
+                          key={card.cardId}
+                          state={cardState(card)}
+                          title={card.title || '未命名'}
+                          meta={`${card.meta} · 取用后未发送`}
+                          legacyWorkflowKind={card.source === 'skill' ? 'skill' : 'workflow'}
+                          footer={
+                            <button
+                              type="button"
+                              data-lcos-task-take
+                              data-lcos-card-source={card.source}
+                              data-lcos-card-entity={`${card.entityType}:${card.entityId}`}
+                              onClick={() => takeCard(card)}
+                              className="flex items-center gap-1 rounded-full px-2 py-1 text-[11px] font-medium"
+                              style={{ color: lcosTokens.color.text }}
+                              title="取用 → 加入 Composer 草稿（未发送）"
+                            >
+                              <PlusCircle className="h-3 w-3" aria-hidden /> 取用
+                            </button>
+                          }
+                        >
+                          <span data-lcos-card-preview className="text-[10px] opacity-60">{card.source === 'skill' ? '可引用技能' : '工作流装备'}</span>
+                        </LcosTaskCard>
+                      );
+                    }
+                    if (card.lane === 'material') {
+                      return (
+                        <article
+                          key={card.cardId}
+                          data-lcos-reference-card
+                          data-lcos-card-lane="material"
+                          data-lcos-card-entity={`${card.entityType}:${card.entityId}`}
+                          className="flex min-h-[112px] w-[224px] flex-col justify-between rounded-xl border p-3"
+                          style={{ background: lcosTokens.color.raised, borderColor: lcosTokens.color.border, color: lcosTokens.color.text }}
+                        >
+                          <div className="space-y-1">
+                            <div className="truncate text-xs font-semibold">{card.title || '未命名'}</div>
+                            <div className="text-[10px] opacity-70">{card.meta} · 取用后未发送</div>
+                            <div className="text-[10px] opacity-60">材料引用 · 需会话接收者</div>
+                          </div>
+                          <button
+                            type="button"
+                            data-lcos-material-take
+                            data-lcos-card-source={card.source}
+                            data-lcos-card-entity={`${card.entityType}:${card.entityId}`}
+                            onClick={() => takeCard(card)}
+                            className="mt-2 flex w-fit items-center gap-1 rounded-full px-2 py-1 text-[11px] font-medium"
+                            style={{ color: lcosTokens.color.text }}
+                            title="取用 → 加入 Composer 草稿（未发送）"
+                          >
+                            <PlusCircle className="h-3 w-3" aria-hidden /> 取用
+                          </button>
+                        </article>
+                      );
+                    }
+                    return (
+                      <article
+                        key={card.cardId}
+                        data-lcos-receiver-card
+                        data-lcos-card-lane="receiver"
+                        data-lcos-card-entity={`${card.entityType}:${card.entityId}`}
+                        className="flex min-h-[112px] w-[224px] flex-col justify-between rounded-xl border p-3"
+                        style={{ background: lcosTokens.color.raised, borderColor: lcosTokens.color.border, color: lcosTokens.color.text }}
+                      >
+                        <div className="space-y-1">
+                          <div className="truncate text-xs font-semibold">{card.title || '未命名'}</div>
+                          <div className="text-[10px] opacity-70">{card.meta}</div>
+                          <div className="text-[10px] opacity-60">独立会话接收者 · 可打开 Work View</div>
+                        </div>
+                        <div className="mt-2 flex items-center gap-2">
+                          <button
+                            type="button"
+                            data-lcos-receiver-take
+                            data-lcos-card-source={card.source}
+                            data-lcos-card-entity={`${card.entityType}:${card.entityId}`}
+                            onClick={() => takeCard(card)}
+                            className="flex items-center gap-1 rounded-full px-2 py-1 text-[11px] font-medium"
+                            style={{ color: lcosTokens.color.text }}
+                            title="设为 Composer 接收者"
+                          >
+                            <PlusCircle className="h-3 w-3" aria-hidden /> 设为接收者
+                          </button>
+                          <button
+                            type="button"
+                            data-lcos-card-open-conversation
+                            onClick={() => openConversation(card)}
+                            className="flex items-center gap-1 rounded-full px-2 py-1 text-[11px]"
+                            style={{ color: lcosTokens.color.muted }}
+                            title="打开会话 Work View（Waiting/Review 从 Core 读取）"
+                          >
+                            <MessageCircle className="h-3 w-3" aria-hidden /> 打开会话
+                          </button>
+                        </div>
+                      </article>
+                    );
+                  })}
+                </div>
+              </section>
+            );
+          })}
         </div>
       )}
     </div>
