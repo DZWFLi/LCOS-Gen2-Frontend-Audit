@@ -77,6 +77,41 @@ describe('Composer UI intent', () => {
     });
   });
 
+  it('rotates a successful continuation message id while keeping the same Composer open', () => {
+    const store = useLcosShellStore.getState();
+    store.clear();
+    store.setProject('continuation-project');
+    const target = {
+      nodeId: 'conversation-node',
+      title: '会话',
+      anchor: { x: 0, y: 0, width: 1, height: 1 },
+      intent: 'continue' as const,
+      receiverConversationId: 'conversation-1',
+      continuationOperationId: 'operation-1',
+      messageId: 'message-1',
+    };
+    store.openComposer(target);
+    store.setComposerPrompt('第一条');
+
+    store.clearSubmittedComposerPrompt('continuation-project', target, '第一条');
+    const afterSuccess = useLcosShellStore.getState();
+    expect(afterSuccess.composerOpen).toBe(true);
+    expect(afterSuccess.composerPrompt).toBe('');
+    expect(afterSuccess.composerTarget).toMatchObject({
+      receiverConversationId: 'conversation-1',
+      continuationOperationId: 'operation-1',
+    });
+    expect(afterSuccess.composerTarget?.messageId).toBeTruthy();
+    expect(afterSuccess.composerTarget?.messageId).not.toBe('message-1');
+
+    // A stale completion cannot rotate the new identity or clear a new draft.
+    store.setComposerPrompt('第二条');
+    const rotatedId = useLcosShellStore.getState().composerTarget?.messageId;
+    store.clearSubmittedComposerPrompt('continuation-project', target, '第一条');
+    expect(useLcosShellStore.getState().composerTarget?.messageId).toBe(rotatedId);
+    expect(useLcosShellStore.getState().composerPrompt).toBe('第二条');
+  });
+
   it('clear resets the ephemeral Composer intent', () => {
     const store = useLcosShellStore.getState();
     store.openComposer({

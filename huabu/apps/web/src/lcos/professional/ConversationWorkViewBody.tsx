@@ -162,10 +162,35 @@ export function ConversationWorkViewBody({
   const userState = projection?.userState;
   const hasPendingInput = projection?.activity.pendingInputId !== undefined;
   const hasPendingReview = projection?.recentReturns.some((row) => row.status === 'pending_review') ?? false;
-  // B3：send 与 delegate 心智必须分开。当前 send fail-closed（无真实 transport）→
-  // 不提供「继续这个会话（追加消息）」；Composer 明确是「交给它做（委托新任务）」。
+  // B3：send 与 delegate 心智必须分开。send 只有在 projection capability
+  // 与已确认 continuation operation 同时存在时才开放；否则只显示真实原因。
   const canSend = projection?.capabilities.canSend === true;
   const sendReason = projection?.capabilityReasons?.canSend;
+  /**
+   * A send button is only meaningful when the read projection can identify the
+   * existing provider operation. `canSend` alone is a capability probe; it is
+   * not a license to invent an operation id or silently create a Run.
+   */
+  const continuationOperation = diagnostics?.operations.find((operation) =>
+    operation.connectedConversationId === connectedConversationId
+      && operation.externalEvidence?.externalSessionId !== undefined
+      && operation.status !== 'recovering'
+      && operation.status !== 'outcome_unknown'
+      && operation.status !== 'cancelled',
+  );
+  const canContinueCurrentConversation = canSend && continuationOperation !== undefined;
+  const continueComposerReason = !canSend
+    ? (sendReason ?? '当前协作方式暂不支持直接追加消息')
+    : continuationOperation === undefined
+      ? '当前会话还没有可续聊的已确认 continuation operation'
+      : undefined;
+
+  const callerOwnedMessageId = (): string => {
+    const randomUuid = globalThis.crypto?.randomUUID;
+    return randomUuid !== undefined
+      ? randomUuid.call(globalThis.crypto)
+      : `message-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  };
 
   const runContinuationAction = (action: ConversationContinuationAction): void => {
     if (continuationBusy !== null || projection === undefined || connectedConversationId === undefined) return;
@@ -353,8 +378,8 @@ export function ConversationWorkViewBody({
         <ArtifactReturnSection collaboration={collaboration} projectId={projectId} conversationId={connectedConversationId} />
       )}
 
-      {/* Composer（B3）：明确 Delegate 语义——「交给它做」创建 canonical Run，
-          绝不伪装成原会话 continuation（send 未接通时 fail-closed）。 */}
+      {/* Composer：同一只 Composer 承担两种明确 intent。
+          delegate 创建 canonical Run；continue 只发回当前 continuation operation。 */}
       <section
         data-lcos-conversation-composer
         className="flex flex-col gap-2 rounded-xl p-3"
@@ -362,29 +387,54 @@ export function ConversationWorkViewBody({
       >
         <div className="flex items-center justify-between gap-2">
           <div>
-            <h4 className="text-xs font-semibold" style={{ color: lcosTokens.color.text }}>交给它做（委托新任务）</h4>
+            <h4 className="text-xs font-semibold" style={{ color: lcosTokens.color.text }}>会话输入</h4>
             <p className="mt-1 text-[10px]" style={{ color: lcosTokens.color.muted }}>
-              以当前会话为上下文，创建 Run 交给执行器；与「直接追加消息」不同
+              继续当前会话会发送到已绑定的 continuation；委托新任务会创建独立 Run
             </p>
           </div>
           {!workComposerOpen && (
-            <button
-              type="button"
-              data-lcos-open-work-composer
-              onClick={() =>
-                openComposer({
-                  nodeId: `conversation:${connectedConversationId}`,
-                  title: projection?.identity.title ?? '当前会话',
-                  anchor: { x: 0, y: 0, width: 0, height: 0 },
-                  ...(activeWorkspaceId === null ? {} : { workspaceId: activeWorkspaceId }),
-                  receiverConversationId: connectedConversationId,
-                })
-              }
-              className="rounded-full px-3 py-1.5 text-xs"
-              style={{ background: lcosTokens.color.inverse, color: lcosTokens.color.textOnInverse }}
-            >
-              委托新任务
-            </button>
+            <div className="flex flex-wrap justify-end gap-1.5">
+              <button
+                type="button"
+                data-lcos-open-continue-composer
+                disabled={!canContinueCurrentConversation}
+                title={!canContinueCurrentConversation ? continueComposerReason : undefined}
+                onClick={() => {
+                  if (!canContinueCurrentConversation || continuationOperation === undefined) return;
+                  openComposer({
+                    nodeId: `conversation:${connectedConversationId}`,
+                    title: projection?.identity.title ?? '当前会话',
+                    anchor: { x: 0, y: 0, width: 0, height: 0 },
+                    intent: 'continue',
+                    receiverConversationId: connectedConversationId,
+                    continuationOperationId: continuationOperation.operationId,
+                    messageId: callerOwnedMessageId(),
+                  });
+                }}
+                className="rounded-full px-3 py-1.5 text-xs disabled:opacity-40"
+                style={{ background: lcosTokens.color.pinViolet, color: lcosTokens.color.textOnInverse }}
+              >
+                继续当前会话
+              </button>
+              <button
+                type="button"
+                data-lcos-open-work-composer
+                onClick={() =>
+                  openComposer({
+                    nodeId: `conversation:${connectedConversationId}`,
+                    title: projection?.identity.title ?? '当前会话',
+                    anchor: { x: 0, y: 0, width: 0, height: 0 },
+                    intent: 'delegate',
+                    ...(activeWorkspaceId === null ? {} : { workspaceId: activeWorkspaceId }),
+                    receiverConversationId: connectedConversationId,
+                  })
+                }
+                className="rounded-full px-3 py-1.5 text-xs"
+                style={{ background: lcosTokens.color.inverse, color: lcosTokens.color.textOnInverse }}
+              >
+                委托新任务
+              </button>
+            </div>
           )}
         </div>
         {workComposerOpen && composerTarget && (

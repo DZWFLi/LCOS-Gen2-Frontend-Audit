@@ -79,10 +79,17 @@ export class HuabuAgentletHostTransportV1 implements HuabuAgentletTransportV1 {
       const now = new Date().toISOString()
       const claim = (): CapabilityClaimV1 => ({ value: true, source: 'gateway_probe' as const, observedAt: now })
       return {
-        session: { status: claim(), recoverExisting: claim() },
+        // send is a declared capability of this exact transport because the same
+        // class implements the canonical ACP prompt route below. It is not a
+        // side-effect probe and still requires a bound continuation owner.
+        session: {
+          status: claim(),
+          recoverExisting: claim(),
+          send: { value: true, source: 'adapter_declaration', observedAt: now, evidenceRef: 'HuabuAgentletHostTransportV1.sendPrompt' },
+        },
         limitations: [
           'create/continue/cancel are delegated to Huabu Host but are not probed because they have external side effects',
-          'prompt send requires a canonical ACP owner and is not side-effect probed',
+          'prompt send is declared by the canonical ACP owner implementation and still requires an exact bound continuation owner',
         ],
       }
     } catch (error: unknown) {

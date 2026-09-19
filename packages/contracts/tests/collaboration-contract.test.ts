@@ -158,7 +158,7 @@ describe('CollaborationProductErrorV1', () => {
 describe('CollaborationCommandInputV1', () => {
   it('产品动作可按 kind 分发（send、delegate、new session 不混）', () => {
     const inputs: readonly CollaborationCommandInputV1[] = [
-      { kind: 'send', input: { conversationId: 'c-1', text: '继续' } },
+      { kind: 'send', input: { conversationId: 'c-1', messageId: 'msg-1', continuationOperationId: 'op-1', text: '继续' } },
       { kind: 'delegate', input: { projectId: 'p-1', instruction: '整理画布' } },
       { kind: 'resume', input: { operationId: 'op-resume-1', conversationId: 'c-1' } },
       { kind: 'new_session', input: { operationId: 'op-new-1', conversationId: 'c-1' } },

@@ -33,6 +33,8 @@ export interface CollaborationCapabilityFacts {
   readonly capabilitySnapshot?: ProviderContinuationCapabilitySnapshotV1
   /** ReceiverRuntimeService.prepareHandoff 可用（真实 owner 存在）。 */
   readonly handoffOwnerAvailable: boolean
+  /** A bound continuation owner exists for this exact connected conversation. */
+  readonly hasSendableContinuation: boolean
 }
 
 export interface ResolvedCollaborationCapabilitiesV1 {
@@ -63,7 +65,7 @@ export function resolveCollaborationCapabilitiesV1(
   const hasPendingReview = facts.pendingReturns.length > 0
   const canRecover = facts.continuationOps.some((op) => op.allowedActions.length > 0)
 
-  const canSend = snapshot?.session.send.value === true
+  const canSend = snapshot?.session.send.value === true && facts.hasSendableContinuation
   const canResume = snapshot?.session.continueExisting.value === true
   const canFork = snapshot?.session.nativeFullHistoryFork.value === true
   const canCreate = snapshot?.session.createSession.value === true
@@ -91,7 +93,7 @@ export function resolveCollaborationCapabilitiesV1(
   }
 
   const capabilityReasons: CollaborationCapabilityReasonsV1 = {}
-  if (!canSend) capabilityReasons.canSend = probeReason(snapshot, 'send', '「发送」')
+  if (!canSend) capabilityReasons.canSend = facts.hasSendableContinuation ? probeReason(snapshot, 'send', '「发送」') : '当前会话没有已绑定且可发送的续工 owner'
   if (!canResume) capabilityReasons.canResume = probeReason(snapshot, 'continueExisting', '「继续原会话」')
   if (!canFork) capabilityReasons.canFork = probeReason(snapshot, 'nativeFullHistoryFork', '「分叉」')
   if (!canCreate) {

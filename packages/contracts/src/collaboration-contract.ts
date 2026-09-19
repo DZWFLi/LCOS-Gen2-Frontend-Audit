@@ -250,6 +250,10 @@ export type CollaborationCommandKindV1 =
 
 export interface CollaborationSendInputV1 {
   readonly conversationId: string
+  /** Caller-owned idempotency key for this prompt turn. Reuse it after an unknown outcome. */
+  readonly messageId: string
+  /** The already-bound continuation operation that owns the provider session. */
+  readonly continuationOperationId: string
   readonly text: string
   readonly targetRefs?: readonly string[]
 }

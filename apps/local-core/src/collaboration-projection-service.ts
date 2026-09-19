@@ -26,6 +26,7 @@ import {
 } from './collaboration-capability-resolver.js'
 import { projectCollaborationTimelineV1 } from './collaboration-timeline-projector.js'
 import type { ConversationContinuationService } from './conversation-continuation-service.js'
+import type { ConversationImportService } from './conversation-import-service.js'
 import type { ConversationIdentityService } from './conversation-identity-service.js'
 import type { SqliteMetadataRepository } from './metadata-repository.js'
 import type { ReceiverRuntimeService } from './receiver-runtime-service.js'
@@ -42,6 +43,7 @@ export class CollaborationProjectionService {
     private readonly receiverRuntime: ReceiverRuntimeService | undefined,
     private readonly runtimeReview: RuntimeReviewService | undefined,
     private readonly probeCapability: CollaborationCapabilityProbe | undefined,
+    private readonly conversations: ConversationImportService | undefined = undefined,
   ) {}
 
   async getSession(
@@ -71,6 +73,7 @@ export class CollaborationProjectionService {
       continuationOps: operations,
       ...(snapshot === undefined ? {} : { capabilitySnapshot: snapshot }),
       handoffOwnerAvailable: this.receiverRuntime !== undefined,
+      hasSendableContinuation: operations.some((op) => op.externalEvidence !== undefined && op.cancel === 'none' && op.status !== 'outcome_unknown' && op.status !== 'cancelled'),
     })
     const userState: CollaborationUserStateV1 = deriveCollaborationUserStateV1({
       ...(activeRun === undefined ? {} : { activeRunStatus: activeRun.status }),
@@ -134,7 +137,11 @@ export class CollaborationProjectionService {
     const reviews = [...this.collectReviews(runs).values()]
     const operations = (this.continuation?.list(projectId) ?? [])
       .filter((op) => op.connectedConversationId === connectedConversationId)
-    return projectCollaborationTimelineV1({ runs, reviews, operations }, options)
+    const conversationSessionId = this.identity.resolveChain(projectId, connectedConversationId)?.conversationSession?.id
+    const messages = conversationSessionId === undefined || this.conversations === undefined
+      ? []
+      : this.conversations.getMessages(conversationSessionId, { limit: 250 })
+    return projectCollaborationTimelineV1({ runs, reviews, operations, messages }, options)
   }
 
   private collectReviews(runs: readonly Run[]): Map<string, RunReview> {

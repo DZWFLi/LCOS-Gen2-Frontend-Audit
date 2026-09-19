@@ -73,8 +73,17 @@ export interface LcosComposerTarget {
     readonly height: number;
   };
   readonly workspaceId?: string;
+  /**
+   * Composer intent is explicit: delegate creates a canonical Run;
+   * continue sends into the existing connected conversation.
+   */
+  readonly intent?: 'delegate' | 'continue';
   /** Canonical connected-conversation receiver, only set after an explicit Core identity read. */
   readonly receiverConversationId?: string;
+  /** Caller-owned continuation journal identity for `intent: continue`. */
+  readonly continuationOperationId?: string;
+  /** Caller-owned message identity for idempotent live send. */
+  readonly messageId?: string;
   /** Optional honest block reason for a host that cannot resolve a receiver yet. */
   readonly receiverBlockedReason?: string;
 }
@@ -194,6 +203,14 @@ type ProjectUiSession = Pick<LcosShellUiState,
 // Same-tab project switching only. This is UI continuity, not reload persistence.
 const projectUiSessions = new Map<string, ProjectUiSession>();
 
+/** Caller-owned identity for one live continuation message. */
+function createComposerMessageId(): string {
+  const randomUuid = globalThis.crypto?.randomUUID;
+  return randomUuid !== undefined
+    ? randomUuid.call(globalThis.crypto)
+    : `message-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+}
+
 export const useLcosShellStore = create<LcosShellUiState>((set) => ({
   projectId: null,
   activeSurface: 'main',
@@ -258,12 +275,16 @@ export const useLcosShellStore = create<LcosShellUiState>((set) => ({
   setComposerPrompt: (composerPrompt) => set({ composerPrompt }),
   clearSubmittedComposerPrompt: (projectId, target, prompt) => set((state) => {
     if (state.projectId === projectId) {
-      return state.composerTarget === target && state.composerPrompt === prompt
-        ? { composerPrompt: '' } : state;
+      if (state.composerTarget !== target || state.composerPrompt !== prompt) return state;
+      return target.intent === 'continue'
+        ? { composerPrompt: '', composerTarget: { ...target, messageId: createComposerMessageId() } }
+        : { composerPrompt: '' };
     }
     const saved = projectUiSessions.get(projectId);
     if (saved?.composerTarget === target && saved.composerPrompt === prompt) {
-      projectUiSessions.set(projectId, { ...saved, composerPrompt: '' });
+      projectUiSessions.set(projectId, target.intent === 'continue'
+        ? { ...saved, composerPrompt: '', composerTarget: { ...target, messageId: createComposerMessageId() } }
+        : { ...saved, composerPrompt: '' });
     }
     return state;
   }),

@@ -1438,6 +1438,9 @@ export function createLocalCoreServer(options: LocalCoreServerOptions = {}): Loc
         signal: controller.signal,
         metadata,
         collaborationProjection,
+        continuation: conversationContinuation,
+        conversations,
+        adapter: recoveryAdapter,
         helpers: routeHelpers,
       })) return
       if (await handleRetrievalRoute({

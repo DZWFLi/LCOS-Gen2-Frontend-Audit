@@ -1,5 +1,6 @@
 import type { CoreEntityRefLike } from '../referenceBridge';
 import type { LcosComposerTarget } from '../shell/lcosShellStore';
+import type { CollaborationSendInputV1 } from '@local-creative-os/contracts';
 import type { CreateRunInputV1 } from '@local-creative-os/web-gen2';
 
 
@@ -9,6 +10,14 @@ export interface ComposerSubmissionInput {
   readonly instruction: string;
   readonly workspaceId: string;
   readonly target: LcosComposerTarget;
+  readonly refs: readonly CoreEntityRefLike[];
+}
+
+export interface ComposerContinuationSubmissionInput {
+  readonly conversationId: string;
+  readonly continuationOperationId: string;
+  readonly messageId: string;
+  readonly text: string;
   readonly refs: readonly CoreEntityRefLike[];
 }
 
@@ -41,4 +50,37 @@ export function canSubmitComposerTarget(
     workspaceId !== undefined &&
     target.receiverBlockedReason === undefined
   );
+}
+
+/**
+ * Continue has a narrower identity contract than delegate and deliberately
+ * does not require workspaceId. References are blocked until the continuation
+ * attach protocol exists; dropping them would make the user's draft lie.
+ */
+export function canSubmitComposerContinuation(
+  target: LcosComposerTarget,
+  instruction: string,
+  refs: readonly CoreEntityRefLike[],
+): boolean {
+  return (
+    target.intent === 'continue' &&
+    instruction.trim().length > 0 &&
+    target.receiverConversationId !== undefined &&
+    target.continuationOperationId !== undefined &&
+    target.messageId !== undefined &&
+    refs.length === 0 &&
+    target.receiverBlockedReason === undefined
+  );
+}
+
+export function buildComposerContinuationInput(
+  input: ComposerContinuationSubmissionInput,
+): CollaborationSendInputV1 {
+  return {
+    conversationId: input.conversationId,
+    text: input.text.trim(),
+    ...(input.refs.length === 0 ? {} : { targetRefs: input.refs.map((ref) => `${ref.entityType}:${ref.entityId}`) }),
+    continuationOperationId: input.continuationOperationId,
+    messageId: input.messageId,
+  };
 }

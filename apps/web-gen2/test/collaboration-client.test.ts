@@ -59,6 +59,41 @@ test('delegate 保持 canonical Run 路由，返回真实 receipt', async () => 
   });
 });
 
+test('send 走 connected conversation collaboration-send，保留 caller identities，绝不创建 Run', async () => {
+  const { http, calls } = stubHttp({
+    'POST http://core.test/projects/project-1/connected-conversations/conversation-1/collaboration-send': {
+      value: {
+        receipt: {
+          schemaVersion: 1,
+          command: 'send',
+          acceptedAt: '2026-09-20T00:00:00.000Z',
+          conversationId: 'conversation-1',
+          continuationOperationId: 'continuation-1',
+        },
+      },
+    },
+  });
+  const collaboration = new CoreCollaborationClient(http);
+  const result = await collaboration.send('project-1', {
+    conversationId: 'conversation-1',
+    continuationOperationId: 'continuation-1',
+    messageId: 'message-1',
+    text: '继续刚才的分析',
+  });
+
+  assert.equal(result.ok, true);
+  if (result.ok) assert.equal(result.receipt.continuationOperationId, 'continuation-1');
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0]?.url, `${BASE}/projects/project-1/connected-conversations/conversation-1/collaboration-send`);
+  assert.deepEqual(calls[0]?.body, {
+    conversationId: 'conversation-1',
+    continuationOperationId: 'continuation-1',
+    messageId: 'message-1',
+    text: '继续刚才的分析',
+  });
+  assert.equal(calls.some((call) => call.url.endsWith('/runs')), false);
+});
+
 test('delegate 409 → needs_recovery 产品错误（不泄 transport 细节）', async () => {
   const http = new HttpClient({
     baseUrl: BASE,
@@ -283,16 +318,22 @@ test('handoff：完整 receiver 切换事务未接通前 fail-closed，不把 pr
   assert.equal(calls.length, 0);
 });
 
-test('send/fork 永远 fail-closed：不发任何 HTTP，不 fallback createRun', async () => {
+test('send/fork 分开：send 走真实 continuation transport，fork 仍 fail-closed', async () => {
   const { http, calls } = stubHttp({});
   const collaboration = new CoreCollaborationClient(http);
-  const send = await collaboration.send('p-1', { conversationId: 'c-1', text: '你好' });
+  const send = await collaboration.send('p-1', {
+    conversationId: 'c-1',
+    continuationOperationId: 'op-send-1',
+    messageId: 'message-send-1',
+    text: '你好',
+  });
   const fork = await collaboration.fork('p-1', { operationId: 'op-fork-1', conversationId: 'c-1' });
   assert.equal(send.ok, false);
   assert.equal(fork.ok, false);
   if (!send.ok) assert.equal(send.error.code, 'unavailable');
   if (!fork.ok) assert.equal(fork.error.code, 'unavailable');
-  assert.equal(calls.length, 0);
+  assert.equal(calls.length, 1);
+  assert.match(calls[0]?.url ?? '', /collaboration-send$/);
 });
 
 test('subscribe：复用既有 /events SSE，run.changed → session.changed + timeline.appended', async () => {

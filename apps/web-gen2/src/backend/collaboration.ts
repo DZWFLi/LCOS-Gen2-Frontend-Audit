@@ -93,6 +93,16 @@ function unavailable(message: string): { readonly ok: false; readonly error: Col
   return { ok: false, error: collaborationProductErrorV1('unavailable', message) };
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null;
+}
+
+function isCollaborationCommandResult(value: unknown): value is CollaborationCommandResultV1 {
+  if (!isRecord(value) || typeof value.ok !== 'boolean') return false;
+  if (value.ok) return isRecord(value.receipt) && value.receipt.command === 'send';
+  return isRecord(value.error) && typeof value.error.userMessage === 'string';
+}
+
 export interface CollaborationSubscribeOptions {
   /** 断线重连续点（对应 SSE 路由的 lastSeenProjectSeq / runtimeId）。 */
   readonly lastSeenProjectSeq?: number;
@@ -572,14 +582,68 @@ export class CoreCollaborationClient {
   }
 
   // ------------------------------------------------------------------
-  // Fail-closed：无真实 transport 的动作（Track B 接通前保持不可用）。
+  // Live continuation transport
   // ------------------------------------------------------------------
 
-  /** send = 对当前 Conversation 再说一句。Huabu live send 未接线；禁止 fallback 到 createRun。 */
-  send(projectId: string, input: CollaborationSendInputV1): Promise<CollaborationCommandResultV1> {
-    void projectId;
-    void input;
-    return Promise.resolve(unavailable('「发送」通道尚未接通（该协作方式暂不支持直接追加消息）'));
+  /**
+   * send = 对当前 Conversation 再说一句。
+   *
+   * 这是 continuation 的独立 transport。它故意不调用 `delegate` /
+   * `CoreRunClient.createRun`：一次“继续当前会话”只能由 caller-owned
+   * continuationOperationId + messageId 去重并回到原 provider session。
+   */
+  async send(
+    projectId: string,
+    input: CollaborationSendInputV1,
+    signal?: AbortSignal,
+  ): Promise<CollaborationCommandResultV1> {
+    const sendInput = input as CollaborationSendInputV1 & {
+      readonly continuationOperationId: string;
+      readonly messageId: string;
+    };
+    try {
+      const value = await coreRequest<unknown>(
+        this.http,
+        'POST',
+        `/projects/${encodeURIComponent(projectId)}/connected-conversations/${encodeURIComponent(input.conversationId)}/collaboration-send`,
+        {
+          signal,
+          body: {
+            conversationId: input.conversationId,
+            continuationOperationId: sendInput.continuationOperationId,
+            messageId: sendInput.messageId,
+            text: input.text,
+            ...(input.targetRefs === undefined ? {} : { targetRefs: input.targetRefs }),
+          },
+        },
+      );
+
+      // The product route may already return a fully formed command result.
+      // Preserve its error/receipt semantics rather than guessing success.
+      if (isCollaborationCommandResult(value)) return value;
+
+      // Current Core send route returns a transport receipt payload. Normalize
+      // that one shape at this boundary so Huabu never knows provider details.
+      const response = isRecord(value) ? value : {};
+      const operationId = typeof response.continuationOperationId === 'string'
+        ? response.continuationOperationId
+        : typeof response.operationId === 'string'
+          ? response.operationId
+          : sendInput.continuationOperationId;
+      const returnedReceipt = isRecord(response.receipt) ? response.receipt : undefined;
+      if (returnedReceipt !== undefined && returnedReceipt.command === 'send') {
+        return {
+          ok: true,
+          receipt: returnedReceipt as unknown as CollaborationReceiptV1,
+        };
+      }
+      return receipt('send', {
+        conversationId: input.conversationId,
+        continuationOperationId: operationId,
+      });
+    } catch (error: unknown) {
+      return toProductError(error, '续聊发送失败');
+    }
   }
 
   /** fork = native full-history 分叉。无 authoritative probe；selected-context new 不冒充 fork。 */

@@ -266,7 +266,7 @@ export function composeLocalCoreServices(options: LocalCoreServerOptions = {}): 
       }
   const collaborationProjection = metadata === undefined || conversationIdentity === undefined
     ? undefined
-    : new CollaborationProjectionService(metadata, conversationIdentity, conversationContinuation, receiverRuntime, runtimeReviewService, collaborationCapabilityProbe)
+    : new CollaborationProjectionService(metadata, conversationIdentity, conversationContinuation, receiverRuntime, runtimeReviewService, collaborationCapabilityProbe, conversations)
   if (options.runtimeApplicationService !== undefined && sessionLifecycle !== undefined) {
     options.runtimeApplicationService.attachSessionLifecycle(sessionLifecycle)
   }

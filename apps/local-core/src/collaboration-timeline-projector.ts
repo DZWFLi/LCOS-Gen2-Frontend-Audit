@@ -5,12 +5,13 @@
  * 不新建 persisted Turn 表；item id 由来源 truth id 派生（可重建、可重放）。
  *
  * 诚实边界：
- * - live 会话的 user_message / agent_message 内容由 provider/Huabu 持有，Core 不复制；
- *   V1 只用 run.instruction 表达「用户发起的工作」（work_started）。
+ * - 已显式绑定 Conversation session 的 user_message / agent_message 从唯一
+ *   ConversationImportService 读取；未绑定的 live provider 内容仍诚实缺席。
  * - recovered 无可靠信号（journal 只存当前态），V1 不发射；恢复中 → progress。
  */
 
 import type {
+  ConversationMessageV1,
   ContinuationRecoveryProjectionV1,
   RunReview,
 } from '@local-creative-os/contracts'
@@ -18,6 +19,8 @@ import type { CollaborationTimelineItemV1 } from '@local-creative-os/contracts'
 import type { ArtifactReturn, Run } from '@local-creative-os/domain'
 
 export interface CollaborationTimelineFacts {
+  /** Messages from the explicitly linked canonical Conversation session. */
+  readonly messages?: readonly ConversationMessageV1[]
   /** 该会话的 Run（任意顺序，内部自行排序）。 */
   readonly runs: readonly Run[]
   /** 对应 Run 的复核视图（returns / inputRequest）。 */
@@ -45,6 +48,14 @@ export function projectCollaborationTimelineV1(
 ): CollaborationTimelineItemV1[] {
   const items: CollaborationTimelineItemV1[] = []
   const reviewByRunId = new Map(facts.reviews.map((review) => [String(review.run.id), review]))
+
+  for (const message of [...(facts.messages ?? [])].sort((a, b) => a.seq - b.seq)) {
+    if (message.role === 'user' && message.eventKind !== 'continuation_prompt_pending') {
+      items.push({ schemaVersion: 1, itemId: `message:${message.id}`, kind: 'user_message', occurredAt: message.createdAt, title: firstLine(message.contentText), body: message.contentText, refs: { messageId: message.id } })
+    } else if (message.role === 'assistant') {
+      items.push({ schemaVersion: 1, itemId: `message:${message.id}`, kind: 'agent_message', occurredAt: message.createdAt, title: firstLine(message.contentText), body: message.contentText, refs: { messageId: message.id } })
+    }
+  }
 
   const runs = [...facts.runs].sort((a, b) => a.createdAt.localeCompare(b.createdAt))
   for (const run of runs) {

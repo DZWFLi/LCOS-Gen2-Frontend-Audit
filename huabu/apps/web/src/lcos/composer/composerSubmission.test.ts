@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
 
-import { buildComposerRunInput, canSubmitComposerTarget } from './composerSubmission';
+import {
+  buildComposerContinuationInput,
+  buildComposerRunInput,
+  canSubmitComposerContinuation,
+  canSubmitComposerTarget,
+} from './composerSubmission';
 
 const target = (receiverConversationId?: string) => ({
   nodeId: 'conversation-work-view',
@@ -38,5 +43,37 @@ describe('shared Composer receiver mapping', () => {
 
     expect(payload.receiverRef).toEqual({ connectedConversationId: 'connected-B' });
     expect(JSON.stringify(payload)).not.toContain('connected-A');
+  });
+
+  it('continuation uses operation/message identity and does not require a workspace', () => {
+    const continuationTarget = {
+      ...target('connected-A'),
+      intent: 'continue' as const,
+      continuationOperationId: 'operation-A',
+      messageId: 'message-A',
+    };
+    expect(canSubmitComposerContinuation(continuationTarget, '继续', [])).toBe(true);
+    expect(buildComposerContinuationInput({
+      conversationId: 'connected-A',
+      continuationOperationId: 'operation-A',
+      messageId: 'message-A',
+      text: ' 继续 ',
+      refs: [],
+    })).toEqual({
+      conversationId: 'connected-A',
+      continuationOperationId: 'operation-A',
+      messageId: 'message-A',
+      text: '继续',
+    });
+  });
+
+  it('continuation refuses non-empty draft references instead of dropping them', () => {
+    const continuationTarget = {
+      ...target('connected-A'),
+      intent: 'continue' as const,
+      continuationOperationId: 'operation-A',
+      messageId: 'message-A',
+    };
+    expect(canSubmitComposerContinuation(continuationTarget, '继续', [{ entityType: 'artifact', entityId: 'a-1' }])).toBe(false);
   });
 });

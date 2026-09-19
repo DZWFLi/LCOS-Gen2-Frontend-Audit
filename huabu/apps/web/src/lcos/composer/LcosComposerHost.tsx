@@ -13,7 +13,12 @@ import {
 } from '@/components/Common/CanvasFloatingPopover';
 import { useCloseOnEscape } from '@/hooks/useCloseOnEscape';
 
-import { buildComposerRunInput, canSubmitComposerTarget } from './composerSubmission';
+import {
+  buildComposerContinuationInput,
+  buildComposerRunInput,
+  canSubmitComposerContinuation,
+  canSubmitComposerTarget,
+} from './composerSubmission';
 import { LcosReceiverIdentity } from './LcosReceiverIdentity';
 import { createLcosCoreSession } from '../app/lcosCoreClient';
 import { rectFromDomRect } from '../drop/dropTargetRegistry';
@@ -83,6 +88,16 @@ export function LcosComposerHost({
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const registerTarget = useLcosDropStore((s) => s.registerTarget);
   const unregisterTarget = useLcosDropStore((s) => s.unregisterTarget);
+  const isContinuation = composerTarget?.intent === 'continue';
+  const continuationBlockedReason = isContinuation
+    ? composerTarget?.receiverBlockedReason
+      ?? (draftRefs.length > 0 ? '续聊暂不支持携带当前上下文引用；请先移除引用' : undefined)
+      ?? (composerTarget?.receiverConversationId === undefined
+        ? '当前会话身份尚未解析，暂不能继续'
+        : composerTarget.continuationOperationId === undefined || composerTarget.messageId === undefined
+          ? '续聊操作尚未准备好，请从会话窗口重新打开'
+          : undefined)
+    : undefined;
 
   useCloseOnEscape(open, onClose);
 
@@ -122,31 +137,44 @@ export function LcosComposerHost({
 
   if (!open || (!inline && anchor === null) || projectId.length === 0) return null;
 
-  const canSubmit =
-    composerTarget !== null &&
-    state !== 'submitting' &&
-    canSubmitComposerTarget(composerTarget, text, workspaceId);
+  const canSubmit = composerTarget !== null && state !== 'submitting' && (
+    isContinuation
+      ? canSubmitComposerContinuation(composerTarget, text, draftRefs)
+      : canSubmitComposerTarget(composerTarget, text, workspaceId)
+  );
 
   const submit = async (): Promise<void> => {
-    if (!canSubmit || workspaceId === undefined || !composerTarget) return;
+    if (!canSubmit || !composerTarget) return;
     setState('submitting');
     setErrorDetail(undefined);
     setReceipt(null);
     const refs: readonly CoreEntityRefLike[] = draftRefs;
-    void collaboration
-      .delegate(projectId, buildComposerRunInput({
-        projectId,
-        instruction: text.trim(),
-        workspaceId,
-        target: composerTarget,
+    const request = isContinuation
+      ? collaboration.send(projectId, buildComposerContinuationInput({
+        conversationId: composerTarget.receiverConversationId as string,
+        continuationOperationId: composerTarget.continuationOperationId as string,
+        messageId: composerTarget.messageId as string,
+        text,
         refs,
       }))
+      : workspaceId === undefined
+        ? Promise.resolve({ ok: false as const, error: { userMessage: '现场未就绪（未解析到 workspace），暂不可提交' } })
+        : collaboration.delegate(projectId, buildComposerRunInput({
+          projectId,
+          instruction: text.trim(),
+          workspaceId,
+          target: composerTarget,
+          refs,
+        }));
+    void request
       .then((result) => {
         if (result.ok) {
           const runId = result.receipt.runId;
           setState('done');
           setReceipt(
-            runId !== undefined
+            isContinuation
+              ? '消息已发送 · 当前会话已继续'
+              : runId !== undefined
               ? `Run 已创建 · ${runId.slice(0, 12)}`
               : 'Run 已创建（回执未带 id，查阅 Main/运行节点）',
           );
@@ -180,13 +208,15 @@ export function LcosComposerHost({
       presentation={inline ? 'inline' : 'nearfield'}
       state={state === 'submitting' ? 'sending' : state === 'done' ? 'ready'
         : state === 'error' ? 'error'
-        : workspaceId === undefined || composerTarget?.receiverBlockedReason ? 'blocked'
+        : (isContinuation ? continuationBlockedReason !== undefined : workspaceId === undefined || composerTarget?.receiverBlockedReason) ? 'blocked'
         : text.length === 0 ? 'empty' : 'editing'}
       targetId={composerTarget?.nodeId}
       identity={composerTarget?.receiverConversationId ? (
         <LcosReceiverIdentity projectId={projectId} conversationId={composerTarget.receiverConversationId} size={inline ? 28 : 25} />
       ) : undefined}
-      title={`围绕「${composerTarget?.title ?? '当前对象'}」工作`}
+      title={isContinuation
+        ? `继续「${composerTarget?.title ?? '当前会话'}」`
+        : `围绕「${composerTarget?.title ?? '当前对象'}」工作`}
       references={draftRefs.map((ref) => ({
         key: `${ref.entityType}:${ref.entityId}`,
         label: referenceLabel(ref),
@@ -200,18 +230,25 @@ export function LcosComposerHost({
       onKeyDown={onKeyDown}
       onClose={onClose}
       canSubmit={canSubmit}
-      submitTitle={workspaceId === undefined
-        ? '现场未就绪（未解析到 workspace），暂不可提交'
-        : composerTarget?.receiverBlockedReason ?? '提交（Cmd/Ctrl+Enter）'}
+      submitTitle={isContinuation
+        ? continuationBlockedReason ?? '继续当前会话（Cmd/Ctrl+Enter）'
+        : workspaceId === undefined
+          ? '现场未就绪（未解析到 workspace），暂不可提交'
+          : composerTarget?.receiverBlockedReason ?? '提交（Cmd/Ctrl+Enter）'}
       onSubmit={() => void submit()}
       feedback={
-        workspaceId === undefined || composerTarget?.receiverBlockedReason
+        (isContinuation ? continuationBlockedReason !== undefined : workspaceId === undefined || composerTarget?.receiverBlockedReason)
           || state === 'submitting' || (state === 'done' && receipt) || state === 'error'
           ? (
             <>
-              {workspaceId === undefined && (
+              {!isContinuation && workspaceId === undefined && (
                 <div data-lcos-composer-blocked data-feedback-tone="error">
                   现场未就绪（未解析到 workspace），暂不可提交
+                </div>
+              )}
+              {isContinuation && continuationBlockedReason && (
+                <div data-lcos-composer-continuation-blocked data-feedback-tone="error">
+                  {continuationBlockedReason}
                 </div>
               )}
               {composerTarget?.receiverBlockedReason && (

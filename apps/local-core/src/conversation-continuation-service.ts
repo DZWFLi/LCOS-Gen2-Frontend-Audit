@@ -345,6 +345,7 @@ export class ConversationContinuationService {
     operationId: string,
     payload: ProviderSendPayloadV1,
     adapter: ContinuationProviderAdapterV1,
+    correlationId = operationId,
   ): Promise<ProviderContinuationOperationResultV1> {
     const row = this.metadata.getContinuationOperationJournal(projectId, operationId)
     if (row === undefined) throw new Error('Continuation operation not found.')
@@ -353,7 +354,7 @@ export class ConversationContinuationService {
       return {
         schemaVersion: 1,
         operationId,
-        correlationId: operationId,
+        correlationId,
         provider: row.provider,
         adapterId: adapter.adapterId,
         action: 'send',
@@ -369,13 +370,23 @@ export class ConversationContinuationService {
     }
     return adapter.send({
       operationId,
-      correlationId: operationId,
+      correlationId,
       provider: row.provider,
       runtimeScope: projectId,
       ...(row.runtimeThreadId === undefined ? {} : { threadId: row.runtimeThreadId }),
       externalSessionId,
       ...(row.externalEvidence?.transportSessionId === undefined ? {} : { transportSessionId: row.externalEvidence.transportSessionId }),
       payload,
+    })
+  }
+
+  /** Notify existing collaboration subscribers after a prompt turn is committed. */
+  publishTimelineAppended(projectId: string, connectedConversationId: string, messageId: string): void {
+    this.events.publish(projectId, {
+      channel: 'continuity',
+      type: 'continuity.changed',
+      entityRefs: [connectedConversationId, messageId],
+      payload: { kind: 'conversation.timeline_appended', connectedConversationId, messageId },
     })
   }
 

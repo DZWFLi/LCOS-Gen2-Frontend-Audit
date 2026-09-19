@@ -256,6 +256,13 @@ export function LcosActionArc(): React.JSX.Element | null {
           nodeId,
           title,
           anchor,
+          ...(ref?.entityType === 'conversation'
+            ? {
+                intent: 'continue' as const,
+                receiverConversationId: ref.entityId,
+                receiverBlockedReason: '请先在会话窗口确认可用的续聊 operation',
+              }
+            : { intent: 'delegate' as const }),
           ...(shell.activeWorkspaceId === null
             ? {}
             : { workspaceId: shell.activeWorkspaceId }),

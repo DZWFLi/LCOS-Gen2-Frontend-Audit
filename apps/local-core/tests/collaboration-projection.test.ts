@@ -142,10 +142,11 @@ describe('CollaborationProjectionService（Gate 2 read path）', () => {
     expect(session?.identity.title).toBe('协作目标会话')
   })
 
-  it('探测快照 send=true 时 canSend 才为 true；nativeFullHistoryFork unknown → canFork false', async () => {
+  it('探测快照 send=true 仍需存在该会话的已绑定 owner；nativeFullHistoryFork unknown → canFork false', async () => {
     const { projection, projectId, conversationId } = await setup({ snapshot: probedSnapshot(true) })
     const session = await projection.getSession(projectId, conversationId)
-    expect(session?.capabilities.canSend).toBe(true)
+    expect(session?.capabilities.canSend).toBe(false)
+    expect(session?.capabilityReasons?.canSend).toContain('owner')
     expect(session?.capabilities.canResume).toBe(true)
     expect(session?.capabilities.canFork).toBe(false)
     expect(session?.capabilities.canSelectedContext).toBe(true)

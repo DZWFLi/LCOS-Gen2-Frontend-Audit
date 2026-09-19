@@ -269,6 +269,162 @@ export class ConversationImportService {
     return this.completeImport(projectId, upload.id, { expectedChunks: 1, expectedContentHash: sha256(bytes) })
   }
 
+  /** Read a previously reserved/committed continuation turn without creating a provider side effect. */
+  getContinuationTurn(projectId: string, conversationId: string, messageId: string): { readonly status: 'pending' | 'complete'; readonly user: ConversationMessageV1; readonly assistant?: ConversationMessageV1 } | undefined {
+    if (this.#database.prepare('SELECT id FROM conversation_sessions WHERE id=? AND project_id=?').get(conversationId, projectId) === undefined) throw new Error('Conversation not found.')
+    const ids = this.#continuationMessageIds(messageId)
+    const rows = this.#database.prepare('SELECT * FROM conversation_messages WHERE id IN (?, ?) AND session_id=? ORDER BY seq').all(ids.userId, ids.assistantId, conversationId) as Row[]
+    if (rows.length === 0) return undefined
+    const userRow = rows.find((row) => String(row.id) === ids.userId)
+    const assistantRow = rows.find((row) => String(row.id) === ids.assistantId)
+    if (userRow === undefined) throw new Error('Continuation message idempotency record is incomplete.')
+    const user = this.#mapMessages([userRow])[0]!
+    if (assistantRow === undefined) {
+      if (user.eventKind !== 'continuation_prompt_pending') throw new Error('Continuation message idempotency record is incomplete.')
+      return { status: 'pending', user }
+    }
+    const assistant = this.#mapMessages([assistantRow])[0]!
+    if (user.eventKind !== 'user_message' || assistant.eventKind !== 'agent_message') throw new Error('Continuation message idempotency record is incomplete.')
+    return { status: 'complete', user, assistant }
+  }
+
+  /** Reserve the user prompt before crossing the provider boundary. This prevents a provider-success/Core-failure retry from sending twice. */
+  reserveContinuationPrompt(
+    projectId: string,
+    conversationId: string,
+    input: { readonly messageId: string; readonly userText: string; readonly occurredAt?: string },
+  ): { readonly status: 'reserved' | 'pending' | 'complete'; readonly user: ConversationMessageV1; readonly assistant?: ConversationMessageV1 } {
+    const messageId = input.messageId.trim()
+    const userText = input.userText.trim()
+    if (messageId.length < 1 || messageId.length > 200 || !userText) throw new Error('Continuation prompt requires messageId and userText.')
+    const existing = this.getContinuationTurn(projectId, conversationId, messageId)
+    if (existing !== undefined) {
+      if (existing.user.contentText !== userText) throw new Error('Continuation messageId was already used with different content.')
+      return existing.status === 'complete'
+        ? { status: 'complete', user: existing.user, ...(existing.assistant === undefined ? {} : { assistant: existing.assistant }) }
+        : { status: 'pending', user: existing.user }
+    }
+    const at = input.occurredAt ?? now()
+    const ids = this.#continuationMessageIds(messageId)
+    const nextSeq = Number((this.#database.prepare('SELECT COALESCE(MAX(seq)+1, 0) AS next_seq FROM conversation_messages WHERE session_id=?').get(conversationId) as Row).next_seq)
+    this.#database.exec('BEGIN IMMEDIATE;')
+    try {
+      const session = this.#database.prepare('SELECT id FROM conversation_sessions WHERE id=? AND project_id=?').get(conversationId, projectId)
+      if (session === undefined) throw new Error('Conversation not found.')
+      this.#database.prepare(`
+        INSERT INTO conversation_messages (
+          id, session_id, seq, role, event_kind, source_event_id, content_text, created_at,
+          tool_name, tool_call_json, file_refs_json, parent_id, pinned_as_decision,
+          decision_artifact_id, content_hash, embedding_input_hash, embedding_version
+        ) VALUES (?, ?, ?, 'user', 'continuation_prompt_pending', ?, ?, ?, NULL, NULL, '[]', NULL, 0, NULL, ?, ?, ?)
+      `).run(ids.userId, conversationId, nextSeq, `${messageId}:user`, userText, at, sha256(`user\n${userText}`), embeddingInputHash({ role: 'user', eventKind: 'continuation_prompt_pending', contentText: userText }), EMBEDDING_INDEX_VERSION)
+      this.#database.prepare('UPDATE conversation_sessions SET message_count=?, updated_at=? WHERE id=? AND project_id=?').run(nextSeq + 1, at, conversationId, projectId)
+      this.#database.exec('COMMIT;')
+    } catch (error: unknown) { this.#database.exec('ROLLBACK;'); throw error }
+    return { status: 'reserved', user: this.getContinuationTurn(projectId, conversationId, messageId)!.user }
+  }
+
+  /** Release only a locally reserved prompt after a provider-declared failure. Unknown outcomes keep the reservation. */
+  releaseContinuationPrompt(projectId: string, conversationId: string, messageId: string): boolean {
+    const ids = this.#continuationMessageIds(messageId.trim())
+    this.#database.exec('BEGIN IMMEDIATE;')
+    try {
+      const row = this.#database.prepare('SELECT event_kind FROM conversation_messages WHERE id=? AND session_id=?').get(ids.userId, conversationId) as Row | undefined
+      const assistant = this.#database.prepare('SELECT id FROM conversation_messages WHERE id=? AND session_id=?').get(ids.assistantId, conversationId)
+      if (row === undefined || String(row.event_kind) !== 'continuation_prompt_pending' || assistant !== undefined) {
+        this.#database.exec('ROLLBACK;')
+        return false
+      }
+      this.#database.prepare('DELETE FROM conversation_messages WHERE id=? AND session_id=?').run(ids.userId, conversationId)
+      const count = Number((this.#database.prepare('SELECT COUNT(*) AS count FROM conversation_messages WHERE session_id=?').get(conversationId) as Row).count)
+      this.#database.prepare('UPDATE conversation_sessions SET message_count=?, updated_at=? WHERE id=? AND project_id=?').run(count, now(), conversationId, projectId)
+      this.#database.exec('COMMIT;')
+      return true
+    } catch (error: unknown) { this.#database.exec('ROLLBACK;'); throw error }
+  }
+
+  /**
+   * Append one provider prompt turn to the already-linked canonical Conversation.
+   * The caller owns messageId and must reuse it after an uncertain transport result.
+   * No second turn store is introduced; the two rows are committed together.
+   */
+  appendContinuationTurn(
+    projectId: string,
+    conversationId: string,
+    input: { readonly messageId: string; readonly userText: string; readonly assistantText: string; readonly occurredAt?: string },
+  ): { readonly user: ConversationMessageV1; readonly assistant: ConversationMessageV1 } {
+    const session = this.#database.prepare('SELECT id FROM conversation_sessions WHERE id=? AND project_id=?').get(conversationId, projectId) as Row | undefined
+    if (session === undefined) throw new Error('Conversation not found.')
+    const messageId = input.messageId.trim()
+    if (messageId.length < 1 || messageId.length > 200) throw new Error('messageId must be a non-empty string within the length limit.')
+    const userText = input.userText.trim()
+    const assistantText = input.assistantText.trim()
+    if (!userText || !assistantText) throw new Error('Continuation turn requires user and assistant text.')
+    const at = input.occurredAt ?? now()
+    if (Number.isNaN(Date.parse(at))) throw new Error('Continuation turn occurredAt must be an ISO timestamp.')
+    const { userId, assistantId } = this.#continuationMessageIds(messageId)
+    const existing = this.#database.prepare('SELECT * FROM conversation_messages WHERE id IN (?, ?) AND session_id=? ORDER BY seq').all(userId, assistantId, conversationId) as Row[]
+    if (existing.length > 0) {
+      if (existing.length === 1 && String(existing[0]!.id) === userId && String(existing[0]!.event_kind) === 'continuation_prompt_pending') {
+        const user = this.#mapMessages(existing)[0]!
+        if (user.contentText !== userText) throw new Error('Continuation messageId was already used with different content.')
+        const nextSeq = Number(user.seq) + 1
+        this.#database.exec('BEGIN IMMEDIATE;')
+        try {
+          this.#database.prepare(`UPDATE conversation_messages SET event_kind='user_message' WHERE id=? AND session_id=?`).run(userId, conversationId)
+          this.#database.prepare(`
+            INSERT INTO conversation_messages (
+              id, session_id, seq, role, event_kind, source_event_id, content_text, created_at,
+              tool_name, tool_call_json, file_refs_json, parent_id, pinned_as_decision,
+              decision_artifact_id, content_hash, embedding_input_hash, embedding_version
+            ) VALUES (?, ?, ?, 'assistant', 'agent_message', ?, ?, ?, NULL, NULL, '[]', ?, 0, NULL, ?, ?, ?)
+          `).run(assistantId, conversationId, nextSeq, `${messageId}:assistant`, assistantText, at, userId, sha256(`assistant\n${assistantText}`), embeddingInputHash({ role: 'assistant', eventKind: 'agent_message', contentText: assistantText }), EMBEDDING_INDEX_VERSION)
+          this.#database.prepare('UPDATE conversation_sessions SET message_count=?, updated_at=? WHERE id=? AND project_id=?').run(nextSeq + 1, at, conversationId, projectId)
+          this.#database.exec('COMMIT;')
+        } catch (error: unknown) { this.#database.exec('ROLLBACK;'); throw error }
+        const rows = this.#database.prepare('SELECT * FROM conversation_messages WHERE id IN (?, ?) AND session_id=? ORDER BY seq').all(userId, assistantId, conversationId) as Row[]
+        const messages = this.#mapMessages(rows)
+        return { user: messages.find((message) => message.id === userId)!, assistant: messages.find((message) => message.id === assistantId)! }
+      }
+      if (existing.length !== 2) throw new Error('Continuation message idempotency record is incomplete.')
+      const user = existing.find((row) => String(row.id) === userId)
+      const assistant = existing.find((row) => String(row.id) === assistantId)
+      if (user === undefined || assistant === undefined || String(user.content_text) !== userText || String(assistant.content_text) !== assistantText) {
+        throw new Error('Continuation messageId was already used with different content.')
+      }
+      return { user: this.#mapMessages([user])[0]!, assistant: this.#mapMessages([assistant])[0]! }
+    }
+    const nextSeq = Number((this.#database.prepare('SELECT COALESCE(MAX(seq)+1, 0) AS next_seq FROM conversation_messages WHERE session_id=?').get(conversationId) as Row).next_seq)
+    const insert = this.#database.prepare(`
+      INSERT INTO conversation_messages (
+        id, session_id, seq, role, event_kind, source_event_id, content_text, created_at,
+        tool_name, tool_call_json, file_refs_json, parent_id, pinned_as_decision,
+        decision_artifact_id, content_hash, embedding_input_hash, embedding_version
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NULL, NULL, '[]', NULL, 0, NULL, ?, ?, ?)
+    `)
+    this.#database.exec('BEGIN IMMEDIATE;')
+    try {
+      insert.run(userId, conversationId, nextSeq, 'user', 'user_message', `${messageId}:user`, userText, at, sha256(`user\n${userText}`), embeddingInputHash({ role: 'user', eventKind: 'user_message', contentText: userText }), EMBEDDING_INDEX_VERSION)
+      insert.run(assistantId, conversationId, nextSeq + 1, 'assistant', 'agent_message', `${messageId}:assistant`, assistantText, at, sha256(`assistant\n${assistantText}`), embeddingInputHash({ role: 'assistant', eventKind: 'agent_message', contentText: assistantText }), EMBEDDING_INDEX_VERSION)
+      this.#database.prepare('UPDATE conversation_sessions SET message_count=?, updated_at=? WHERE id=? AND project_id=?')
+        .run(nextSeq + 2, at, conversationId, projectId)
+      this.#database.exec('COMMIT;')
+    } catch (error: unknown) {
+      this.#database.exec('ROLLBACK;')
+      throw error
+    }
+    const rows = this.#database.prepare('SELECT * FROM conversation_messages WHERE id IN (?, ?) AND session_id=? ORDER BY seq').all(userId, assistantId, conversationId) as Row[]
+    const messages = this.#mapMessages(rows)
+    const user = messages.find((message) => message.id === userId)
+    const assistant = messages.find((message) => message.id === assistantId)
+    if (user === undefined || assistant === undefined) throw new Error('Continuation turn commit could not be read back.')
+    return { user, assistant }
+  }
+
+  #continuationMessageIds(messageId: string): { readonly userId: string; readonly assistantId: string } {
+    return { userId: `continuation-message:${messageId}:user`, assistantId: `continuation-message:${messageId}:assistant` }
+  }
+
   async createImportSession(projectId: string, input: CreateConversationImportSessionInputV1): Promise<ConversationImportSessionV1> {
     if (this.#repository.getProject(projectId) === undefined) throw new Error('Project not found.')
     if (!['codex', 'manual'].includes(input.sourceKind)) throw new Error('当前版本只支持 Codex JSONL 和手动时间线；ChatGPT / Claude 解析器需要真实导出样本后接入。')
