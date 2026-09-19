@@ -181,7 +181,7 @@ test('resume：provider 从工程层会话查询回补，走 continuation submit
     'POST http://core.test/projects/p-1/conversation-continuations': { value: { created: true } },
   });
   const collaboration = new CoreCollaborationClient(http);
-  const result = await collaboration.resume('p-1', { conversationId: 'c-1' });
+  const result = await collaboration.resume('p-1', { operationId: 'op-resume-1', conversationId: 'c-1' });
   assert.equal(result.ok, true);
   assert.equal(calls.length, 2);
   const submit = calls[1];
@@ -195,7 +195,7 @@ test('resume：provider 从工程层会话查询回补，走 continuation submit
 test('resume：会话不存在 → unavailable，不发起 submit', async () => {
   const { http, calls } = stubHttp({ 'GET http://core.test/projects/p-1/connected-conversations': { value: [] } });
   const collaboration = new CoreCollaborationClient(http);
-  const result = await collaboration.resume('p-1', { conversationId: 'ghost' });
+  const result = await collaboration.resume('p-1', { operationId: 'op-resume-ghost', conversationId: 'ghost' });
   assert.equal(result.ok, false);
   if (!result.ok) assert.equal(result.error.code, 'unavailable');
   assert.equal(calls.length, 1);
@@ -287,7 +287,7 @@ test('send/fork 永远 fail-closed：不发任何 HTTP，不 fallback createRun'
   const { http, calls } = stubHttp({});
   const collaboration = new CoreCollaborationClient(http);
   const send = await collaboration.send('p-1', { conversationId: 'c-1', text: '你好' });
-  const fork = await collaboration.fork('p-1', { conversationId: 'c-1' });
+  const fork = await collaboration.fork('p-1', { operationId: 'op-fork-1', conversationId: 'c-1' });
   assert.equal(send.ok, false);
   assert.equal(fork.ok, false);
   if (!send.ok) assert.equal(send.error.code, 'unavailable');

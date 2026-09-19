@@ -487,18 +487,15 @@ export class CoreCollaborationClient {
       if (conversation === undefined) {
         return unavailable('要续走的会话不存在或已断开');
       }
-      const operationId = typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
-        ? crypto.randomUUID()
-        : `resume-${Date.now()}`;
       await this.continuations.submit(projectId, {
-        operationId,
+        operationId: input.operationId,
         mode: 'continue_existing',
         contextInheritance: 'inherit',
         checkout: 'shared',
         provider: conversation.provider,
         connectedConversationId: input.conversationId,
       }, signal);
-      return receipt('resume', { continuationOperationId: operationId, conversationId: input.conversationId });
+      return receipt('resume', { continuationOperationId: input.operationId, conversationId: input.conversationId });
     } catch (error: unknown) {
       return toProductError(error, '续走提交失败');
     }

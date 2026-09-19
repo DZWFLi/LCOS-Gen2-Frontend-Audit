@@ -160,9 +160,9 @@ describe('CollaborationCommandInputV1', () => {
     const inputs: readonly CollaborationCommandInputV1[] = [
       { kind: 'send', input: { conversationId: 'c-1', text: '继续' } },
       { kind: 'delegate', input: { projectId: 'p-1', instruction: '整理画布' } },
-      { kind: 'resume', input: { conversationId: 'c-1' } },
-      { kind: 'new_session', input: { conversationId: 'c-1' } },
-      { kind: 'fork', input: { conversationId: 'c-1' } },
+      { kind: 'resume', input: { operationId: 'op-resume-1', conversationId: 'c-1' } },
+      { kind: 'new_session', input: { operationId: 'op-new-1', conversationId: 'c-1' } },
+      { kind: 'fork', input: { operationId: 'op-fork-1', conversationId: 'c-1' } },
       { kind: 'handoff', input: { conversationId: 'c-1' } },
       { kind: 'answerInput', input: { pendingInputId: 'pi-1', answer: '是' } },
       { kind: 'approve', input: { returnId: 'r-1', decision: 'accept' } },

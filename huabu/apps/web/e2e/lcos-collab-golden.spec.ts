@@ -72,6 +72,29 @@ test('B. Work View：真实双击进入，identity/state 正确，无假 attenti
   await expect(page.locator('[data-lcos-recovery-section]').first()).toBeVisible({ timeout: 10_000 });
 });
 
+test('B1. Wave8 续工：无真实 gateway 时四动作全部 fail-close，native fork 显示真实原因，诊断仍可见', async ({ page }) => {
+  const continuationPosts: string[] = [];
+  page.on('request', (request) => {
+    if (request.method() === 'POST' && request.url().includes('/conversation-continuations')) continuationPosts.push(request.url());
+  });
+  await enterProject(page);
+  await openWorkView(page);
+  const actions = page.locator('[data-lcos-conversation-continuation] [data-lcos-continuation-action]');
+  await expect(actions, 'Work View 必须提供四种续工动作入口').toHaveCount(4);
+  for (const action of ['continue_existing', 'selected_context', 'blank_new', 'native_full_fork']) {
+    const button = page.locator(`[data-lcos-continuation-action="${action}"]`);
+    await expect(button, `${action} 无 gateway 能力时必须 disabled`).toBeDisabled();
+    await expect(button, `${action} 必须显示 fail-close 原因`).toHaveAttribute('title', /.+/);
+  }
+  const fork = page.locator('[data-lcos-continuation-action="native_full_fork"]');
+  expect(await fork.getAttribute('title')).toMatch(/分叉|native|探测|不算|不可用/);
+  await expect(page.locator('[data-lcos-continuation-receipt]')).toHaveCount(0);
+  expect(continuationPosts, 'disabled 入口不得提交 continuation').toHaveLength(0);
+
+  await page.locator('[data-lcos-diagnostics-toggle]').first().click();
+  await expect(page.locator('[data-lcos-recovery-section]').first(), '操作 journal / recovery 必须继续在 Diagnostics 可见').toBeVisible({ timeout: 10_000 });
+});
+
 test('C. Composer target = canonical conversation（无二次 Session 选择）', async ({ page }) => {
   await enterProject(page);
   await openWorkView(page);

@@ -263,6 +263,8 @@ export interface CollaborationDelegateInputV1 {
 }
 
 export interface CollaborationResumeInputV1 {
+  /** Caller-owned idempotency key; reuse it when a submit/recovery result is uncertain. */
+  readonly operationId: string
   readonly conversationId: string
 }
 
@@ -275,6 +277,8 @@ export interface CollaborationNewSessionInputV1 {
 }
 
 export interface CollaborationForkInputV1 {
+  /** Caller-owned idempotency key; reuse it if native fork submit has an uncertain outcome. */
+  readonly operationId: string
   readonly conversationId: string
 }
 
