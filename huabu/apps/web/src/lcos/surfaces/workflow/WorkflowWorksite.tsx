@@ -34,7 +34,7 @@ export function WorkflowHandOverlay({ projectId, open, onClose }: WorkflowHandOv
     <div data-lcos-workflow-hand className="lcos-workflow-hand-stage">
       <div className="lcos-workflow-hand-shell">
         <div className="lcos-workflow-hand-head">
-          <span>最近使用</span>
+          <span>工作流</span>
           <button type="button" aria-label="收回手牌" onClick={onClose} className="lcos-workflow-hand-close">
             <X className="h-[22px] w-[22px]" aria-hidden />
           </button>

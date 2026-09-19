@@ -5,7 +5,7 @@
 
 
 import { CoreAssemblyClient, HttpError } from '@local-creative-os/web-gen2';
-import { MessageCircle, PlusCircle, Search } from 'lucide-react';
+import { MessageCircle, PlusCircle } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 
 
@@ -105,7 +105,6 @@ export function WorkflowCardPool({ projectId }: { readonly projectId: string }):
   const [state, setState] = useState<'loading' | 'ready' | 'error'>('loading');
   const [errorDetail, setErrorDetail] = useState<string | undefined>(undefined);
   const [skillErrorDetail, setSkillErrorDetail] = useState<string | undefined>(undefined);
-  const [query, setQuery] = useState('');
   // 草稿引用 = 真实 presentation state（Selection ≠ Reference）；用于卡面「草稿中」
   const draftRefs = useLcosReferenceStore((s) => s.draft.orderedEntityRefs);
   const activeWorkspaceId = useLcosShellStore((s) => s.activeWorkspaceId);
@@ -141,11 +140,7 @@ export function WorkflowCardPool({ projectId }: { readonly projectId: string }):
     };
   }, [projectId, assembly, session]);
 
-  const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (q === '') return cards;
-    return cards.filter((card) => `${card.title} ${card.meta}`.toLowerCase().includes(q));
-  }, [cards, query]);
+  const filtered = cards;
 
   /**
    * 7 状态里生产可达的三种（其余 悬停/键盘焦点 由 CSS 表达；预览/已选目标 归属 R5）：
@@ -173,19 +168,6 @@ export function WorkflowCardPool({ projectId }: { readonly projectId: string }):
 
   return (
     <div data-lcos-workflow-pool className="lcos-workflow-hand-pool">
-      <div className="lcos-workflow-hand-search">
-        <label className="flex flex-1 items-center gap-2 rounded-xl px-3 py-2" style={{ background: lcosTokens.color.raised }}>
-          <Search className="h-4 w-4 shrink-0" style={{ color: lcosTokens.color.muted }} aria-hidden />
-          <input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="搜索工作流、材料或技能"
-            className="w-full bg-transparent text-sm outline-none"
-            style={{ color: lcosTokens.color.text }}
-          />
-        </label>
-      </div>
-
       {state === 'loading' && <div className="py-8"><LcosSurfaceFeedback presentation="loading" message="读取卡池…" /></div>}
       {state === 'error' && (
         <div className="py-8"><LcosSurfaceFeedback presentation="error" message={`卡池读取失败${errorDetail ? `（${errorDetail}）` : ''}`} /></div>
@@ -197,7 +179,7 @@ export function WorkflowCardPool({ projectId }: { readonly projectId: string }):
       )}
       {state === 'ready' && filtered.length === 0 && (
         <div className="py-8">
-          <LcosSurfaceFeedback presentation="empty" message={query ? '没有匹配项' : '还没有可取用的工作流、材料或技能'} />
+          <LcosSurfaceFeedback presentation="empty" message="还没有工作流卡片" />
         </div>
       )}
 
