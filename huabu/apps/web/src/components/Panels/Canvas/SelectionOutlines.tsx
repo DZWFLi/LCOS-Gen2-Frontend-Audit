@@ -2,7 +2,7 @@
 // Licensed under the MIT license.
 
 import { useStore, useViewport } from '@xyflow/react';
-import { useMemo } from 'react';
+import { useMemo, type CSSProperties } from 'react';
 import { createPortal } from 'react-dom';
 
 import {
@@ -11,6 +11,7 @@ import {
   type NestableNode,
 } from '@huabu/shared/canvas-engine';
 
+import { useResolvedNodeHostPresentation } from '@/lcos-seam/nodeBodySlot';
 import useCanvasStore from '@/store/canvasStore';
 import { useGesturePreviewStore } from '@/store/gesturePreviewStore';
 import {
@@ -53,6 +54,17 @@ export function selectOutlinedNodes(
  * `MultiSelectResizer`; this component draws the individual node
  * outlines on top of it.
  */
+/** Cosmetic companion to the existing body seam. Never filters or changes Selection. */
+function NodeSelectionOutline({ node, style }: { readonly node: CanvasNode; readonly style: CSSProperties }) {
+  const host = useResolvedNodeHostPresentation({
+    nodeId: node.id,
+    nodeType: node.type ?? '',
+    data: node.data as unknown as Readonly<Record<string, unknown>>,
+  });
+  if (host?.selectionFeedback === 'body') return null;
+  return <div data-native-selection-outline={node.id} className="pointer-events-none absolute z-998" style={style} />;
+}
+
 export const SelectionOutlines = () => {
   const nodes = useCanvasStore((s) => s.nodes);
   const nodeGeometryPreviews = useGesturePreviewStore(
@@ -103,9 +115,9 @@ export const SelectionOutlines = () => {
     const isSketch = n.type === 'sketch';
 
     return (
-      <div
+      <NodeSelectionOutline
         key={n.id}
-        className="pointer-events-none absolute z-998"
+        node={n}
         style={{
           left,
           top,

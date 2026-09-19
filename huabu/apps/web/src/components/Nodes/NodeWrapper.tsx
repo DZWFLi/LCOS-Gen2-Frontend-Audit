@@ -686,6 +686,7 @@ export const NodeWrapper = memo(
             onResizeStart={handleResizeStart}
             onResize={handleResize}
             onResizeEnd={handleResizeEnd}
+            handleClassName={hostPresentation?.selectionFeedback === 'body' ? 'lcos-body-resize-hit' : undefined}
             handleStyle={{
               width: isNotMouse ? 12 : 8,
               height: isNotMouse ? 12 : 8,
@@ -766,7 +767,7 @@ export const NodeWrapper = memo(
             // layer that is always on top regardless of node stacking.
             // Hover ring (only for non-sketch) stays here because it
             // tracks `:hover`, which the overlay cannot observe.
-            !selected && type !== 'sketch' && 'ring-edge-default hover:ring',
+            hostPresentation?.selectionFeedback !== 'body' && !selected && type !== 'sketch' && 'ring-edge-default hover:ring',
 
             nativeSurfaceEnabled && type !== 'sketch' && 'border-3 border-transparent',
             // Question nodes need visible overflow for status badges and progress bar
@@ -796,6 +797,7 @@ export const NodeWrapper = memo(
           }}
           data-lod={renderMode}
           data-lcos-host-surface={hostPresentation?.surface}
+          data-lcos-host-selection={hostPresentation?.selectionFeedback}
           onDoubleClick={onDoubleClick}
           onPointerEnter={() => setHovered(true)}
           onPointerLeave={() => setHovered(false)}

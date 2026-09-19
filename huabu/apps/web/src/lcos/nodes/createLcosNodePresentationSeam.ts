@@ -14,7 +14,13 @@ import { resolveLcosNodeHostPresentation, resolveNodeSpeciesFromFacts } from '@l
 import { useLcosReferenceStore } from '../lcosReferenceState';
 import { lcosNodeCardRegistry } from './lcosNodeCardRegistry';
 
-import type { CanvasNodeBodySeam, CanvasNodeBodySlotInput } from '@/lcos-seam/types';
+import type { CanvasNodeBodySeam, CanvasNodeBodySlotInput, CanvasNodeHostPresentation } from '@/lcos-seam/types';
+
+// Stable snapshot: useSyncExternalStore must not receive a fresh object on every read.
+const conversationHost = resolveLcosNodeHostPresentation({ entityType: 'conversation' });
+const conversationBodyHost: CanvasNodeHostPresentation | undefined = conversationHost === undefined
+  ? undefined
+  : { ...conversationHost, selectionFeedback: 'body' };
 
 export function createLcosNodePresentationSeam(): CanvasNodeBodySeam {
   return {
@@ -37,6 +43,7 @@ export function createLcosNodePresentationSeam(): CanvasNodeBodySeam {
     resolveHostPresentation(input: CanvasNodeBodySlotInput) {
       const ref = useLcosReferenceStore.getState().nodeEntityRefs.get(input.nodeId);
       if (!ref) return undefined;
+      if (ref.entityType === 'conversation') return conversationBodyHost;
       const descriptor = ref.descriptor;
       return resolveLcosNodeHostPresentation({
         entityType: ref.entityType,

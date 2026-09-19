@@ -42,6 +42,8 @@ export interface CanvasNodeHostPresentation {
   readonly surface: 'transparent' | 'paper' | 'media' | 'card';
   readonly showAiBadge: boolean;
   readonly allowOverflow: boolean;
+  /** Cosmetic outline only. Selection, hit testing and resize remain native. */
+  readonly selectionFeedback?: 'native' | 'body';
 }
 
 /**

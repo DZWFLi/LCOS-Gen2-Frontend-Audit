@@ -80,6 +80,7 @@ describe('createLcosNodePresentationSeam', () => {
       surface: 'transparent',
       showAiBadge: false,
       allowOverflow: true,
+      selectionFeedback: 'body',
     });
   });
 

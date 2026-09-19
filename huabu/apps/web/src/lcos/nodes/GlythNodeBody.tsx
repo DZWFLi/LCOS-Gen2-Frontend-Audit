@@ -1,33 +1,28 @@
 // GlythNodeBody — Conversation/Glyth exact Main anchor.
 // Figma visual truth: 5388:118 group 121×142; 5388:119 body 92×92 at x=9/y=0.
-// Donor geometry is retained, but production Main stays on the single dark blob
-// authorized by current Figma until identity variants are explicitly designed.
+// The uploaded donor renderer owns only body motion. Core/Collaboration,
+// Huabu geometry, drop callbacks and density retain their existing owners.
 
 import {
   glythInputFromCollaborationState,
   resolveGlythPresentation,
-  type GlythPresentationPose,
 } from '@local-creative-os/web-gen2';
+import { useEffect, useRef } from 'react';
 
 import { useLcosNodePresentation } from '@/lcos-seam/nodePresentation';
+import useCanvasStore from '@/store/canvasStore';
 
-import {
-  GLYTH_CENTER,
-  GLYTH_IDLE_EYE_PATHS,
-  GLYTH_SHAPE_PATHS,
-  GLYTH_VIEW_BOX,
-} from './glythGeometry';
 import { useLcosDensity } from './useLcosDensity';
+import { useCollaborationSession } from '../collaboration/useCollaborationSession';
 import { rectFromDomRect } from '../drop/dropTargetRegistry';
 import { useLcosDropStore } from '../lcosDropState';
-import { useCollaborationSession } from '../collaboration/useCollaborationSession';
 import { useLcosReferenceStore } from '../lcosReferenceState';
 import { useLcosShellStore } from '../shell/lcosShellStore';
+import { GlythBodyView } from '../ui/glyth/GlythBodyView';
 import { lcosTokens } from '../ui/lcosTokens';
 
-import type { CanvasNodeBodySlotInput } from '@/lcos-seam/types';
 import type { DropTargetRegistration } from '../drop/dropTypes';
-import { useEffect, useRef } from 'react';
+import type { CanvasNodeBodySlotInput } from '@/lcos-seam/types';
 import type { JSX } from 'react';
 
 function titleOf(data: Readonly<Record<string, unknown>>): string {
@@ -35,18 +30,9 @@ function titleOf(data: Readonly<Record<string, unknown>>): string {
   return typeof raw === 'string' && raw.trim() !== '' ? raw.trim() : 'Glyth';
 }
 
-function bodyPoseTransform(pose: GlythPresentationPose): string | undefined {
-  switch (pose) {
-    case 'listening': return 'translate(0 -2)';
-    case 'working': return `rotate(-2 ${GLYTH_CENTER} ${GLYTH_CENTER})`;
-    case 'curious': return `rotate(4 ${GLYTH_CENTER} ${GLYTH_CENTER})`;
-    case 'idle':
-    default: return undefined;
-  }
-}
-
 export function GlythNodeBody(input: CanvasNodeBodySlotInput): JSX.Element {
   const bodyRef = useRef<HTMLDivElement>(null);
+  const selected = useCanvasStore((state) => state.nodes.find((node) => node.id === input.nodeId)?.selected === true);
   const density = useLcosDensity();
   const presentation = useLcosNodePresentation();
   const ref = useLcosReferenceStore((state) => state.nodeEntityRefs.get(input.nodeId));
@@ -142,31 +128,16 @@ export function GlythNodeBody(input: CanvasNodeBodySlotInput): JSX.Element {
       className="relative h-full w-full overflow-visible"
       style={{ background: 'transparent', border: 0, boxShadow: 'none' }}
     >
-      <svg
-        data-lcos-glyth-vector
-        data-figma-node-id="5388:119"
-        viewBox={GLYTH_VIEW_BOX}
-        width={size}
-        height={size}
-        preserveAspectRatio="xMidYMid meet"
-        aria-hidden
-        style={{
-          position: 'absolute',
-          left,
-          top,
-          display: 'block',
-          overflow: 'visible',
-          color: lcosTokens.color.text,
-        }}
-      >
-        <g transform={bodyPoseTransform(pose)}>
-          <path d={GLYTH_SHAPE_PATHS.blob} fill="currentColor" />
-          <g data-lcos-glyth-eyes fill={lcosTokens.color.textOnInverse}>
-            <path d={GLYTH_IDLE_EYE_PATHS[0]} />
-            <path d={GLYTH_IDLE_EYE_PATHS[1]} />
-          </g>
-        </g>
-      </svg>
+      <GlythBodyView
+        pose={pose}
+        {...(projection?.userState === undefined ? {} : { userState: projection.userState })}
+        selected={selected}
+        mark={isMark}
+        paused={presentation?.phase === 'dragging' || presentation?.phase === 'resizing'}
+        size={size}
+        left={left}
+        top={top}
+      />
       {!isMark && (
         <span
           data-lcos-glyth-label
