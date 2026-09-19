@@ -14,9 +14,9 @@ import { createLcosCoreSession } from '../../app/lcosCoreClient';
 import { useLcosReferenceStore } from '../../lcosReferenceState';
 import { sameEntityRef } from '../../referenceBridge';
 import { useLcosShellStore } from '../../shell/lcosShellStore';
-import { LcosTaskCard, type LcosTaskCardState } from '../../ui/families';
 import { LcosSurfaceFeedback } from '../../ui/LcosSurfaceFeedback';
 import { lcosTokens } from '../../ui/lcosTokens';
+import { WorkflowTaskCardView, type WorkflowTaskCardVisualState } from '../../ui/workflow/WorkflowTaskCardView';
 
 import type { LcosComposerTarget } from '../../shell/lcosShellStore';
 import type { SkillCatalogEntryV1, WarehouseItemV1 } from '@local-creative-os/contracts';
@@ -32,6 +32,7 @@ export interface WorkflowHandCard {
   readonly source: 'warehouse' | 'skill';
   readonly lane: WorkflowHandCardLane;
   readonly conversationReceiver: boolean;
+  readonly previewUrl?: string;
 }
 
 export function toWorkflowHandCards(
@@ -47,6 +48,7 @@ export function toWorkflowHandCards(
     source: 'warehouse',
     lane: 'task',
     conversationReceiver: false,
+    ...(item.previewRef === undefined ? {} : { previewUrl: item.previewRef }),
   }));
   const materialCards = warehouse.filter(isWorkflowMaterialItem).map((item): WorkflowHandCard => ({
     cardId: `${item.kind}:${item.entityRef.id}`,
@@ -149,7 +151,7 @@ export function WorkflowCardPool({ projectId }: { readonly projectId: string }):
    * 7 状态里生产可达的三种（其余 悬停/键盘焦点 由 CSS 表达；预览/已选目标 归属 R5）：
    * 草稿中 = 该实体已在 Composer 草稿；不可用 = 没有可引用的实体身份；其余为静息。
    */
-  const cardState = (card: WorkflowHandCard): LcosTaskCardState => {
+  const cardState = (card: WorkflowHandCard): WorkflowTaskCardVisualState => {
     if (!card.entityId) return '不可用';
     const ref = { entityType: card.entityType, entityId: card.entityId };
     return draftRefs.some((x) => sameEntityRef(x, ref)) ? '草稿中' : '静息';
@@ -170,8 +172,8 @@ export function WorkflowCardPool({ projectId }: { readonly projectId: string }):
   };
 
   return (
-    <div data-lcos-workflow-pool className="flex h-full flex-col gap-3 p-4">
-      <div className="flex items-center gap-2">
+    <div data-lcos-workflow-pool className="lcos-workflow-hand-pool">
+      <div className="lcos-workflow-hand-search">
         <label className="flex flex-1 items-center gap-2 rounded-xl px-3 py-2" style={{ background: lcosTokens.color.raised }}>
           <Search className="h-4 w-4 shrink-0" style={{ color: lcosTokens.color.muted }} aria-hidden />
           <input
@@ -200,7 +202,7 @@ export function WorkflowCardPool({ projectId }: { readonly projectId: string }):
       )}
 
       {state === 'ready' && filtered.length > 0 && (
-        <div className="max-h-[46vh] space-y-4 overflow-y-auto pr-1">
+        <div className="lcos-workflow-hand-cards">
           {(['task', 'material', 'receiver'] as const).map((lane) => {
             const laneCards = filtered.filter((card) => card.lane === lane);
             if (laneCards.length === 0) return null;
@@ -212,29 +214,16 @@ export function WorkflowCardPool({ projectId }: { readonly projectId: string }):
                   {laneCards.map((card) => {
                     if (card.lane === 'task') {
                       return (
-                        <LcosTaskCard
+                        <WorkflowTaskCardView
                           key={card.cardId}
                           state={cardState(card)}
                           title={card.title || '未命名'}
-                          meta={`${card.meta} · 取用后未发送`}
-                          legacyWorkflowKind={card.source === 'skill' ? 'skill' : 'workflow'}
-                          footer={
-                            <button
-                              type="button"
-                              data-lcos-task-take
-                              data-lcos-card-source={card.source}
-                              data-lcos-card-entity={`${card.entityType}:${card.entityId}`}
-                              onClick={() => takeCard(card)}
-                              className="flex items-center gap-1 rounded-full px-2 py-1 text-[11px] font-medium"
-                              style={{ color: lcosTokens.color.text }}
-                              title="取用 → 加入 Composer 草稿（未发送）"
-                            >
-                              <PlusCircle className="h-3 w-3" aria-hidden /> 取用
-                            </button>
-                          }
-                        >
-                          <span data-lcos-card-preview className="text-[10px] opacity-60">{card.source === 'skill' ? '可引用技能' : '工作流装备'}</span>
-                        </LcosTaskCard>
+                          summary={`${card.meta} · 取用后未发送`}
+                          {...(card.previewUrl === undefined ? {} : { previewUrl: card.previewUrl })}
+                          dataSource={card.source}
+                          dataEntity={`${card.entityType}:${card.entityId}`}
+                          onUse={() => takeCard(card)}
+                        />
                       );
                     }
                     if (card.lane === 'material') {

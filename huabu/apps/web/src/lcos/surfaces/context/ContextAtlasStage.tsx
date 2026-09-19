@@ -5,7 +5,7 @@
 
 
 import { CoreAssemblyClient, HttpError } from '@local-creative-os/web-gen2';
-import { ArrowRight, CalendarDays, Layers, X } from 'lucide-react';
+import { ArrowRight, X } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { DropdownMenu, DropdownMenuItem } from '@/components/Common/DropdownMenu';
@@ -15,9 +15,10 @@ import { buildAtlasGroups, canAtlasLocate, isAtlasItem } from './contextAtlasSem
 import { createLcosCoreSession } from '../../app/lcosCoreClient';
 import { useLcosReferenceStore } from '../../lcosReferenceState';
 import { workspaceTargetsForItem } from '../../navigation/workspaceTargets';
-import { LcosCollectionSurface } from '../../ui/families';
+import { ContextCollectionView } from '../../ui/context/ContextCollectionView';
 import { LcosSurfaceFeedback } from '../../ui/LcosSurfaceFeedback';
-import { lcosGlassStyle, lcosTokens } from '../../ui/lcosTokens';
+import { lcosTokens } from '../../ui/lcosTokens';
+import '../../ui/context/context-spatial.css';
 
 import type { WarehouseItemV1 } from '@local-creative-os/contracts';
 import type { Workspace } from '@local-creative-os/domain';
@@ -74,82 +75,50 @@ export function ContextAtlasStage({ projectId, workspaces, onClose, onEnterSurfa
   const kindLabel = (item: WarehouseItemV1): string => item.kind === 'scene' ? '现场' : item.kind === 'collection' ? '集合' : 'Context';
 
   return (
-    <div data-lcos-context-atlas className="fixed inset-0 z-40 flex items-center justify-center p-12" style={{ background: 'rgba(250,250,250,0.86)', backdropFilter: 'blur(8px)' }}>
-      <div className="flex h-full w-full max-w-[1180px] flex-col rounded-2xl p-7" style={{ ...lcosGlassStyle, background: 'rgba(255,255,255,0.72)' }}>
-        <div className="mb-4 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span className="text-base font-semibold" style={{ color: lcosTokens.color.text }}>Context Atlas</span>
-            <span className="text-xs" style={{ color: lcosTokens.color.muted }}>Context 集合光幕 · 同身份实体</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              disabled
-              aria-disabled="true"
-              title="当前数据没有明确的事情组织字段"
-              className="flex items-center gap-1 rounded-full px-3 py-1.5 text-xs font-medium"
-              style={{ color: lcosTokens.color.muted, opacity: 0.55, cursor: 'not-allowed' }}
-            >
-              <Layers className="h-3.5 w-3.5" aria-hidden /> 事情（不可用）
-            </button>
-            <button
-              type="button"
-              disabled
-              aria-disabled="true"
-              title="当前数据没有明确的时间组织字段"
-              className="flex items-center gap-1 rounded-full px-3 py-1.5 text-xs font-medium"
-              style={{ color: lcosTokens.color.muted, opacity: 0.55, cursor: 'not-allowed' }}
-            >
-              <CalendarDays className="h-3.5 w-3.5" aria-hidden /> 时间（不可用）
-            </button>
-            <button type="button" aria-label="关闭 Atlas" onClick={onClose} className="rounded-full p-1.5" style={{ color: lcosTokens.color.muted }}>
-              <X className="h-4 w-4" />
-            </button>
-          </div>
+    <div data-lcos-context-atlas className="lcos-atlas-light-curtain">
+      <div className="lcos-atlas-light-curtain-inner">
+        <div className="lcos-atlas-light-curtain-head">
+          <span>{items.length} 个集合</span>
+          <button type="button" aria-label="收回 Atlas" onClick={onClose} className="lcos-atlas-close">
+            <X className="h-[22px] w-[22px]" aria-hidden />
+          </button>
         </div>
-
         {state === 'loading' && <div className="py-16"><LcosSurfaceFeedback presentation="loading" message="正在读取 Atlas…" /></div>}
         {state === 'error' && (
           <div className="py-16"><LcosSurfaceFeedback presentation="error" message={`Atlas 读取失败${errorDetail ? `（${errorDetail}）` : ''}`} /></div>
         )}
-
         {state === 'ready' && (
-          <div className="flex min-h-0 flex-1 flex-col gap-8 overflow-y-auto">
+          <div className="lcos-atlas-grid">
             {groups.map((group) => (
-              <section key={group.key}>
-                  <h4 className="mb-4 text-xs font-medium tracking-wide" style={{ color: lcosTokens.color.muted }}>
-                  {group.label}
-                </h4>
-                {/* Figma atlas：体块 248×244、列间 32（gap-8）；体块语言 = 族 Collection 5333:96 */}
-                <div className="flex flex-wrap gap-8">
+              <section key={group.key} style={{ display: 'contents' }}>
+                <div style={{ display: 'contents' }}>
                   {group.list.map((item) => {
                     const childTargets = workspaceTargetsForItem(item, workspaces);
                     return (
-                      <LcosCollectionSurface
+                      <ContextCollectionView
                         key={`${item.kind}:${item.entityRef.id}`}
-                        organize="未指定"
-                        rendition="总览"
                         title={item.title ?? '未命名'}
-                        meta={`${kindLabel(item)}${item.updatedAt ? ` · 更新时间 ${new Date(item.updatedAt).toLocaleDateString('zh-CN')}` : ''}`}
-                        legacyAtlasKind={item.kind}
-                        renderAs="div"
-                      >
-                        <span className="mt-auto flex items-center gap-2 text-xs" style={{ color: projected(item) || childTargets.length > 0 ? lcosTokens.color.info : lcosTokens.color.muted }}>
-                          {childTargets.length === 1 ? (
-                            <button type="button" disabled={!childTargets[0]?.canvasId} className="flex items-center gap-1 disabled:cursor-not-allowed disabled:opacity-50" onClick={() => { onEnterSurface(item, childTargets[0]); }}>
-                              进入现场 <ArrowRight className="h-3 w-3" aria-hidden />
-                            </button>
-                          ) : childTargets.length > 1 ? (
-                            <DropdownMenu trigger={<button type="button" className="flex items-center gap-1">选择现场 <ArrowRight className="h-3 w-3" aria-hidden /></button>}>
-                              {childTargets.map((workspace) => (
-                                <DropdownMenuItem key={String(workspace.id)} disabled={!workspace.canvasId} onClick={() => { onEnterSurface(item, workspace); }}>
-                                  {workspace.name}{workspace.canvasId ? '' : ' · 画布尚未就绪'}
-                                </DropdownMenuItem>
-                              ))}
-                            </DropdownMenu>
-                          ) : projected(item) ? <button type="button" className="flex items-center gap-1" onClick={() => { focusOnCanvas(item); }}>定位 <ArrowRight className="h-3 w-3" aria-hidden /></button> : item.kind === 'scene' ? '暂无可进入现场' : '当前现场不可用'}
-                        </span>
-                      </LcosCollectionSurface>
+                        organization="未指定"
+                        {...(item.previewRef === undefined ? {} : { previewUrl: item.previewRef })}
+                        disabled={!projected(item) && childTargets.length === 0}
+                        action={
+                          <span style={{ color: projected(item) || childTargets.length > 0 ? lcosTokens.color.info : lcosTokens.color.muted }}>
+                            {childTargets.length === 1 ? (
+                              <button type="button" aria-label={`进入 ${item.title ?? '集合'} 现场`} disabled={!childTargets[0]?.canvasId} onClick={() => { onEnterSurface(item, childTargets[0]); }}>
+                                <ArrowRight className="h-4 w-4" aria-hidden />
+                              </button>
+                            ) : childTargets.length > 1 ? (
+                              <DropdownMenu trigger={<button type="button" aria-label={`选择 ${item.title ?? '集合'} 的现场`}><ArrowRight className="h-4 w-4" aria-hidden /></button>}>
+                                {childTargets.map((workspace) => (
+                                  <DropdownMenuItem key={String(workspace.id)} disabled={!workspace.canvasId} onClick={() => { onEnterSurface(item, workspace); }}>
+                                    {workspace.name}{workspace.canvasId ? '' : ' · 画布尚未就绪'}
+                                  </DropdownMenuItem>
+                                ))}
+                              </DropdownMenu>
+                            ) : projected(item) ? <button type="button" aria-label={`定位 ${item.title ?? kindLabel(item)}`} onClick={() => { focusOnCanvas(item); }}><ArrowRight className="h-4 w-4" aria-hidden /></button> : <span aria-hidden>↗</span>}
+                          </span>
+                        }
+                      />
                     );
                   })}
                 </div>
