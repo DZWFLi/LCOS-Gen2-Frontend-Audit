@@ -69,7 +69,7 @@ const result = await runScenario({
       1,
       'Assembly 不得创建第二套专业窗口宿主',
     );
-    await h.page.locator('[data-lcos-window-icon-button]').click();
+    await h.page.locator('[data-lcos-window-icon-button][aria-label="关闭窗口"]').click();
     // The shared host intentionally remains mounted while empty and is hidden
     // for layout stability. Assert attachment plus the empty marker rather than
     // visibility; waiting for a visible node makes this contract fail on the
