@@ -16,17 +16,23 @@ import {
 import React from 'react';
 import { useEffect, useMemo, useRef } from 'react';
 
+import { toast } from '@/components/Common/Toast';
 import useCanvasStore from '@/store/canvasStore';
 
 import { createLcosCoreSession } from './app/lcosCoreClient';
 import { LcosComposerHost } from './composer/LcosComposerHost';
+import { DropCommitRouter } from './drop/dropCommitRouter';
+import { rectFromDomRect } from './drop/dropTargetRegistry';
+import { useLcosHostStore } from './host/lcosHostState';
 import { LcosDropPreview } from './LcosDropPreview';
 import { useLcosDropStore } from './lcosDropState';
-import { useLcosShellStore } from './shell/lcosShellStore';
-import { rectFromDomRect } from './drop/dropTargetRegistry';
-import { DropCommitRouter } from './drop/dropCommitRouter';
-import { useLcosReferenceStore } from './lcosReferenceState';
 import { advanceDropAtScreenPoint } from './lcosRecognizers';
+import { useLcosReferenceStore } from './lcosReferenceState';
+import { useLcosShellStore } from './shell/lcosShellStore';
+import {
+  importWorkflowArchiveDrop,
+  resolveWorkflowArchiveDrop,
+} from './surfaces/workflow/workflowArchiveDrop';
 
 import type {
   DropAssemblyApplyIntent,
@@ -56,6 +62,7 @@ export const LcosHostOverlay: React.FC = () => {
   const projectId = useLcosShellStore((state) => state.projectId);
   const activeSurface = useLcosShellStore((state) => state.activeSurface);
   const activeWorkspaceId = useLcosShellStore((state) => state.activeWorkspaceId);
+  const host = useLcosHostStore((state) => state.host);
   const composerOpen = useLcosShellStore((state) => state.composerOpen);
   const composerTarget = useLcosShellStore((state) => state.composerTarget);
   const closeComposer = useLcosShellStore((state) => state.closeComposer);
@@ -87,6 +94,58 @@ export const LcosHostOverlay: React.FC = () => {
     window.addEventListener('dragover', onDragOver);
     return () => window.removeEventListener('dragover', onDragOver);
   }, [canvasWrapper, rfInstance]);
+
+  // Portable Workflow archives need their Blob bytes, while the spatial-drop
+  // payload intentionally carries only file metadata. Capture this one native
+  // file gesture at the LCOS host boundary and route it straight to the
+  // canonical Core producer. No second store/card and no client-side ZIP parse.
+  useEffect(() => {
+    const onDrop = (event: DragEvent): void => {
+      if (activeSurface !== 'main' && activeSurface !== 'workflow') return;
+      const target = event.target;
+      if (!(target instanceof Element)) return;
+      const isReachableSurface = activeSurface === 'workflow'
+        ? target.closest('[data-lcos-workflow-worksite]') !== null
+        : target.closest('[data-canvas-root]') !== null;
+      if (!isReachableSurface) return;
+
+      const files = event.dataTransfer?.files;
+      if (files === undefined || files.length === 0) return;
+      const resolution = resolveWorkflowArchiveDrop(files);
+      if (resolution.status === 'ignored') return;
+
+      // Consume before any async work so the stock Canvas onDrop cannot turn
+      // a failed Workflow import into an unrelated Huabu file node.
+      event.preventDefault();
+      event.stopPropagation();
+      event.stopImmediatePropagation();
+
+      if (resolution.status === 'rejected') {
+        toast(resolution.reason, { tone: 'danger' });
+        return;
+      }
+      if (host === null) {
+        toast('工作流导入尚未就绪，请等待项目现场完成连接。', { tone: 'danger' });
+        return;
+      }
+
+      void importWorkflowArchiveDrop(resolution, host).then((outcome) => {
+        if (outcome.status === 'failed') {
+          toast(`工作流导入失败：${outcome.reason}`, { tone: 'danger' });
+          return;
+        }
+        toast(
+          outcome.receipt.created
+            ? '工作流已加入 Main 与 Assembly'
+            : '这个工作流已在项目中，已定位到现有定义',
+          { tone: 'success' },
+        );
+      });
+    };
+
+    window.addEventListener('drop', onDrop, true);
+    return () => window.removeEventListener('drop', onDrop, true);
+  }, [activeSurface, host]);
 
   // Canvas is a live target, not a hard-coded edge destination. Its semantic
   // target is derived from the active Core/Huabu identity; its rect is only
