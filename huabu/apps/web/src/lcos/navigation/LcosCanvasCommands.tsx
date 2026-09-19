@@ -13,10 +13,16 @@
 import {
   computeLocatorGeometry,
   fitBoundsWithInsets,
+  initialArrivalState,
+  initialLocatorState,
+  reduceArrivalState,
+  reduceLocatorState,
   type SafeInsets,
+  type ArrivalState,
+  type LocatorState,
 } from '@local-creative-os/web-gen2';
 import { useReactFlow, useViewport } from '@xyflow/react';
-import { useEffect, useRef } from 'react';
+import { useEffect, useReducer, useRef, useState } from 'react';
 
 
 import { focusNodesOnCanvas } from '@/components/Panels/CanvasLayerPanel/focusNodesOnCanvas';
@@ -42,6 +48,15 @@ const LOCATOR_SAFE_INSETS = {
   top: HUD_INSETS.top,
   bottom: HUD_INSETS.bottom,
 };
+
+const ARRIVAL_LIFETIME_MS = 720;
+
+interface ArrivalTarget {
+  readonly surface: ReturnType<typeof useLcosShellStore.getState>['activeSurface'];
+  readonly canvasId: string;
+  readonly nodeId: string;
+  readonly reqId: string;
+}
 
 interface Box {
   width: number;
@@ -113,6 +128,24 @@ export function LcosCanvasCommands(): React.JSX.Element {
   const nodeCount = useCanvasStore((s) => s.nodes.length);
   const rf = useReactFlow();
   const viewport = useViewport();
+  const [locatorState, dispatchLocator] = useReducer(
+    reduceLocatorState,
+    initialLocatorState,
+  );
+  const [arrivalState, dispatchArrival] = useReducer(
+    reduceArrivalState,
+    initialArrivalState,
+  );
+  const [arrivalTarget, setArrivalTarget] = useState<ArrivalTarget | null>(null);
+  const locateGeneration = useRef(0);
+  const arrivalTimer = useRef<number | null>(null);
+
+  const cancelArrivalTimer = (): void => {
+    if (arrivalTimer.current !== null) {
+      window.clearTimeout(arrivalTimer.current);
+      arrivalTimer.current = null;
+    }
+  };
 
   /** 安全取景：节点真实包围盒 + HUD 安全边距 + 可读性 zoom 上限。 */
   const fitWithHud = (duration = 0): void => {
@@ -210,18 +243,96 @@ export function LcosCanvasCommands(): React.JSX.Element {
   useEffect(() => {
     if (!locateRequest || locateRequest.surface !== activeSurface) return;
     if (locateRequest.canvasId && locateRequest.canvasId !== canvasId) return;
-    // 本现场内已投影：直接 focus 唯一 camera
-    if (locateRequest.nodeId && useCanvasStore.getState().nodes.some((node) => node.id === locateRequest.nodeId)) {
-      focusNodesOnCanvas(rf, [locateRequest.nodeId]);
+
+    const request = locateRequest;
+    const nodeId = request.nodeId;
+    const generation = locateGeneration.current + 1;
+    locateGeneration.current = generation;
+    cancelArrivalTimer();
+    dispatchLocator({ type: 'locate-requested' });
+    dispatchArrival({ type: 'travel-start' });
+    setArrivalTarget(
+      nodeId && canvasId
+        ? { surface: request.surface, canvasId, nodeId, reqId: request.reqId }
+        : null,
+    );
+
+    const nodePresent = nodeId !== undefined
+      && useCanvasStore.getState().nodes.some((node) => node.id === nodeId);
+    if (!nodePresent || nodeId === undefined) {
+      dispatchLocator({ type: request.status === 'unavailable' ? 'target-unavailable' : 'target-gone' });
+      dispatchArrival({ type: 'cancel' });
+      setArrivalTarget(null);
+      if (request.status !== 'unavailable') consumeLocate();
+      return;
     }
-    // Keep the request alive for the same camera settle window as the focus
-    // animation. The locator cue is rendered from this request; consuming it
-    // synchronously would make the cue disappear before the user can perceive
-    // where the object is travelling from.
-    const timer = window.setTimeout(() => consumeLocate(), 900);
-    return () => window.clearTimeout(timer);
+
+    let active = true;
+    const cancelForUserGesture = (): void => {
+      if (!active || locateGeneration.current !== generation) return;
+      active = false;
+      locateGeneration.current += 1;
+      cancelArrivalTimer();
+      dispatchLocator({ type: 'cancel' });
+      dispatchArrival({ type: 'cancel' });
+      setArrivalTarget(null);
+      // A user gesture wins over an in-flight camera request. Clear only the
+      // request this consumer started; a newer request must survive.
+      if (useLcosShellStore.getState().locateRequest?.reqId === request.reqId) {
+        consumeLocate();
+      }
+    };
+    const flowRoot = document.querySelector('.react-flow');
+    flowRoot?.addEventListener('pointerdown', cancelForUserGesture);
+    flowRoot?.addEventListener('wheel', cancelForUserGesture, { passive: true });
+    flowRoot?.addEventListener('touchstart', cancelForUserGesture, { passive: true });
+    void focusNodesOnCanvas(rf, [nodeId]).then((settled) => {
+      if (!active || locateGeneration.current !== generation) return;
+      if (!settled) {
+        dispatchLocator({ type: 'target-gone' });
+        dispatchArrival({ type: 'cancel' });
+        setArrivalTarget(null);
+        if (useLcosShellStore.getState().locateRequest?.reqId === request.reqId) {
+          consumeLocate();
+        }
+        return;
+      }
+
+      // The focus helper resolves from Huabu's setCenter promise. Arrival is
+      // therefore driven by the actual camera settle, never by a guessed
+      // timeout. The request remains alive until the target-local cue closes.
+      dispatchLocator({ type: 'camera-settled' });
+      dispatchArrival({ type: 'camera-settled' });
+      cancelArrivalTimer();
+      arrivalTimer.current = window.setTimeout(() => {
+        if (locateGeneration.current !== generation) return;
+        dispatchLocator({ type: 'arrival-done' });
+        dispatchArrival({ type: 'arrival-complete' });
+        setArrivalTarget(null);
+        consumeLocate();
+        arrivalTimer.current = null;
+      }, ARRIVAL_LIFETIME_MS);
+    });
+
+    return () => {
+      active = false;
+      flowRoot?.removeEventListener('pointerdown', cancelForUserGesture);
+      flowRoot?.removeEventListener('wheel', cancelForUserGesture);
+      flowRoot?.removeEventListener('touchstart', cancelForUserGesture);
+      locateGeneration.current += 1;
+      cancelArrivalTimer();
+      dispatchLocator({ type: 'cancel' });
+      dispatchArrival({ type: 'cancel' });
+      setArrivalTarget(null);
+    };
+    // The shell request is the existing locate command seam; all state below
+    // is transient presentation state owned by this canvas-local consumer.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [locateRequest?.reqId, activeSurface, canvasId]);
+  }, [locateRequest?.reqId, activeSurface, canvasId, rf]);
+
+  useEffect(() => () => {
+    cancelArrivalTimer();
+  }, []);
 
   return (
     <>
@@ -239,6 +350,9 @@ export function LcosCanvasCommands(): React.JSX.Element {
         canvasId={canvasId}
         rf={rf}
         viewport={viewport}
+        locatorState={locatorState}
+        arrivalState={arrivalState}
+        arrivalTarget={arrivalTarget}
       />
     </>
   );
@@ -250,22 +364,39 @@ function LcosLocatorCue({
   canvasId,
   rf,
   viewport,
+  locatorState,
+  arrivalState,
+  arrivalTarget,
 }: {
   readonly request: ReturnType<typeof useLcosShellStore.getState>['locateRequest'];
   readonly activeSurface: ReturnType<typeof useLcosShellStore.getState>['activeSurface'];
   readonly canvasId: string | null | undefined;
   readonly rf: ReturnType<typeof useReactFlow>;
   readonly viewport: ReturnType<typeof useViewport>;
+  readonly locatorState: LocatorState;
+  readonly arrivalState: ArrivalState;
+  readonly arrivalTarget: ArrivalTarget | null;
 }): React.JSX.Element | null {
-  if (!request || request.surface !== activeSurface) return null;
-  if (request.canvasId !== undefined && request.canvasId !== canvasId) return null;
+  const presentationRequest = request ?? (
+    arrivalTarget === null
+      ? null
+      : {
+          reqId: arrivalTarget.reqId,
+          surface: arrivalTarget.surface,
+          canvasId: arrivalTarget.canvasId,
+          nodeId: arrivalTarget.nodeId,
+          status: 'projected' as const,
+        }
+  );
+  if (!presentationRequest || presentationRequest.surface !== activeSurface) return null;
+  if (presentationRequest.canvasId !== undefined && presentationRequest.canvasId !== canvasId) return null;
 
   const root = document.querySelector('.react-flow');
   if (!(root instanceof HTMLElement)) return null;
   const rootRect = root.getBoundingClientRect();
   if (rootRect.width <= 0 || rootRect.height <= 0) return null;
 
-  if (request.status === 'unavailable') {
+  if (presentationRequest.status === 'unavailable' || locatorState.phase === 'unavailable') {
     return (
       <div
         data-lcos-locator="unavailable"
@@ -285,8 +416,8 @@ function LcosLocatorCue({
     );
   }
 
-  if (!request.nodeId) return null;
-  const internal = rf.getInternalNode(request.nodeId);
+  if (!presentationRequest.nodeId) return null;
+  const internal = rf.getInternalNode(presentationRequest.nodeId);
   if (!internal || internal.hidden) return null;
   const width = internal.measured.width ?? internal.width ?? internal.initialWidth ?? 280;
   const height = internal.measured.height ?? internal.height ?? internal.initialHeight ?? 200;
@@ -325,6 +456,28 @@ function LcosLocatorCue({
     edgeInset: 12,
     nearEdgeDistance: 72,
   });
+
+  if (arrivalState.phase === 'arriving' && arrivalTarget !== null) {
+    return (
+      <div
+        data-lcos-arrival="arriving"
+        data-lcos-arrival-node-id={arrivalTarget.nodeId}
+        role="status"
+        aria-label="已抵达目标"
+        className="lcos-static-pulse pointer-events-none fixed z-[65] rounded-xl"
+        style={{
+          left: targetRect.x,
+          top: targetRect.y,
+          width: targetRect.width,
+          height: targetRect.height,
+          border: `2px solid ${lcosTokens.color.accent}`,
+          boxShadow: `0 0 0 6px color-mix(in srgb, ${lcosTokens.color.accent} 18%, transparent)`,
+        }}
+      />
+    );
+  }
+
+  if (locatorState.phase === 'arriving' || locatorState.phase === 'hidden') return null;
   if (geometry.state === 'local') return null;
 
   const anchor = geometry.edgeAnchor ?? geometry.directionAnchor ?? geometry.targetCenter;

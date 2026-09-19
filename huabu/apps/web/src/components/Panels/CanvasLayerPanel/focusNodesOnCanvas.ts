@@ -141,12 +141,15 @@ export const focusNodesOnCanvas = (
   rfInstance: ReactFlowInstance,
   nodeIds: string[],
   duration = 800,
-): void => {
+): Promise<boolean> => {
   const bounds = getReliableNodeBounds(rfInstance, nodeIds);
-  if (!bounds) return;
+  if (!bounds) return Promise.resolve(false);
 
   const cx = bounds.x + bounds.width / 2;
   const cy = bounds.y + bounds.height / 2;
   const zoom = Math.min(rfInstance.getZoom(), 1);
-  void rfInstance.setCenter(cx, cy, { duration, zoom });
+  return rfInstance.setCenter(cx, cy, { duration, zoom }).then(
+    () => true,
+    () => false,
+  );
 };

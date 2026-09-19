@@ -6,6 +6,7 @@ import { describe, expect, it, vi } from 'vitest';
 import {
   anchorViewportCentre,
   fitNodesOnCanvas,
+  focusNodesOnCanvas,
   getReliableNodeBounds,
   revealBoundsInViewport,
 } from './focusNodesOnCanvas';
@@ -64,6 +65,23 @@ describe('reliable canvas node bounds', () => {
 
     await expect(fitNodesOnCanvas(instance, [])).resolves.toBe(false);
     expect(fitBounds).not.toHaveBeenCalled();
+  });
+
+  it('resolves only after Huabu camera settle and reports a missing target honestly', async () => {
+    const setCenter = vi.fn().mockResolvedValue(undefined);
+    const instance = {
+      getInternalNode: (id: string) => id === 'first' ? {
+        measured: {},
+        style: { width: 200, height: 120 },
+        internals: { positionAbsolute: { x: 1000, y: 500 } },
+      } : undefined,
+      getZoom: () => 0.8,
+      setCenter,
+    } as unknown as ReactFlowInstance;
+
+    await expect(focusNodesOnCanvas(instance, ['first'], 800)).resolves.toBe(true);
+    expect(setCenter).toHaveBeenCalledWith(1100, 560, { duration: 800, zoom: 0.8 });
+    await expect(focusNodesOnCanvas(instance, ['missing'])).resolves.toBe(false);
   });
 });
 
