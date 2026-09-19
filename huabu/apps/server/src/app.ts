@@ -17,6 +17,7 @@ import { setHostServerPort } from './host-port.js';
 import {
   acpAgentCliRoutes,
   acpAgentletRoutes,
+  acpContinuationTransportRoutes,
   acpProfilesRoutes,
   acpThreadsRoutes,
   externalAgentRuntimeConfigRoutes,
@@ -386,6 +387,7 @@ app.addHook('onListen', async () => {
 installAcpProfileCachePort();
 app.register(acpProfilesRoutes, { prefix: '/api/acp' });
 app.register(acpAgentletRoutes, { prefix: '/api/acp' });
+app.register(acpContinuationTransportRoutes, { prefix: '/api/acp' });
 app.register(acpAgentCliRoutes, { prefix: '/api/acp' });
 app.register(acpThreadsRoutes, { prefix: '/api/acp' });
 app.register(externalAgentRuntimeConfigRoutes, { prefix: '/api/acp' });
