@@ -5,7 +5,9 @@ import { SpacePreviewViewport } from '@/components/Nodes/spacePreview/SpacePrevi
 import useCanvasStore from '@/store/canvasStore';
 import { useSpacePreviewScene } from '@/store/spacePreviewSceneCache';
 
-import { LcosPortalPreview, type LcosPortalPreviewState } from '../ui/families';
+import { PortalPreviewView } from '../ui/professional/PortalPreviewView';
+
+import type { LcosPortalPreviewState } from '../ui/families';
 
 export interface PortalPreviewBodyProps {
   readonly projectId: string;
@@ -18,7 +20,7 @@ export function PortalPreviewBody({ target, targetKind }: PortalPreviewBodyProps
   if (!target || targetKind !== 'canvas') {
     return (
       <div className="p-4">
-        <LcosPortalPreview
+        <PortalPreviewView
           state="目标缺失"
           title="入口目标预览"
           detail={target ? '此对象尚未关联可预览的工作现场。' : '此入口尚未关联目标。'}
@@ -49,7 +51,7 @@ function CanvasTargetPreview({ canvasId }: { readonly canvasId: string }): React
 
   return (
     <div className="p-4">
-      <LcosPortalPreview
+      <PortalPreviewView
         state={state}
         title={matchingScene?.title || '入口目标预览'}
         detail={detail}
@@ -67,7 +69,7 @@ function CanvasTargetPreview({ canvasId }: { readonly canvasId: string }): React
           </div>
         )}
         {!matchingScene && error && <span className="px-4 text-xs">请稍后重试。</span>}
-      </LcosPortalPreview>
+      </PortalPreviewView>
     </div>
   );
 }

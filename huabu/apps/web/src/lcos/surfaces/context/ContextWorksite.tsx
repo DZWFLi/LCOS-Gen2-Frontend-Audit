@@ -14,7 +14,7 @@ import { beginChildWorksiteNavigation } from '../../navigation/childWorksiteNavi
 import { childSurfaceForItem, workspaceTargetsForItem } from '../../navigation/workspaceTargets';
 import { useLcosShellStore } from '../../shell/lcosShellStore';
 import { LcosWorksiteStage } from '../../shell/LcosWorksiteStage';
-import { lcosTokens } from '../../ui/lcosTokens';
+import '../../ui/context/context-spatial.css';
 
 import type { LcosSurfaceKey } from '../../shell/lcosShellStore';
 import type { WarehouseItemV1 } from '@local-creative-os/contracts';
@@ -94,19 +94,11 @@ export function ContextWorksite({
           type="button"
           data-lcos-context-instrument="atlas"
           onClick={() => setAtlasOpen(true)}
-          className="flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium"
-          style={{
-            background: 'rgba(252,252,252,0.86)',
-            backdropFilter: 'blur(18px) saturate(1.4)',
-            WebkitBackdropFilter: 'blur(18px) saturate(1.4)',
-            border: '1px solid rgba(0,0,0,0.09)',
-            boxShadow: '0 4px 12px rgba(40,48,58,0.075)',
-            minHeight: 44,
-            color: lcosTokens.color.text,
-          }}
+          className="lcos-context-instrument-trigger"
+          aria-label="打开集合总览 Atlas"
+          title="集合总览"
         >
           <Layers className="h-4 w-4" aria-hidden />
-          Atlas
         </button>
       </div>
 
