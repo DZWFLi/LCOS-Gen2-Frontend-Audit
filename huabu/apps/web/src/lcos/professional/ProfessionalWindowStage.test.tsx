@@ -24,6 +24,7 @@ let host: HTMLDivElement;
 let root: Root;
 beforeEach(() => {
   useLcosShellStore.getState().clear();
+  window.sessionStorage.clear();
   host = document.createElement('div'); document.body.append(host); root = createRoot(host);
 });
 afterEach(async () => { await act(async () => root.unmount()); host.remove(); });
@@ -48,6 +49,15 @@ it('renders every independent region and publishes every region as occupied', as
   expect(useLcosShellStore.getState().windowEnvironment?.activeRegionId).toBe(
     useLcosShellStore.getState().windowRegions[1]?.id,
   );
+});
+it('restores Reader artifact targets after a reload without changing Stage geometry ownership', async () => {
+  window.sessionStorage.setItem('lcos-reader-window-v1:p', JSON.stringify([
+    { artifactId: 'artifact-reload', title: '阅读 · Reload 材料' },
+  ]));
+  await act(async () => root.render(<ProfessionalWindowStage projectId="p" />));
+  expect(host.querySelector('[data-reader-artifact="artifact-reload"]')).not.toBeNull();
+  expect(useLcosShellStore.getState().windowRegions).toHaveLength(1);
+  expect(useLcosShellStore.getState().windowRegions[0]?.layout).toBe('floating');
 });
 it('closes the inline Composer first and keeps its Work View until the next Escape', async () => {
   const store = useLcosShellStore.getState();

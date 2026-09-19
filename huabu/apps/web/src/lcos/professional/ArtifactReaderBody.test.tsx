@@ -99,6 +99,7 @@ afterEach(() => {
   requestLocate.mockReset();
   setComposerPrompt.mockReset();
   nodeEntityRefs.clear();
+  window.sessionStorage.clear();
   vi.restoreAllMocks();
 });
 
@@ -251,5 +252,28 @@ describe('ArtifactReaderBody R4 residual', () => {
     const second = await renderMarkdown();
     expect(second.container.textContent).toContain('body:file-old');
     expect(second.container.querySelector('[data-lcos-reader-readonly]')).not.toBeNull();
+  });
+
+  it('阅读缩放与 Canvas zoom 分离，并把版本/位置/缩放写入 reload continuity', async () => {
+    const { container } = await renderMarkdown('artifact-zoom');
+    const content = container.querySelector<HTMLElement>('[data-lcos-reader-content="text"]');
+    expect(content).not.toBeNull();
+    if (content === null) return;
+    content.scrollTop = 180;
+    act(() => content.dispatchEvent(new Event('scroll', { bubbles: true })));
+    click(container, '[data-lcos-reader-zoom-in]');
+    expect(container.querySelector('[data-lcos-reader-zoom-value]')?.textContent).toBe('110%');
+    const stored = JSON.parse(window.sessionStorage.getItem('lcos-reader-continuity-v1:project-1:artifact-zoom') ?? '{}') as Record<string, unknown>;
+    expect(stored.revisionId).toBe('revision-current');
+    expect(stored.scrollTop).toBe(180);
+    expect(stored.zoom).toBe(110);
+  });
+
+  it('shows a truthful reader content failure when the canonical file record is unavailable', async () => {
+    detailFor.mockResolvedValue(detail('artifact-failure', 'revision-current'));
+    revisionsFor.mockResolvedValue([revision('artifact-failure', 'revision-current', 'file-failure')]);
+    textFor.mockRejectedValue(new Error('file record unavailable'));
+    const { container } = await render('artifact-failure');
+    expect(container.querySelector('[data-lcos-reader-content="error"]')?.textContent).toContain('file record unavailable');
   });
 });

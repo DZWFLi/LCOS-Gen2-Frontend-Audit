@@ -2,16 +2,16 @@
 // Stage 是唯一 Window topology + geometry producer；body 数据来自 Core。
 // 多个 window region 保持独立，只有显式 group 才共享 tab chrome。
 
-import { Columns2, Group, Pin, Ungroup, X } from 'lucide-react';
-import { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
-
-import { useCloseOnEscape } from '@/hooks/useCloseOnEscape';
-
 import {
   clampProfessionalRectV1,
   deriveProfessionalWindowEnvironmentV1,
   resizeProfessionalRectV1,
 } from '@local-creative-os/web-gen2';
+import { Columns2, Group, Pin, Ungroup, X } from 'lucide-react';
+import { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
+
+import { useCloseOnEscape } from '@/hooks/useCloseOnEscape';
+
 
 import { ArtifactReaderBody } from './ArtifactReaderBody';
 import { AssemblyBody } from './AssemblyBody';
@@ -69,6 +69,45 @@ function currentViewport(): ProfessionalRectV1 {
   };
 }
 
+interface PersistedReaderWindowV1 {
+  readonly artifactId: string;
+  readonly title: string;
+}
+
+const readerWindowStorageKey = (projectId: string): string => `lcos-reader-window-v1:${projectId}`;
+
+function readPersistedReaderWindows(projectId: string): readonly PersistedReaderWindowV1[] {
+  if (typeof window === 'undefined') return [];
+  try {
+    const raw = window.sessionStorage.getItem(readerWindowStorageKey(projectId));
+    if (raw === null) return [];
+    const parsed: unknown = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    return parsed.flatMap((value): PersistedReaderWindowV1[] => {
+      if (typeof value !== 'object' || value === null) return [];
+      const item = value as Record<string, unknown>;
+      return typeof item.artifactId === 'string' && item.artifactId !== '' && typeof item.title === 'string'
+        ? [{ artifactId: item.artifactId, title: item.title }]
+        : [];
+    });
+  } catch {
+    return [];
+  }
+}
+
+function persistReaderWindows(projectId: string, windows: readonly LcosWindow[]): void {
+  if (typeof window === 'undefined') return;
+  const readers = windows
+    .filter((entry) => entry.bodyKey === 'reader' && entry.target !== undefined && entry.target !== '')
+    .flatMap((entry) => entry.target === undefined ? [] : [{ artifactId: entry.target, title: entry.title }]);
+  try {
+    if (readers.length === 0) window.sessionStorage.removeItem(readerWindowStorageKey(projectId));
+    else window.sessionStorage.setItem(readerWindowStorageKey(projectId), JSON.stringify(readers));
+  } catch {
+    // Reload continuity is best-effort UI state; the in-memory shell store remains authoritative.
+  }
+}
+
 function materializeRegionEntries(
   windows: readonly LcosWindow[],
   windowRegions: readonly LcosWindowRegion[],
@@ -108,12 +147,14 @@ export function ProfessionalWindowStage({ projectId }: ProfessionalWindowStagePr
   const windowRegions = useLcosShellStore((s) => s.windowRegions);
   const activateWindow = useLcosShellStore((s) => s.activateWindow);
   const closeWindow = useLcosShellStore((s) => s.closeWindow);
+  const openWindow = useLcosShellStore((s) => s.openWindow);
   const publishWindowEnvironment = useLcosShellStore((s) => s.publishWindowEnvironment);
   const clearWindowEnvironment = useLcosShellStore((s) => s.clearWindowEnvironment);
   const composerOpen = useLcosShellStore((s) => s.composerOpen);
   const composerReceiver = useLcosShellStore((s) => s.composerTarget?.receiverConversationId);
   const [viewport, setViewport] = useState<ProfessionalRectV1>(currentViewport);
   const regionElements = useRef(new Map<string, HTMLDivElement>());
+  const restoredReaderProject = useRef<string | null>(null);
   const active = windows.find((window) => window.active) ?? windows[windows.length - 1];
   const regionEntries = useMemo(
     () => materializeRegionEntries(windows, windowRegions),
@@ -124,6 +165,23 @@ export function ProfessionalWindowStage({ projectId }: ProfessionalWindowStagePr
     : regionEntries.find((entry) => entry.region.windowIds.includes(active.id))?.region.id;
   const inlineComposerOpen = composerOpen && active?.bodyKey === 'conversation'
     && active.target !== undefined && composerReceiver === active.target;
+
+  // Reader target continuity is a shell UI concern; Stage remains the sole
+  // topology/geometry owner and recreates the usual floating region on reload.
+  useLayoutEffect(() => {
+    if (restoredReaderProject.current === projectId) {
+      persistReaderWindows(projectId, windows);
+      return;
+    }
+    restoredReaderProject.current = projectId;
+    if (windows.length > 0) {
+      persistReaderWindows(projectId, windows);
+      return;
+    }
+    for (const saved of readPersistedReaderWindows(projectId)) {
+      openWindow('reader', saved.title, saved.artifactId);
+    }
+  }, [openWindow, projectId, windows]);
   const placements = useMemo(() => {
     // 单区域且无用户几何/dock 时沿用既有 CSS 默认摆放（与 R2-A 行为逐字一致）。
     const hasExplicitGeometry = regionEntries.some((entry) =>
@@ -437,6 +495,8 @@ export function ProfessionalWindowStage({ projectId }: ProfessionalWindowStagePr
 
             {/* Figma 360×280 minimum includes the 48px chrome, so multi-region body floor is 232px. */}
             <div
+              data-lcos-window-body={activeWindow.bodyKey}
+              data-lcos-window-target={activeWindow.target}
               className={`${multiRegion ? 'min-h-[232px]' : 'min-h-[240px]'} flex-1 overflow-y-auto`}
               style={{ background: lcosTokens.color.canvas }}
             >

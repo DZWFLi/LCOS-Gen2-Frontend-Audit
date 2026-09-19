@@ -14,16 +14,17 @@
 // - 回到来源：按 Core identity 解析当前投影节点后 requestLocate —— 不依赖任何旧 rect。
 
 import { CoreArtifactClient, HttpError } from '@local-creative-os/web-gen2';
-import type { RevisionCompareResultV1 } from '@local-creative-os/web-gen2';
 import { FileImage, FileText } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-
 
 import { createLcosCoreSession } from '../app/lcosCoreClient';
 import { useLcosReferenceStore } from '../lcosReferenceState';
 import { useLcosShellStore } from '../shell/lcosShellStore';
 import { LcosSurfaceFeedback } from '../ui/LcosSurfaceFeedback';
 import { lcosTokens } from '../ui/lcosTokens';
+import { ReaderContentView } from '../ui/professional/ReaderContentView';
+
+import type { RevisionCompareResultV1 } from '@local-creative-os/web-gen2';
 
 export interface ArtifactReaderBodyProps {
   readonly projectId: string;
@@ -47,12 +48,60 @@ export function readerCitationBlockV1(trace: ReaderSourceTraceV1, excerpt: strin
 }
 
 /**
- * 阅读位续读（UI-only ephemera）：只记「读到哪一版、滚到哪」，按 project+artifact 隔离。
- * 它不是 Artifact/Revision 真值，也不落库；刷新即丢（沿用既有 UI continuity 语义）。
+ * 阅读位续读（UI-only ephemera）：只记「读到哪一版、滚到哪、阅读缩放」，按 project+artifact 隔离。
+ * 它不是 Artifact/Revision 真值，也不落库；仅写当前浏览器 session storage，Core 仍是内容真值。
  */
-interface ReaderContinuity { readonly revisionId: string; readonly scrollTop: number }
+interface ReaderContinuity {
+  readonly revisionId: string;
+  readonly scrollTop: number;
+  readonly zoom: number;
+}
 const readerContinuity = new Map<string, ReaderContinuity>();
 const continuityKey = (projectId: string, artifactId: string): string => `${projectId}:${artifactId}`;
+const READER_CONTINUITY_STORAGE_KEY = 'lcos-reader-continuity-v1';
+
+function readPersistedReaderContinuity(key: string): ReaderContinuity | undefined {
+  if (typeof window === 'undefined') return undefined;
+  try {
+    const raw = window.sessionStorage.getItem(`${READER_CONTINUITY_STORAGE_KEY}:${key}`);
+    if (raw === null) return undefined;
+    const parsed: unknown = JSON.parse(raw);
+    if (typeof parsed !== 'object' || parsed === null) return undefined;
+    const value = parsed as Record<string, unknown>;
+    if (typeof value.revisionId !== 'string' || typeof value.scrollTop !== 'number') return undefined;
+    const zoom = typeof value.zoom === 'number' && Number.isFinite(value.zoom) ? value.zoom : 100;
+    return {
+      revisionId: value.revisionId,
+      scrollTop: Math.max(0, value.scrollTop),
+      zoom: Math.min(175, Math.max(75, zoom)),
+    };
+  } catch {
+    return undefined;
+  }
+}
+
+function continuityFor(key: string): ReaderContinuity | undefined {
+  const inMemory = readerContinuity.get(key);
+  if (inMemory !== undefined) return inMemory;
+  const persisted = readPersistedReaderContinuity(key);
+  if (persisted !== undefined) readerContinuity.set(key, persisted);
+  return persisted;
+}
+
+function writeReaderContinuity(key: string, value: ReaderContinuity): void {
+  const normalized = {
+    ...value,
+    scrollTop: Math.max(0, value.scrollTop),
+    zoom: Math.min(175, Math.max(75, value.zoom)),
+  };
+  readerContinuity.set(key, normalized);
+  if (typeof window === 'undefined') return;
+  try {
+    window.sessionStorage.setItem(`${READER_CONTINUITY_STORAGE_KEY}:${key}`, JSON.stringify(normalized));
+  } catch {
+    // Session storage is an optional continuity enhancement; memory remains authoritative for this tab.
+  }
+}
 
 /** locate 请求 id；无 crypto.randomUUID 的环境（jsdom/旧内核）退化为时间戳。 */
 function nextLocateReqId(): string {
@@ -69,12 +118,18 @@ export function ArtifactReaderBody({ projectId, artifactId }: ArtifactReaderBody
   const [loadedRevisionId, setLoadedRevisionId] = useState<string | undefined>(undefined);
   const [content, setContent] = useState<{ kind: 'text'; value: string } | { kind: 'image'; url: string; mimeType: string } | null>(null);
   const [errorDetail, setErrorDetail] = useState<string | undefined>(undefined);
+  const [contentError, setContentError] = useState<string | undefined>(undefined);
+  const [contentLoading, setContentLoading] = useState(false);
   const [compare, setCompare] = useState<RevisionCompareResultV1 | null>(null);
   const [compareError, setCompareError] = useState<string | undefined>(undefined);
   const [compareBusy, setCompareBusy] = useState(false);
   const [lastTrace, setLastTrace] = useState<string | undefined>(undefined);
   const [note, setNote] = useState<string | undefined>(undefined);
   const contentRef = useRef<HTMLDivElement>(null);
+  const [readerZoom, setReaderZoom] = useState(() => {
+    if (artifactId === undefined) return 100;
+    return continuityFor(continuityKey(projectId, artifactId))?.zoom ?? 100;
+  });
 
   // 草稿引用镜像（只读）：draft 变化即重算数量。真值仍在 reference store。
   const draft = useLcosReferenceStore((s) => s.draft);
@@ -94,6 +149,7 @@ export function ArtifactReaderBody({ projectId, artifactId }: ArtifactReaderBody
     setLoadedRevisionId(undefined);
     setContent(null);
     setErrorDetail(undefined);
+    setContentError(undefined);
     setCompare(null);
     setCompareError(undefined);
     setNote(undefined);
@@ -106,7 +162,7 @@ export function ArtifactReaderBody({ projectId, artifactId }: ArtifactReaderBody
         }
         setDetail(value);
         // 重开续读：读回上次阅读的版本（仅当它仍存在于该材料的 revision 列表里）。
-        const remembered = readerContinuity.get(continuityKey(projectId, artifactId))?.revisionId;
+        const remembered = continuityFor(continuityKey(projectId, artifactId))?.revisionId;
         const stillListed = remembered !== undefined && value.revisions.some((r) => String(r.id) === remembered);
         setSelectedRevisionId(stillListed ? remembered : undefined);
         setState('ready');
@@ -125,6 +181,14 @@ export function ArtifactReaderBody({ projectId, artifactId }: ArtifactReaderBody
   const revisionIdToLoad = selectedRevisionId ?? detail?.currentRevisionId ?? detail?.revisions[0]?.id;
 
   useEffect(() => {
+    if (artifactId === undefined) {
+      setReaderZoom(100);
+      return;
+    }
+    setReaderZoom(continuityFor(continuityKey(projectId, artifactId))?.zoom ?? 100);
+  }, [artifactId, projectId]);
+
+  useEffect(() => {
     if (artifactId === undefined || revisionIdToLoad === undefined) return;
     if (detail === null) return;
     const controller = new AbortController();
@@ -133,12 +197,15 @@ export function ArtifactReaderBody({ projectId, artifactId }: ArtifactReaderBody
     void (async (): Promise<void> => {
       try {
         setContent(null);
+        setContentError(undefined);
+        setContentLoading(true);
         // The detail route intentionally returns only revision metadata. Read the
         // canonical revision to obtain its FileRecord identity before reading bytes.
         const revisions = await artifacts.listArtifactRevisions(artifactId);
         if (cancelled || controller.signal.aborted) return;
         const revision = revisions.find((candidate) => String(candidate.id) === String(revisionIdToLoad));
         if (revision === undefined || String(revision.artifactId) !== String(artifactId)) {
+          setContentError('该版本没有可读取的 canonical file record。');
           setLoadedRevisionId(String(revisionIdToLoad));
           return;
         }
@@ -159,7 +226,9 @@ export function ArtifactReaderBody({ projectId, artifactId }: ArtifactReaderBody
         setLoadedRevisionId(String(revision.id));
       } catch (error: unknown) {
         if (controller.signal.aborted) return;
-        setErrorDetail(error instanceof HttpError ? `${error.message} (${error.status})` : String(error));
+        setContentError(error instanceof HttpError ? `${error.message} (${error.status})` : String(error));
+      } finally {
+        if (!cancelled && !controller.signal.aborted) setContentLoading(false);
       }
     })();
     return () => {
@@ -177,25 +246,40 @@ export function ArtifactReaderBody({ projectId, artifactId }: ArtifactReaderBody
     if (artifactId === undefined || loadedRevisionId === undefined) return;
     const node = contentRef.current;
     if (node === null) return;
-    const saved = readerContinuity.get(continuityKey(projectId, artifactId));
+    const saved = continuityFor(continuityKey(projectId, artifactId));
     node.scrollTop = saved !== undefined && saved.revisionId === loadedRevisionId ? saved.scrollTop : 0;
   }, [artifactId, loadedRevisionId, projectId, content]);
 
   const rememberScroll = useCallback((event: React.UIEvent<HTMLDivElement>): void => {
     if (artifactId === undefined || loadedRevisionId === undefined) return;
-    readerContinuity.set(continuityKey(projectId, artifactId), {
+    writeReaderContinuity(continuityKey(projectId, artifactId), {
       revisionId: loadedRevisionId,
       scrollTop: event.currentTarget.scrollTop,
+      zoom: readerZoom,
     });
-  }, [artifactId, loadedRevisionId, projectId]);
+  }, [artifactId, loadedRevisionId, projectId, readerZoom]);
 
   // 重开续读的另一半：载入某一版就先记住「读到哪一版」，滚动再细化位置。
   // 只在版本变化时写，避免把已保存的滚动位置抹成 0。
   useEffect(() => {
     if (artifactId === undefined || loadedRevisionId === undefined) return;
     const key = continuityKey(projectId, artifactId);
-    if (readerContinuity.get(key)?.revisionId === loadedRevisionId) return;
-    readerContinuity.set(key, { revisionId: loadedRevisionId, scrollTop: 0 });
+    const current = continuityFor(key);
+    if (current?.revisionId === loadedRevisionId) return;
+    writeReaderContinuity(key, { revisionId: loadedRevisionId, scrollTop: 0, zoom: readerZoom });
+  }, [artifactId, loadedRevisionId, projectId, readerZoom]);
+
+  const updateReaderZoom = useCallback((next: number): void => {
+    const normalized = Math.min(175, Math.max(75, Math.round(next / 5) * 5));
+    setReaderZoom(normalized);
+    if (artifactId === undefined || loadedRevisionId === undefined) return;
+    const key = continuityKey(projectId, artifactId);
+    const current = continuityFor(key);
+    writeReaderContinuity(key, {
+      revisionId: loadedRevisionId,
+      scrollTop: current?.scrollTop ?? contentRef.current?.scrollTop ?? 0,
+      zoom: normalized,
+    });
   }, [artifactId, loadedRevisionId, projectId]);
 
   const runCompare = useCallback((): void => {
@@ -302,10 +386,10 @@ export function ArtifactReaderBody({ projectId, artifactId }: ArtifactReaderBody
   const isHistorical = loadedRevisionId !== undefined && currentRevisionId !== undefined && loadedRevisionId !== currentRevisionId;
 
   return (
-    <div data-lcos-reader className="flex h-full flex-col gap-3 p-5" style={{ minHeight: 320 }}>
-      <div className="flex items-start justify-between gap-3">
+    <div data-lcos-reader className="lcos-reader-body">
+      <div className="lcos-reader-heading">
         <div className="min-w-0">
-          <h3 className="truncate text-base font-semibold" style={{ color: lcosTokens.color.text }}>
+          <h3 className="lcos-reader-title" style={{ color: lcosTokens.color.text }}>
             {detail.artifact.title ?? '未命名'}
           </h3>
           <p className="mt-0.5 break-all text-xs" style={{ color: lcosTokens.color.muted }}>
@@ -340,7 +424,18 @@ export function ArtifactReaderBody({ projectId, artifactId }: ArtifactReaderBody
         fileName={fileName}
         contentRef={contentRef}
         onScroll={rememberScroll}
+        zoom={readerZoom}
+        loading={contentLoading}
+        error={contentError}
       />
+
+      <div data-lcos-reader-zoom className="flex items-center gap-2 text-[11px]" style={{ color: lcosTokens.color.muted }}>
+        <span>阅读缩放</span>
+        <button type="button" data-lcos-reader-zoom-out aria-label="缩小正文" onClick={() => updateReaderZoom(readerZoom - 10)} disabled={readerZoom <= 75}>−</button>
+        <span data-lcos-reader-zoom-value>{readerZoom}%</span>
+        <button type="button" data-lcos-reader-zoom-in aria-label="放大正文" onClick={() => updateReaderZoom(readerZoom + 10)} disabled={readerZoom >= 175}>＋</button>
+        <button type="button" data-lcos-reader-zoom-reset onClick={() => updateReaderZoom(100)}>重置</button>
+      </div>
 
       {/* R4：revision 浏览 / 切换 */}
       {detail.revisions.length > 1 && (
@@ -373,7 +468,7 @@ export function ArtifactReaderBody({ projectId, artifactId }: ArtifactReaderBody
       )}
 
       {/* R4：动作行（引用 / 摘录 / 对比 / 回到来源） */}
-      <div className="flex flex-wrap items-center gap-2">
+      <div data-lcos-reader-actions className="flex flex-wrap items-center gap-2">
         <button
           type="button"
           data-lcos-reader-to-draft
@@ -461,39 +556,33 @@ function ReaderContent({
   fileName,
   contentRef,
   onScroll,
+  zoom,
+  loading,
+  error,
 }: {
   content: { kind: 'text'; value: string } | { kind: 'image'; url: string; mimeType: string } | null;
   kind: string;
   fileName: string;
   contentRef: React.RefObject<HTMLDivElement | null>;
   onScroll: (event: React.UIEvent<HTMLDivElement>) => void;
+  zoom: number;
+  loading: boolean;
+  error?: string;
 }): React.JSX.Element {
-  if (content?.kind === 'text') {
-    return (
-      <div
-        ref={contentRef}
-        onScroll={onScroll}
-        data-lcos-reader-content="text"
-        className="min-h-0 flex-1 overflow-auto rounded-xl p-5"
-        style={{ background: lcosTokens.color.surface, border: `1px solid ${lcosTokens.color.borderSubtle}` }}
-      >
-        <pre className="whitespace-pre-wrap break-words text-sm leading-6" style={{ color: lcosTokens.color.text }}>{content.value}</pre>
-      </div>
-    );
-  }
-  if (content?.kind === 'image') {
-    return (
-      <div data-lcos-reader-content="image" className="flex min-h-0 flex-1 items-center justify-center overflow-auto rounded-xl p-4" style={{ background: lcosTokens.color.surface, border: `1px solid ${lcosTokens.color.borderSubtle}` }}>
-        <img src={content.url} alt={fileName} className="max-h-full max-w-full object-contain" />
-        <span className="sr-only">{content.mimeType}</span>
-      </div>
-    );
-  }
   return (
-    <div data-lcos-reader-content="unavailable" className="flex flex-1 flex-col items-center justify-center gap-3 rounded-xl p-6" style={{ background: lcosTokens.color.surface, border: `1px solid ${lcosTokens.color.borderSubtle}` }}>
-      {kind === 'image' ? <FileImage className="h-6 w-6" style={{ color: lcosTokens.color.muted }} aria-hidden /> : <FileText className="h-6 w-6" style={{ color: lcosTokens.color.muted }} aria-hidden />}
-      <span className="text-sm" style={{ color: lcosTokens.color.muted }}>{fileName ?? '材料'} · {String(kind)} 暂无可用正文读取通道</span>
-    </div>
+    <ReaderContentView
+      content={content}
+      kind={kind}
+      fileName={fileName}
+      contentRef={contentRef}
+      onScroll={onScroll}
+      zoom={zoom}
+      loading={loading}
+      error={error}
+      unavailableGlyph={kind === 'image'
+        ? <FileImage className="h-6 w-6" style={{ color: lcosTokens.color.muted }} aria-hidden />
+        : <FileText className="h-6 w-6" style={{ color: lcosTokens.color.muted }} aria-hidden />}
+    />
   );
 }
 

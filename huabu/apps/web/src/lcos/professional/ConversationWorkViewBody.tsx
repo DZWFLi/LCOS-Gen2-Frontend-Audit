@@ -25,8 +25,25 @@ import { LcosComposerHost } from '../composer/LcosComposerHost';
 import { useLcosShellStore } from '../shell/lcosShellStore';
 import { LcosSurfaceFeedback } from '../ui/LcosSurfaceFeedback';
 import { lcosTokens } from '../ui/lcosTokens';
+import { ConversationEventView } from '../ui/professional/ConversationEventView';
+import { ConversationIdentityView } from '../ui/professional/ConversationIdentityView';
 
+import type { LcosComposerTarget } from '../shell/lcosShellStore';
 import type { CollaborationDiagnosticsV1, CollaborationTimelineItemV1, CollaborationUserStateV1 } from '@local-creative-os/contracts';
+
+/**
+ * Conversation owns only its own composer intents. An Assembly-originated
+ * intent remains mounted by Assembly even when its receiver is this session.
+ */
+export function conversationComposerOwnsTarget(
+  composerOpen: boolean,
+  composerTarget: Pick<LcosComposerTarget, 'nodeId' | 'receiverConversationId'> | null,
+  connectedConversationId: string | undefined,
+): boolean {
+  return composerOpen
+    && composerTarget?.receiverConversationId === connectedConversationId
+    && composerTarget?.nodeId.startsWith('assembly:') !== true;
+}
 
 export interface ConversationWorkViewBodyProps {
   readonly projectId: string;
@@ -102,8 +119,11 @@ export function ConversationWorkViewBody({
     );
   }
 
-  const workComposerOpen =
-    composerOpen && composerTarget?.receiverConversationId === connectedConversationId;
+  const workComposerOpen = conversationComposerOwnsTarget(
+    composerOpen,
+    composerTarget,
+    connectedConversationId,
+  );
 
   const userState = projection?.userState;
   const hasPendingInput = projection?.activity.pendingInputId !== undefined;
@@ -114,40 +134,14 @@ export function ConversationWorkViewBody({
   const sendReason = projection?.capabilityReasons?.canSend;
 
   return (
-    <div data-lcos-conversation-work-view className="flex flex-col gap-4 p-4">
+    <div data-lcos-conversation-work-view className="lcos-conversation-body">
       {/* Header：projection 身份 + 用户态 + capability 驱动动作 */}
-      <section
-        data-lcos-conversation-header
-        className="flex flex-col gap-2 rounded-xl p-3"
-        style={{ background: lcosTokens.color.surface, border: `1px solid ${lcosTokens.color.borderSubtle}` }}
-      >
-        <div className="flex items-center gap-2">
-          <span
-            aria-hidden
-            className="flex h-7 w-7 items-center justify-center rounded-full text-[11px] font-bold"
-            style={{ background: lcosTokens.color.inverse, color: lcosTokens.color.textOnInverse }}
-          >
-            <User className="h-3.5 w-3.5" />
-          </span>
-          <div className="min-w-0">
-            <div className="truncate text-sm font-semibold" style={{ color: lcosTokens.color.text }}>
-              {projection?.identity.title ?? connectedConversationId}
-            </div>
-            {projection?.identity.subtitle !== undefined && (
-              <div className="truncate text-[10px]" style={{ color: lcosTokens.color.muted }}>
-                {projection.identity.subtitle}
-              </div>
-            )}
-          </div>
-          <span
-            data-lcos-conversation-user-state
-            className="ml-auto rounded-full px-2 py-0.5 text-[10px]"
-            style={{ background: lcosTokens.color.raised, color: lcosTokens.color.text }}
-          >
-            {userState === undefined ? '状态读取中…' : USER_STATE_LABEL[userState]}
-          </span>
-          {/* R4 §7 target continuity：只把共享 Assembly 的 live targetRef 更新为当前会话，
-              不创建 ConversationAssembly，也不新开第二窗口。 */}
+      <ConversationIdentityView
+        title={projection?.identity.title ?? connectedConversationId}
+        {...(projection?.identity.subtitle === undefined ? {} : { subtitle: projection.identity.subtitle })}
+        stateLabel={userState === undefined ? '状态读取中…' : USER_STATE_LABEL[userState]}
+        identity={<User className="h-3.5 w-3.5" />}
+        actions={
           <button
             type="button"
             data-lcos-conversation-open-assembly
@@ -159,7 +153,8 @@ export function ConversationWorkViewBody({
           >
             <Boxes className="h-3.5 w-3.5" aria-hidden />
           </button>
-        </div>
+        }
+      >
         {projection?.recovery !== undefined && projection.recovery.state !== 'none' && (
           <div className="text-[11px]" style={{ color: lcosTokens.color.pinAmber }}>
             {projection.recovery.userMessage ?? '需要恢复'}
@@ -170,7 +165,7 @@ export function ConversationWorkViewBody({
             {sendReason ?? '当前协作方式暂不支持直接追加消息'}
           </div>
         )}
-      </section>
+      </ConversationIdentityView>
 
       {/* Timeline / Work Events */}
       <section className="flex flex-col gap-2" data-lcos-conversation-timeline>
@@ -184,25 +179,22 @@ export function ConversationWorkViewBody({
           timeline.map((item) => {
             const meta = TIMELINE_KIND_META[item.kind];
             return (
-              <div
+              <ConversationEventView
                 key={item.itemId}
-                data-lcos-timeline-item={item.kind}
-                className="flex items-center gap-2 rounded-xl px-3 py-2"
-                style={{ background: lcosTokens.color.surface, border: `1px solid ${lcosTokens.color.borderSubtle}` }}
-              >
-                <meta.Icon
-                  className="h-3.5 w-3.5 shrink-0"
-                  style={{ color: item.kind === 'error' ? lcosTokens.color.danger : item.kind === 'input_required' ? lcosTokens.color.pinAmber : lcosTokens.color.muted }}
-                  aria-hidden
-                />
-                <div className="min-w-0 flex-1">
-                  <div className="truncate text-sm" style={{ color: lcosTokens.color.text }}>{item.title}</div>
-                  {item.body !== undefined && (
-                    <div className="truncate text-[11px]" style={{ color: lcosTokens.color.muted }}>{item.body}</div>
-                  )}
-                </div>
-                <span className="shrink-0 text-[10px]" style={{ color: lcosTokens.color.muted }}>{meta.label}</span>
-              </div>
+                kind={item.kind}
+                title={item.title}
+                {...(item.body === undefined ? {} : { body: item.body })}
+                label={meta.label}
+                presentation={item.kind === 'user_message' || item.kind === 'agent_message' ? 'message' : 'activity'}
+                tone={item.kind === 'error' ? 'danger' : item.kind === 'input_required' ? 'attention' : 'neutral'}
+                icon={
+                  <meta.Icon
+                    className="h-3.5 w-3.5 shrink-0"
+                    style={{ color: item.kind === 'error' ? lcosTokens.color.danger : item.kind === 'input_required' ? lcosTokens.color.pinAmber : lcosTokens.color.muted }}
+                    aria-hidden
+                  />
+                }
+              />
             );
           })
         )}

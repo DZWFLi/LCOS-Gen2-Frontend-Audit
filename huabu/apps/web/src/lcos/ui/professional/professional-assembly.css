@@ -1,0 +1,89 @@
+/* Figma C01 5346:1416. Current Source Bay + CSS columns retained; Lovart is behavior-only evidence. */
+.lcos-assembly-body {
+  container-type: inline-size;
+  box-sizing: border-box;
+  min-inline-size: 0;
+  inline-size: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 24px 32px;
+  color: var(--gen2-text);
+  background: var(--gen2-surface);
+  font-family: 'Noto Sans SC', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+.lcos-assembly-source-tabs { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; min-inline-size: 0; }
+.lcos-assembly-source-buttons { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.lcos-assembly-source-buttons button {
+  min-inline-size: 44px;
+  min-block-size: 44px;
+  padding: 8px 12px;
+  border: 0;
+  border-radius: var(--lcos-radius-control, 8px);
+  color: var(--gen2-muted);
+  background: transparent;
+  font: inherit;
+  font-size: 12px;
+  line-height: 18px;
+  cursor: pointer;
+  transition: background 120ms ease, color 120ms ease;
+}
+.lcos-assembly-source-buttons button:hover:not(:disabled) { background: var(--gen2-raised); color: var(--gen2-text); }
+.lcos-assembly-source-buttons button[aria-pressed='true'] { background: var(--lcos-color-bg-inverse); color: var(--lcos-color-text-on-inverse); }
+.lcos-assembly-source-buttons button:disabled { opacity: 0.45; cursor: not-allowed; }
+.lcos-assembly-target-context { flex: 1 1 100%; min-inline-size: 0; overflow-wrap: anywhere; font-size: 11px; line-height: 18px; color: var(--gen2-muted); }
+.lcos-assembly-body [data-lcos-assembly-source-panel] { min-inline-size: 0; }
+.lcos-assembly-body form { flex-wrap: wrap; }
+.lcos-assembly-body form label { min-inline-size: 120px; }
+.lcos-assembly-body [data-lcos-assembly-search] { min-inline-size: 0; inline-size: 100%; font-size: 14px; line-height: 20px; }
+.lcos-assembly-masonry { column-width: 216px; column-gap: 24px; inline-size: 100%; }
+.lcos-assembly-item {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  break-inside: avoid;
+  box-sizing: border-box;
+  position: relative;
+  margin-block-end: 24px;
+  min-inline-size: 0;
+  padding: 10px;
+  border: 1px solid transparent;
+  border-radius: var(--lcos-radius-medium, 16px);
+  background: transparent;
+  color: var(--gen2-text);
+  transition: border-color 120ms ease, box-shadow 120ms ease;
+}
+.lcos-assembly-item:hover, .lcos-assembly-item:focus-within, .lcos-assembly-item[data-visual-active='true'] {
+  border-color: var(--lcos-color-border-subtle, var(--gen2-border));
+  box-shadow: var(--lcos-shadow-default);
+}
+.lcos-assembly-item[data-referenced='true']::before { content: ''; position: absolute; inset-inline-start: 3px; inset-block-start: 14px; inline-size: 2px; block-size: 18px; border-radius: 1px; background: var(--gen2-accent); }
+.lcos-assembly-material-view { inline-size: 100%; min-inline-size: 0; }
+.lcos-assembly-preview-image { display: block; inline-size: 100%; block-size: auto; border-radius: 12px; }
+.lcos-assembly-preview-excerpt { margin: 0; padding: 16px; border-radius: 2px; background: var(--lcos-main-paper, var(--gen2-surface)); font-size: 14px; line-height: 23px; white-space: pre-wrap; overflow-wrap: anywhere; }
+.lcos-assembly-preview-unavailable { display: flex; align-items: center; gap: 12px; padding: 12px 2px; min-block-size: 48px; color: var(--gen2-muted); }
+.lcos-assembly-material-glyph { inline-size: 24px; block-size: 24px; display: inline-flex; flex: 0 0 auto; }
+.lcos-assembly-preview-reason { display: flex; flex-direction: column; gap: 4px; font-size: 12px; line-height: 18px; }
+.lcos-assembly-preview-reason small { font-size: 10px; line-height: 16px; }
+.lcos-assembly-item [data-lcos-assembly-actions] { flex-wrap: wrap; }
+.lcos-assembly-item [data-lcos-assembly-actions] button, .lcos-assembly-item [data-lcos-assembly-more] { min-block-size: 44px; }
+.lcos-assembly-item [data-lcos-assembly-more] { opacity: 0.75; transition: opacity 120ms ease; }
+.lcos-assembly-item:hover [data-lcos-assembly-more], .lcos-assembly-item:focus-within [data-lcos-assembly-more] { opacity: 1; }
+.lcos-assembly-body :is(button, a, input):focus-visible { outline: 2px solid var(--gen2-accent); outline-offset: 2px; }
+.lcos-assembly-body [data-lcos-assembly-preview] { overflow-wrap: anywhere; }
+@container (max-width: 460px) {
+  .lcos-assembly-masonry { column-count: 1; }
+}
+@media (max-width: 480px) {
+  .lcos-assembly-body { padding-inline: 16px; }
+}
+@media (hover: none), (pointer: coarse) {
+  .lcos-assembly-item [data-lcos-assembly-more] { opacity: 1; }
+  .lcos-assembly-item [data-lcos-assembly-actions] { display: flex; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .lcos-assembly-item, .lcos-assembly-item [data-lcos-assembly-more], .lcos-assembly-source-buttons button { transition: none; }
+}
+@media (forced-colors: active) {
+  .lcos-assembly-item, .lcos-assembly-source-buttons button { border: 1px solid ButtonText; }
+}

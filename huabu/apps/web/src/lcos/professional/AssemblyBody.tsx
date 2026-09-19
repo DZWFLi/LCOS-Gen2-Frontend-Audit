@@ -24,15 +24,20 @@ import { DropdownMenu, DropdownMenuItem, DropdownMenuSubmenu } from '@/component
 import useCanvasStore from '@/store/canvasStore';
 
 import { createLcosCoreSession } from '../app/lcosCoreClient';
-import { acquireDrop } from '../lcosRecognizers';
+import { LcosComposerHost } from '../composer/LcosComposerHost';
 import { useLcosDropStore } from '../lcosDropState';
+import { acquireDrop } from '../lcosRecognizers';
 import { useLcosReferenceStore } from '../lcosReferenceState';
+import { assemblySourceRefOf } from './assemblySourceRef';
 import { childSurfaceForItem, workspaceTargetsForItem } from '../navigation/workspaceTargets';
 import { useLcosShellStore } from '../shell/lcosShellStore';
 import { LcosSurfaceFeedback } from '../ui/LcosSurfaceFeedback';
 import { lcosTokens } from '../ui/lcosTokens';
-import { assemblySourceRefOf } from './assemblySourceRef';
+import { AssemblyMasonryView } from '../ui/professional/AssemblyMasonryView';
+import { AssemblyMaterialView } from '../ui/professional/AssemblyMaterialView';
+import { AssemblySourceTabsView } from '../ui/professional/AssemblySourceTabsView';
 
+import type { LcosComposerTarget } from '../shell/lcosShellStore';
 import type {
   AssemblyApplyItemResultV1,
   AssemblyApplyResultV1,
@@ -45,6 +50,17 @@ import type {
   WarehouseItemV1,
 } from '@local-creative-os/contracts';
 import type { Workspace } from '@local-creative-os/domain';
+
+/**
+ * The body that opened a Composer intent is its only presentation owner.
+ * Assembly intents are identifiable without adding another shell truth field.
+ */
+export function assemblyComposerOwnsTarget(
+  composerOpen: boolean,
+  composerTarget: Pick<LcosComposerTarget, 'nodeId'> | null,
+): boolean {
+  return composerOpen && composerTarget !== null && composerTarget.nodeId.startsWith('assembly:');
+}
 
 const KIND_LABEL: Readonly<Record<WarehouseEntityKindV1, string>> = {
   artifact: '材料',
@@ -319,6 +335,9 @@ export function AssemblyBody({
   const activeWorkspaceId = useLcosShellStore((s) => s.activeWorkspaceId);
   const beginChildNavigation = useLcosShellStore((s) => s.beginChildNavigation);
   const openWindow = useLcosShellStore((s) => s.openWindow);
+  const composerOpen = useLcosShellStore((s) => s.composerOpen);
+  const composerTarget = useLcosShellStore((s) => s.composerTarget);
+  const closeComposer = useLcosShellStore((s) => s.closeComposer);
   const referencedRefs = useLcosReferenceStore((s) => s.draft.orderedEntityRefs);
 
   const controller = useMemo(
@@ -422,6 +441,22 @@ export function AssemblyBody({
       entityType: item.kind,
       entityId: item.entityRef.id,
       ...(item.title === undefined ? {} : { displayLabel: item.title }),
+    });
+
+    // Assembly 复用唯一 Composer。只有明确的 Conversation 才能成为 receiver；
+    // 其它材料仍可进入 draft，但提交按钮必须显示真实阻断原因，不能猜一个 agent。
+    const receiverConversationId = item.kind === 'conversation' ? item.entityRef.id
+      : targetRef.kind === 'conversation' ? targetRef.id : undefined;
+    const receiverBlockedReason = receiverConversationId === undefined
+      ? '尚未选择会话接收者；请从会话窗口打开 Composer 后再提交'
+      : undefined;
+    useLcosShellStore.getState().openComposer({
+      nodeId: `assembly:${item.kind}:${item.entityRef.id}`,
+      title: item.title ?? '当前材料',
+      anchor: { x: 0, y: 0, width: 0, height: 0 },
+      ...(activeWorkspaceId === null ? {} : { workspaceId: activeWorkspaceId }),
+      ...(receiverConversationId === undefined ? {} : { receiverConversationId }),
+      ...(receiverBlockedReason === undefined ? {} : { receiverBlockedReason }),
     });
   };
 
@@ -599,37 +634,24 @@ export function AssemblyBody({
   );
 
   const summary = applyResult === null ? undefined : describeAssemblyApplyResultV1(applyResult);
+  // Composer intent 的起点决定唯一 presentation host。Assembly 发起的引用草稿
+  // 留在 Assembly；ConversationWorkView 不得再把同一 intent 二次挂载。
+  const assemblyOwnsComposer = assemblyComposerOwnsTarget(composerOpen, composerTarget);
   return (
     <div
       data-lcos-assembly
       data-lcos-assembly-target={targetRef.kind}
       data-lcos-assembly-target-id={'id' in targetRef ? targetRef.id : ''}
-      className="flex flex-col gap-3 p-4"
+      className="lcos-assembly-body"
     >
       {/* Source Bay tab：四路共用同一个 Assembly region；切 tab 只换数据源，不换窗口。
           注意：这里刻意不使用 role=tab —— R2-4 的不变量是「role=tab 只属于显式窗口组」。 */}
-      <div data-lcos-assembly-source-tabs className="flex items-center gap-1" aria-label="Assembly 来源">
-        {(['project', 'capture', 'sources', 'skills'] as const).map((key) => (
-          <button
-            key={key}
-            type="button"
-            aria-pressed={tab === key}
-            data-lcos-assembly-source-tab={key}
-            onClick={() => selectTab(key)}
-            className="rounded-full px-3 py-1.5 text-xs"
-            style={{
-              background: tab === key ? lcosTokens.color.inverse : lcosTokens.color.raised,
-              color: tab === key ? lcosTokens.color.textOnInverse : lcosTokens.color.text,
-              minHeight: 32,
-            }}
-          >
-            {TAB_LABEL[key]}
-          </button>
-        ))}
-        <span className="ml-auto truncate text-[10px]" style={{ color: lcosTokens.color.muted }}>
-          {TAB_OWNER_LABEL[tab]} · 投放到{targetLabel(targetRef)}
-        </span>
-      </div>
+      <AssemblySourceTabsView
+        items={(['project', 'capture', 'sources', 'skills'] as const).map((key) => ({ key, label: TAB_LABEL[key] }))}
+        value={tab}
+        onSelect={selectTab}
+        context={<span>{TAB_OWNER_LABEL[tab]} · 投放到{targetLabel(targetRef)}</span>}
+      />
 
       {/* Project Warehouse：canonical 搜索 + 分页 */}
       {tab === 'project' && (
@@ -704,7 +726,7 @@ export function AssemblyBody({
           {bay?.warehouseStatus === 'loaded' && (bay.warehouse?.items.length ?? 0) > 0 && (
             <>
               <div className="max-h-[52vh] overflow-y-auto pr-1">
-                <div className="columns-1 gap-4 sm:columns-2" data-lcos-assembly-waterfall>
+                <AssemblyMasonryView>
                   {bay.warehouse!.items.map((item) => {
                     const card = assemblyCardViewV1(item, referencedKeySet);
                     const itemKey = `${item.kind}:${item.entityRef.id}`;
@@ -719,26 +741,18 @@ export function AssemblyBody({
                         draggable
                         onDragStart={(event) => beginAssemblyDrag(event, item.entityRef.id, assemblySourceRefOf(item))}
                         onDragEnd={finishAssemblyDrag}
-                        className="group mb-4 flex break-inside-avoid flex-col gap-2 rounded-2xl p-3 transition-shadow hover:shadow-md focus-within:shadow-md"
+                        className="group lcos-assembly-item"
+                        data-visual-active={activeItemKey === itemKey}
+                        data-referenced={card.referenced}
                         onMouseEnter={() => setActiveItemKey(itemKey)}
                         onMouseLeave={() => setActiveItemKey((current) => current === itemKey ? null : current)}
-                        style={{ background: lcosTokens.color.surface, border: `1px solid ${lcosTokens.color.borderSubtle}`, boxShadow: lcosTokens.shadow.default }}
                       >
-                        <div
-                          className={`${previewUrl ? 'min-h-24' : 'px-3 py-2'} flex items-center justify-center rounded-xl`}
-                          data-lcos-assembly-material
-                          style={{ background: previewUrl ? lcosTokens.color.raised : 'transparent', color: lcosTokens.color.muted }}
-                        >
-                          {previewUrl ? (
-                            <img src={previewUrl} alt="" className="max-h-56 w-full rounded-xl object-cover" />
-                          ) : (
-                            <div className="flex flex-col items-center gap-1 text-xs">
-                              <MaterialGlyph item={item} />
-                              <span>{materialFamily(item)}</span>
-                              <span className="text-[10px] opacity-70">暂无真实预览</span>
-                            </div>
-                          )}
-                        </div>
+                        <AssemblyMaterialView
+                          title={item.title ?? '未命名'}
+                          familyLabel={materialFamily(item)}
+                          {...(previewUrl === undefined ? {} : { previewUrl })}
+                          fallbackGlyph={<MaterialGlyph item={item} />}
+                        />
                         <div className="flex items-start justify-between gap-2">
                           <span className="min-w-0 text-sm font-medium" style={{ color: lcosTokens.color.text }}>
                             {item.title ?? '未命名'}
@@ -831,7 +845,7 @@ export function AssemblyBody({
                       </div>
                     );
                   })}
-                </div>
+                </AssemblyMasonryView>
               </div>
               {bay.warehouseNextCursor !== undefined && (
                 <button
@@ -1074,6 +1088,21 @@ export function AssemblyBody({
           ))}
           <div className="text-[11px]">{summary.headline}</div>
         </div>
+      )}
+
+      {/* Assembly 取用后的 Composer 仍是同一个 near-field 组件；它不创建第二份
+          draft/store/Run truth，只把当前 SourceRef 交给现有 receiver/workspace gate。 */}
+      {assemblyOwnsComposer && composerTarget !== null && (
+        <section data-lcos-assembly-composer className="mt-1">
+          <LcosComposerHost
+            projectId={projectId}
+            {...(composerTarget.workspaceId === undefined ? {} : { workspaceId: composerTarget.workspaceId })}
+            anchor={composerTarget.anchor}
+            open
+            inline
+            onClose={closeComposer}
+          />
+        </section>
       )}
     </div>
   );

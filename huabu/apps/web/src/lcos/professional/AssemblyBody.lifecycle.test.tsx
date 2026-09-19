@@ -17,6 +17,9 @@ const mocks = vi.hoisted(() => ({
   skillRead: vi.fn(),
   workspaces: vi.fn(),
   openWindow: vi.fn(),
+  openComposer: vi.fn(),
+  closeComposer: vi.fn(),
+  addReference: vi.fn(),
   navigate: vi.fn(),
   beginChildNavigation: vi.fn(),
 }));
@@ -24,7 +27,7 @@ const mocks = vi.hoisted(() => ({
 // R4：AssemblyBody 现在消费 web-gen2 的 AssemblySourceBayController / assemblyCardView，
 // 以及 lcosDropState 的 idleDrop——必须 partial mock，否则整棵模块图会拿到 undefined。
 vi.mock('@local-creative-os/web-gen2', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@local-creative-os/web-gen2')>();
+  const actual = await importOriginal<Record<string, unknown>>();
   return {
     ...actual,
     CoreAssemblyClient: class {
@@ -47,26 +50,31 @@ vi.mock('../app/lcosCoreClient', () => ({
 vi.mock('../lcosReferenceState', () => {
   const state = {
     draft: { orderedEntityRefs: [] as readonly { entityType: string; entityId: string }[] },
-    addEntityToDraft: () => {},
+    addEntityToDraft: mocks.addReference,
   };
   const store = (selector?: (value: typeof state) => unknown) =>
     selector === undefined ? state : selector(state);
   return { useLcosReferenceStore: Object.assign(store, { getState: () => state }) };
 });
-vi.mock('../shell/lcosShellStore', () => ({
-  useLcosShellStore: (
-    select: (state: {
-      openWindow: typeof mocks.openWindow;
-      activeSurface: 'main';
-      activeWorkspaceId: null;
-      beginChildNavigation: typeof mocks.beginChildNavigation;
-    }) => unknown,
-  ) => select({
+vi.mock('../shell/lcosShellStore', () => {
+  const shellState = {
     openWindow: mocks.openWindow,
-    activeSurface: 'main',
+    openComposer: mocks.openComposer,
+    closeComposer: mocks.closeComposer,
+    composerOpen: false as const,
+    composerTarget: null,
+    activeSurface: 'main' as const,
     activeWorkspaceId: null,
     beginChildNavigation: mocks.beginChildNavigation,
-  }),
+  };
+  const useLcosShellStore = Object.assign(
+    (select: (state: typeof shellState) => unknown) => select(shellState),
+    { getState: () => shellState },
+  );
+  return { useLcosShellStore };
+});
+vi.mock('../composer/LcosComposerHost', () => ({
+  LcosComposerHost: () => <div data-lcos-composer />,
 }));
 vi.mock('react-router-dom', () => ({ useNavigate: () => mocks.navigate }));
 vi.mock('../ui/LcosSurfaceFeedback', () => ({
@@ -164,6 +172,9 @@ beforeEach(() => {
   mocks.skillRead.mockReset();
   mocks.workspaces.mockReset();
   mocks.openWindow.mockReset();
+  mocks.openComposer.mockReset();
+  mocks.closeComposer.mockReset();
+  mocks.addReference.mockReset();
   mocks.navigate.mockReset();
   mocks.beginChildNavigation.mockReset();
 });
@@ -242,6 +253,48 @@ it('keeps artifact cards available when workspace loading fails', async () => {
   expect(
     host.querySelector('[data-lcos-assembly-item="artifact-1"]'),
   ).not.toBeNull();
+});
+
+it('takes a canonical conversation into the shared Composer with the exact receiver', async () => {
+  mocks.warehouse.mockResolvedValue({
+    items: [{ entityRef: { id: 'conversation-a' }, kind: 'conversation', title: '会话 A', usageCount: 0 }],
+  });
+  mocks.workspaces.mockResolvedValue([]);
+
+  await render('project-a');
+  await act(async () => mocks.warehouse.mock.results[0]?.value);
+  await act(async () => host.querySelector<HTMLButtonElement>('[data-lcos-assembly-more]')?.click());
+  await act(async () => host.querySelector<HTMLButtonElement>('[data-lcos-assembly-add]')?.click());
+
+  expect(mocks.addReference).toHaveBeenCalledWith(expect.objectContaining({
+    entityType: 'conversation',
+    entityId: 'conversation-a',
+    displayLabel: '会话 A',
+  }));
+  expect(mocks.openComposer).toHaveBeenCalledWith(expect.objectContaining({
+    nodeId: 'assembly:conversation:conversation-a',
+    receiverConversationId: 'conversation-a',
+    title: '会话 A',
+  }));
+  expect(mocks.openComposer.mock.calls[0]?.[0]).not.toHaveProperty('receiverBlockedReason');
+});
+
+it('keeps a material reference but fails closed with a real receiver reason', async () => {
+  mocks.warehouse.mockResolvedValue({
+    items: [artifact('artifact-a', '材料 A')],
+  });
+  mocks.workspaces.mockResolvedValue([]);
+
+  await render('project-a');
+  await act(async () => mocks.warehouse.mock.results[0]?.value);
+  await act(async () => host.querySelector<HTMLButtonElement>('[data-lcos-assembly-more]')?.click());
+  await act(async () => host.querySelector<HTMLButtonElement>('[data-lcos-assembly-add]')?.click());
+
+  expect(mocks.addReference).toHaveBeenCalledWith(expect.objectContaining({ entityType: 'artifact', entityId: 'artifact-a' }));
+  expect(mocks.openComposer).toHaveBeenCalledWith(expect.objectContaining({
+    nodeId: 'assembly:artifact:artifact-a',
+    receiverBlockedReason: '尚未选择会话接收者；请从会话窗口打开 Composer 后再提交',
+  }));
 });
 
 it('offers every exact context scope workspace and opens the selected canvas', async () => {
