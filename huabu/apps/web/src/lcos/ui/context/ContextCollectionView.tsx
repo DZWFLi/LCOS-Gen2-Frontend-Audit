@@ -15,6 +15,8 @@ export interface ContextCollectionViewProps {
   readonly disabled?: boolean;
   readonly active?: boolean;
   readonly action?: ReactNode;
+  /** Transitional selector for the current production/e2e contract. */
+  readonly legacyAtlasKind?: string;
 }
 
 export function ContextCollectionView({
@@ -25,12 +27,18 @@ export function ContextCollectionView({
   disabled = false,
   active = false,
   action,
+  legacyAtlasKind,
 }: ContextCollectionViewProps): React.JSX.Element {
   const reducedMotion = useReducedMotion();
   const Icon = organization === '时间' ? Clock3 : organization === '事情' ? FolderOpen : Layers3;
   const label = organization === '未指定' ? '组织未标注' : `按${organization}组织`;
   return (
     <motion.div
+      data-lcos-family="collection-surface"
+      data-lcos-organize={organization}
+      data-lcos-rendition="总览"
+      data-lcos-variant={active ? 'selected' : '总览'}
+      {...(legacyAtlasKind === undefined ? {} : { 'data-lcos-atlas-card': legacyAtlasKind })}
       data-lcos-context-collection
       data-organization={organization}
       data-active={active ? 'true' : undefined}

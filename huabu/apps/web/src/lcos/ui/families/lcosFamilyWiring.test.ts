@@ -47,17 +47,17 @@ const FAMILIES: Readonly<
   Collection: {
     galleryUsage: '<LcosCollectionSurface',
     owner: 'surfaces/context/ContextAtlasStage.tsx',
-    ownerMarker: '<LcosCollectionSurface',
+    ownerMarker: '<ContextCollectionView',
   },
   TaskCard: {
     galleryUsage: '<LcosTaskCard',
     owner: 'surfaces/workflow/WorkflowCardPool.tsx',
-    ownerMarker: '<LcosTaskCard',
+    ownerMarker: '<WorkflowTaskCardView',
   },
   Portal: {
     galleryUsage: '<LcosPortalPreview',
     owner: 'professional/PortalPreviewBody.tsx',
-    ownerMarker: '<LcosPortalPreview',
+    ownerMarker: '<PortalPreviewView',
   },
 };
 

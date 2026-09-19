@@ -13,6 +13,8 @@ export interface WorkflowTaskCardViewProps {
   readonly onUse?: () => void;
   readonly dataSource?: string;
   readonly dataEntity?: string;
+  /** Transitional selector for the current production/e2e contract. */
+  readonly legacyWorkflowKind?: string;
 }
 
 export function WorkflowTaskCardView({
@@ -23,12 +25,16 @@ export function WorkflowTaskCardView({
   onUse,
   dataSource,
   dataEntity,
+  legacyWorkflowKind,
 }: WorkflowTaskCardViewProps): React.JSX.Element {
   const reducedMotion = useReducedMotion();
   const disabled = state === '不可用';
   const showUse = !disabled && onUse !== undefined;
   return (
     <motion.article
+      data-lcos-family="task-card"
+      data-lcos-variant={state}
+      {...(legacyWorkflowKind === undefined ? {} : { 'data-lcos-workflow-card': legacyWorkflowKind })}
       data-lcos-workflow-task-card
       data-state={state}
       className="lcos-workflow-task-card"

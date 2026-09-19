@@ -13,7 +13,7 @@
 .lcos-atlas-close:hover,.lcos-atlas-close:focus-visible { background: rgba(255,255,255,.7); outline: 2px solid var(--gen2-accent); outline-offset: 2px; }
 .lcos-atlas-grid { display: grid; grid-template-columns: repeat(3, 248px); gap: 42px 74px; justify-content: center; }
 
-.lcos-context-collection { position: relative; width: 248px; height: 244px; color: var(--gen2-text); }
+.lcos-context-collection { position: relative; display:block; box-sizing:border-box; width:248px; height:244px; overflow:visible; padding:0; border:0; border-radius:0; background:transparent; box-shadow:none; color:var(--gen2-text); text-align:initial; transition:none; }
 .lcos-context-collection[data-disabled='true'] { opacity: .55; }
 .lcos-context-collection-back { position:absolute; left:18px; top:38px; width:212px; height:164px; border-radius:18px; background:var(--gen2-surface); border:1px solid var(--gen2-surface); box-shadow:0 0 1px rgba(40,48,58,.10),0 4px 12px rgba(40,48,58,.08); transform:rotate(3deg); }
 .lcos-context-collection-tab { position:absolute; left:30px; top:24px; width:82px; height:36px; border-radius:10px; background:var(--lcos-pin-teal, #def7f9); }

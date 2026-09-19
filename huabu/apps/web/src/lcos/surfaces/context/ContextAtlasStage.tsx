@@ -101,6 +101,7 @@ export function ContextAtlasStage({ projectId, workspaces, onClose, onEnterSurfa
                         organization="未指定"
                         {...(item.previewRef === undefined ? {} : { previewUrl: item.previewRef })}
                         disabled={!projected(item) && childTargets.length === 0}
+                        legacyAtlasKind={item.kind}
                         action={
                           <span style={{ color: projected(item) || childTargets.length > 0 ? lcosTokens.color.info : lcosTokens.color.muted }}>
                             {childTargets.length === 1 ? (

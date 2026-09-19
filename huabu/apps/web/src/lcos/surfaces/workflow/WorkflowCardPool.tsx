@@ -222,6 +222,7 @@ export function WorkflowCardPool({ projectId }: { readonly projectId: string }):
                           {...(card.previewUrl === undefined ? {} : { previewUrl: card.previewUrl })}
                           dataSource={card.source}
                           dataEntity={`${card.entityType}:${card.entityId}`}
+                          legacyWorkflowKind={card.entityType}
                           onUse={() => takeCard(card)}
                         />
                       );
