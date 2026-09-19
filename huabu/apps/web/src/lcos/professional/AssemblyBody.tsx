@@ -733,6 +733,7 @@ export function AssemblyBody({
                     const workflowTargets = item.kind === 'workflow'
                       ? workspaceTargetsForItem(item, workspaces)
                       : [];
+                    const workflowTarget = workflowTargets.length === 1 ? workflowTargets[0] : undefined;
                     const workflowDisabledReason = item.kind === 'workflow'
                       ? workspaceError
                         ? '现场信息读取失败，请重试'
@@ -764,12 +765,12 @@ export function AssemblyBody({
                             disabled={workflowDisabledReason !== undefined}
                             disabledReason={workflowDisabledReason}
                             active={activeItemKey === itemKey}
-                            action={workflowTargets.length === 1 && workflowDisabledReason === undefined ? (
+                            action={workflowTarget !== undefined && workflowDisabledReason === undefined ? (
                               <button
                                 type="button"
                                 aria-label={`进入 ${item.title ?? '工作流'}`}
                                 title="进入 Workflow 现场"
-                                onClick={() => enterChildWorkspace(item, workflowTargets[0]!) }
+                                onClick={() => enterChildWorkspace(item, workflowTarget) }
                               >
                                 ↗
                               </button>

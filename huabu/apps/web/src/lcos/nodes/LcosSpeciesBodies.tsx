@@ -22,10 +22,10 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { resolveArtifactUrl } from '@/api/artifact';
-import { createLcosCoreSession } from '../app/lcosCoreClient';
 import { useLcosNodePresentation } from '@/lcos-seam/nodePresentation';
 import useCanvasStore from '@/store/canvasStore';
 
+import { createLcosCoreSession } from '../app/lcosCoreClient';
 import { SourceMorphology } from './source/SourceMorphology';
 import { useLcosDensity } from './useLcosDensity';
 import { useLcosReferenceStore } from '../lcosReferenceState';
@@ -35,8 +35,8 @@ import { lcosTokens } from '../ui/lcosTokens';
 import { WorkflowCollectionView } from '../ui/workflow/WorkflowCollectionView';
 
 import type { CanvasNodeBodySlotInput } from '@/lcos-seam/types';
-import type { ComponentType, JSX } from 'react';
 import type { Workspace } from '@local-creative-os/domain';
+import type { ComponentType, JSX } from 'react';
 
 /** 物种 → 主识别色（边缘/角标；浓度统一收敛，不作为唯一区分）。 */
 export const SPECIES_ACCENT: Readonly<Record<LcosNodeSpecies, string>> = {

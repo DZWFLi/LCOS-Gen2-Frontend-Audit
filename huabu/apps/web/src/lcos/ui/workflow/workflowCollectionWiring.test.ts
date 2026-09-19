@@ -7,12 +7,13 @@ const ROOT = resolve((import.meta as unknown as { dirname?: string }).dirname ??
 const read = (relative: string): string => readFileSync(join(ROOT, relative), 'utf8');
 
 describe('Workflow Collection 真实 caller 接线', () => {
-  it('Main 节点使用主画布 rendition，并只通过现有 shell/canvas navigation 进入 Workflow', () => {
+  it('Main 节点使用主画布 rendition，并按真实 scope workspace 进入 Workflow', () => {
     const source = read('huabu/apps/web/src/lcos/nodes/LcosSpeciesBodies.tsx');
     expect(source).toContain("import { WorkflowCollectionView } from '../ui/workflow/WorkflowCollectionView';");
     expect(source).toContain('rendition="主画布"');
-    expect(source).toContain("setActiveSurface('workflow')");
-    expect(source).toContain("/workflow");
+    expect(source).toContain('String(workspace.scopeId) === ref.entityId');
+    expect(source).toContain('beginChildWorksiteNavigation({');
+    expect(source).toContain("targetSurface: 'workflow'");
   });
 
   it('Assembly workflow item 使用装配 rendition，并复用 workspaceTargetsForItem/child navigation', () => {
@@ -20,7 +21,7 @@ describe('Workflow Collection 真实 caller 接线', () => {
     expect(source).toContain("import { WorkflowCollectionView } from '../ui/workflow/WorkflowCollectionView';");
     expect(source).toContain('rendition="装配"');
     expect(source).toContain('workspaceTargetsForItem(item, workspaces)');
-    expect(source).toContain('enterChildWorkspace(item, workflowTargets[0]!)');
+    expect(source).toContain('enterChildWorkspace(item, workflowTarget)');
   });
 
   it('Workflow Worksite 继续由唯一 WorkflowCardPool 提供卡池', () => {
