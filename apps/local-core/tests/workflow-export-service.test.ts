@@ -103,6 +103,32 @@ describe('Phase 4 Slice 2 — Workflow export/import roundtrip', () => {
     expect(repository.getWorkspaces('disposable-workflow').map((workspace) => workspace.name)).toContain('排程')
   })
 
+  it('imports an archive as one canonical workflow scope/worksite identity and replay is idempotent', async () => {
+    const { repository, presentation } = await createFixture()
+    const service = new WorkflowExportService(repository, presentation)
+    const exported = service.export('disposable-workflow', 'scope-root')
+
+    const first = service.importAsWorkflow('disposable-workflow', exported, '可复用排程')
+    expect(first.created).toBe(true)
+    expect(first.scopeId).toMatch(/^scope-workflow-/)
+    expect(first.workspaceIds).toHaveLength(1)
+    const afterFirst = repository.get('disposable-workflow')!
+    expect(afterFirst.scopes).toContainEqual(expect.objectContaining({ id: first.scopeId, kind: 'workflow', name: '可复用排程' }))
+    expect(afterFirst.workspaces).toContainEqual(expect.objectContaining({
+      id: first.workspaceIds[0],
+      scopeId: first.scopeId,
+      preferredSurface: 'workflow',
+    }))
+    expect(presentation.get('disposable-workflow', `presentation:workflow:${first.scopeId}`)?.state.memberViewIds).toEqual(['v1', 'v2'])
+
+    const second = service.importAsWorkflow('disposable-workflow', exported, '可复用排程')
+    expect(second).toMatchObject({ created: false, scopeId: first.scopeId, workspaceIds: first.workspaceIds })
+    const afterSecond = repository.get('disposable-workflow')!
+    expect(afterSecond.graphVersion).toBe(afterFirst.graphVersion)
+    expect(afterSecond.scopes.filter((scope) => scope.kind === 'workflow')).toHaveLength(1)
+    expect(afterSecond.workspaces.filter((workspace) => String(workspace.scopeId) === first.scopeId)).toHaveLength(1)
+  })
+
   it('rejects unknown schema, duplicate workspace ids, missing references and invalid edge targets', async () => {
     const { repository, presentation } = await createFixture()
     const service = new WorkflowExportService(repository, presentation)

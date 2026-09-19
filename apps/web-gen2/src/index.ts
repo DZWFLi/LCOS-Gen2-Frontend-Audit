@@ -13,6 +13,9 @@ export type { CoreEnvelope, CoreEnvelopeOk, CoreEnvelopeError } from './backend/
 export { CoreProjectClient } from './backend/projects.js';
 export type { ProjectListItem } from './backend/projects.js';
 
+export { CoreWorkflowClient } from './backend/workflows.js';
+export type { WorkflowImportReceiptV1 } from './backend/workflows.js';
+
 export { CoreArtifactClient } from './backend/artifacts.js';
 export type {
   ArtifactDetailProjection,

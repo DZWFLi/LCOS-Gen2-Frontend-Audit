@@ -12,12 +12,13 @@ export interface WorkflowRouteContext extends RouteHttpContext {
 
 /** /projects/:id/workflow/export|import —— .lcos-workflow.zip（Phase 4 §7.6）。 */
 export async function handleWorkflowRoute(ctx: WorkflowRouteContext): Promise<boolean> {
-  const { method, pathname, request, response, controller, url, metadata, presentation, maxImportBodyBytes, helpers } = ctx
+  const { method, pathname, request, response, controller, url, presentation, maxImportBodyBytes, helpers } = ctx
   const { sendJson, failure, readRawBody, sendBinary } = helpers
 
   const exportMatch = /^\/projects\/([^/]+)\/workflow\/export$/.exec(pathname)
   const importMatch = /^\/projects\/([^/]+)\/workflow\/import$/.exec(pathname)
-  if (exportMatch === null && importMatch === null) return false
+  const importAsWorkflowMatch = /^\/projects\/([^/]+)\/workflow\/import-as-workflow$/.exec(pathname)
+  if (exportMatch === null && importMatch === null && importAsWorkflowMatch === null) return false
   if (presentation === undefined) {
     sendJson(response, 503, failure('UNAVAILABLE', 'Presentation service is not configured.'))
     return true
@@ -53,6 +54,41 @@ export async function handleWorkflowRoute(ctx: WorkflowRouteContext): Promise<bo
       }
       const result = new WorkflowExportService(db, presentation).import(String(projectId), scopeId, new Uint8Array(multipart.file.bytes))
       sendJson(response, 200, { ok: true, value: result })
+    } catch (error: unknown) {
+      const isSize = error instanceof RangeError
+      sendJson(response, isSize ? 413 : 409, failure(isSize ? 'INVALID_ARGUMENT' : 'CONFLICT', error instanceof Error ? error.message : 'Workflow import failed.'))
+    }
+    return true
+  }
+
+  if (method === 'POST' && importAsWorkflowMatch !== null) {
+    const db = routeRequireMetadata(ctx); if (db === undefined) return true
+    const projectId = decodeURIComponent(importAsWorkflowMatch[1] ?? '') as ProjectId
+    const project = routeRequireProject(String(projectId), { metadata: db, response, helpers })
+    if (project === undefined) return true
+    try {
+      const raw = await readRawBody(request, controller.signal, maxImportBodyBytes)
+      const multipart = parseMultipartImport(request.headers['content-type'], raw)
+      if (!/\.(zip|lcos-workflow\.zip)$/i.test(multipart.file.fileName)) {
+        sendJson(response, 400, failure('INVALID_ARGUMENT', '请选择 .lcos-workflow.zip 工作流文件。'))
+        return true
+      }
+      const unknownField = Object.keys(multipart.fields).find((field) => field !== 'name')
+      if (unknownField !== undefined) {
+        sendJson(response, 400, failure('INVALID_ARGUMENT', `Unknown workflow import field: ${unknownField}.`))
+        return true
+      }
+      const name = multipart.fields.name?.trim()
+      if (name !== undefined && (name.length < 1 || name.length > 120)) {
+        sendJson(response, 400, failure('INVALID_ARGUMENT', 'Workflow name must be 1-120 characters.'))
+        return true
+      }
+      const result = new WorkflowExportService(db, presentation).importAsWorkflow(
+        String(projectId),
+        new Uint8Array(multipart.file.bytes),
+        name,
+      )
+      sendJson(response, result.created ? 201 : 200, { ok: true, value: result })
     } catch (error: unknown) {
       const isSize = error instanceof RangeError
       sendJson(response, isSize ? 413 : 409, failure(isSize ? 'INVALID_ARGUMENT' : 'CONFLICT', error instanceof Error ? error.message : 'Workflow import failed.'))

@@ -130,6 +130,21 @@ export class HttpClient {
     return this.request<Blob>('GET', path, { signal, headers, mode: 'blob' });
   }
 
+  /** Multipart request. The runtime owns the boundary header; auth stays identical to JSON calls. */
+  async postForm<T>(path: string, form: FormData, signal?: AbortSignal): Promise<T> {
+    const url = path.startsWith('http') ? path : `${this.config.baseUrl}${path}`;
+    const headers = this.resolveHeaders({ signal });
+    let response: Response;
+    try {
+      response = await this.fetcher(url, { method: 'POST', headers, body: form, signal });
+    } catch (err) {
+      const aborted = err instanceof Error && err.name === 'AbortError';
+      throw new HttpError(0, aborted ? 'Request aborted' : `Network error: ${String(err)}`, aborted ? 'aborted' : 'network');
+    }
+    await this.assertOk(response);
+    return (await this.parseBody(response, 'json')) as T;
+  }
+
   async postJson<T>(path: string, body?: unknown, signal?: AbortSignal, headers?: Record<string, string>): Promise<T> {
     return this.request<T>('POST', path, { body, signal, headers, mode: 'json' });
   }

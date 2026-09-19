@@ -12,6 +12,7 @@ import { CoreProjectClient } from '../backend/projects.js';
 import { CoreConversationClient } from '../backend/conversations.js';
 import { CoreAssemblyClient } from '../backend/assembly.js';
 import { CoreRailwayClient } from '../backend/railway.js';
+import { CoreWorkflowClient, type WorkflowImportReceiptV1 } from '../backend/workflows.js';
 import { CoreContinuationClient } from '../backend/continuation.js';
 import { CoreDraftClient } from '../backend/drafts.js';
 import { CoreCaptureClient } from '../backend/captures.js';
@@ -71,6 +72,7 @@ export class Gen2Host {
   readonly connectors: CoreConnectorClient;
   readonly health: CoreHealthClient;
   readonly railway: CoreRailwayClient;
+  readonly workflows: CoreWorkflowClient;
   readonly bindings: ProjectionBindingRegistry;
   readonly nodeProjector: ProjectToSpaceProjection;
   readonly relationProjector: RelationProjection;
@@ -96,6 +98,7 @@ export class Gen2Host {
     this.connectors = new CoreConnectorClient(deps.http);
     this.health = new CoreHealthClient(deps.http);
     this.railway = new CoreRailwayClient(deps.http);
+    this.workflows = new CoreWorkflowClient(deps.http);
     this.bindings = new ProjectionBindingRegistry(new SqliteBindingStore(deps.http, deps.projectId));
 
     this.nodeProjector = new ProjectToSpaceProjection(
@@ -378,5 +381,27 @@ export class Gen2Host {
   /** Run reconciliation on demand (startup / after a mutation / on reconnect). */
   async reconcile(trigger: ReconcileTrigger): Promise<boolean> {
     return this.reconciler.runNow(trigger);
+  }
+
+  /**
+   * Canonical producer for a portable Workflow definition. Core creates the
+   * scope/worksite truth; then the existing Main projector is notified through
+   * the single host reconciler. Assembly sees the same scope through warehouse.
+   */
+  async importWorkflowDefinition(
+    file: Blob,
+    fileName: string,
+    name?: string,
+    signal?: AbortSignal,
+  ): Promise<WorkflowImportReceiptV1> {
+    const receipt = await this.workflows.importAsWorkflow(
+      this.projectId,
+      file,
+      fileName,
+      name,
+      signal,
+    );
+    this.reconciler.onMutationSuccess();
+    return receipt;
   }
 }

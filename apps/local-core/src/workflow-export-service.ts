@@ -23,6 +23,11 @@ interface WorkflowFile {
   readonly surfaceElements?: SurfaceElementV0[]
 }
 
+interface WorkflowArchive {
+  readonly manifest: Record<string, unknown>
+  readonly workflow: WorkflowFile
+}
+
 export class WorkflowExportService {
   constructor(
     private readonly metadata: SqliteMetadataRepository,
@@ -75,6 +80,94 @@ export class WorkflowExportService {
   }
 
   import(projectId: string, scopeId: string, bytes: Uint8Array): { readonly imported: boolean; readonly members: number; readonly workspaces: number } {
+    const archive = this.#readAndValidateArchive(projectId, bytes)
+    this.#writeWorkflow(projectId, scopeId, archive)
+    return { imported: true, members: archive.workflow.members.length, workspaces: (archive.workflow.workspaces ?? []).length }
+  }
+
+  /**
+   * Import a portable definition as a canonical Workflow scope + worksite.
+   * The archive hash is the idempotency identity: replaying the same bytes for
+   * the same project converges on the same scope/workspaces instead of creating
+   * another collection. No second workflow store is introduced.
+   */
+  importAsWorkflow(projectId: string, bytes: Uint8Array, requestedName?: string) {
+    const archive = this.#readAndValidateArchive(projectId, bytes)
+    const graph = this.metadata.get(projectId)
+    if (graph === undefined) throw new Error('Project not found.')
+    const rootScope = graph.scopes.find((scope) => scope.kind === 'root') ?? graph.scopes[0]
+    if (rootScope === undefined) throw new Error('Project has no root scope.')
+
+    const digest = createHash('sha256').update(bytes).digest('hex').slice(0, 20)
+    const scopeId = `scope-workflow-${digest}`
+    const fallbackName = typeof archive.manifest.title === 'string' && archive.manifest.title.trim() !== ''
+      ? archive.manifest.title.trim()
+      : 'Workflow'
+    const name = requestedName?.trim() || fallbackName
+    const existingScope = graph.scopes.find((scope) => String(scope.id) === scopeId)
+    if (existingScope !== undefined && existingScope.kind !== 'workflow') {
+      throw new Error(`Workflow import identity ${scopeId} is already owned by a non-workflow scope.`)
+    }
+
+    const definitions = (archive.workflow.workspaces ?? []).length === 0
+      ? [{ id: 'primary', title: name, memberViewIds: archive.workflow.members, order: 0 }]
+      : [...(archive.workflow.workspaces ?? [])].sort((a, b) => a.order - b.order)
+    const now = new Date().toISOString()
+    const workspaceIds = definitions.map((workspace, index) => {
+      const workspaceDigest = createHash('sha256').update(`${digest}\0${workspace.id}\0${index}`).digest('hex').slice(0, 12)
+      return `workspace-workflow-${workspaceDigest}`
+    })
+    const desiredWorkspaces = definitions.map((workspace, index) => ({
+      id: workspaceIds[index] as never,
+      projectId: projectId as never,
+      scopeId: scopeId as never,
+      name: workspace.title || name,
+      intent: 'build' as const,
+      viewport: { x: 0, y: 0, zoom: 1 },
+      focusedViewIds: workspace.memberViewIds as never[],
+      visibleLayers: ['core', 'process'],
+      contextPolicy: 'workspace-related' as const,
+      preferredSurface: 'workflow',
+      updatedAt: now,
+    }))
+    const existingWorkspaceIds = new Set(graph.workspaces.map((workspace) => String(workspace.id)))
+    const missingWorkspaces = desiredWorkspaces.filter((workspace) => !existingWorkspaceIds.has(String(workspace.id)))
+    const created = existingScope === undefined
+    if (created || missingWorkspaces.length > 0) {
+      this.metadata.applyMutations({
+        baseVersion: graph.graphVersion,
+        actorKind: 'user',
+        ops: [
+          ...(created ? [{
+            type: 'upsert_scope' as const,
+            scope: {
+              id: scopeId as never,
+              projectId: projectId as never,
+              parentScopeId: rootScope.id,
+              containerViewId: null,
+              kind: 'workflow' as const,
+              name,
+              createdAt: now,
+              updatedAt: now,
+            },
+          }] : []),
+          ...missingWorkspaces.map((workspace) => ({ type: 'upsert_workspace' as const, workspace })),
+        ],
+      }, projectId)
+    }
+
+    this.#writeWorkflow(projectId, scopeId, archive, false)
+    return {
+      imported: true as const,
+      created,
+      scopeId,
+      workspaceIds,
+      members: archive.workflow.members.length,
+      workspaces: desiredWorkspaces.length,
+    }
+  }
+
+  #readAndValidateArchive(projectId: string, bytes: Uint8Array): WorkflowArchive {
     const entries = readZipArchive(Buffer.from(bytes))
     const readJson = (name: string): Record<string, unknown> => {
       const entry = entries.find((item) => item.path === name)
@@ -105,7 +198,8 @@ export class WorkflowExportService {
     for (const viewId of workflow.members) {
       const reference = (referencesFile.references ?? []).find((item) => item.viewId === viewId)
       if (reference === undefined) throw new Error(`Missing reference for member ${viewId}.`)
-      if (this.metadata.getArtifact(reference.artifactId) === undefined) {
+      const artifact = this.metadata.getArtifact(reference.artifactId)
+      if (artifact === undefined || String(artifact.projectId) !== projectId) {
         throw new Error(`Reference artifact ${reference.artifactId} does not exist in this project.`)
       }
     }
@@ -126,20 +220,27 @@ export class WorkflowExportService {
       }
     }
 
+    return { manifest, workflow }
+  }
+
+  #writeWorkflow(projectId: string, scopeId: string, archive: WorkflowArchive, writeArchiveWorkspaces = true): void {
+    const { workflow } = archive
     const now = new Date().toISOString()
-    for (const workspace of (workflow.workspaces ?? []).sort((a, b) => a.order - b.order)) {
-      this.metadata.upsertWorkspace({
-        id: workspace.id as never,
-        projectId: projectId as never,
-        scopeId: scopeId as never,
-        name: workspace.title,
-        intent: null,
-        viewport: { x: 0, y: 0, zoom: 1 },
-        focusedViewIds: workspace.memberViewIds as never[],
-        visibleLayers: ['core', 'process'],
-        contextPolicy: 'workspace-related',
-        updatedAt: now,
-      })
+    if (writeArchiveWorkspaces) {
+      for (const workspace of (workflow.workspaces ?? []).sort((a, b) => a.order - b.order)) {
+        this.metadata.upsertWorkspace({
+          id: workspace.id as never,
+          projectId: projectId as never,
+          scopeId: scopeId as never,
+          name: workspace.title,
+          intent: null,
+          viewport: { x: 0, y: 0, zoom: 1 },
+          focusedViewIds: workspace.memberViewIds as never[],
+          visibleLayers: ['core', 'process'],
+          contextPolicy: 'workspace-related',
+          updatedAt: now,
+        })
+      }
     }
 
     const presentationId = `presentation:workflow:${scopeId}`
@@ -165,6 +266,5 @@ export class WorkflowExportService {
       expectedVersion: existing?.version ?? 0,
       updatedBy: 'agent',
     })
-    return { imported: true, members: workflow.members.length, workspaces: (workflow.workspaces ?? []).length }
   }
 }
