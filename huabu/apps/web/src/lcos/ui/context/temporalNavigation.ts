@@ -14,21 +14,23 @@ export function nextEnabledTemporalIndex(
   delta: -1 | 1,
 ): number {
   if (items.length === 0) return -1;
+  const start = Number.isFinite(from) ? Math.trunc(from) : -1;
   for (let offset = 1; offset <= items.length; offset += 1) {
-    const index = (from + delta * offset + items.length) % items.length;
+    const index = ((start + delta * offset) % items.length + items.length) % items.length;
     if (items[index]?.disabled !== true) return index;
   }
   return -1;
 }
 
 export function temporalTickCount(railHeight: number): number {
+  if (!Number.isFinite(railHeight) || railHeight < TEMPORAL_TOP_PADDING + TEMPORAL_BOTTOM_PADDING) return 0;
   return Math.min(
     TEMPORAL_MAX_TICKS,
-    Math.max(1, Math.floor((railHeight - TEMPORAL_TOP_PADDING - 1) / TEMPORAL_TICK_STEP)),
+    Math.max(0, Math.floor((railHeight - TEMPORAL_TOP_PADDING - TEMPORAL_BOTTOM_PADDING) / TEMPORAL_TICK_STEP) + 1),
   );
 }
 
 export function temporalRatioToY(ratio: number, railHeight: number): number {
-  const usable = Math.max(1, railHeight - TEMPORAL_TOP_PADDING - TEMPORAL_BOTTOM_PADDING);
-  return TEMPORAL_TOP_PADDING + Math.max(0, Math.min(1, ratio)) * usable;
+  const usable = Math.max(0, (Number.isFinite(railHeight) ? railHeight : TEMPORAL_MAX_RAIL_HEIGHT) - TEMPORAL_TOP_PADDING - TEMPORAL_BOTTOM_PADDING);
+  return TEMPORAL_TOP_PADDING + Math.max(0, Math.min(1, Number.isFinite(ratio) ? ratio : 0)) * usable;
 }
