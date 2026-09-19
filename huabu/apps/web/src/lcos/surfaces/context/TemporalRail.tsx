@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 
 import { createLcosCoreSession } from '../../app/lcosCoreClient';
-import { useLcosReferenceStore } from '../../lcosReferenceState';
+import { useLcosReferenceStore, type LcosNodeEntityRef } from '../../lcosReferenceState';
 import { useLcosShellStore } from '../../shell/lcosShellStore';
 import { TemporalRailView, type TemporalRailItemView } from '../../ui/context/TemporalRailView';
 
@@ -16,8 +16,10 @@ function ratioFor(index: number, count: number): number {
   return count <= 1 ? 0.5 : index / (count - 1);
 }
 
-function projectedNodeId(group: TemporalGroupV1): string | undefined {
-  const refs = useLcosReferenceStore.getState().nodeEntityRefs;
+function projectedNodeId(
+  group: TemporalGroupV1,
+  refs: ReadonlyMap<string, LcosNodeEntityRef>,
+): string | undefined {
   return [...refs.entries()].find(([, ref]) => group.targets.some(
     (target) => target.type === ref.entityType && target.id === ref.entityId,
   ))?.[0];
@@ -27,6 +29,7 @@ export function TemporalRail({ projectId, workspaceId }: TemporalRailProps): Rea
   const [index, setIndex] = useState<TemporalIndexV1 | null>(null);
   const [state, setState] = useState<'loading' | 'empty' | 'ready' | 'error'>('loading');
   const [reason, setReason] = useState<string>();
+  const nodeEntityRefs = useLcosReferenceStore((referenceState) => referenceState.nodeEntityRefs);
 
   useEffect(() => {
     if (workspaceId === undefined) {
@@ -52,18 +55,18 @@ export function TemporalRail({ projectId, workspaceId }: TemporalRailProps): Rea
     return () => controller.abort();
   }, [projectId, workspaceId]);
 
-  const groups = index?.mid ?? [];
+  const groups = useMemo(() => index?.mid ?? [], [index]);
   const items = useMemo<readonly TemporalRailItemView[]>(() => groups.map((group, itemIndex) => ({
     id: group.id,
     label: `${new Date(group.start).toLocaleString()} · ${group.eventCount} 条记录`,
     ratio: ratioFor(itemIndex, groups.length),
-    disabled: projectedNodeId(group) === undefined,
-  })), [groups]);
+    disabled: projectedNodeId(group, nodeEntityRefs) === undefined,
+  })), [groups, nodeEntityRefs]);
 
   const activate = (item: TemporalRailItemView): void => {
     const group = groups.find((candidate) => candidate.id === item.id);
     if (group === undefined) return;
-    const nodeId = projectedNodeId(group);
+    const nodeId = projectedNodeId(group, nodeEntityRefs);
     if (nodeId === undefined) return;
     useLcosShellStore.getState().requestLocate({ reqId: `temporal-${Date.now()}`, surface: 'context', nodeId, status: 'projected' });
   };
