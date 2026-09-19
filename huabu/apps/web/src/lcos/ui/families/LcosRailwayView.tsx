@@ -4,6 +4,7 @@
 // 目的地数量是唯一变体轴；hover 预览 / Enter 进入 / 拖动重排由 container 负责。
 
 import { FigmaShellGlyph } from '../FigmaShellGlyph';
+import { LcosIconButton } from '../primitives/LcosIconButton';
 
 import type { FigmaShellGlyphName } from '../FigmaShellGlyph';
 import type { ComponentType, DragEvent, ReactNode } from 'react';
@@ -77,7 +78,7 @@ export function LcosRailwayView({ items, onSelect, footer }: LcosRailwayViewProp
                 }
               }}
             >
-              <button
+              <LcosIconButton
                 ref={item.onElement}
                 type="button"
                 draggable={item.draggable}
@@ -97,7 +98,7 @@ export function LcosRailwayView({ items, onSelect, footer }: LcosRailwayViewProp
               >
                 {item.glyph === undefined ? <Icon className="h-[21px] w-[21px]" />
                   : <FigmaShellGlyph name={item.glyph} size={21} />}
-              </button>
+              </LcosIconButton>
               {item.peekOpen && item.peek}
               {item.moreOpen && item.more}
             </div>

@@ -1,5 +1,6 @@
 // Figma 5386:274 定义52×48收起态；展开态保留现有生产命令，不重新裁决相机。
 import { FigmaShellGlyph } from '../FigmaShellGlyph';
+import { LcosIconButton } from '../primitives/LcosIconButton';
 
 import type { CSSProperties, ReactNode } from 'react';
 
@@ -23,16 +24,16 @@ export function LcosCameraControlsView({ zoom, onZoomOut, onZoomIn, onFit,
   const collapsed = compact !== undefined && !compact.expanded;
   return <div data-lcos-camera-controls data-lcos-family="camera-controls"
     data-lcos-camera-collapsed={collapsed ? 'true' : 'false'} className={className} style={style}>
-    {collapsed ? <button type="button" aria-label="展开相机控件" aria-expanded={false}
-      disabled={disabled} onClick={compact.onToggle}><FigmaShellGlyph name="grid" size={17} /></button> : <>
-      <button type="button" aria-label="缩小" title="缩小" disabled={disabled} onClick={onZoomOut}>{zoomOutIcon}</button>
+    {collapsed ? <LcosIconButton type="button" aria-label="展开相机控件" aria-expanded={false}
+      disabled={disabled} onClick={compact.onToggle}><FigmaShellGlyph name="grid" size={17} /></LcosIconButton> : <>
+      <LcosIconButton type="button" aria-label="缩小" title="缩小" disabled={disabled} onClick={onZoomOut}>{zoomOutIcon}</LcosIconButton>
       <span data-lcos-camera-zoom>{Math.round(zoom * 100)}%</span>
-      <button type="button" aria-label="放大" title="放大" disabled={disabled} onClick={onZoomIn}>{zoomInIcon}</button>
+      <LcosIconButton type="button" aria-label="放大" title="放大" disabled={disabled} onClick={onZoomIn}>{zoomInIcon}</LcosIconButton>
       <span data-lcos-camera-separator aria-hidden />
-      <button type="button" aria-label="适合画面" title="适合画面" disabled={disabled} onClick={onFit}>{fitIcon}</button>
-      {compact && <button type="button" aria-label="收起相机控件" aria-expanded onClick={compact.onToggle}>
+      <LcosIconButton type="button" aria-label="适合画面" title="适合画面" disabled={disabled} onClick={onFit}>{fitIcon}</LcosIconButton>
+      {compact && <LcosIconButton type="button" aria-label="收起相机控件" aria-expanded onClick={compact.onToggle}>
         <FigmaShellGlyph name="grid" size={17} />
-      </button>}
+      </LcosIconButton>}
     </>}
   </div>;
 }

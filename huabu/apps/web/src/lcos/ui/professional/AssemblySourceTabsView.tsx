@@ -1,7 +1,8 @@
-import type { ReactNode } from 'react';
+import { LcosButton } from '../primitives/LcosButton';
 
 import './professional-assembly.css';
 
+import type { ReactNode } from 'react';
 export interface AssemblySourceTabPresentation<Key extends string> {
   readonly key: Key;
   readonly label: string;
@@ -26,7 +27,7 @@ export function AssemblySourceTabsView<Key extends string>({
     <div data-lcos-assembly-source-tabs className="lcos-assembly-source-tabs" aria-label="Assembly 来源">
       <div className="lcos-assembly-source-buttons" role="group" aria-label="材料来源">
         {items.map((item) => (
-          <button
+          <LcosButton
             key={item.key}
             type="button"
             data-lcos-assembly-source-tab={item.key}
@@ -35,7 +36,7 @@ export function AssemblySourceTabsView<Key extends string>({
             onClick={() => onSelect(item.key)}
           >
             {item.label}
-          </button>
+          </LcosButton>
         ))}
       </div>
       {context === undefined ? null : <div className="lcos-assembly-target-context">{context}</div>}

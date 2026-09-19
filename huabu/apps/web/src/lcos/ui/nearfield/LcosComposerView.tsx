@@ -1,5 +1,9 @@
+import { useCallback, useLayoutEffect, useRef } from 'react';
+
 import { ComposerReferenceStrip } from './ComposerReferenceStrip';
+import { fitComposerTextarea } from './fitComposerTextarea';
 import { LcosNearfieldGlyph } from './LcosNearfieldGlyph';
+import { LcosIconButton } from '../primitives/LcosIconButton';
 import './nearfield.css';
 
 import type { LcosComposerViewProps } from './composerViewTypes';
@@ -10,6 +14,31 @@ import type { JSX } from 'react';
  * progress. The original textarea is still exposed to the host's live drop registry.
  */
 export function LcosComposerView(props: LcosComposerViewProps): JSX.Element {
+  const editorRef = useRef<HTMLTextAreaElement | null>(null);
+  const setEditorRef = useCallback((editor: HTMLTextAreaElement | null) => {
+    editorRef.current = editor;
+    const externalRef = props.textareaRef;
+    if (typeof externalRef === 'function') return externalRef(editor);
+    if (externalRef !== undefined && externalRef !== null) externalRef.current = editor;
+  }, [props.textareaRef]);
+  useLayoutEffect(() => {
+    const editor = editorRef.current;
+    if (editor !== null) fitComposerTextarea(editor);
+  }, [props.text, props.presentation]);
+  useLayoutEffect(() => {
+    const editor = editorRef.current;
+    if (editor === null || typeof ResizeObserver !== 'function') return;
+    // Only inline-size changes trigger a refit, not the height this function just changed.
+    let width = editor.clientWidth;
+    const observer = new ResizeObserver(() => {
+      if (editor.clientWidth === width) return;
+      width = editor.clientWidth;
+      fitComposerTextarea(editor);
+    });
+    observer.observe(editor);
+    return () => observer.disconnect();
+  }, []);
+
   const busy = props.state === 'resolving'
     || props.state === 'sending' || props.state === 'reconciling';
   return (
@@ -27,7 +56,7 @@ export function LcosComposerView(props: LcosComposerViewProps): JSX.Element {
           <span className="lcos-composer-identity" aria-hidden="true">{props.identity}</span>
         )}
         {props.receiverAction ? (
-          <button
+          <LcosIconButton
             type="button"
             className="lcos-composer-receiver"
             disabled={props.receiverAction.disabled}
@@ -35,9 +64,9 @@ export function LcosComposerView(props: LcosComposerViewProps): JSX.Element {
             onClick={props.receiverAction.onClick}
           >
             {props.title}
-          </button>
+          </LcosIconButton>
         ) : <span className="lcos-composer-title" title={props.title}>{props.title}</span>}
-        <button
+        <LcosIconButton
           type="button"
           className="lcos-composer-close"
           aria-label="关闭 Composer"
@@ -45,14 +74,14 @@ export function LcosComposerView(props: LcosComposerViewProps): JSX.Element {
           onClick={props.onClose}
         >
           <LcosNearfieldGlyph name="close" size={14} />
-        </button>
+        </LcosIconButton>
       </div>
 
       <ComposerReferenceStrip items={props.references} />
 
       <div className="lcos-composer-editor">
         <textarea
-          ref={props.textareaRef}
+          ref={setEditorRef}
           data-lcos-composer-input
           value={props.text}
           onChange={props.onTextChange}
@@ -65,25 +94,25 @@ export function LcosComposerView(props: LcosComposerViewProps): JSX.Element {
         <div className="lcos-composer-tools">
           <div className="lcos-composer-tools-start">
             {props.attachAction && (
-              <button type="button" className="lcos-composer-tool-hit"
+              <LcosIconButton type="button" className="lcos-composer-tool-hit"
                 disabled={props.attachAction.disabled}
                 title={props.attachAction.disabledReason ?? props.attachAction.label}
                 aria-label={props.attachAction.label}
                 onClick={props.attachAction.onClick}>
                 <span className="lcos-composer-tool-face"><LcosNearfieldGlyph name="attach" /></span>
-              </button>
+              </LcosIconButton>
             )}
             {props.referencePickAction && (
-              <button type="button" className="lcos-composer-tool-hit"
+              <LcosIconButton type="button" className="lcos-composer-tool-hit"
                 disabled={props.referencePickAction.disabled}
                 title={props.referencePickAction.disabledReason ?? props.referencePickAction.label}
                 aria-label={props.referencePickAction.label}
                 onClick={props.referencePickAction.onClick}>
                 <span className="lcos-composer-tool-face"><LcosNearfieldGlyph name="at" /></span>
-              </button>
+              </LcosIconButton>
             )}
           </div>
-          <button
+          <LcosIconButton
             type="button"
             className="lcos-composer-tool-hit lcos-composer-submit"
             disabled={!props.canSubmit}
@@ -92,7 +121,7 @@ export function LcosComposerView(props: LcosComposerViewProps): JSX.Element {
             onClick={props.onSubmit}
           >
             <span className="lcos-composer-tool-face"><LcosNearfieldGlyph name="send" /></span>
-          </button>
+          </LcosIconButton>
         </div>
       </div>
       {(props.feedback !== null && props.feedback !== undefined ||
@@ -100,13 +129,13 @@ export function LcosComposerView(props: LcosComposerViewProps): JSX.Element {
         <div className="lcos-composer-feedback" aria-live="polite">
           {props.feedback}
           {props.feedbackAction && (
-            <button type="button" className="lcos-composer-recovery-action"
+            <LcosIconButton type="button" className="lcos-composer-recovery-action"
               aria-label={props.feedbackAction.label}
               disabled={props.feedbackAction.disabled}
               title={props.feedbackAction.disabledReason ?? props.feedbackAction.label}
               onClick={props.feedbackAction.onClick}>
               {props.feedbackAction.label}
-            </button>
+            </LcosIconButton>
           )}
         </div>
       )}

@@ -1,6 +1,9 @@
-import type { ReactNode, Ref, UIEventHandler } from 'react';
-
+import { Gen1ImageZoomStage } from './donor/Gen1ImageZoomStage';
+import { Gen1TextDocument } from './donor/Gen1TextDocument';
+import './donor/gen1-reader.css';
 import './professional-reading.css';
+
+import type { ReactNode, Ref, UIEventHandler } from 'react';
 
 /** The owning Reader supplies revision bytes. No loading, URL or revision owner lives here. */
 export type ReaderVisibleContent =
@@ -66,7 +69,8 @@ export function ReaderContentView({
       >
         <div className="lcos-reader-measure">
           {renderedText === undefined ? (
-            <pre className="lcos-reader-plaintext" style={{ fontSize: `${0.875 * zoom / 100}rem` }}>{content.value}</pre>
+            kind === 'markdown' ? <Gen1TextDocument text={content.value} /> :
+              <pre className="lcos-reader-plaintext" style={{ fontSize: `${0.875 * zoom / 100}rem` }}>{content.value}</pre>
           ) : (
             <div className="lcos-reader-richtext" style={{ zoom: zoom / 100 }}>{renderedText}</div>
           )}
@@ -85,13 +89,7 @@ export function ReaderContentView({
         className="lcos-reader-media-page"
       >
         <figure className="lcos-reader-figure">
-          <img
-            data-figma-node-id="5388:27490"
-            src={content.url}
-            alt={fileName}
-            className="lcos-reader-image"
-            style={{ width: `${zoom}%`, maxWidth: 'none' }}
-          />
+          <Gen1ImageZoomStage key={content.url} src={content.url} alt={fileName} />
           <figcaption className="lcos-reader-media-caption">{fileName}</figcaption>
         </figure>
         <span className="lcos-professional-sr-only">{content.mimeType}</span>

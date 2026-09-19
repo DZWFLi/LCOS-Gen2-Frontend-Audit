@@ -1,3 +1,4 @@
+import { LcosButton } from '../primitives/LcosButton';
 // LcosWindowChrome — 共享组件族 ProfessionalWindowChrome（Figma 5387:331，布局 浮动/停靠/分组）。
 // 几何取自 structures/window-chrome：h48 · pad 8/24 · gap 8 · 标题 12px / 18px（22px 内容框） · 图标键 32×32 r999。
 // body 不拥有窗口位置：拓扑（浮动/停靠/分组）由 ProfessionalWindowStage 决定，本组件只呈现顶栏。
@@ -45,7 +46,7 @@ export function LcosWindowChrome({
     <div data-lcos-family="window-chrome" data-lcos-variant={layout} data-lcos-window-busy={busy ? 'true' : undefined}>
       {tabs.length > 0 ? (
         <div data-lcos-window-tabs aria-label={title}>{tabs.map((tab) => (
-          <button
+          <LcosButton
             key={tab.value ?? tab.key}
             type="button"
             data-lcos-window-tab={tab.key}
@@ -55,7 +56,7 @@ export function LcosWindowChrome({
             onClick={() => onSelectTab?.(tab.value ?? tab.key)}
           >
             {tab.label}
-          </button>
+          </LcosButton>
         ))}</div>
       ) : (
         <span data-lcos-window-title title={title}>

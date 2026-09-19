@@ -6,6 +6,7 @@
 import { FigmaPinMark, FigmaShellGlyph } from '../FigmaShellGlyph';
 import { LcosSurfaceFeedbackView } from '../LcosSurfaceFeedbackView';
 import { lcosTokens } from '../lcosTokens';
+import { LcosIconButton } from '../primitives/LcosIconButton';
 
 import type { RefObject } from 'react';
 
@@ -70,16 +71,16 @@ export function LcosNavigatorIslandView({
     <div data-lcos-nav-view>
       <div data-lcos-family="navigator-island" data-lcos-variant={state}
         data-lcos-expanded={expanded ? 'true' : 'false'} aria-busy={state === 'loading'}>
-        <button type="button" data-lcos-nav-part="search"
+        <LcosIconButton type="button" data-lcos-nav-part="search"
           aria-label={expanded ? '收起搜索（Esc）' : '搜索项目中的内容（Ctrl/Cmd+F）'}
           aria-expanded={expanded} disabled={disabled} onClick={onToggleSearch}>
           <FigmaShellGlyph name="search" size={19} />
-        </button>
+        </LcosIconButton>
         {expanded && <input ref={inputRef} data-lcos-nav-part="input" value={query}
           disabled={disabled} onChange={(event) => onQueryChange?.(event.target.value)}
           placeholder="搜索项目中的内容" aria-label="项目搜索" />}
         {pins.map((pin) => (
-          <button key={pin.id} type="button" data-lcos-nav-part="pin"
+          <LcosIconButton key={pin.id} type="button" data-lcos-nav-part="pin"
             data-lcos-pin-tone={pin.tone} data-lcos-pin-color={pin.color ?? ''}
             data-lcos-pin-count={pin.count ?? 0} aria-label={pin.label}
             title={pin.count === undefined ? pin.label : `${pin.label} · ${pin.count} 项`}
@@ -87,13 +88,13 @@ export function LcosNavigatorIslandView({
             <FigmaPinMark color={pin.color ?? tones[pin.tone]} />
             {pin.count !== undefined && pin.count > 0 &&
               <span data-lcos-pin-count-mark>{pin.count}</span>}
-          </button>
+          </LcosIconButton>
         ))}
-        {onCreatePin !== undefined && <button type="button" data-lcos-nav-part="pin-add"
+        {onCreatePin !== undefined && <LcosIconButton type="button" data-lcos-nav-part="pin-add"
           aria-label="新建颜色组" title="把当前现场标为颜色组"
           disabled={disabled || createPinDisabled} onClick={onCreatePin}>
           <FigmaShellGlyph name="plus" size={16} />
-        </button>}
+        </LcosIconButton>}
       </div>
       {feedback !== undefined && <div data-lcos-nav-feedback>
         <LcosSurfaceFeedbackView presentation={feedback}

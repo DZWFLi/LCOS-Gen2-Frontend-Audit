@@ -1,15 +1,19 @@
-import {
-  ACTION_ARC_HIT_INSET,
-  ACTION_ARC_HIT_SIZE,
-  ACTION_ARC_VISUAL_SIZE,
-} from '../../navigation/actionArcGeometry';
-import './nearfield.css';
+import { motion, useIsPresent } from 'motion/react';
 
-import type { ActionArcPoint } from '../../navigation/actionArcGeometry';
-import type { JSX, ReactNode } from 'react';
+import { Tooltip } from '@/components/Common/Tooltip';
+
+import { satelliteVariants } from './objectOrbitMotion';
+import './nearfield.css';
+import {
+  ACTION_ARC_HIT_INSET, ACTION_ARC_HIT_SIZE, ACTION_ARC_VISUAL_SIZE,
+  type ActionArcPoint,
+} from '../../navigation/actionArcGeometry';
+import { useReducedSpatialMotion } from '../motion/useReducedSpatialMotion';
+import { LcosIconButton } from '../primitives/LcosIconButton';
+
+import type { ReactNode } from 'react';
 
 export interface LcosActionOrbViewProps {
-  /** Existing Arc geometry owns this point; the View never positions the overlay. */
   readonly point: ActionArcPoint;
   readonly label: string;
   readonly actionId?: string | undefined;
@@ -21,40 +25,37 @@ export interface LcosActionOrbViewProps {
   readonly children: ReactNode;
 }
 
-/** Thin extraction of the current orb; Gen1 ObjectOrbit capability/label grammar retained. */
-export function LcosActionOrbView({
-  point, label, actionId, more, disabledReason, expanded, selected, onClick, children,
-}: LcosActionOrbViewProps): JSX.Element {
+/** GEN1 satellite animation + Huabu Tooltip, with exact Figma 5388:311 geometry. */
+export function LcosActionOrbView({ point, label, actionId, more, disabledReason, expanded, selected, onClick, children }: LcosActionOrbViewProps): React.JSX.Element {
+  const reduced = useReducedSpatialMotion();
+  const present = useIsPresent();
   return (
-    <button
-      type="button"
-      className="lcos-action-orb-hit"
-      data-lcos-action-orb-hit
-      data-lcos-arc-primary={more ? undefined : actionId}
-      data-lcos-arc-more={more || undefined}
-      data-ui-selected={selected || undefined}
-      aria-label={label}
-      aria-expanded={expanded}
-      aria-pressed={selected}
-      disabled={disabledReason !== undefined}
-      title={disabledReason ?? label}
-      onClick={onClick}
-      style={{
-        position: 'absolute',
-        left: point.x - ACTION_ARC_HIT_INSET,
-        top: point.y - ACTION_ARC_HIT_INSET,
-        width: ACTION_ARC_HIT_SIZE,
-        height: ACTION_ARC_HIT_SIZE,
-      }}
+    <motion.div
+      className="lcos-action-orb-placement"
+      custom={{ dx: -point.x, dy: -point.y }}
+      variants={reduced ? {
+        hidden: { opacity: 1 }, visible: { opacity: 1 }, exiting: { opacity: 0, transition: { duration: 0 } },
+      } : satelliteVariants}
+      style={{ position: 'absolute', left: point.x - ACTION_ARC_HIT_INSET, top: point.y - ACTION_ARC_HIT_INSET, width: ACTION_ARC_HIT_SIZE, height: ACTION_ARC_HIT_SIZE }}
     >
-      <span
-        className="lcos-action-orb-face"
-        data-lcos-action-orb
-        style={{ width: ACTION_ARC_VISUAL_SIZE, height: ACTION_ARC_VISUAL_SIZE }}
-      >
-        {children}
-      </span>
-      <span className="lcos-action-orb-label" aria-hidden="true">{label}</span>
-    </button>
+      <Tooltip content={present ? disabledReason ?? label : ''} wrapperClassName="lcos-action-orb-tooltip-host" contentClassName="lcos-action-orb-tooltip">
+        <LcosIconButton
+          data-lcos-action-orb-hit
+          data-lcos-arc-primary={more ? undefined : actionId}
+          data-lcos-arc-more={more || undefined}
+          data-ui-selected={selected || undefined}
+          className="lcos-action-orb-hit"
+          aria-label={label}
+          aria-expanded={expanded}
+          aria-pressed={selected}
+          disabled={disabledReason !== undefined || !present}
+          tabIndex={present ? undefined : -1}
+          onClick={onClick}
+          style={{ position: 'relative', left: 0, top: 0, width: ACTION_ARC_HIT_SIZE, height: ACTION_ARC_HIT_SIZE }}
+        >
+          <span data-lcos-action-orb style={{ width: ACTION_ARC_VISUAL_SIZE, height: ACTION_ARC_VISUAL_SIZE }} className="lcos-action-orb-face" data-expanded={expanded} data-selected={selected}>{children}</span>
+        </LcosIconButton>
+      </Tooltip>
+    </motion.div>
   );
 }

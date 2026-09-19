@@ -1,4 +1,5 @@
 import { LcosNearfieldGlyph } from './LcosNearfieldGlyph';
+import { LcosIconButton } from '../primitives/LcosIconButton';
 
 import type { ComposerReferenceViewItem } from './composerViewTypes';
 import type { JSX } from 'react';
@@ -30,14 +31,14 @@ export function ComposerReferenceStrip({
           </span>
           <span className="lcos-composer-reference-label">{item.label}</span>
           {item.onRemove !== undefined && (
-            <button
+            <LcosIconButton
               type="button"
               className="lcos-composer-reference-remove"
               aria-label={`移除引用 ${item.label}`}
               onClick={item.onRemove}
             >
               <LcosNearfieldGlyph name="close" size={10} />
-            </button>
+            </LcosIconButton>
           )}
         </div>
       ))}

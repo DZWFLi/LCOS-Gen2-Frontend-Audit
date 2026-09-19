@@ -14,11 +14,13 @@ import {
 import { useCloseOnEscape } from '@/hooks/useCloseOnEscape';
 
 import { buildComposerRunInput, canSubmitComposerTarget } from './composerSubmission';
+import { LcosReceiverIdentity } from './LcosReceiverIdentity';
 import { createLcosCoreSession } from '../app/lcosCoreClient';
 import { rectFromDomRect } from '../drop/dropTargetRegistry';
 import { useLcosDropStore } from '../lcosDropState';
 import { useLcosReferenceStore } from '../lcosReferenceState';
 import { useLcosShellStore } from '../shell/lcosShellStore';
+import { ScaleIn } from '../ui/motion/ScaleIn';
 import { LcosComposerView } from '../ui/nearfield/LcosComposerView';
 
 import type { DropTargetRegistration } from '../drop/dropTypes';
@@ -181,6 +183,9 @@ export function LcosComposerHost({
         : workspaceId === undefined || composerTarget?.receiverBlockedReason ? 'blocked'
         : text.length === 0 ? 'empty' : 'editing'}
       targetId={composerTarget?.nodeId}
+      identity={composerTarget?.receiverConversationId ? (
+        <LcosReceiverIdentity projectId={projectId} conversationId={composerTarget.receiverConversationId} size={inline ? 28 : 25} />
+      ) : undefined}
       title={`围绕「${composerTarget?.title ?? '当前对象'}」工作`}
       references={draftRefs.map((ref) => ({
         key: `${ref.entityType}:${ref.entityId}`,
@@ -229,7 +234,7 @@ export function LcosComposerHost({
 
   return inline ? content : anchor ? (
     <CanvasFloatingPopover anchor={anchor} open={open} side="top" offset={10}>
-      {content}
+      <ScaleIn initialScale={1}>{content}</ScaleIn>
     </CanvasFloatingPopover>
   ) : null;
 }

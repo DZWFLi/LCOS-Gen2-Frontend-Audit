@@ -33,6 +33,7 @@ import {
   TextCursorInput,
   Trash2,
 } from 'lucide-react';
+import { AnimatePresence } from 'motion/react';
 import { useEffect, useMemo, useState } from 'react';
 
 import { ACCENT_PALETTE } from '@huabu/shared';
@@ -50,6 +51,7 @@ import { resolveActionArcGeometry } from './actionArcGeometry';
 import { useLcosReferenceStore } from '../lcosReferenceState';
 import { useLcosShellStore } from '../shell/lcosShellStore';
 import { lcosGlassStyle, lcosTokens } from '../ui/lcosTokens';
+import { LcosActionOrbitMotion, LcosActionArcMotionHost } from '../ui/nearfield/LcosActionOrbitMotion';
 import { LcosActionOrbView as ActionArcOrb } from '../ui/nearfield/LcosActionOrbView';
 import { LcosNearfieldGlyph } from '../ui/nearfield/LcosNearfieldGlyph';
 
@@ -225,7 +227,7 @@ export function LcosActionArc(): React.JSX.Element | null {
 
   // Professional Window owns the foreground interaction; keep the node Arc out
   // of the reader, Assembly, portal, and conversation work view.
-  if (!node || !nodeId || composerOpen || professionalWindowOpen) return null;
+  if (!node || !nodeId || composerOpen || professionalWindowOpen) return <AnimatePresence />;
 
   const box = flowBoxOf(node);
   const anchor: CanvasAnchorRect = {
@@ -306,6 +308,7 @@ export function LcosActionArc(): React.JSX.Element | null {
   const contextMenuView = contextMenu !== null && node !== undefined && nodeId !== undefined
     ? (
       <div
+        key="context-menu"
         data-lcos-context-menu
         role="menu"
         aria-label="节点命令"
@@ -363,11 +366,11 @@ export function LcosActionArc(): React.JSX.Element | null {
   const arcHeight = arcGeometry.height;
 
   return (
-    <>
+    <AnimatePresence>
       {contextMenuView}
       {contextMenu === null && (
-      <CanvasFloatingPopover anchor={anchor} open side="top" offset={10}>
-      <div
+      <CanvasFloatingPopover key={nodeId} anchor={anchor} open side="top" offset={10}>
+      <LcosActionArcMotionHost
         data-lcos-action-arc
         data-lcos-arc-node={nodeId}
         data-lcos-arc-mode={arcMode}
@@ -376,11 +379,7 @@ export function LcosActionArc(): React.JSX.Element | null {
         style={{ maxWidth: 320 }}
       >
         {/* Figma 5388:311：每个动作是独立 30×30 玻璃圆，沿节点近场弧线展开。 */}
-        <div
-          data-lcos-action-arc-orbit
-          className="relative"
-          style={{ width: arcWidth, height: arcHeight }}
-        >
+        <LcosActionOrbitMotion width={arcWidth} height={arcHeight}>
           {primary.map((command, index) => (
             <ActionArcOrb
               key={command.id}
@@ -402,7 +401,7 @@ export function LcosActionArc(): React.JSX.Element | null {
           >
             <LcosNearfieldGlyph name="more" size={17} />
           </ActionArcOrb>
-        </div>
+        </LcosActionOrbitMotion>
 
         {moreOpen && (
           <div
@@ -543,9 +542,9 @@ export function LcosActionArc(): React.JSX.Element | null {
             ))}
           </div>
         )}
-      </div>
+      </LcosActionArcMotionHost>
       </CanvasFloatingPopover>
       )}
-    </>
+    </AnimatePresence>
   );
 }
