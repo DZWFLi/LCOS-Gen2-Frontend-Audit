@@ -9,7 +9,7 @@ import { useCloseOnEscape } from '@/hooks/useCloseOnEscape';
 
 import { WorkflowCardPool } from './WorkflowCardPool';
 import { LcosWorksiteStage } from '../../shell/LcosWorksiteStage';
-import '../../ui/workflow/workflow-hand.css';
+import { WorkflowHandView } from '../../ui/workflow/WorkflowHandView';
 
 import type { LcosSurfaceKey } from '../../shell/lcosShellStore';
 
@@ -29,19 +29,15 @@ export interface WorkflowHandOverlayProps {
 /** 可由 Main / Workflow 现场共同呼出的手牌；不拥有 Canvas 或业务 truth。 */
 export function WorkflowHandOverlay({ projectId, open, onClose }: WorkflowHandOverlayProps): React.JSX.Element | null {
   useCloseOnEscape(open, onClose);
-  if (!open) return null;
   return (
-    <div data-lcos-workflow-hand className="lcos-workflow-hand-stage">
-      <div className="lcos-workflow-hand-shell">
-        <div className="lcos-workflow-hand-head">
-          <span>工作流</span>
-          <button type="button" aria-label="收回手牌" onClick={onClose} className="lcos-workflow-hand-close">
-            <X className="h-[22px] w-[22px]" aria-hidden />
-          </button>
-        </div>
-        <WorkflowCardPool projectId={projectId} />
-      </div>
-    </div>
+    <WorkflowHandView key={projectId} open={open} header={<>
+      <span>工作流</span>
+      <button type="button" aria-label="收回手牌" onClick={onClose} className="lcos-workflow-hand-close">
+        <X className="h-[22px] w-[22px]" aria-hidden />
+      </button>
+    </>}>
+      <WorkflowCardPool projectId={projectId} />
+    </WorkflowHandView>
   );
 }
 

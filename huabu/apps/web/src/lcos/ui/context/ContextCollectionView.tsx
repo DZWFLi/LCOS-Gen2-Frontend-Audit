@@ -1,6 +1,7 @@
 import { Layers3 } from 'lucide-react';
 import { motion, useReducedMotion } from 'motion/react';
 
+import { PRESENTATION_EXIT, PRESENTATION_SPRING, presentationPose } from '../spatial/presentationMotion';
 import { PreviewMedia } from '../spatial/PreviewMedia';
 import { useDescendantFocus } from '../spatial/useDescendantFocus';
 import thingIcon from './assets/context-thing.svg';
@@ -24,6 +25,9 @@ export interface ContextCollectionViewProps {
   readonly action?: ReactNode;
   /** Transitional selector for the current production/e2e contract. */
   readonly legacyAtlasKind?: string;
+  /** Existing owner activation only; absent when the destination is ambiguous/unavailable. */
+  readonly onActivate?: () => void;
+  readonly activationLabel?: string;
 }
 
 function OrganizationGlyph({ organization }: { readonly organization: ContextCollectionOrganization }): React.JSX.Element {
@@ -43,8 +47,10 @@ export function ContextCollectionView({
   active = false,
   action,
   legacyAtlasKind,
+  onActivate,
+  activationLabel,
 }: ContextCollectionViewProps): React.JSX.Element {
-  const reducedMotion = useReducedMotion();
+  const reducedMotion = Boolean(useReducedMotion());
   const focus = useDescendantFocus();
   const label = organization === '未指定' ? '组织未标注' : `按${organization}组织`;
   return (
@@ -71,10 +77,13 @@ export function ContextCollectionView({
         data-rendition={rendition}
         className="lcos-context-collection"
         initial={reducedMotion ? false : { opacity: 0, y: 36, scale: 0.96 }}
-        animate={{ opacity: 1, y: !reducedMotion && !disabled && focus.focused ? -8 : 0, scale: !reducedMotion && !disabled && focus.focused ? 1.025 : 1 }}
+        animate={presentationPose(reducedMotion, focus.focused, disabled)}
+        exit={{ opacity: 0, y: reducedMotion ? 0 : 36, scale: reducedMotion ? 1 : 0.96, transition: reducedMotion ? { duration: 0 } : PRESENTATION_EXIT }}
         whileHover={reducedMotion || disabled ? undefined : { y: -8, scale: 1.025 }}
-        transition={reducedMotion ? { duration: 0 } : { type: 'spring', stiffness: 400, damping: 25 }}
+        transition={reducedMotion ? { duration: 0 } : PRESENTATION_SPRING}
       >
+        {onActivate && !disabled ? <button type="button" className="lcos-context-collection-hit"
+          aria-label={activationLabel ?? `进入集合 · ${title}`} onClick={onActivate} /> : null}
         <div className="lcos-context-collection-back" aria-hidden />
         <div className="lcos-context-collection-tab" aria-hidden />
         <div className="lcos-context-collection-cover cover-a">

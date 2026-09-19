@@ -1,15 +1,9 @@
 /* Stage5 deep fidelity: Figma 5388:24294 / 5333:96 / 5388:25701 / 5348:1151. */
-.lcos-atlas-light-curtain {
-  position: fixed; inset: 0; z-index: 40; overflow: auto;
-  background: linear-gradient(180deg, rgba(250,250,250,.64), rgba(250,250,250,.94));
-  backdrop-filter: blur(7px); -webkit-backdrop-filter: blur(7px);
-}
-.lcos-atlas-light-curtain::after {
-  content: ''; position: fixed; left: 0; right: 0; bottom: 0; height: min(690px, calc(100vh - 210px)); pointer-events: none;
-  background: radial-gradient(ellipse at 50% 100%, rgba(255,255,255,.99), rgba(255,255,255,.50) 58%, transparent 80%);
-}
-.lcos-atlas-light-curtain-inner { position: relative; z-index: 1; width: min(892px, calc(100vw - 96px)); margin: 0 auto; padding: 122px 0 96px; }
-.lcos-atlas-light-curtain-head { display: flex; align-items: center; justify-content: space-between; margin: 0 -58px 24px; color: var(--gen2-muted); font-size: 12px; line-height: 19px; }
+.lcos-atlas-light-curtain { position:fixed; inset:0; z-index:40; overflow:auto; background:transparent; }
+.lcos-atlas-light-curtain-inner { position:relative; z-index:1; width:min(892px,calc(100vw - 96px)); margin:0 auto; padding:159px 0 100px; transform:translateX(-34px); pointer-events:none; }
+.lcos-atlas-light-curtain-head { display:flex; align-items:center; justify-content:space-between; height:44px; margin:0 -58px 15px; color:var(--gen2-muted); font-size:12px; line-height:19px; }
+.lcos-atlas-light-curtain-head > button { pointer-events:auto; position:absolute; left:calc(100% + 127px); }
+.lcos-atlas-grid .lcos-context-collection-slot, .lcos-atlas-light-curtain-inner [data-lcos-family='surface-feedback'] { pointer-events:auto; }
 .lcos-atlas-close { width: 44px; height: 44px; display: grid; place-items: center; border: 0; background: transparent; border-radius: 12px; color: var(--gen2-muted); }
 .lcos-atlas-close:hover,.lcos-atlas-close:focus-visible { background: rgba(255,255,255,.70); outline: 2px solid var(--gen2-accent); outline-offset: 2px; }
 .lcos-atlas-grid { display: grid; grid-template-columns: repeat(3,248px); gap: 42px 74px; justify-content: center; align-items: start; }
@@ -20,9 +14,9 @@
 .lcos-context-collection-slot[data-disabled='true'] { opacity: .65; }
 .lcos-context-collection { position: relative; width: 248px; height: 244px; color: var(--gen2-text); outline: none; }
 .lcos-context-collection-back { box-sizing:border-box; position:absolute; left:18px; top:38px; width:212px; height:164px; border-radius:18px; background:var(--gen2-surface); border:1px solid var(--gen2-surface); box-shadow:0 0 1px rgba(40,48,58,.10),0 4px 12px rgba(40,48,58,.08); }
-.lcos-context-collection[data-rendition='总览'] .lcos-context-collection-back { transform:rotate(3deg); }
+.lcos-context-collection[data-rendition='总览'] .lcos-context-collection-back { transform:rotate(3deg); transform-origin:0 0; }
 .lcos-context-collection-tab { position:absolute; left:30px; top:24px; width:82px; height:36px; border-radius:10px; background:var(--lcos-collection-pocket-bg,#def7f9); }
-.lcos-context-collection-cover { position:absolute; overflow:hidden; background:var(--gen2-raised); border-radius:12px; box-shadow:0 3px 10px rgba(40,48,58,.06); transform-origin:center; }
+.lcos-context-collection-cover { position:absolute; overflow:hidden; background:var(--gen2-raised); border-radius:12px; box-shadow:0 3px 10px rgba(40,48,58,.06); transform-origin:0 0; }
 .lcos-context-collection-cover img { width:100%; height:100%; display:block; object-fit:cover; }
 .lcos-context-collection-cover.cover-a { left:31px; width:108px; height:133px; transform:rotate(6deg); }
 .lcos-context-collection-cover.cover-b { left:109px; width:104px; height:128px; transform:rotate(-5deg); }
@@ -50,7 +44,7 @@
 
 .lcos-temporal-rail:focus-visible { outline:2px solid color-mix(in srgb,var(--gen2-accent) 55%,transparent); outline-offset:4px; border-radius:14px; }
 .lcos-temporal-ticks { position:absolute; inset:0; pointer-events:none; }
-.lcos-temporal-ticks i { position:absolute; right:17px; height:1px; border-radius:1px; background:#a8b8ac; transform:translateY(-.5px); }
+.lcos-temporal-ticks i { position:absolute; right:17px; height:1px; border-radius:1px; background:#a8b8ac; }
 .lcos-temporal-item { position:absolute; right:8px; width:42px; height:24px; border:0; border-radius:10px; background:transparent; padding:0; color:var(--gen2-text); }
 .lcos-temporal-item > i { position:absolute; right:9px; top:11px; width:8px; height:2px; border-radius:2px; background:#789082; transition:width 150ms ease,background 150ms ease; }
 .lcos-temporal-item > span { pointer-events:none; position:absolute; right:42px; top:50%; min-width:0; max-width:180px; transform:translateY(-50%); padding:6px 8px; border:1px solid var(--lcos-color-border-subtle); border-radius:9px; background:rgba(255,255,255,.94); box-shadow:0 4px 14px rgba(40,48,58,.08); color:var(--gen2-text); font-size:11px; line-height:16px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; opacity:0; visibility:hidden; transition:opacity 100ms ease,visibility 0s linear 100ms; }
@@ -90,7 +84,7 @@
   .lcos-portal-footer-copy,.lcos-portal-preview-view[data-has-retry='true'][data-has-zoom='true'] .lcos-portal-footer-copy { top:305px; max-width:calc(100% - 40px); }
 }
 
-@media (max-width:1180px) { .lcos-atlas-grid { grid-template-columns:repeat(2,248px); } .lcos-atlas-light-curtain-inner { width:min(570px,calc(100vw - 72px)); } .lcos-atlas-light-curtain-head { margin-inline:0; } }
+@media (max-width:1180px) { .lcos-atlas-grid { grid-template-columns:repeat(2,248px); } .lcos-atlas-light-curtain-inner { width:min(570px,calc(100vw - 72px)); transform:none; } .lcos-atlas-light-curtain-head > button { position:static; } .lcos-atlas-light-curtain-head { margin-inline:0; } }
 @media (max-width:720px) { .lcos-atlas-grid { grid-template-columns:248px; } .lcos-atlas-light-curtain-inner { width:calc(100vw - 36px); padding-top:92px; } .lcos-temporal-rail { right:12px; } }
 @media (prefers-reduced-motion:reduce) {
   .lcos-context-collection-slot { transition:none; }
@@ -114,3 +108,12 @@
 .lcos-temporal-item:focus-visible { outline:2px solid var(--gen2-accent); outline-offset:2px; }
 
 .lcos-context-collection-cover .lcos-preview-media-message { justify-content:flex-start; padding-top:14px; gap:4px; }
+
+.lcos-atlas-light-curtain-inner > :not(.lcos-atlas-grid):not(.lcos-atlas-light-curtain-head) { pointer-events:auto; }
+
+/* A native sibling hit surface, not a clickable div enclosing nested buttons.
+   Image retry / destination menu remain independent real controls above it. */
+.lcos-context-collection-hit { position:absolute; left:12px; top:16px; width:224px; height:200px; padding:0; border:0; border-radius:18px; background:transparent; cursor:pointer; }
+.lcos-context-collection-hit:focus-visible { outline:none; }
+.lcos-context-collection:has(> .lcos-context-collection-hit) > :not(.lcos-context-collection-hit):not(.lcos-context-collection-action) { pointer-events:none; }
+.lcos-context-collection:has(> .lcos-context-collection-hit) .lcos-preview-media-message > button { pointer-events:auto; }

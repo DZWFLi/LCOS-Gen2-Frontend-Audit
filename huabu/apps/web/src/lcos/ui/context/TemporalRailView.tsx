@@ -1,7 +1,7 @@
 import { motion, useReducedMotion } from 'motion/react';
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 
-import { fisheye1d, temporalTickLength } from './temporalFisheye';
+import { temporalFocusTick } from './temporalFocusProfile';
 import {
   nextEnabledTemporalIndex,
   temporalRatioToY,
@@ -12,6 +12,7 @@ import {
   TEMPORAL_TOP_PADDING,
 } from './temporalNavigation';
 import { bindTemporalWheel } from './temporalWheel';
+import { PRESENTATION_SPRING } from '../spatial/presentationMotion';
 import './context-spatial.css';
 
 export interface TemporalRailItemView {
@@ -196,19 +197,14 @@ export function TemporalRailView({
       {sorted.length > 0 ? <div className="lcos-temporal-ticks" aria-hidden>
         {Array.from({ length: temporalTickCount(railHeight) }, (_, index) => {
           const baseY = TEMPORAL_TOP_PADDING + index * TEMPORAL_TICK_STEP;
-          const y = focusY === null || reducedMotion ? baseY : fisheye1d({
-            value: baseY, focus: focusY, min: TEMPORAL_TOP_PADDING,
-            max: Math.max(TEMPORAL_TOP_PADDING, railHeight - TEMPORAL_BOTTOM_PADDING), distortion: 3,
-          });
-          return <i key={index} style={{ top: y, width: temporalTickLength(index) }} />;
+          const face = temporalFocusTick(index, focusY, reducedMotion === true);
+          return <motion.i key={index} initial={false} data-temporal-tick={index}
+            style={{ top: baseY }} animate={face}
+            transition={reducedMotion ? { duration: 0 } : PRESENTATION_SPRING} />;
         })}
       </div> : null}
       {sorted.map((item) => {
         const baseY = temporalRatioToY(item.ratio, railHeight);
-        const y = focusY === null || reducedMotion ? baseY : fisheye1d({
-          value: baseY, focus: focusY, min: TEMPORAL_TOP_PADDING,
-          max: Math.max(TEMPORAL_TOP_PADDING, railHeight - TEMPORAL_BOTTOM_PADDING), distortion: 3,
-        });
         const preview = previewItem?.id === item.id;
         return <motion.button
           key={item.id}
@@ -220,11 +216,16 @@ export function TemporalRailView({
           disabled={item.disabled}
           tabIndex={item.id === tabId ? 0 : -1}
           className="lcos-temporal-item"
-          style={{ top: y - 12 }}
-          animate={{ x: !reducedMotion && preview ? -12 : 0, scale: !reducedMotion && preview ? 1.1 : 1 }}
-          transition={reducedMotion ? { duration: 0 } : { type: 'spring', stiffness: 400, damping: 25 }}
+          style={{ top: baseY - 12 }}
+          initial={false}
+          animate={{ x: 0, scale: 1 }}
+          transition={reducedMotion ? { duration: 0 } : PRESENTATION_SPRING}
           onPointerEnter={() => { if (item.disabled !== true) setPreview(item); }}
-          onFocus={() => { setRovingId(item.id); setPreview(item); }}
+          onFocus={() => {
+            setRovingId(item.id);
+            setPreview(item);
+            if (!reducedMotion) setFocusY(baseY);
+          }}
           onClick={() => { if (item.disabled !== true) onActivate?.(item); }}
           aria-label={item.label}
           aria-current={activeId === item.id ? 'true' : undefined}

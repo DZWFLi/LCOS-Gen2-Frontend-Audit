@@ -1,6 +1,8 @@
 import { motion, useReducedMotion } from 'motion/react';
 
+import { PRESENTATION_EXIT, PRESENTATION_SPRING, presentationPose } from '../spatial/presentationMotion';
 import { PreviewMedia } from '../spatial/PreviewMedia';
+import { useDescendantFocus } from '../spatial/useDescendantFocus';
 import flowIcon from './assets/workflow-flow-23.svg';
 import chevronIcon from './assets/workflow-use-chevron.svg';
 import paperclipIcon from './assets/workflow-use-paperclip.svg';
@@ -39,7 +41,8 @@ export function WorkflowTaskCardView({
   dataEntity,
   legacyWorkflowKind,
 }: WorkflowTaskCardViewProps): React.JSX.Element {
-  const reducedMotion = useReducedMotion();
+  const reducedMotion = Boolean(useReducedMotion());
+  const focus = useDescendantFocus();
   const disabled = state === '不可用';
   const actionAllowed = onUse !== undefined && !disabled;
   const secondary =
@@ -49,7 +52,7 @@ export function WorkflowTaskCardView({
         ? disabledReason ?? '当前不可用'
         : summary ?? '工作流';
   return (
-    <div className="lcos-workflow-task-slot" data-card-state={state}>
+    <div className="lcos-workflow-task-slot" data-card-state={state} onFocusCapture={focus.onFocusCapture} onBlurCapture={focus.onBlurCapture}>
       <motion.article
         data-lcos-family="task-card"
         data-lcos-variant={state}
@@ -61,10 +64,10 @@ export function WorkflowTaskCardView({
         aria-disabled={disabled || undefined}
         aria-label={`${title} · ${secondary}`}
         initial={reducedMotion ? false : { opacity: 0, y: 112, scale: 0.82 }}
-        animate={{ opacity: 1, y: 0, scale: 1 }}
-        exit={reducedMotion ? undefined : { opacity: 0, y: 42, scale: 0.8 }}
+        animate={presentationPose(reducedMotion, focus.focused || state === '键盘焦点', disabled)}
+        exit={{ opacity: 0, y: reducedMotion ? 0 : 42, scale: reducedMotion ? 1 : 0.8, transition: reducedMotion ? { duration: 0 } : PRESENTATION_EXIT }}
         whileHover={reducedMotion || disabled ? undefined : { y: -8, scale: 1.025 }}
-        transition={reducedMotion ? { duration: 0 } : { type: 'spring', stiffness: 400, damping: 25 }}
+        transition={reducedMotion ? { duration: 0 } : PRESENTATION_SPRING}
       >
         <div className="lcos-workflow-task-plate" aria-hidden />
         <div className="lcos-workflow-task-cover">
