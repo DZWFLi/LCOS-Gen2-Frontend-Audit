@@ -55,7 +55,9 @@ export function LcosWindowChrome({
         </span>
       )}
       <span className="flex-1" />
-      {actions}
+      <span data-lcos-window-actions role="group" aria-label="窗口操作">
+        {actions}
+      </span>
     </div>
   );
 }

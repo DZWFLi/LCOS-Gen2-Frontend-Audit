@@ -11,7 +11,7 @@ import {
 } from './lcosShellStore';
 import { lcosHudEdgeOffsets } from './lcosHudPlacement';
 import { useLcosWorksiteNav } from '../app/useLcosWorksiteNav';
-import { lcosTokens } from '../ui/lcosTokens';
+import { lcosGlassStyle, lcosTokens } from '../ui/lcosTokens';
 
 export interface LcosSurfaceDockProps {
   readonly projectId: string;
@@ -57,18 +57,17 @@ export function LcosSurfaceDock({
 
   return (
     <div
+      data-lcos-family="surface-dock"
+      data-lcos-variant={activeSurface}
       data-lcos-surface-dock
       className="pointer-events-auto fixed z-40 rounded-full px-2 py-1.5"
       style={{
+        ...lcosGlassStyle,
         left: safeCenteredLeft,
         bottom: edgeOffsets.bottom,
         transform: 'translateX(-50%)',
         maxWidth: 'calc(100vw - 24px)',
-        background: 'rgba(252,252,252,0.86)',
-        backdropFilter: 'blur(18px) saturate(1.4)',
-        WebkitBackdropFilter: 'blur(18px) saturate(1.4)',
-        border: '1px solid rgba(0,0,0,0.09)',
-        boxShadow: '0 4px 20px rgba(0,0,0,0.10)',
+        borderRadius: lcosTokens.radius.capsule,
       }}
     >
       <div className="flex items-center gap-1 overflow-x-auto">

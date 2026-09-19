@@ -162,6 +162,13 @@
   background: var(--gen2-surface);
   color: var(--gen2-text);
 }
+[data-lcos-window-actions] {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--lcos-space-x2);
+  flex: none;
+  min-width: 0;
+}
 [data-lcos-family='window-chrome'][data-lcos-variant='浮动'] {
   border-bottom: 1px solid var(--lcos-color-border-subtle);
 }
@@ -215,6 +222,37 @@
   background: var(--gen2-raised);
   color: var(--gen2-text);
   font-weight: 500;
+}
+
+/* ---------- SurfaceDock（ProjectShell 常驻现场切换） ----------
+ * Dock 的位置由 shell safeRect 计算；这里仅收口 Figma glass family 的外观，
+ * 不把现场切换、建画布或错误回执再复制一份到 CSS/组件层。 */
+[data-lcos-family='surface-dock'] {
+  display: inline-flex;
+  align-items: center;
+  box-sizing: border-box;
+  max-width: calc(100vw - 24px);
+  padding: var(--lcos-space-x2);
+  border-radius: var(--lcos-radius-capsule);
+  background: var(--lcos-glass-bg);
+  border: 1px solid var(--lcos-color-border-subtle);
+  box-shadow: var(--lcos-glass-shadow);
+  backdrop-filter: blur(var(--lcos-glass-blur)) saturate(1.4);
+  -webkit-backdrop-filter: blur(var(--lcos-glass-blur)) saturate(1.4);
+}
+[data-lcos-family='surface-dock'] [data-lcos-surface] {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  flex: none;
+  border-radius: var(--lcos-radius-control);
+}
+[data-lcos-family='surface-dock'] [data-lcos-surface]:hover {
+  background: var(--gen2-raised) !important;
+}
+[data-lcos-family='surface-dock'] [data-lcos-surface-active='true'] {
+  box-shadow: inset 0 0 0 1px var(--lcos-color-border-default);
 }
 
 /* ---------- SurfaceFeedback（Figma 5391:357｜7 呈现｜h38 pad 10/12 gap 8 r16） ---------- */

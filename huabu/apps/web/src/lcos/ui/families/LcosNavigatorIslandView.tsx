@@ -67,7 +67,11 @@ export function LcosNavigatorIslandView({
   const expanded = state === '搜索';
   const disabled = state === 'disabled';
   return (
-    <div data-lcos-family="navigator-island" data-lcos-variant={state}>
+    <div
+      data-lcos-family="navigator-island"
+      data-lcos-variant={state}
+      aria-busy={state === 'loading'}
+    >
       <button
         type="button"
         data-lcos-nav-part="search"
@@ -137,6 +141,8 @@ export function LcosNavigatorIslandView({
       {(state === 'error' || state === 'degraded') && (
         <span
           data-lcos-nav-message
+          role="status"
+          aria-live="polite"
           className="truncate text-xs"
           style={{ color: state === 'error' ? lcosTokens.color.danger : lcosTokens.color.muted, maxWidth: 180 }}
         >
