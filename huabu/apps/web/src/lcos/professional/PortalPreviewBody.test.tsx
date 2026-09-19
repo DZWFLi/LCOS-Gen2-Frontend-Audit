@@ -58,7 +58,7 @@ it('derives loading, partial, cached, failure and missing states from the donor 
   await render({ scene: { ...scene, truncated: { nodes: true, edges: false } }, loading: false, stale: false, error: null }); expect(variant()).toBe('部分预览');
   await render({ scene, loading: false, stale: true, error: new Error('offline') }); expect(variant()).toBe('旧缓存');
   expect(host.textContent).toContain('真实预览正文');
-  const retry = [...host.querySelectorAll('button')].find((button) => button.textContent === '重试');
+  const retry = [...host.querySelectorAll('button')].find((button) => button.textContent === '重新读取');
   if (!retry) throw new Error('Retry missing');
   await act(async () => retry.click()); expect(mocks.retry).toHaveBeenCalledOnce();
   await render({ scene: null, loading: false, stale: false, error: new Error('offline') }); expect(variant()).toBe('预览失败');

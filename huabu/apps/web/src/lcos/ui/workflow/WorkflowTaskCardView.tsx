@@ -1,5 +1,6 @@
 import { motion, useReducedMotion } from 'motion/react';
 
+import { PreviewMedia } from '../spatial/PreviewMedia';
 import flowIcon from './assets/workflow-flow-23.svg';
 import chevronIcon from './assets/workflow-use-chevron.svg';
 import paperclipIcon from './assets/workflow-use-paperclip.svg';
@@ -17,25 +18,28 @@ export type WorkflowTaskCardVisualState =
 export interface WorkflowTaskCardViewProps {
   readonly title: string;
   readonly summary?: string;
+  readonly disabledReason?: string;
   readonly previewUrl?: string;
   readonly state: WorkflowTaskCardVisualState;
   readonly onUse?: () => void;
   readonly dataSource?: string;
   readonly dataEntity?: string;
 }
+
 export function WorkflowTaskCardView({
   title,
   summary,
   previewUrl,
   state,
   onUse,
+  disabledReason,
   dataSource,
   dataEntity,
 }: WorkflowTaskCardViewProps): React.JSX.Element {
   const reducedMotion = useReducedMotion();
   const disabled = state === '不可用';
   const actionAllowed = onUse !== undefined && !disabled && state !== '草稿中' && state !== '已选目标';
-  const secondary = state === '草稿中' ? '已加入草稿 · 未发送' : summary ?? '工作流';
+  const secondary = state === '草稿中' ? '已加入草稿 · 未发送' : disabled ? disabledReason ?? '当前不可用' : summary ?? '工作流';
   return (
     <div className="lcos-workflow-task-slot" data-card-state={state}>
       <motion.article
@@ -49,10 +53,11 @@ export function WorkflowTaskCardView({
         animate={{ opacity: 1, y: 0, scale: 1 }}
         exit={reducedMotion ? undefined : { opacity: 0, y: 42, scale: 0.8 }}
         whileHover={reducedMotion || disabled ? undefined : { y: -8, scale: 1.025 }}
-        transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+        transition={reducedMotion ? { duration: 0 } : { type: 'spring', stiffness: 400, damping: 25 }}
       >
+        <div className="lcos-workflow-task-plate" aria-hidden />
         <div className="lcos-workflow-task-cover">
-          {previewUrl ? <img src={previewUrl} alt="" draggable={false} /> : <div className="lcos-workflow-task-cover-fallback" />}
+          <PreviewMedia src={previewUrl} label={`${title} 封面`} />
           <span className="lcos-workflow-task-badge" aria-hidden><img src={flowIcon} alt="" draggable={false} /></span>
           {actionAllowed ? (
             <button
@@ -71,8 +76,8 @@ export function WorkflowTaskCardView({
           ) : null}
         </div>
         <div className="lcos-workflow-task-copy">
-          <strong>{title}</strong>
-          <span>{secondary}</span>
+          <strong title={title}>{title}</strong>
+          <span title={secondary}>{secondary}</span>
         </div>
       </motion.article>
     </div>
