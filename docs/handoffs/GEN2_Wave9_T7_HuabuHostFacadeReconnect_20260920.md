@@ -169,6 +169,17 @@ fixture 不是裸 Node idle process：它实现 ACP stdio `initialize` 与 `sess
 
 风险：route 的真实成功态依赖 Huabu Host 内已有 connected agentlet；未连接时返回结构化 503，不自动创建 fallback session。`send` 继续保持 unsupported。
 
+## Prompt 接线审查（2026-09-20）
+
+本轮沿 `Local Core ContinuationProviderAdapter.send` → Host transport → Huabu ACP owner 反查，结论是 **PROMPT_TRANSPORT_UNWIRED / exact GAP**：当前 continuation 的 `externalSessionId` 不能唯一映射到 Huabu 现有 `AcpSessionEntry` owner。
+
+- Local Core `apps/local-core/src/huabu-agentlet-continuation-adapter.ts:221-243` 明确返回 `prompt_transport_not_wired`；`huabu-agentlet-host-transport.ts:142-144` 的 `sendResource` 也明确拒绝承担 prompt。
+- Host facade 的 spawn 返回的是 `AgentletGateway.spawnOnAgentlet` 创建的 Gateway transport `sessionId`；状态查询只走 `gateway.getSession(agentletId, sessionId)`（`continuation-transport.route.ts:172-188`）。这条路径没有 Huabu `threadId`，也没有向 `acpSessionRegistry` 注册 entry。
+- Huabu ACP registry 的唯一 owner key 是 `(agentletId, threadId)`（`acp-driver/src/session-registry.ts:44-53` 与 `threads.route.ts:226-234`）；entry 才持有共享 `AcpAgentClient` 和 ACP native `sessionId`。registry 没有按 `externalSessionId` 的反查 API。
+- `AcpAgentClient.prompt()`（`acp-driver/src/client.ts:496-532`）是可复用的真实发送入口，但只能安全地从已有 entry/client 调用。直接 `new AcpAgentClient(gateway.getSession(...))` 会创建第二 owner；直接 `AgentletConnection.send({method:'session/prompt'})` 会绕过 ACP client 的 update/permission/receipt 管理。两者都会制造第二 message truth，故未实现。
+
+最小可行接线缺口是由 Huabu ACP owner 先建立并保留一个 canonical continuation binding（至少包含 `agentletId + threadId + ACP sessionId + shared AcpAgentClient`），并提供按该 binding 取回现有 entry/client 的 Host API；随后 facade 才能增加 prompt route，Local Core receipt 也必须同时区分 `externalSessionId`（ACP native session）与 Gateway `transportSessionId`。在这个 owner contract 获得前，capability probe 不得把 prompt 宣称为可用，真实 fixture 只验证了 initialize/session-new 与 spawn/list/status/stop，未伪造 prompt receipt。
+
 回滚：删除新增的 `continuation-transport.route.ts` / `.test.ts`，并撤销 `app.ts` import/register 与 `acp/index.ts` export 三处增量即可；不恢复旧 Local Core WebSocket 假 peer。
 
-下一步：在可复现的 Huabu server + agentlet daemon 配置下做一次真实 Host HTTP list/status/spawn/stop smoke，并将结果另行记录为真实 daemon receipt。
+下一步：由 Huabu ACP owner 设计并落地 canonical continuation binding 后，再补 prompt route、receipt contract、fixture prompt smoke；在此之前保持 `send` unsupported，避免偷换 transport session 与 ACP session identity。
