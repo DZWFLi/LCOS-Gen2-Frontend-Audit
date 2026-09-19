@@ -23,7 +23,6 @@ import {
 } from '@local-creative-os/web-gen2';
 import {
   ChevronsUpDown,
-  Ellipsis,
   Expand,
   FileText,
   Link2,
@@ -47,16 +46,12 @@ import { shouldStandDownLegacyNodeToolbar } from '@/lcos-seam/chromeModeSlot';
 import useCanvasStore from '@/store/canvasStore';
 import { openPreviewNode } from '@/store/previewWorkspace/actions';
 
-import {
-  ACTION_ARC_HIT_INSET,
-  ACTION_ARC_HIT_SIZE,
-  ACTION_ARC_VISUAL_SIZE,
-  resolveActionArcGeometry,
-  type ActionArcPoint,
-} from './actionArcGeometry';
+import { resolveActionArcGeometry } from './actionArcGeometry';
 import { useLcosReferenceStore } from '../lcosReferenceState';
 import { useLcosShellStore } from '../shell/lcosShellStore';
 import { lcosGlassStyle, lcosTokens } from '../ui/lcosTokens';
+import { LcosActionOrbView as ActionArcOrb } from '../ui/nearfield/LcosActionOrbView';
+import { LcosNearfieldGlyph } from '../ui/nearfield/LcosNearfieldGlyph';
 
 import type { Node } from '@xyflow/react';
 
@@ -109,65 +104,6 @@ function primaryCommandIcon(command: LcosNodeCommand): React.JSX.Element {
     default:
       return <Sparkles size={17} strokeWidth={1.8} aria-hidden />;
   }
-}
-
-function ActionArcOrb({
-  point,
-  label,
-  disabledReason,
-  expanded,
-  onClick,
-  children,
-}: {
-  readonly point: ActionArcPoint;
-  readonly label: string;
-  readonly disabledReason?: string;
-  readonly expanded?: boolean;
-  readonly onClick: () => void;
-  readonly children: React.ReactNode;
-}): React.JSX.Element {
-  const disabled = disabledReason !== undefined;
-  return (
-    <button
-      type="button"
-      data-lcos-action-orb-hit
-      aria-label={label}
-      aria-expanded={expanded}
-      disabled={disabled}
-      title={disabledReason ?? label}
-      onClick={onClick}
-      className="grid place-items-center rounded-full bg-transparent p-0 focus-visible:outline-2 focus-visible:outline-offset-2"
-      style={{
-        position: 'absolute',
-        left: point.x - ACTION_ARC_HIT_INSET,
-        top: point.y - ACTION_ARC_HIT_INSET,
-        width: ACTION_ARC_HIT_SIZE,
-        height: ACTION_ARC_HIT_SIZE,
-        outlineColor: lcosTokens.color.accent,
-        cursor: disabled ? 'not-allowed' : 'pointer',
-      }}
-    >
-      <span
-        data-lcos-action-orb
-        style={{
-          display: 'grid',
-          placeItems: 'center',
-          width: ACTION_ARC_VISUAL_SIZE,
-          height: ACTION_ARC_VISUAL_SIZE,
-          borderRadius: 15,
-          background: lcosTokens.actionOrb.background,
-          border: `0.6px solid ${lcosTokens.actionOrb.border}`,
-          boxShadow: lcosTokens.actionOrb.shadow,
-          color: disabled ? lcosTokens.color.muted : lcosTokens.color.text,
-          opacity: disabled ? 0.48 : 1,
-          transform: expanded ? 'scale(0.96)' : undefined,
-          transition: 'transform 120ms ease, opacity 120ms ease',
-        }}
-      >
-        {children}
-      </span>
-    </button>
-  );
 }
 
 export function LcosActionArc(): React.JSX.Element | null {
@@ -448,23 +384,23 @@ export function LcosActionArc(): React.JSX.Element | null {
           {primary.map((command, index) => (
             <ActionArcOrb
               key={command.id}
+              actionId={command.id}
               point={arcPoints[index]}
               label={command.label}
               disabledReason={command.disabledReason}
               onClick={() => dispatch(command)}
             >
-              <span data-lcos-arc-primary={command.id}>{primaryCommandIcon(command)}</span>
+              {primaryCommandIcon(command)}
             </ActionArcOrb>
           ))}
           <ActionArcOrb
+            more
             point={arcPoints[primary.length]}
             label={moreOpen ? '收起更多命令' : '更多命令'}
             expanded={moreOpen}
             onClick={() => setMoreOpen((v) => !v)}
           >
-            <span data-lcos-arc-more>
-              <Ellipsis size={17} strokeWidth={1.8} aria-hidden />
-            </span>
+            <LcosNearfieldGlyph name="more" size={17} />
           </ActionArcOrb>
         </div>
 

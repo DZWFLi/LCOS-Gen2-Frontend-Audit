@@ -5,7 +5,6 @@
 // 写死 'main' 会被 Core 外键拒绝（FOREIGN KEY constraint failed → 409）。
 
 import { CoreCollaborationClient, HttpError } from '@local-creative-os/web-gen2';
-import { ArrowUp, Paperclip, X } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
 import {
@@ -17,13 +16,13 @@ import { useCloseOnEscape } from '@/hooks/useCloseOnEscape';
 import { buildComposerRunInput, canSubmitComposerTarget } from './composerSubmission';
 import { createLcosCoreSession } from '../app/lcosCoreClient';
 import { rectFromDomRect } from '../drop/dropTargetRegistry';
-import { useLcosReferenceStore } from '../lcosReferenceState';
 import { useLcosDropStore } from '../lcosDropState';
+import { useLcosReferenceStore } from '../lcosReferenceState';
 import { useLcosShellStore } from '../shell/lcosShellStore';
-import { lcosGlassStyle, lcosTokens } from '../ui/lcosTokens';
+import { LcosComposerView } from '../ui/nearfield/LcosComposerView';
 
-import type { CoreEntityRefLike } from '../referenceBridge';
 import type { DropTargetRegistration } from '../drop/dropTypes';
+import type { CoreEntityRefLike } from '../referenceBridge';
 
 const ENTITY_LABEL: Readonly<Record<string, string>> = {
   artifact: '材料',
@@ -175,136 +174,57 @@ export function LcosComposerHost({
   };
 
   const content = (
-      <div
-        data-lcos-composer
-        data-lcos-composer-target={composerTarget?.nodeId}
-        className={inline ? 'pointer-events-auto w-full min-w-0' : 'pointer-events-auto w-[min(520px,calc(100vw-32px))]'}
-      >
-        <div
-          className="flex flex-col overflow-hidden rounded-2xl"
-          style={{ ...lcosGlassStyle, borderRadius: 18 }}
-        >
-          <div className="flex items-center justify-between px-3 pt-2.5">
-            <span
-              className="text-[11px]"
-              style={{ color: lcosTokens.color.muted }}
-            >
-              围绕「{composerTarget?.title ?? '当前对象'}」工作
-            </span>
-            <button
-              type="button"
-              aria-label="关闭 Composer"
-              title="关闭（草稿保留）"
-              onClick={onClose}
-              className="rounded-full p-1"
-            >
-              <X
-                className="h-3.5 w-3.5"
-                style={{ color: lcosTokens.color.muted }}
-              />
-            </button>
-          </div>
-          {draftRefs.length > 0 && (
-            <div className="flex flex-wrap items-center gap-1.5 px-3 pt-2.5">
-              {draftRefs.map((ref) => (
-                <span
-                  key={`${ref.entityType}:${ref.entityId}`}
-                  data-lcos-composer-ref
-                  className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px]"
-                  style={{
-                    background: lcosTokens.color.raised,
-                    color: lcosTokens.color.text,
-                  }}
-                >
-                  <Paperclip
-                    className="h-3 w-3"
-                    style={{ color: lcosTokens.color.muted }}
-                    aria-hidden
-                  />
-                  {referenceLabel(ref)}
-                </span>
-              ))}
-            </div>
-          )}
-          <div className="flex items-end gap-2 px-3 py-2.5">
-            <textarea
-              ref={textareaRef}
-              data-lcos-composer-input
-              value={text}
-              onChange={(e) => {
-                setText(e.target.value);
-                if (state === 'done' || state === 'error') setState('idle');
-              }}
-              onKeyDown={onKeyDown}
-              rows={2}
-              placeholder="告诉 Agent 下一步要做什么…（Cmd/Ctrl+Enter 提交；空行不可提交）"
-              aria-label="Composer 输入"
-              className="max-h-40 w-full resize-none bg-transparent text-sm leading-relaxed outline-none"
-              style={{ color: lcosTokens.color.text }}
-            />
-            <button
-              type="button"
-              disabled={!canSubmit}
-              aria-label="提交"
-              title={
-                workspaceId === undefined
-                  ? '现场未就绪（未解析到 workspace），暂不可提交'
-                  : composerTarget?.receiverBlockedReason ?? '提交（Cmd/Ctrl+Enter）'
-              }
-              onClick={() => void submit()}
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full transition-colors disabled:opacity-40"
-              style={{
-                background: lcosTokens.color.inverse,
-                color: lcosTokens.color.textOnInverse,
-              }}
-            >
-              <ArrowUp className="h-4 w-4" />
-            </button>
-          </div>
-          {workspaceId === undefined && (
-            <div
-              data-lcos-composer-blocked
-              className="px-4 pb-2 text-xs"
-              style={{ color: lcosTokens.color.danger }}
-            >
-              现场未就绪（未解析到 workspace），暂不可提交
-            </div>
-          )}
-          {composerTarget?.receiverBlockedReason && (
-            <div
-              data-lcos-composer-receiver-blocked
-              className="px-4 pb-2 text-xs"
-              style={{ color: lcosTokens.color.danger }}
-            >
-              {composerTarget.receiverBlockedReason}
-            </div>
-          )}
-          {state === 'submitting' && (
-            <div
-              className="px-4 pb-2 text-xs"
-              style={{ color: lcosTokens.color.muted }}
-            >
-              提交中…
-            </div>
-          )}
-          {state === 'done' && receipt && (
-            <div
-              className="px-4 pb-2 text-xs"
-              style={{ color: lcosTokens.color.accent }}
-            >
-              {receipt}
-            </div>
-          )}
-          {state === 'error' && (
-            <div
-              className="px-4 pb-2 text-xs"
-              style={{ color: lcosTokens.color.danger }}
-            >
-              提交失败 · {errorDetail}（草稿已保留）
-            </div>
-          )}
-        </div>
-      </div>
+    <LcosComposerView
+      presentation={inline ? 'inline' : 'nearfield'}
+      state={state === 'submitting' ? 'sending' : state === 'done' ? 'ready'
+        : state === 'error' ? 'error'
+        : workspaceId === undefined || composerTarget?.receiverBlockedReason ? 'blocked'
+        : text.length === 0 ? 'empty' : 'editing'}
+      targetId={composerTarget?.nodeId}
+      title={`围绕「${composerTarget?.title ?? '当前对象'}」工作`}
+      references={draftRefs.map((ref) => ({
+        key: `${ref.entityType}:${ref.entityId}`,
+        label: referenceLabel(ref),
+      }))}
+      text={text}
+      textareaRef={textareaRef}
+      onTextChange={(e) => {
+        setText(e.target.value);
+        if (state === 'done' || state === 'error') setState('idle');
+      }}
+      onKeyDown={onKeyDown}
+      onClose={onClose}
+      canSubmit={canSubmit}
+      submitTitle={workspaceId === undefined
+        ? '现场未就绪（未解析到 workspace），暂不可提交'
+        : composerTarget?.receiverBlockedReason ?? '提交（Cmd/Ctrl+Enter）'}
+      onSubmit={() => void submit()}
+      feedback={
+        workspaceId === undefined || composerTarget?.receiverBlockedReason
+          || state === 'submitting' || (state === 'done' && receipt) || state === 'error'
+          ? (
+            <>
+              {workspaceId === undefined && (
+                <div data-lcos-composer-blocked data-feedback-tone="error">
+                  现场未就绪（未解析到 workspace），暂不可提交
+                </div>
+              )}
+              {composerTarget?.receiverBlockedReason && (
+                <div data-lcos-composer-receiver-blocked data-feedback-tone="error">
+                  {composerTarget.receiverBlockedReason}
+                </div>
+              )}
+              {state === 'submitting' && <div data-feedback-tone="loading">提交中…</div>}
+              {state === 'done' && receipt && <div data-feedback-tone="normal">{receipt}</div>}
+              {state === 'error' && (
+                <div data-feedback-tone="error" role="alert">
+                  提交失败 · {errorDetail}（草稿已保留）
+                </div>
+              )}
+            </>
+          ) : null
+      }
+    />
   );
 
   return inline ? content : anchor ? (

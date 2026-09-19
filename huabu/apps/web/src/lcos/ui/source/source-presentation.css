@@ -1,0 +1,54 @@
+/* Body-only styling. NodeWrapper, projection geometry, selection and LOD stay with Infra. */
+.lcos-source-view {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  overflow: visible;
+  color: var(--gen2-text);
+  font-family: 'Noto Sans SC', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+}
+.lcos-source-view *, .lcos-source-view { box-sizing: border-box; }
+.lcos-source-caption { display: block; color: var(--gen2-muted); font-size: 12px; line-height: 19px; font-weight: 400; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.lcos-source-text { display: grid; align-content: start; grid-template-rows: 116px 19px; row-gap: 1px; }
+.lcos-source-statement {
+  min-width: 0; margin: 0; color: var(--gen2-text); font-size: 37px; line-height: 58px;
+  font-weight: 500; letter-spacing: normal; white-space: pre-line;
+  display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden;
+}
+.lcos-source-text[data-density='mark'] { grid-template-rows: 20px; }
+.lcos-source-text[data-density='mark'] .lcos-source-statement { font-size: 14px; line-height: 20px; -webkit-line-clamp: 1; }
+.lcos-source-paper {
+  display: grid;
+  grid-template-rows: 25px 11px minmax(0, 1fr) 29px 18px;
+  box-sizing: border-box; width: 100%; height: 100%; min-width: 0;
+  padding: 15px 2px 14px 18px;
+  overflow: hidden; border-radius: 2px;
+  background: var(--lcos-main-paper); box-shadow: var(--lcos-main-paper-shadow);
+}
+.lcos-document-title { grid-row: 1; width: min(186px, 100%); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 16px; line-height: 25px; font-weight: 500; }
+.lcos-document-excerpt { grid-row: 3; width: min(173px, 100%); overflow: hidden; color: var(--gen2-muted); font-size: 13px; line-height: 21px; white-space: pre-line; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+.lcos-document-source { grid-row: 5; width: min(178px, 100%); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 11px; line-height: 18px; color: var(--gen2-muted); }
+.lcos-source-document[data-density='mark'] .lcos-source-paper { display: block; }
+.lcos-source-document[data-density='mark'] .lcos-document-title { display: block; font-size: 13px; line-height: 20px; }
+.lcos-image-media {
+  width: 100%; height: 100%; overflow: hidden; border-radius: 7px;
+  background: var(--lcos-surface-elevated); box-shadow: var(--lcos-main-image-shadow);
+}
+.lcos-image-media img { display: block; width: 100%; height: 100%; border: 0; object-fit: cover; pointer-events: none; }
+.lcos-image-unavailable { display: grid; place-items: center; width: 100%; height: 100%; color: var(--gen2-muted); }
+.lcos-source-image[data-thumbnail] .lcos-image-media { border-radius: 6px; box-shadow: var(--lcos-main-image-shadow-small); }
+/* Caption follows the user's actual media box, not the initial projection's saved height. */
+.lcos-source-image > .lcos-source-caption { position: absolute; top: calc(100% + 9px); left: 0; width: 100%; }
+.lcos-audio-wave { display: grid; grid-template-columns: repeat(64, minmax(0, 2px)); align-items: center; max-width: 100%; height: 50px; }
+.lcos-audio-wave [data-lcos-wave-bar] { display: block; width: 100%; border-radius: 1px; background: var(--lcos-main-wave-tail); }
+.lcos-audio-wave [data-wave-tone='leading'] { background: var(--lcos-main-wave-active); }
+.lcos-source-audio > .lcos-source-caption { position: absolute; left: 0; top: 79px; width: 220px; }
+.lcos-source-feedback { position: absolute; top: calc(100% + 32px); left: 0; z-index: 1; max-width: max(100%, 200px); }
+/* Optional controlled states: default runtime selection outline is NOT duplicated. */
+.lcos-source-view[data-ui-interaction='hover'] { filter: brightness(1.025); }
+.lcos-source-view[data-ui-interaction='selected'] { outline: 1px solid var(--gen2-accent); outline-offset: 4px; }
+.lcos-source-view[data-ui-interaction='active'] { outline: 1px solid var(--lcos-pin-violet); outline-offset: 2px; }
+.lcos-source-view[data-ui-interaction='disabled'] { opacity: .55; }
+.lcos-source-view:focus-visible { outline: 2px solid var(--lcos-pin-violet); outline-offset: 4px; }
+@media (prefers-reduced-motion: reduce) { .lcos-source-view { animation: none; transition: none; } }
