@@ -246,12 +246,16 @@ it('keeps an explicit child-worksite return context separate from project truth'
     sourceWorkspaceId: 'workspace-main',
     sourceWasChild: false,
     sourceCanvasId: 'canvas-main',
+    sourceViewport: { x: 48, y: -24, zoom: 0.82 },
     selectedNodeIds: ['node-a', 'node-b'],
+    sourceEntityRefs: [{ nodeId: 'node-a', entityType: 'artifact', entityId: 'artifact-a' }],
   });
   expect(useLcosShellStore.getState().childReturn).toEqual(expect.objectContaining({
     projectId: 'project-1',
     sourceCanvasId: 'canvas-main',
+    sourceViewport: { x: 48, y: -24, zoom: 0.82 },
     selectedNodeIds: ['node-a', 'node-b'],
+    sourceEntityRefs: [{ nodeId: 'node-a', entityType: 'artifact', entityId: 'artifact-a' }],
   }));
   store.clearChildNavigation();
   expect(useLcosShellStore.getState().childReturn).toBeNull();

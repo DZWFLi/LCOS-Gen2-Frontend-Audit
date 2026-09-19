@@ -12,12 +12,13 @@ import { LcosGlobalHud } from './LcosGlobalHud';
 import { useLcosShellStore, type LcosSurfaceKey } from './lcosShellStore';
 import { LcosWorksiteStage } from './LcosWorksiteStage';
 import { useLcosReferenceStore } from '../lcosReferenceState';
+import { waitForProjectedEntity } from '../navigation/waitForProjectedEntity';
 import { ProfessionalWindowStage } from '../professional/ProfessionalWindowStage';
 import { ContextWorksite } from '../surfaces/context/ContextWorksite';
 import { MainWorksite } from '../surfaces/main/MainWorksite';
 import { WorkflowHandOverlay, WorkflowWorksite } from '../surfaces/workflow/WorkflowWorksite';
-import { FigmaShellGlyph } from '../ui/FigmaShellGlyph';
 import { LcosProjectIdentityView } from '../ui/families/LcosProjectIdentityView';
+import { FigmaShellGlyph } from '../ui/FigmaShellGlyph';
 import { LcosSurfaceFeedback } from '../ui/LcosSurfaceFeedback';
 import { lcosGlassStyle, lcosTokens } from '../ui/lcosTokens';
 
@@ -112,7 +113,36 @@ export function LcosProjectShell({
         if (context?.projectId === projectId && context.sourceCanvasId !== undefined) {
           const loaded = await useCanvasStore.getState().switchCanvas(context.sourceCanvasId);
           if (!loaded) throw new Error('来源现场暂不可读取，请重试');
-          useCanvasStore.getState().selectNodes([...context.selectedNodeIds]);
+          // Restore the exact source camera through Huabu's existing canvas
+          // store. This is a one-shot return restore; it does not create a
+          // second camera or persist navigation state as Core truth.
+          if (context.sourceViewport !== undefined) {
+            useCanvasStore.getState().setViewport(context.sourceViewport);
+          }
+          const canvasState = useCanvasStore.getState();
+          const currentNodeIds = new Set(canvasState.nodes.map((node) => node.id));
+          const restoredNodeIds = new Set(
+            context.selectedNodeIds.filter((nodeId) => currentNodeIds.has(nodeId)),
+          );
+          // Node ids are spatial projection ids, not Core identity. If a
+          // reconcile rebuilt a selected node with a new id, resolve the
+          // captured entity ref against the current projection before
+          // selecting. This keeps sourceEntityRefs a real recovery input.
+          for (const ref of context.sourceEntityRefs ?? []) {
+            if (currentNodeIds.has(ref.nodeId)) {
+              restoredNodeIds.add(ref.nodeId);
+              continue;
+            }
+            const reboundNodeId = await waitForProjectedEntity({
+              projectId,
+              canvasId: context.sourceCanvasId,
+              entityType: ref.entityType,
+              entityId: ref.entityId,
+              timeoutMs: 5000,
+            });
+            if (reboundNodeId !== undefined) restoredNodeIds.add(reboundNodeId);
+          }
+          canvasState.selectNodes([...restoredNodeIds]);
         }
         if (context?.projectId === projectId) clearChildNavigation();
         const sourceSurface = context?.projectId === projectId ? context.sourceSurface : 'main';
@@ -172,6 +202,7 @@ export function LcosProjectShell({
                 canvasBySurface={effectiveCanvasBySurface}
                 workspaces={workspaces}
                 ensureCanvas={ensureActiveCanvas}
+                isChildWorksite={childWorkspaceId !== undefined}
               />
             ) : active === 'workflow' ? (
               <WorkflowWorksite

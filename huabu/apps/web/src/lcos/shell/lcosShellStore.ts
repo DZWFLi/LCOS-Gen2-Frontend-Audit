@@ -3,6 +3,7 @@
 
 import { create } from 'zustand';
 
+import type { CanvasViewport } from '@huabu/shared';
 import type { AssemblyTargetRefV1 } from '@local-creative-os/contracts';
 import type {
   ProfessionalRectV1,
@@ -47,7 +48,15 @@ export interface LcosChildReturn {
   readonly sourceWorkspaceId?: string;
   readonly sourceWasChild: boolean;
   readonly sourceCanvasId?: string;
+  /** Snapshot of the Huabu viewport at entry; restored through the same canvas store on return. */
+  readonly sourceViewport?: CanvasViewport;
   readonly selectedNodeIds: readonly string[];
+  /** Canonical entity refs for the selected nodes; node ids alone are not enough after reconcile. */
+  readonly sourceEntityRefs?: readonly {
+    readonly nodeId: string;
+    readonly entityType: string;
+    readonly entityId: string;
+  }[];
 }
 
 export type LcosCameraCommandKind = 'zoom-in' | 'zoom-out' | 'fit' | 'reset';

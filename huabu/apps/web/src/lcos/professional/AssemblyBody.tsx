@@ -21,7 +21,6 @@ import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore
 import { useNavigate } from 'react-router-dom';
 
 import { DropdownMenu, DropdownMenuItem, DropdownMenuSubmenu } from '@/components/Common/DropdownMenu';
-import useCanvasStore from '@/store/canvasStore';
 
 import { createLcosCoreSession } from '../app/lcosCoreClient';
 import { LcosComposerHost } from '../composer/LcosComposerHost';
@@ -29,6 +28,7 @@ import { useLcosDropStore } from '../lcosDropState';
 import { acquireDrop } from '../lcosRecognizers';
 import { useLcosReferenceStore } from '../lcosReferenceState';
 import { assemblySourceRefOf } from './assemblySourceRef';
+import { beginChildWorksiteNavigation } from '../navigation/childWorksiteNavigation';
 import { childSurfaceForItem, workspaceTargetsForItem } from '../navigation/workspaceTargets';
 import { useLcosShellStore } from '../shell/lcosShellStore';
 import { LcosSurfaceFeedback } from '../ui/LcosSurfaceFeedback';
@@ -333,7 +333,6 @@ export function AssemblyBody({
   const navigate = useNavigate();
   const activeSurface = useLcosShellStore((s) => s.activeSurface);
   const activeWorkspaceId = useLcosShellStore((s) => s.activeWorkspaceId);
-  const beginChildNavigation = useLcosShellStore((s) => s.beginChildNavigation);
   const openWindow = useLcosShellStore((s) => s.openWindow);
   const composerOpen = useLcosShellStore((s) => s.composerOpen);
   const composerTarget = useLcosShellStore((s) => s.composerTarget);
@@ -538,16 +537,15 @@ export function AssemblyBody({
     if (workspace.canvasId === undefined) return;
     const targetSurface = childSurfaceForItem(item, workspace);
     if (targetSurface === undefined) return;
-    const current = useCanvasStore.getState();
-    beginChildNavigation({
+    beginChildWorksiteNavigation({
       projectId,
       sourceSurface: activeSurface,
       ...(activeWorkspaceId === null ? {} : { sourceWorkspaceId: activeWorkspaceId }),
       sourceWasChild: new URLSearchParams(window.location.search).has('workspaceId'),
-      ...(current.canvasId === null ? {} : { sourceCanvasId: current.canvasId }),
-      selectedNodeIds: current.nodes.filter((node) => node.selected).map((node) => node.id),
+      targetSurface,
+      targetWorkspace: workspace,
+      navigate,
     });
-    navigate(`/projects/${encodeURIComponent(projectId)}/${targetSurface}?workspaceId=${encodeURIComponent(String(workspace.id))}`);
   };
 
   // ---- 预览（transient read；不改 Source Bay 状态）----

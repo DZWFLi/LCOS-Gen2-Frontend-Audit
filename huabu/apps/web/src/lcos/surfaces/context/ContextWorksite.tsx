@@ -6,13 +6,11 @@ import { Layers } from 'lucide-react';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-import useCanvasStore from '@/store/canvasStore';
-
-
 import { ContextAtlasStage } from './ContextAtlasStage';
 import { TemporalRail } from './TemporalRail';
 import { useLcosWorksiteNav } from '../../app/useLcosWorksiteNav';
 import { useLcosReferenceStore } from '../../lcosReferenceState';
+import { beginChildWorksiteNavigation } from '../../navigation/childWorksiteNavigation';
 import { childSurfaceForItem, workspaceTargetsForItem } from '../../navigation/workspaceTargets';
 import { useLcosShellStore } from '../../shell/lcosShellStore';
 import { LcosWorksiteStage } from '../../shell/LcosWorksiteStage';
@@ -29,6 +27,8 @@ export interface ContextWorksiteProps {
   readonly canvasBySurface: Readonly<Partial<Record<LcosSurfaceKey, string>>>;
   readonly workspaces: readonly Workspace[];
   readonly ensureCanvas: (surface: LcosSurfaceKey, force?: boolean) => Promise<string | undefined>;
+  /** Route-owned child identity; do not infer this from a stale browser URL. */
+  readonly isChildWorksite?: boolean;
 }
 
 export function ContextWorksite({
@@ -38,6 +38,7 @@ export function ContextWorksite({
   canvasBySurface,
   workspaces,
   ensureCanvas,
+  isChildWorksite = false,
 }: ContextWorksiteProps): React.JSX.Element {
   const navigate = useNavigate();
   const [atlasOpen, setAtlasOpen] = useState(false);
@@ -47,20 +48,19 @@ export function ContextWorksite({
     const childTargets = workspaceTargetsForItem(item, workspaces);
     const childTarget = selectedWorkspace ?? (childTargets.length === 1 ? childTargets[0] : undefined);
     const childSurface = childSurfaceForItem(item, childTarget);
-    if (childTarget !== undefined && childTarget.canvasId !== undefined && childSurface !== undefined) {
-      const current = useCanvasStore.getState();
+    if (childTarget !== undefined && childSurface !== undefined) {
       const shell = useLcosShellStore.getState();
-      shell.beginChildNavigation({
+      const entered = beginChildWorksiteNavigation({
         projectId,
-        sourceSurface: shell.activeSurface,
+        sourceSurface: surface,
         ...(shell.activeWorkspaceId === null ? {} : { sourceWorkspaceId: shell.activeWorkspaceId }),
-        sourceWasChild: new URLSearchParams(window.location.search).has('workspaceId'),
-        ...(current.canvasId === null ? {} : { sourceCanvasId: current.canvasId }),
-        selectedNodeIds: current.nodes.filter((node) => node.selected).map((node) => node.id),
+        sourceWasChild: isChildWorksite,
+        targetSurface: childSurface,
+        targetWorkspace: childTarget,
+        navigate,
       });
-      navigate(`/projects/${encodeURIComponent(projectId)}/${childSurface}?workspaceId=${encodeURIComponent(String(childTarget.id))}`);
-      setAtlasOpen(false);
-      return true;
+      if (entered) setAtlasOpen(false);
+      return entered;
     }
     if (childTargets.length > 0) return false;
     // 有明确 Workspace 映射时进入子现场；其余实体只有已有投影才允许定位，避免“点一下只关闭”。
