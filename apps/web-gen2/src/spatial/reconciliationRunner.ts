@@ -87,6 +87,7 @@ function artifactSource(
       title?: unknown;
       kind?: unknown;
       managed?: unknown;
+      sourceRunId?: unknown;
     };
     const artifactId = String(artifact.id ?? artifact.artifactId ?? '');
     if (!artifactId) return undefined;
@@ -100,6 +101,7 @@ function artifactSource(
       ...(fileRecordId === undefined || fileRecordId === '' ? {} : { fileRecordId }),
       ...(currentRevisionId === undefined || currentRevisionId === '' ? {} : { currentRevisionId }),
       ...(typeof artifact.managed === 'boolean' ? { managed: artifact.managed } : {}),
+      ...(typeof artifact.sourceRunId === 'string' && artifact.sourceRunId !== '' ? { sourceRunId: artifact.sourceRunId } : {}),
       ...(displayMode === undefined || displayMode === '' ? {} : { displayMode }),
       // R2：带上 Core 侧呈现尺寸（ArtifactView.size），让 Main 首屏有真实主次分组。
       ...(viewSize === undefined ? {} : { size: viewSize }),

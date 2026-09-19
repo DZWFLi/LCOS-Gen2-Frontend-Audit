@@ -604,7 +604,12 @@ export const NodeWrapper = memo(
     );
 
     const isMinimal = renderMode === 'minimal';
+    // LCOS owns the four information densities for a bound presentation body.
+    // The Huabu binary placeholder is still the owner for native heavy nodes,
+    // but must stand down once the binding-aware seam has taken over; otherwise
+    // a bound Source/Draft body gets hidden behind the unrelated two-stage LOD.
     const supportsMinimalLOD =
+      hostPresentation === undefined &&
       SEMANTIC_ZOOM_CONFIG.nodeLOD[type]?.minimal === 'minimal';
 
     // Per-node resize handles are only ever shown when this is the *sole*

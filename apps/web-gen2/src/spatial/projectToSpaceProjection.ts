@@ -50,6 +50,8 @@ export interface ArtifactProjectionSource {
   currentRevisionId?: string;
   /** Core managed fact when available. */
   managed?: boolean;
+  /** Core provenance: the Run that produced this artifact, when present. */
+  sourceRunId?: string;
   /** Existing Core presentation mode; used only to choose an adopted initial morphology size. */
   displayMode?: 'card' | 'thumbnail' | 'compact' | string;
   /**
@@ -224,6 +226,7 @@ export class ProjectToSpaceProjection {
         ...(artifact.fileRecordId === undefined ? {} : { fileRecordId: artifact.fileRecordId }),
         ...(artifact.currentRevisionId === undefined ? {} : { currentRevisionId: artifact.currentRevisionId }),
         ...(artifact.managed === undefined ? {} : { managed: artifact.managed }),
+        ...(artifact.sourceRunId === undefined ? {} : { sourceRunId: artifact.sourceRunId }),
         ...(artifact.displayMode === undefined ? {} : { displayMode: artifact.displayMode }),
         ...(artifact.size === undefined ? {} : { size: artifact.size }),
       })),

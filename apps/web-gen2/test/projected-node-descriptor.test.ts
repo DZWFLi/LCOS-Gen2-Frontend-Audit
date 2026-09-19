@@ -54,6 +54,24 @@ test('R2 物种解析：Core 事实优先', () => {
   );
   // 绑定了但缺 Kind 事实 → 仍按机械投影（不因一次 Core 抖动退回 native）
   assert.equal(resolveNodeSpeciesFromFacts({ entityType: 'artifact' }), 'source');
+  assert.equal(
+    resolveNodeSpeciesFromFacts({ entityType: 'artifact', sourceRunId: 'run-1', managed: true }),
+    'draft',
+  );
+});
+
+test('Wave 3 Draft 次级行保留真实 Run 来源', () => {
+  assert.equal(
+    buildNodeSecondaryLine({
+      entityType: 'artifact',
+      entityId: 'a-draft',
+      title: 'Generated brief',
+      artifactKind: 'markdown',
+      managed: true,
+      sourceRunId: 'run-1',
+    }),
+    '文本 · 受管 · Run 产出',
+  );
 });
 
 test('R2 物种解析：未绑定用户节点绝不兜底成 LCOS 物种', () => {

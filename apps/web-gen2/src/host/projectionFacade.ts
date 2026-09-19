@@ -265,7 +265,7 @@ export class Gen2Host {
     // artifact → selected view revision → current revision fallback → FileRecord.
     // Never use the first revision in an API array: reversed history must not
     // change the rendered species or the bytes staged into Huabu.
-    const revisionById = new Map<string, { id?: unknown; fileRecordId?: unknown }>();
+    const revisionById = new Map<string, { id?: unknown; fileRecordId?: unknown; runId?: unknown }>();
     for (const revision of graph?.artifactRevisions ?? []) {
       const revisionId = String(revision.id ?? '');
       if (revisionId !== '') revisionById.set(revisionId, revision);
@@ -293,6 +293,9 @@ export class Gen2Host {
         entityId,
         title: String(artifact.title ?? artifact.id),
         artifactKind: String(artifact.kind),
+        ...(typeof selectedRevision?.runId === 'string' && selectedRevision.runId !== ''
+          ? { sourceRunId: selectedRevision.runId }
+          : {}),
         ...(artifact.managed === undefined ? {} : { managed: artifact.managed }),
         ...(artifact.availability === undefined ? {} : { availability: String(artifact.availability) }),
         ...(artifact.currentRevisionId === undefined

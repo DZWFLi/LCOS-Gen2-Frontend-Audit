@@ -3,10 +3,11 @@ import { chromium } from 'playwright-core';
 
 const SHOTS = 'C:/Users/1/AppData/Local/Temp/trae/screenshots';
 const EXE = 'C:/Users/1/AppData/Local/ms-playwright/chromium-1234/chrome-win64/chrome.exe';
+const BASE_URL = process.env.LCOS_E2E_WEB_URL ?? 'http://localhost:5173';
 const out = {};
 const browser = await chromium.launch({ executablePath: EXE, headless: true });
 const page = await browser.newPage({ viewport: { width: 1366, height: 768 } });
-await page.goto('http://localhost:5173/projects/lcos-gen2-dev/main', { waitUntil: 'domcontentloaded', timeout: 20000 });
+await page.goto(`${BASE_URL}/projects/lcos-gen2-dev/main`, { waitUntil: 'domcontentloaded', timeout: 20000 });
 await page.waitForSelector('.react-flow', { timeout: 25000 });
 // wait longer for reconcile + reference store sync
 await page.waitForTimeout(12000);

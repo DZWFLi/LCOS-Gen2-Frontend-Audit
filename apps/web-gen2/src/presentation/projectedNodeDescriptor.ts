@@ -18,6 +18,8 @@ export interface ProjectedEntityFacts {
   /** Core `ArtifactKind`（text/markdown/image/pdf/presentation/…）。 */
   readonly artifactKind?: string;
   readonly managed?: boolean;
+  /** Core provenance: the Run that produced this artifact, when present. */
+  readonly sourceRunId?: string;
   /** Core `ArtifactAvailability`（current / missing / stale …）。 */
   readonly availability?: string;
   readonly currentRevisionId?: string;
@@ -89,6 +91,7 @@ export function buildNodeSecondaryLine(facts: ProjectedEntityFacts): string {
   const kind = facts.artifactKind;
   if (kind !== undefined && kind !== '') parts.push(KIND_LABEL[kind] ?? kind);
   if (facts.managed === true) parts.push('受管');
+  if (facts.sourceRunId !== undefined && facts.sourceRunId !== '') parts.push('Run 产出');
   const availability = facts.availability;
   if (availability !== undefined && availability !== '' && availability !== 'current') {
     parts.push(AVAILABILITY_LABEL[availability] ?? availability);
@@ -107,12 +110,14 @@ export function buildNodeSecondaryLine(facts: ProjectedEntityFacts): string {
  * 的原生类型（当前只有 `canvasRef`）。`note`/`text`/`image`/`frame` 等一律不兜底 ——
  * 未绑定 Core 的用户节点必须留在 native body（编辑能力与画布自带渲染不能被我方 body 顶掉）。
  *
- * 说明：working / draft 需要 Run 关联事实（当前 reconcile 不产出），仍不可达 —— 见 ledger 缺口。
+ * 说明：working 仍需要 Run 的活动状态；draft 则由 Core artifact 的 sourceRunId
+ * 与 managed 事实直接可达。缺少这些事实时保持 source/unknown，绝不按标题猜。
  */
 export function resolveNodeSpeciesFromFacts(facts: {
   readonly entityType?: string;
   readonly artifactKind?: string;
   readonly managed?: boolean;
+  readonly sourceRunId?: string;
   readonly mimeType?: string;
   readonly sourceKind?: string;
   /** Huabu 原生节点类型（机械投影的结果）。 */
@@ -123,6 +128,7 @@ export function resolveNodeSpeciesFromFacts(facts: {
     artifactKind: facts.artifactKind,
     mimeType: facts.mimeType,
     sourceKind: facts.sourceKind,
+    sourceRunId: facts.sourceRunId,
     managed: facts.managed,
   });
   if (byEntity !== 'unknown') return byEntity;
