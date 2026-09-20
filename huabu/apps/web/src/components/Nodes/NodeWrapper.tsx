@@ -389,7 +389,16 @@ export const NodeWrapper = memo(
         });
     }, [id]);
 
-    const renderMode = useNodeLOD(id, type);
+    // Resolve the binding-aware host before asking Huabu's native LOD owner.
+    // A hosted LCOS body owns mark/summary/working/reading itself; native LOD
+    // must stay dormant or its root `data-lod=minimal` selector will hide the
+    // hosted body even when no SemanticPlaceholder is mounted.
+    const hostPresentation = useResolvedNodeHostPresentation({
+      nodeId: id,
+      nodeType: type,
+      data: data as unknown as Readonly<Record<string, unknown>>,
+    });
+    const renderMode = useNodeLOD(id, type, hostPresentation === undefined);
     const rootRef = useRef<HTMLDivElement>(null);
     const { zoom } = useViewport();
     const isNotMouse = useIsNotMouse();
@@ -406,11 +415,6 @@ export const NodeWrapper = memo(
 
     // Same binding-aware presentation seam that resolves the replacement body.
     // It controls only visible host chrome; Huabu still owns mechanics and geometry.
-    const hostPresentation = useResolvedNodeHostPresentation({
-      nodeId: id,
-      nodeType: type,
-      data: data as unknown as Readonly<Record<string, unknown>>,
-    });
     const effectiveAllowOverflow = hostPresentation?.allowOverflow ?? allowOverflow;
     const nativeSurfaceEnabled = hostPresentation === undefined || hostPresentation.surface === 'card';
 

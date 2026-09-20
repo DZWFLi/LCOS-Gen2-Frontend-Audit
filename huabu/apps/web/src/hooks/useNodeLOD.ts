@@ -9,6 +9,37 @@ import {
   type LODRenderMode,
 } from '@/config/semanticZoom';
 
+export interface ResolveNodeLODModeInput {
+  readonly enabled: boolean;
+  readonly nodeType: string;
+  readonly screenWidth: number;
+  readonly previousMode: LODRenderMode;
+}
+
+/**
+ * Resolve Huabu's native binary LOD without taking ownership from a hosted
+ * presentation body. LCOS-hosted nodes pass `enabled: false`; their four-tier
+ * density is resolved by the Gen2 presentation seam instead.
+ */
+export function resolveNodeLODMode(
+  input: ResolveNodeLODModeInput,
+): LODRenderMode {
+  if (!input.enabled) return 'full';
+
+  const lodConfig = SEMANTIC_ZOOM_CONFIG.nodeLOD[input.nodeType];
+  if (!lodConfig || lodConfig.minimal !== 'minimal') return 'full';
+
+  const { hysteresis, screenThresholds } = SEMANTIC_ZOOM_CONFIG;
+  const threshold = screenThresholds.minimal ?? 120;
+  return input.previousMode === 'minimal'
+    ? input.screenWidth >= threshold + hysteresis
+      ? 'full'
+      : 'minimal'
+    : input.screenWidth < threshold - hysteresis
+      ? 'minimal'
+      : 'full';
+}
+
 /**
  * Returns the LODRenderMode for a specific node at the current viewport zoom.
  * Node types not listed in the config always return 'full'.
@@ -18,7 +49,11 @@ import {
  * A `minimal` label just keeps scaling down with the node as you zoom out
  * (its tier font is a canvas size), so there is no separate small-text floor.
  */
-export function useNodeLOD(nodeId: string, nodeType: string): LODRenderMode {
+export function useNodeLOD(
+  nodeId: string,
+  nodeType: string,
+  enabled = true,
+): LODRenderMode {
   const { zoom } = useViewport();
   const nodeWidth = useStore((s) => {
     const node = s.nodeLookup.get(nodeId);
@@ -27,27 +62,13 @@ export function useNodeLOD(nodeId: string, nodeType: string): LODRenderMode {
 
   const prevModeRef = useRef<LODRenderMode>('full');
 
-  const lodConfig = SEMANTIC_ZOOM_CONFIG.nodeLOD[nodeType];
-  if (!lodConfig || lodConfig.minimal !== 'minimal') {
-    prevModeRef.current = 'full';
-    return 'full';
-  }
-
-  const { hysteresis, screenThresholds } = SEMANTIC_ZOOM_CONFIG;
-
-  // full ↔ minimal (screen width). Hysteresis: once minimal, require growing
-  // past threshold + buffer to expand; once full, require dropping below
-  // threshold - buffer to collapse.
   const screenWidth = nodeWidth * zoom;
-  const threshold = screenThresholds.minimal ?? 120;
-  const mode: LODRenderMode =
-    prevModeRef.current === 'minimal'
-      ? screenWidth >= threshold + hysteresis
-        ? 'full'
-        : 'minimal'
-      : screenWidth < threshold - hysteresis
-        ? 'minimal'
-        : 'full';
+  const mode = resolveNodeLODMode({
+    enabled,
+    nodeType,
+    screenWidth,
+    previousMode: prevModeRef.current,
+  });
 
   prevModeRef.current = mode;
   return mode;
