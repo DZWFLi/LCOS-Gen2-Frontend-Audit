@@ -168,6 +168,7 @@ export interface RecoverExistingInputV1 {
   readonly externalSessionId?: string
   readonly transportSessionId?: string
   readonly threadId?: string
+  readonly runtimeScope?: string
   readonly identityHints: readonly string[]
   readonly bundle?: ContinuityAttachBundleV1
 }
@@ -216,6 +217,7 @@ export interface ProviderContinuationOperationResultV1 {
   readonly externalSessionId?: string
   readonly transportSessionId?: string
   readonly agentletId?: string
+  readonly runtimeScope?: string
   readonly threadId?: string
   /** Assistant text returned by a send operation. The Core caller decides how to persist it. */
   readonly responseText?: string
@@ -260,7 +262,9 @@ export function continuationExternalEvidenceFromReceiptV1(receipt: {
   readonly observedAt: string
   readonly transportSessionId?: string
   readonly threadId?: string
-}): { readonly schemaVersion: 1; readonly provider: string; readonly externalSessionId: string; readonly correlationId: string; readonly createdAt: string; readonly threadId?: string; readonly transportSessionId?: string; readonly raw?: { readonly kind: 'provider_receipt'; readonly ref: string } } | undefined {
+  readonly agentletId?: string
+  readonly runtimeScope?: string
+}): { readonly schemaVersion: 1; readonly provider: string; readonly externalSessionId: string; readonly correlationId: string; readonly createdAt: string; readonly threadId?: string; readonly transportSessionId?: string; readonly agentletId?: string; readonly runtimeScope?: string; readonly raw?: { readonly kind: 'provider_receipt'; readonly ref: string } } | undefined {
   if (receipt.externalSessionId === undefined) return undefined
   return {
     schemaVersion: 1,
@@ -270,6 +274,8 @@ export function continuationExternalEvidenceFromReceiptV1(receipt: {
     createdAt: receipt.observedAt,
     ...(receipt.threadId === undefined ? {} : { threadId: receipt.threadId }),
     ...(receipt.transportSessionId === undefined ? {} : { transportSessionId: receipt.transportSessionId }),
+    ...(receipt.agentletId === undefined ? {} : { agentletId: receipt.agentletId }),
+    ...(receipt.runtimeScope === undefined ? {} : { runtimeScope: receipt.runtimeScope }),
     ...(receipt.transportSessionId === undefined ? {} : { raw: { kind: 'provider_receipt' as const, ref: `transport:${receipt.transportSessionId}` } }),
   }
 }

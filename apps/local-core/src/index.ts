@@ -61,7 +61,9 @@ export type {
   BridgeResultEnvelopeV0,
   BridgeTaskEnvelopeV0,
   BridgeTaskEnvelopeV1,
+  BridgeTaskExecutionReceiptV1,
   BridgeTaskIdentity,
+  HuabuAcpExistingSessionTargetV1,
   RuntimeInputPackV0,
   RuntimeProviderError,
 } from './runtime-adapter.js'

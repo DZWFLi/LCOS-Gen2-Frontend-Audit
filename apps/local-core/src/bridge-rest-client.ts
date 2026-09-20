@@ -1,6 +1,7 @@
 import type {
   BridgeResultEnvelopeV0,
   BridgeRuntimePort,
+  BridgeTaskExecutionReceiptV1,
   BridgeTaskEnvelopeV0,
   BridgeTaskIdentity,
   RuntimeProviderError,
@@ -94,6 +95,22 @@ export class RestBridgeRuntimeClient implements BridgeRuntimePort {
       requestFingerprint: envelope.requestFingerprint,
       contractVersion: envelope.contractVersion,
     })
+  }
+
+  async executeTask(taskId: string, runId: string): Promise<BridgeTaskExecutionReceiptV1> {
+    const response = await this.#json(`/v1/tasks/${encodeURIComponent(taskId)}/execute`, { method: 'POST' })
+    if (response.ok !== true || typeof response.replayed !== 'boolean') {
+      throw providerError('CONTRACT_UNSUPPORTED', 'Light Bridge targeted execution receipt is incomplete.', false)
+    }
+    const task = normalizeIdentity(response.task)
+    if (task.taskId !== taskId || task.lcosRunId !== runId) {
+      throw providerError('CONTRACT_UNSUPPORTED', 'Light Bridge targeted execution receipt belongs to another Task or Run.', false)
+    }
+    const execution = asObject(response.execution)
+    if (typeof execution.status !== 'string' || execution.status.trim() === '') {
+      throw providerError('CONTRACT_UNSUPPORTED', 'Light Bridge targeted execution status is missing.', false)
+    }
+    return { replayed: response.replayed, task, execution: { status: execution.status } }
   }
 
   async findTaskByRunId(runId: string): Promise<BridgeTaskIdentity | undefined> {

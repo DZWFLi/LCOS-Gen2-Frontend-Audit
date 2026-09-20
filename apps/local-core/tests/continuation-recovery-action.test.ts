@@ -272,6 +272,17 @@ describe('executeRecoveryAction（intent → T6 service → T7 adapter → recei
       fallbackConnectedConversationId: conversationId,
     })
     expect(rebound.connectedConversation.conversationSessionId).toBe(firstSessionId)
+    service.submit(submitInput(projectId, conversationId, 'op-session-owner-mismatch'))
+    const mismatch = metadata.getContinuationOperationJournal(projectId, 'op-session-owner-mismatch')!
+    const mismatchClaim = metadata.claimContinuationOperationStep(projectId, 'op-session-owner-mismatch', 'core_bind', mismatch.revision)!
+    expect(() => metadata.confirmContinuationCoreBind({
+      projectId,
+      operationId: mismatchClaim.operationId,
+      expectedRevision: mismatchClaim.revision,
+      externalSessionId: external.externalEvidence!.externalSessionId,
+      externalEvidence: { ...external.externalEvidence!, agentletId: 'different-agentlet' },
+      fallbackConnectedConversationId: conversationId,
+    })).toThrow(/owner evidence does not match/)
     const importer = new ConversationImportService(metadata)
     try {
       expect(importer.list(projectId).filter((session) => session.id === firstSessionId)).toHaveLength(1)

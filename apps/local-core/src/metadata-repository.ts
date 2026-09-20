@@ -6275,6 +6275,36 @@ export class SqliteMetadataRepository {
       if (projectSessionIdentityRows.length > 1) {
         throw new Error('Multiple canonical conversation sessions match the provider session identity.')
       }
+      const assertCanonicalSessionOrigin = (conversationSessionId: string): void => {
+        const origin = this.#database.prepare(
+          `SELECT json_extract(origin_meta_json, '$.continuationExternalSessionId') AS external_session_id,
+                  json_extract(origin_meta_json, '$.continuationProvider') AS provider,
+                  json_extract(origin_meta_json, '$.continuationTransportSessionId') AS transport_session_id,
+                  json_extract(origin_meta_json, '$.continuationThreadId') AS thread_id,
+                  json_extract(origin_meta_json, '$.continuationAgentletId') AS agentlet_id,
+                  json_extract(origin_meta_json, '$.continuationRuntimeScope') AS runtime_scope
+           FROM conversation_sessions WHERE id = ?`,
+        ).get(conversationSessionId) as Row | undefined
+        if (origin === undefined) throw new Error('Canonical conversation session origin is missing.')
+        if (origin.external_session_id !== null && origin.external_session_id !== undefined
+          && String(origin.external_session_id) !== input.externalSessionId) {
+          throw new Error('Canonical conversation session is bound to another provider session identity.')
+        }
+        if (origin.provider !== null && origin.provider !== undefined && String(origin.provider) !== current.provider) {
+          throw new Error('Canonical conversation session provider does not match bound provider.')
+        }
+        const evidenceMatches = (
+          key: keyof Pick<ContinuationExternalEvidenceV1, 'transportSessionId' | 'threadId' | 'agentletId' | 'runtimeScope'>,
+          stored: SQLInputValue | undefined,
+        ): boolean => input.externalEvidence?.[key] === undefined
+          || (stored !== null && stored !== undefined && String(stored) === input.externalEvidence[key])
+        if (!evidenceMatches('transportSessionId', origin.transport_session_id)
+          || !evidenceMatches('threadId', origin.thread_id)
+          || !evidenceMatches('agentletId', origin.agentlet_id)
+          || !evidenceMatches('runtimeScope', origin.runtime_scope)) {
+          throw new Error('Canonical conversation session owner evidence does not match provider receipt.')
+        }
+      }
 
       let connected: ConnectedConversationV1
       const now = new Date().toISOString()
@@ -6340,31 +6370,11 @@ export class SqliteMetadataRepository {
         if (linkedElsewhere !== undefined) {
           throw new Error('Canonical conversation session is already linked to another connected conversation.')
         }
-        const originExternalSessionId = this.#database.prepare(
-          `SELECT json_extract(origin_meta_json, '$.continuationExternalSessionId') AS external_session_id,
-                  json_extract(origin_meta_json, '$.continuationProvider') AS provider
-           FROM conversation_sessions WHERE id = ?`,
-        ).get(linkedSessionId) as Row | undefined
-        if (originExternalSessionId?.external_session_id !== null
-          && originExternalSessionId?.external_session_id !== undefined
-          && String(originExternalSessionId.external_session_id) !== input.externalSessionId) {
-          throw new Error('Canonical conversation session is bound to another provider session identity.')
-        }
-        if (originExternalSessionId?.provider !== null
-          && originExternalSessionId?.provider !== undefined
-          && String(originExternalSessionId.provider) !== current.provider) {
-          throw new Error('Canonical conversation session provider does not match bound provider.')
-        }
+        assertCanonicalSessionOrigin(linkedSessionId)
         conversationSessionId = linkedSessionId
       } else if (projectSessionIdentityRows.length === 1) {
         const existingSession = projectSessionIdentityRows[0]!
-        const existingSessionProvider = this.#database.prepare(
-          `SELECT json_extract(origin_meta_json, '$.continuationProvider') AS provider
-           FROM conversation_sessions WHERE id = ?`,
-        ).get(String(existingSession.id)) as Row | undefined
-        if (existingSessionProvider?.provider !== current.provider) {
-          throw new Error('Canonical conversation session provider does not match bound provider.')
-        }
+        assertCanonicalSessionOrigin(String(existingSession.id))
         const linkedElsewhere = this.#database.prepare(
           'SELECT project_id, id FROM connected_conversations WHERE conversation_session_id = ? AND id <> ?',
         ).get(String(existingSession.id), connected.id) as Row | undefined
@@ -6383,6 +6393,8 @@ export class SqliteMetadataRepository {
           continuationProvider: current.provider,
           ...(input.externalEvidence?.transportSessionId === undefined ? {} : { continuationTransportSessionId: input.externalEvidence.transportSessionId }),
           ...(input.externalEvidence?.threadId === undefined ? {} : { continuationThreadId: input.externalEvidence.threadId }),
+          ...(input.externalEvidence?.agentletId === undefined ? {} : { continuationAgentletId: input.externalEvidence.agentletId }),
+          ...(input.externalEvidence?.runtimeScope === undefined ? {} : { continuationRuntimeScope: input.externalEvidence.runtimeScope }),
         }
         this.#database.prepare(`
           INSERT INTO conversation_sessions(
@@ -6737,6 +6749,25 @@ export class SqliteMetadataRepository {
   getConnectedConversationByRef(projectId: string, conversationRef: string): ConnectedConversationV1 | undefined {
     const row = this.#database.prepare(`SELECT * FROM connected_conversations WHERE project_id = ? AND conversation_ref = ?`).get(projectId, conversationRef) as Row | undefined
     return row === undefined ? undefined : connectedConversationFromRow(row)
+  }
+
+  /** Runtime dispatch reads only the frozen provider identity needed for an explicit execution target. */
+  getConversationSessionRuntimeIdentity(projectId: string, conversationSessionId: string): {
+    readonly id: string
+    readonly projectId: string
+    readonly provider: string
+    readonly originMeta: Readonly<Record<string, unknown>>
+  } | undefined {
+    const row = this.#database.prepare(
+      'SELECT id, project_id, provider, origin_meta_json FROM conversation_sessions WHERE project_id = ? AND id = ?',
+    ).get(projectId, conversationSessionId) as Row | undefined
+    if (row === undefined) return undefined
+    return {
+      id: String(row.id),
+      projectId: String(row.project_id),
+      provider: String(row.provider),
+      originMeta: json<Readonly<Record<string, unknown>>>(row.origin_meta_json as SQLInputValue),
+    }
   }
 
   /**

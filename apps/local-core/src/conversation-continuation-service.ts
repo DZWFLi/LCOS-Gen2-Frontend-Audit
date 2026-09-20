@@ -823,7 +823,7 @@ export class ConversationContinuationService {
           operationId,
           expectedRevision: row.revision,
           externalSessionId: boundExternalSessionId,
-          ...(evidence === undefined || evidence.externalSessionId === row.externalEvidence?.externalSessionId ? {} : { externalEvidence: evidence }),
+          ...(evidence === undefined ? {} : { externalEvidence: evidence }),
           fallbackConnectedConversationId: row.connectedConversationId ?? `connected-conversation-${randomUUID()}`,
         })
         this.events.publish(projectId, {
@@ -863,6 +863,7 @@ export class ConversationContinuationService {
       operationId,
       correlationId: operationId,
       provider: row.provider,
+      runtimeScope: projectId,
       ...(row.externalEvidence?.externalSessionId === undefined ? {} : { externalSessionId: row.externalEvidence.externalSessionId }),
       ...(row.externalEvidence?.transportSessionId === undefined ? {} : { transportSessionId: row.externalEvidence.transportSessionId }),
       ...(row.runtimeThreadId === undefined ? {} : { threadId: row.runtimeThreadId }),
@@ -965,7 +966,9 @@ function assertExternalEvidence(evidence: ContinuationExternalEvidenceV1, provid
     || evidence.provider !== provider
     || typeof evidence.externalSessionId !== 'string' || evidence.externalSessionId.trim() === ''
     || typeof evidence.correlationId !== 'string' || evidence.correlationId.trim() === ''
-    || typeof evidence.createdAt !== 'string' || evidence.createdAt.trim() === '') {
+    || typeof evidence.createdAt !== 'string' || evidence.createdAt.trim() === ''
+    || (evidence.agentletId !== undefined && (evidence.agentletId.trim() === '' || evidence.agentletId !== evidence.agentletId.trim()))
+    || (evidence.runtimeScope !== undefined && (evidence.runtimeScope.trim() === '' || evidence.runtimeScope !== evidence.runtimeScope.trim()))) {
     throw new Error('External evidence is invalid or does not match the continuation provider.')
   }
 }

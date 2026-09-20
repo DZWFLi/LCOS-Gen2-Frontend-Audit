@@ -380,10 +380,13 @@ describe('T7 receipt → T6 journal 集成（Provider 成功/Core 失败 + cance
     const opId = 'op-provider-success'
     service.submit(submitInput(projectId, conversationId, opId))
     const createReceipt = await adapter.createSession({
-      operationId: opId, correlationId: 'corr-p', provider: 'codex', createVariant: 'long_lived', bundle: bundleFixture(projectId),
+      operationId: opId, correlationId: 'corr-p', provider: 'codex', runtimeScope: projectId,
+      createVariant: 'long_lived', bundle: bundleFixture(projectId),
     })
     const evidence = continuationExternalEvidenceFromReceiptV1(createReceipt)
     expect(evidence?.externalSessionId).toBe('ext-created')
+    expect(evidence?.agentletId).toBe('lcos-default-agentlet')
+    expect(evidence?.runtimeScope).toBe(projectId)
 
     const bound = service.advanceStep(projectId, opId, { step: 'external_create', outcome: 'confirmed', externalEvidence: evidence! })
     expect(bound.status).toBe('binding')

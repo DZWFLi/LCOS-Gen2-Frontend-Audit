@@ -116,6 +116,16 @@ export interface BridgeTaskEnvelopeV1 {
   readonly metadata: {
     readonly projectId: string
   }
+  readonly executionTarget?: HuabuAcpExistingSessionTargetV1
+}
+
+export interface HuabuAcpExistingSessionTargetV1 {
+  readonly kind: 'huabu-acp-existing-session-v1'
+  readonly agentletId: string
+  readonly threadId: string
+  readonly externalSessionId: string
+  readonly transportSessionId: string
+  readonly runtimeScope?: string
 }
 
 // Kept under the original exported name so existing V0 fixtures remain readable
@@ -132,8 +142,17 @@ export interface BridgeTaskIdentity {
   readonly leaseExpiresAt?: string
 }
 
+export interface BridgeTaskExecutionReceiptV1 {
+  readonly replayed: boolean
+  readonly task: BridgeTaskIdentity
+  readonly execution: {
+    readonly status: string
+  }
+}
+
 export interface BridgeRuntimePort {
   createTask(envelope: BridgeTaskEnvelopeV0, projectId: string): Promise<BridgeTaskIdentity>
+  executeTask?(taskId: string, runId: string): Promise<BridgeTaskExecutionReceiptV1>
   findTaskByRunId(runId: string): Promise<BridgeTaskIdentity | undefined>
   getTask?(taskId: string, runId: string): Promise<BridgeTaskIdentity | undefined>
   getResult(taskId: string, runId: string): Promise<BridgeResultEnvelopeV0 | undefined>
@@ -217,6 +236,21 @@ export interface RuntimeProjectReader {
     readonly source: { readonly kind: 'file' | 'directory' | 'archive' | 'external' | 'url' }
     readonly readFirst: readonly string[]
   } | undefined
+  getRunReceiverConversationId(runId: string): string | undefined
+  getConnectedConversation(projectId: string, connectedConversationId: string): {
+    readonly id: string
+    readonly projectId: string
+    readonly provider: 'codex' | 'workbuddy'
+    readonly executorId: string
+    readonly conversationRef: string
+    readonly conversationSessionId?: string
+  } | undefined
+  getConversationSessionRuntimeIdentity(projectId: string, conversationSessionId: string): {
+    readonly id: string
+    readonly projectId: string
+    readonly provider: string
+    readonly originMeta: Readonly<Record<string, unknown>>
+  } | undefined
 }
 
 function canonicalJson(value: unknown): string {
@@ -297,9 +331,10 @@ export class RuntimeAdapterService {
     const run = this.requireRun(runId)
     const dispatch = this.requireDispatch(runId)
     const existingBinding = this.repository.getRuntimeBinding(runId)
-    if (existingBinding !== undefined) return existingBinding
+    if (existingBinding !== undefined) return await this.resumeBoundTargetExecution(run, existingBinding)
 
     const { envelope } = await this.materialize(run)
+    this.requireTargetExecutionSupport(run, envelope.executionTarget)
     this.repository.updateRuntimeDispatch({
       ...dispatch,
       status: 'dispatching',
@@ -309,7 +344,7 @@ export class RuntimeAdapterService {
 
     try {
       const task = await this.bridge.createTask(envelope, this.bridgeProjectId)
-      return this.bind(run, task)
+      return await this.bindAndExecute(run, task, envelope)
     } catch (error: unknown) {
       const detail = dispatchError(error, run.provider)
       this.repository.updateRuntimeDispatch({
@@ -326,13 +361,14 @@ export class RuntimeAdapterService {
   async recover(runId: RunId): Promise<RuntimeBinding> {
     const run = this.requireRun(runId)
     const existingBinding = this.repository.getRuntimeBinding(runId)
-    if (existingBinding !== undefined) return existingBinding
+    if (existingBinding !== undefined) return await this.resumeBoundTargetExecution(run, existingBinding)
 
     try {
-      const found = await this.bridge.findTaskByRunId(String(runId))
-      if (found !== undefined) return this.bind(run, found)
       const { envelope } = await this.materialize(run)
-      return this.bind(run, await this.bridge.createTask(envelope, this.bridgeProjectId))
+      this.requireTargetExecutionSupport(run, envelope.executionTarget)
+      const found = await this.bridge.findTaskByRunId(String(runId))
+      if (found !== undefined) return await this.bindAndExecute(run, found, envelope)
+      return await this.bindAndExecute(run, await this.bridge.createTask(envelope, this.bridgeProjectId), envelope)
     } catch (error: unknown) {
       if (error instanceof AdapterUnsupportedError) throw error
       const detail = dispatchError(error, run.provider)
@@ -569,6 +605,7 @@ export class RuntimeAdapterService {
     if (manifest === undefined) throw new Error('ContextManifest not found.')
     const project = this.repository.getProject(String(run.projectId))
     if (project === undefined) throw new Error('Project not found.')
+    const executionTarget = this.resolveExecutionTarget(run)
 
     const runtimeRoot = resolve(project.rootPath, '.creative-os', 'runtime', String(run.id))
     const packPath = resolve(runtimeRoot, 'runtime-input-pack.json')
@@ -649,9 +686,124 @@ export class RuntimeAdapterService {
       timeoutSeconds: 600,
       reportMode: 'short',
       metadata: { projectId: this.bridgeProjectId },
+      ...(executionTarget === undefined ? {} : { executionTarget }),
     }
     const requestFingerprint = createTaskRequestFingerprint(unsigned)
     return { envelope: { ...unsigned, requestFingerprint } }
+  }
+
+  private resolveExecutionTarget(run: Run): HuabuAcpExistingSessionTargetV1 | undefined {
+    const receiverConversationId = this.repository.getRunReceiverConversationId(String(run.id))
+    if (receiverConversationId === undefined) return undefined
+    const fail = (message: string): RuntimeAdapterError => {
+      return new RuntimeAdapterError({
+        code: 'CONTRACT_UNSUPPORTED',
+        message,
+        retryable: false,
+        provider: run.provider,
+      })
+    }
+    if (run.outputIntent !== 'analyze') {
+      throw fail('A Run targeting an existing Huabu ACP session only supports outputIntent=analyze.')
+    }
+    const connected = this.repository.getConnectedConversation(String(run.projectId), receiverConversationId)
+    if (connected === undefined || connected.projectId !== String(run.projectId)) {
+      throw fail('Run receiver does not resolve to a ConnectedConversation in this Project.')
+    }
+    if (connected.provider !== run.provider || connected.provider !== run.requestedProvider) {
+      throw fail('Run provider does not match the explicitly selected ConnectedConversation provider.')
+    }
+    const conversationSessionId = connected.conversationSessionId
+    if (conversationSessionId === undefined) {
+      throw fail('Run receiver is not linked to a canonical ConversationSession.')
+    }
+    const session = this.repository.getConversationSessionRuntimeIdentity(String(run.projectId), conversationSessionId)
+    if (session === undefined || session.projectId !== String(run.projectId) || session.id !== conversationSessionId) {
+      throw fail('Run receiver canonical ConversationSession is missing or belongs to another Project.')
+    }
+    if (session.provider !== connected.provider) {
+      throw fail('Canonical ConversationSession provider does not match the selected ConnectedConversation.')
+    }
+    const canonical = (key: string): string => {
+      const value = session.originMeta[key]
+      if (typeof value !== 'string' || value.length === 0 || value !== value.trim()) {
+        throw fail(`Canonical ConversationSession originMeta.${key} is missing or invalid.`)
+      }
+      return value
+    }
+    const originProvider = canonical('continuationProvider')
+    const externalSessionId = canonical('continuationExternalSessionId')
+    const transportSessionId = canonical('continuationTransportSessionId')
+    const threadId = canonical('continuationThreadId')
+    if (originProvider !== connected.provider || externalSessionId !== connected.conversationRef) {
+      throw fail('Canonical ConversationSession origin identity does not match the selected ConnectedConversation.')
+    }
+    const agentletId = canonical('continuationAgentletId')
+    const runtimeScope = canonical('continuationRuntimeScope')
+    if (runtimeScope !== String(run.projectId)) {
+      throw fail('Canonical ConversationSession runtime scope does not match the Run Project.')
+    }
+    return {
+      kind: 'huabu-acp-existing-session-v1',
+      agentletId,
+      threadId,
+      externalSessionId,
+      transportSessionId,
+      runtimeScope,
+    }
+  }
+
+  private requireTargetExecutionSupport(run: Run, executionTarget: HuabuAcpExistingSessionTargetV1 | undefined): void {
+    if (executionTarget === undefined || this.bridge.executeTask !== undefined) return
+    throw new RuntimeAdapterError({
+      code: 'CONTRACT_UNSUPPORTED',
+      message: 'Bridge does not support explicit execution targets.',
+      retryable: false,
+      provider: run.provider,
+    })
+  }
+
+  private async resumeBoundTargetExecution(run: Run, binding: RuntimeBinding): Promise<RuntimeBinding> {
+    const executionTarget = this.resolveExecutionTarget(run)
+    if (executionTarget === undefined) return binding
+    this.requireTargetExecutionSupport(run, executionTarget)
+    if (binding.externalTaskId === undefined) {
+      throw new RuntimeAdapterError({
+        code: 'TASK_NOT_FOUND',
+        message: 'RuntimeBinding has no external task for targeted execution.',
+        retryable: false,
+        provider: run.provider,
+      })
+    }
+    try {
+      await this.bridge.executeTask!(binding.externalTaskId, String(run.id))
+      const currentDispatch = this.requireDispatch(run.id)
+      const { lastErrorCode: _lastErrorCode, lastErrorMessage: _lastErrorMessage, ...cleared } = currentDispatch
+      this.repository.updateRuntimeDispatch({ ...cleared, status: 'bound', updatedAt: this.now() })
+      return binding
+    } catch (error: unknown) {
+      const detail = dispatchError(error, run.provider)
+      this.repository.updateRuntimeDispatch({
+        ...this.requireDispatch(run.id),
+        status: 'recovery_required',
+        lastErrorCode: detail.code,
+        lastErrorMessage: detail.message,
+        updatedAt: this.now(),
+      })
+      throw new RuntimeAdapterError(detail)
+    }
+  }
+
+  private async bindAndExecute(
+    run: Run,
+    task: BridgeTaskIdentity,
+    envelope: BridgeTaskEnvelopeV1,
+  ): Promise<RuntimeBinding> {
+    const binding = this.bind(run, task)
+    if (envelope.executionTarget !== undefined) {
+      await this.bridge.executeTask!(task.taskId, String(run.id))
+    }
+    return binding
   }
 
   private resolveProfile(

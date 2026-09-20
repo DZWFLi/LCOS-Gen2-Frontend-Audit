@@ -28,6 +28,42 @@ describe('RestBridgeRuntimeClient', () => {
     expect(String(request.mock.calls[0]?.[0])).toContain('/v1/tasks')
   })
 
+  it('schedules one exact targeted task and validates the returned task/run identity', async () => {
+    const request = vi.fn<typeof fetch>().mockResolvedValue(response({
+      ok: true,
+      replayed: false,
+      task: {
+        taskId: 'task-one', lcosRunId: 'run-one', status: 'assigned',
+        requestFingerprint: 'fingerprint-one', contractVersion: 'bridge-task-v1',
+      },
+      execution: { status: 'dispatching' },
+    }, 202))
+    const client = new RestBridgeRuntimeClient('http://127.0.0.1:43122', request)
+
+    await expect(client.executeTask('task-one', 'run-one')).resolves.toMatchObject({
+      replayed: false,
+      task: { taskId: 'task-one', lcosRunId: 'run-one' },
+      execution: { status: 'dispatching' },
+    })
+    expect(String(request.mock.calls[0]?.[0])).toContain('/v1/tasks/task-one/execute')
+    expect(request.mock.calls[0]?.[1]?.method).toBe('POST')
+  })
+
+  it('rejects a targeted execution receipt for another Run', async () => {
+    const request = vi.fn<typeof fetch>().mockResolvedValue(response({
+      ok: true,
+      replayed: false,
+      task: {
+        taskId: 'task-one', lcosRunId: 'run-other', status: 'assigned',
+        requestFingerprint: 'fingerprint-one', contractVersion: 'bridge-task-v1',
+      },
+      execution: { status: 'dispatching' },
+    }, 202))
+    const client = new RestBridgeRuntimeClient('http://127.0.0.1:43122', request)
+    await expect(client.executeTask('task-one', 'run-one'))
+      .rejects.toMatchObject({ detail: { code: 'CONTRACT_UNSUPPORTED', retryable: false } })
+  })
+
   it('returns undefined for a structured task-not-found response', async () => {
     const request = vi.fn<typeof fetch>().mockResolvedValue(response({ error: { code: 'TASK_NOT_FOUND', message: 'missing', retryable: false } }, 404))
     const client = new RestBridgeRuntimeClient('http://127.0.0.1:43122', request)

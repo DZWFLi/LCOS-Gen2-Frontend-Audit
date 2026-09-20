@@ -58,6 +58,10 @@ export interface ContinuationExternalEvidenceV1 {
   readonly threadId?: string
   /** Gateway session identity; may equal externalSessionId today but is a separate contract field. */
   readonly transportSessionId?: string
+  /** Exact Huabu host owner returned by the provider adapter; never inferred from executorId. */
+  readonly agentletId?: string
+  /** Exact provider runtime scope returned by the adapter; never inferred from Project identity. */
+  readonly runtimeScope?: string
   readonly createdAt: string
   readonly raw?: { readonly kind: 'provider_receipt' | 'provider_error'; readonly ref: string }
 }
