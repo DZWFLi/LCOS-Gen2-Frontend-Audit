@@ -225,12 +225,12 @@ it('opens a scene using the resolved real workspace canvas id', async () => {
   const take = host.querySelector<HTMLButtonElement>(
     '[data-lcos-assembly-more]',
   );
-  if (!take) throw new Error('取用 action missing');
+  if (!take) { throw new Error('取用 action missing'); }
   await act(async () => take.click());
   const open = [...host.querySelectorAll<HTMLButtonElement>('button')].find(
     (button) => button.textContent?.includes('预览现场'),
   );
-  if (!open) throw new Error('现场 open action missing');
+  if (!open) { throw new Error('现场 open action missing'); }
   await act(async () => open.click());
 
   expect(mocks.openWindow).toHaveBeenCalledWith(
@@ -335,7 +335,7 @@ it('offers every exact context scope workspace and opens the selected canvas', a
   const take = host.querySelector<HTMLButtonElement>(
     '[data-lcos-assembly-more]',
   );
-  if (!take) throw new Error('取用 action missing');
+  if (!take) { throw new Error('取用 action missing'); }
   await act(async () => take.click());
 
   const menuItems = [
@@ -373,11 +373,11 @@ it('enters an exact context child workspace through the shared route, without gu
   await render('project-a');
   await act(async () => mocks.warehouse.mock.results[0]?.value);
   const take = host.querySelector<HTMLButtonElement>('[data-lcos-assembly-more]');
-  if (!take) throw new Error('取用 action missing');
+  if (!take) { throw new Error('取用 action missing'); }
   await act(async () => take.click());
   const enter = [...host.querySelectorAll<HTMLButtonElement>('[data-test-dropdown-item]')]
     .find((button) => button.textContent?.includes('进入现场'));
-  if (!enter) throw new Error('进入现场 action missing');
+  if (!enter) { throw new Error('进入现场 action missing'); }
   await act(async () => enter.click());
 
   expect(mocks.beginChildNavigation).toHaveBeenCalledWith(expect.objectContaining({
@@ -395,3 +395,72 @@ function deferred<T>(): { promise: Promise<T>; resolve: (value: T) => void } {
   });
   return { promise, resolve };
 }
+
+
+it('uses the canonical scope reference type when taking a workflow into the draft', async () => {
+  mocks.warehouse.mockResolvedValue({ items: [{ entityRef: { id: 'workflow-scope' }, kind: 'workflow', title: '工作流', usageCount: 0 }] });
+  mocks.workspaces.mockResolvedValue([]);
+  await render('project-a');
+  await act(async () => host.querySelector<HTMLButtonElement>('[data-lcos-assembly-add]')?.click());
+  expect(mocks.addReference).toHaveBeenCalledWith(expect.objectContaining({ entityType: 'scope', entityId: 'workflow-scope' }));
+  expect(mocks.apply).not.toHaveBeenCalled();
+});
+
+it('submits selected source identities once and retains only incomplete selections', async () => {
+  mocks.warehouse.mockResolvedValue({ items: [artifact('a', '材料 A'), artifact('b', '材料 B')] });
+  mocks.workspaces.mockResolvedValue([]);
+  const pending = deferred<unknown>();
+  mocks.apply.mockReturnValue(pending.promise);
+  await render('project-a');
+  await act(async () => {
+    host.querySelector<HTMLInputElement>('input[aria-label="选择 材料 A"]')?.click();
+    host.querySelector<HTMLInputElement>('input[aria-label="选择 材料 B"]')?.click();
+  });
+  const apply = host.querySelector<HTMLButtonElement>('[data-lcos-assembly-batch-apply]');
+  expect(apply).not.toBeNull();
+  await act(async () => { apply?.click(); apply?.click(); });
+  expect(mocks.apply).toHaveBeenCalledTimes(1);
+  expect(mocks.apply).toHaveBeenCalledWith('project-a', expect.objectContaining({
+    projectId: 'project-a', targetRef: { kind: 'main' },
+    sourceRefs: [{ kind: 'artifactView', id: 'a' }, { kind: 'artifactView', id: 'b' }],
+  }));
+  expect(apply?.disabled).toBe(true);
+  pending.resolve({ schemaVersion: 1, projectId: 'project-a', allApplied: false, results: [
+    { sourceRef: { kind: 'artifactView', id: 'a' }, status: 'applied', channel: 'main', changeSetId: 'change-a' },
+    { sourceRef: { kind: 'artifactView', id: 'b' }, status: 'failed', channel: 'error', message: '未落地' },
+  ] });
+  await act(async () => pending.promise);
+  expect(host.querySelector<HTMLInputElement>('input[aria-label="选择 材料 A"]')?.checked).toBe(false);
+  expect(host.querySelector<HTMLInputElement>('input[aria-label="选择 材料 B"]')?.checked).toBe(true);
+  expect(host.textContent).toContain('1 项落地');
+  expect(host.textContent).not.toContain('全部成功');
+});
+
+it('does not call an unconfirmed transport failure a failed write or retry it automatically', async () => {
+  mocks.warehouse.mockResolvedValue({ items: [artifact('a', '材料 A')] });
+  mocks.workspaces.mockResolvedValue([]);
+  mocks.apply.mockRejectedValue(new Error('连接中断'));
+  await render('project-a');
+  await act(async () => host.querySelector<HTMLButtonElement>('[data-lcos-assembly-drop]')?.click());
+  expect(host.textContent).toContain('未收到完整装配回执');
+  expect(host.textContent).toContain('尚未确认');
+  expect(host.textContent).not.toContain('投放失败 · 没有来源落地');
+  expect(mocks.apply).toHaveBeenCalledTimes(1);
+});
+
+it('does not reopen a source preview when its late result arrives after closing', async () => {
+  mocks.warehouse.mockResolvedValue({ items: [] });
+  mocks.workspaces.mockResolvedValue([]);
+  mocks.captureSnapshot.mockResolvedValue({ items: [{ id: 'capture-a', kind: 'web_page', source: { title: '原始网页', url: 'https://example.org/a' } }] });
+  const pending = deferred<unknown>();
+  mocks.capturePreview.mockReturnValue(pending.promise);
+  await render('project-a');
+  await act(async () => host.querySelector<HTMLButtonElement>('[data-lcos-assembly-source-tab="capture"]')?.click());
+  await act(async () => host.querySelector<HTMLButtonElement>('[data-lcos-assembly-preview-open="capture:capture-a"]')?.click());
+  expect(host.querySelector('[data-lcos-assembly-preview]')).not.toBeNull();
+  await act(async () => host.querySelector<HTMLButtonElement>('[data-lcos-assembly-preview-close]')?.click());
+  pending.resolve({ type: 'text', text: '已经关闭的旧内容' });
+  await act(async () => pending.promise);
+  expect(host.querySelector('[data-lcos-assembly-preview]')).toBeNull();
+  expect(host.textContent).not.toContain('已经关闭的旧内容');
+});

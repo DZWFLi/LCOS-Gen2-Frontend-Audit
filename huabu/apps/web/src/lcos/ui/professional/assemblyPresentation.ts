@@ -1,0 +1,59 @@
+import type { WarehouseItemV1 } from '@local-creative-os/contracts';
+
+export type AssemblyMaterialFilter = 'all' | 'image' | 'text' | 'media' | 'collection';
+export type AssemblyMaterialShape = 'image' | 'text' | 'document' | 'video' | 'audio' | 'link' | 'file' | 'context' | 'workflow' | 'conversation' | 'skill';
+export const ASSEMBLY_FILTERS: readonly { readonly value: AssemblyMaterialFilter; readonly label: string }[] = [
+  { value: 'all', label: '全部' }, { value: 'image', label: '图片' },
+  { value: 'text', label: '文字' }, { value: 'media', label: '影音' },
+  { value: 'collection', label: '集合' },
+];
+
+/** GEN1 Warehouse itemIcon taxonomy, projected onto the existing Figma material bodies. */
+export function assemblyMaterialShape(item: Pick<WarehouseItemV1, 'kind' | 'visualFamily'>): AssemblyMaterialShape {
+  if (item.kind === 'context' || item.kind === 'collection' || item.kind === 'scene') { return 'context'; }
+  if (item.kind === 'workflow') { return 'workflow'; }
+  if (item.kind === 'conversation') { return 'conversation'; }
+  if (item.kind === 'note') { return 'text'; }
+  switch (item.visualFamily) {
+    case 'image': return 'image';
+    case 'markdown': return 'text';
+    case 'pdf': case 'ppt': return 'document';
+    case 'audio': return 'audio';
+    case 'video': return 'video';
+    case 'link': return 'link';
+    default: return 'file';
+  }
+}
+export function captureMaterialShape(kind: string): AssemblyMaterialShape {
+  switch (kind) {
+    case 'image': case 'web_image': case 'clipboard_image': case 'screenshot': return 'image';
+    case 'text': case 'web_selection': case 'clipboard_text': return 'text';
+    case 'url': case 'web_link': case 'web_page': return 'link';
+    case 'conversation_snapshot': return 'conversation';
+    default: return 'file';
+  }
+}
+export function matchesAssemblyFilter(shape: AssemblyMaterialShape, filter: AssemblyMaterialFilter): boolean {
+  return filter === 'all' || (filter === 'image' && shape === 'image')
+    || (filter === 'text' && (shape === 'text' || shape === 'document'))
+    || (filter === 'media' && (shape === 'video' || shape === 'audio'))
+    || (filter === 'collection' && (shape === 'context' || shape === 'workflow'));
+}
+/** GEN1 CaptureWorkspace selection pruning; local UI selection, never membership truth. */
+export function retainAssemblySelection(selected: readonly string[], available: ReadonlySet<string>): readonly string[] {
+  const next = selected.filter((id) => available.has(id));
+  return next.length === selected.length ? selected : next;
+}
+export function toggleAssemblySelection(selected: readonly string[], id: string): readonly string[] {
+  return selected.includes(id) ? selected.filter((candidate) => candidate !== id) : [...selected, id];
+}
+export function safeAssemblyLink(value?: string): string | undefined {
+  if (!value) { return undefined; }
+  try { const url = new URL(value); return url.protocol === 'https:' || url.protocol === 'http:' ? url.href : undefined; }
+  catch { return undefined; }
+}
+export function assemblyDate(value?: string): string {
+  if (!value) { return ''; }
+  const date = new Date(value);
+  return Number.isNaN(date.valueOf()) ? '' : date.toLocaleString('zh-CN', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false });
+}

@@ -10,8 +10,8 @@ import {
 import { Columns2, Group, Pin, Ungroup, X } from 'lucide-react';
 import { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
 
+import { DropdownMenu, DropdownMenuItem } from '@/components/Common/DropdownMenu';
 import { useCloseOnEscape } from '@/hooks/useCloseOnEscape';
-
 
 import { ArtifactReaderBody } from './ArtifactReaderBody';
 import { AssemblyBody } from './AssemblyBody';
@@ -26,6 +26,7 @@ import {
 import { useLcosShellStore, type LcosWindow, type LcosWindowRegion } from '../shell/lcosShellStore';
 import { LcosWindowChrome } from '../ui/families';
 import { lcosGlassStyle, lcosTokens } from '../ui/lcosTokens';
+import moreIcon from '../ui/nearfield/assets/more.svg';
 
 import type { AssemblyTargetRefV1 } from '@local-creative-os/contracts';
 import type { ProfessionalRectV1, ProfessionalResizeHandleV1 } from '@local-creative-os/web-gen2';
@@ -56,11 +57,11 @@ interface ProfessionalRegionEntry {
 }
 
 function preferredWidthFor(window: LcosWindow): number {
-  return window.bodyKey === 'reader' ? 1120 : window.bodyKey === 'assembly' ? 640 : 520;
+  return window.bodyKey === 'reader' ? 1120 : window.bodyKey === 'assembly' ? 644 : 520;
 }
 
 function currentViewport(): ProfessionalRectV1 {
-  if (typeof window === 'undefined') return { x: 0, y: 0, width: 0, height: 0 };
+  if (typeof window === 'undefined') { return { x: 0, y: 0, width: 0, height: 0 }; }
   return {
     x: 0,
     y: 0,
@@ -77,14 +78,14 @@ interface PersistedReaderWindowV1 {
 const readerWindowStorageKey = (projectId: string): string => `lcos-reader-window-v1:${projectId}`;
 
 function readPersistedReaderWindows(projectId: string): readonly PersistedReaderWindowV1[] {
-  if (typeof window === 'undefined') return [];
+  if (typeof window === 'undefined') { return []; }
   try {
     const raw = window.sessionStorage.getItem(readerWindowStorageKey(projectId));
-    if (raw === null) return [];
+    if (raw === null) { return []; }
     const parsed: unknown = JSON.parse(raw);
-    if (!Array.isArray(parsed)) return [];
+    if (!Array.isArray(parsed)) { return []; }
     return parsed.flatMap((value): PersistedReaderWindowV1[] => {
-      if (typeof value !== 'object' || value === null) return [];
+      if (typeof value !== 'object' || value === null) { return []; }
       const item = value as Record<string, unknown>;
       return typeof item.artifactId === 'string' && item.artifactId !== '' && typeof item.title === 'string'
         ? [{ artifactId: item.artifactId, title: item.title }]
@@ -96,13 +97,13 @@ function readPersistedReaderWindows(projectId: string): readonly PersistedReader
 }
 
 function persistReaderWindows(projectId: string, windows: readonly LcosWindow[]): void {
-  if (typeof window === 'undefined') return;
+  if (typeof window === 'undefined') { return; }
   const readers = windows
     .filter((entry) => entry.bodyKey === 'reader' && entry.target !== undefined && entry.target !== '')
     .flatMap((entry) => entry.target === undefined ? [] : [{ artifactId: entry.target, title: entry.title }]);
   try {
-    if (readers.length === 0) window.sessionStorage.removeItem(readerWindowStorageKey(projectId));
-    else window.sessionStorage.setItem(readerWindowStorageKey(projectId), JSON.stringify(readers));
+    if (readers.length === 0) { window.sessionStorage.removeItem(readerWindowStorageKey(projectId)); }
+    else { window.sessionStorage.setItem(readerWindowStorageKey(projectId), JSON.stringify(readers)); }
   } catch {
     // Reload continuity is best-effort UI state; the in-memory shell store remains authoritative.
   }
@@ -188,7 +189,7 @@ export function ProfessionalWindowStage({ projectId }: ProfessionalWindowStagePr
       entry.region.rect !== undefined
       || entry.region.dockWidth !== undefined
       || entry.region.layout === 'docked-right');
-    if (regionEntries.length <= 1 && !hasExplicitGeometry) return new Map<string, ProfessionalRectV1>();
+    if (regionEntries.length <= 1 && !hasExplicitGeometry) { return new Map<string, ProfessionalRectV1>(); }
     return new Map(
       deriveProfessionalStageRegionPlacementsV1({
         viewport,
@@ -206,9 +207,9 @@ export function ProfessionalWindowStage({ projectId }: ProfessionalWindowStagePr
   /** 当前实际生效的区域几何（显式 placement 优先，否则读 DOM 的 CSS 默认值）。 */
   const rectFor = useCallback((regionId: string): ProfessionalRectV1 | undefined => {
     const placement = placements.get(regionId);
-    if (placement !== undefined) return placement;
+    if (placement !== undefined) { return placement; }
     const element = regionElements.current.get(regionId);
-    if (element === undefined) return undefined;
+    if (element === undefined) { return undefined; }
     const r = element.getBoundingClientRect();
     return { x: r.x, y: r.y, width: r.width, height: r.height };
   }, [placements]);
@@ -226,12 +227,12 @@ export function ProfessionalWindowStage({ projectId }: ProfessionalWindowStagePr
     kind: 'move' | 'resize',
     handle?: ProfessionalResizeHandleV1,
   ): void => {
-    if (event.button !== 0) return;
+    if (event.button !== 0) { return; }
     // chrome 上的按钮 / tab 不触发移动（它们有自己的点击语义）。
-    if (kind === 'move' && (event.target as HTMLElement).closest('button') !== null) return;
+    if (kind === 'move' && (event.target as HTMLElement).closest('button') !== null) { return; }
     const element = regionElements.current.get(region.id);
     const startRect = rectFor(region.id);
-    if (element === undefined || startRect === undefined) return;
+    if (element === undefined || startRect === undefined) { return; }
     event.preventDefault();
     event.stopPropagation();
     const viewportBounds = currentViewport();
@@ -285,8 +286,8 @@ export function ProfessionalWindowStage({ projectId }: ProfessionalWindowStagePr
       window.removeEventListener('pointerup', onUp);
       window.removeEventListener('pointercancel', onUp);
       const store = useLcosShellStore.getState();
-      if (gesture.docked) store.setWindowRegionDockWidth(region.id, gesture.latest.width);
-      else store.setWindowRegionRect(region.id, gesture.latest);
+      if (gesture.docked) { store.setWindowRegionDockWidth(region.id, gesture.latest.width); }
+      else { store.setWindowRegionRect(region.id, gesture.latest); }
     };
     window.addEventListener('pointermove', onMove);
     window.addEventListener('pointerup', onUp);
@@ -298,7 +299,7 @@ export function ProfessionalWindowStage({ projectId }: ProfessionalWindowStagePr
     const store = useLcosShellStore.getState();
     if (region.layout === 'docked-right') {
       const current = rectFor(region.id);
-      if (current !== undefined) store.setWindowRegionRect(region.id, current);
+      if (current !== undefined) { store.setWindowRegionRect(region.id, current); }
       store.setWindowRegionLayout(region.id, 'floating');
       return;
     }
@@ -326,7 +327,7 @@ export function ProfessionalWindowStage({ projectId }: ProfessionalWindowStagePr
     const publish = (): void => {
       const regions = regionEntries.flatMap((entry) => {
         const element = regionElements.current.get(entry.region.id);
-        if (element === undefined) return [];
+        if (element === undefined) { return []; }
         const rect = element.getBoundingClientRect();
         return [{
           regionId: entry.region.id,
@@ -349,7 +350,7 @@ export function ProfessionalWindowStage({ projectId }: ProfessionalWindowStagePr
     const observer = typeof ResizeObserver === 'undefined' ? undefined : new ResizeObserver(publish);
     for (const entry of regionEntries) {
       const element = regionElements.current.get(entry.region.id);
-      if (element !== undefined) observer?.observe(element);
+      if (element !== undefined) { observer?.observe(element); }
     }
     window.addEventListener('scroll', publish, true);
     return () => {
@@ -360,10 +361,10 @@ export function ProfessionalWindowStage({ projectId }: ProfessionalWindowStagePr
 
   // Esc 栈：Professional Stage 只关闭全局前景窗口；inline Composer 仍先消费一次 Esc。
   useCloseOnEscape(windows.length > 0 && !inlineComposerOpen, () => {
-    if (active) closeWindow(active.id);
+    if (active) { closeWindow(active.id); }
   });
 
-  if (windows.length === 0) return <div data-lcos-professional-stage data-empty="true" className="hidden" aria-hidden />;
+  if (windows.length === 0) { return <div data-lcos-professional-stage data-empty="true" className="hidden" aria-hidden />; }
 
   return (
     <div data-lcos-professional-stage className="pointer-events-none fixed inset-0 z-40">
@@ -375,25 +376,29 @@ export function ProfessionalWindowStage({ projectId }: ProfessionalWindowStagePr
         // 显式分组的目标：前一个区域（2 个区域时即“另一个”）；不存在则按钮 disabled。
         const groupTarget = regionIndex > 0 ? regionEntries[regionIndex - 1] : undefined;
         const docked = region.layout === 'docked-right';
+        const isAssembly = activeWindow.bodyKey === 'assembly';
         return (
           <div
             key={region.id}
             ref={(element) => {
-              if (element === null) regionElements.current.delete(region.id);
-              else regionElements.current.set(region.id, element);
+              if (element === null) { regionElements.current.delete(region.id); }
+              else { regionElements.current.set(region.id, element); }
             }}
             data-lcos-window-region-id={region.id}
             data-lcos-window-layout={region.layout}
+            data-lcos-window-active-body={activeWindow.bodyKey}
             className="pointer-events-auto absolute flex flex-col rounded-2xl"
             onPointerDownCapture={() => {
-              if (!isGlobalActive) activateWindow(activeWindow.id);
+              if (!isGlobalActive) { activateWindow(activeWindow.id); }
             }}
             style={{
+              boxSizing: 'border-box',
               ...(placement === undefined
                 ? {
-                    right: region.layout === 'docked-right' ? 0 : 24,
-                    top: region.layout === 'docked-right' ? 0 : 88,
-                    width: `min(${preferredWidth}px, calc(100vw - 48px))`,
+                    right: region.layout === 'docked-right' ? 0 : isAssembly ? (viewport.width >= 1280 ? 96 : viewport.width < 600 ? 12 : 24) : 24,
+                    top: region.layout === 'docked-right' ? 0 : isAssembly ? (viewport.width >= 1280 ? 120 : viewport.width < 600 ? 76 : 88) : 88,
+                    ...(isAssembly ? { height: 648 } : {}),
+                    width: `min(${preferredWidth}px, calc(100vw - ${isAssembly && viewport.width < 600 ? 24 : 48}px))`,
                   }
                 : {
                     left: placement.x,
@@ -401,12 +406,12 @@ export function ProfessionalWindowStage({ projectId }: ProfessionalWindowStagePr
                     width: placement.width,
                     height: placement.height,
                   }),
-              maxWidth: 'calc(100vw - 48px)',
-              maxHeight: region.layout === 'docked-right' ? '100vh' : 'calc(100vh - 140px)',
+              maxWidth: isAssembly && viewport.width < 600 ? 'calc(100vw - 24px)' : 'calc(100vw - 48px)',
+              maxHeight: region.layout === 'docked-right' ? '100vh' : isAssembly && viewport.width < 600 ? 'calc(100vh - 100px)' : 'calc(100vh - 140px)',
               border: '1px solid var(--lcos-window-border)',
               boxShadow: 'var(--lcos-window-shadow)',
               background: lcosTokens.color.surface,
-              borderRadius: region.layout === 'docked-right' ? 0 : 16,
+              borderRadius: region.layout === 'docked-right' ? 0 : isAssembly ? 18 : 16,
               overflow: 'hidden',
               zIndex: isGlobalActive ? 2 : 1,
             }}
@@ -415,7 +420,7 @@ export function ProfessionalWindowStage({ projectId }: ProfessionalWindowStagePr
             <div
               data-lcos-window-drag-handle={docked ? 'disabled' : 'enabled'}
               onPointerDown={(event) => {
-                if (docked) return;
+                if (docked) { return; }
                 beginWindowGesture(event, region, 'move');
               }}
             >
@@ -431,7 +436,15 @@ export function ProfessionalWindowStage({ projectId }: ProfessionalWindowStagePr
                     }))
                   : undefined}
                 onSelectTab={(id) => activateWindow(id)}
-                actions={
+                primaryActions={isAssembly ? <button type="button" data-lcos-window-icon-button aria-label="关闭窗口"
+                  onClick={() => closeWindow(activeWindow.id)}><X className="h-4 w-4" /></button> : undefined}
+                overflowTrigger={isAssembly ? <AssemblyWindowActions
+                  docked={docked} canGroup={groupTarget !== undefined} canUngroup={regionWindows.length > 1}
+                  onDock={() => toggleRegionDock(region)}
+                  onGroup={() => { if (groupTarget) { useLcosShellStore.getState().groupWindowRegions(region.id, groupTarget.region.id); } }}
+                  onUngroup={() => useLcosShellStore.getState().ungroupWindowRegion(region.id)}
+                /> : undefined}
+                actions={isAssembly ? undefined :
                   <>
                     <button
                       type="button"
@@ -451,7 +464,7 @@ export function ProfessionalWindowStage({ projectId }: ProfessionalWindowStagePr
                       title={groupTarget === undefined ? '没有可并入的相邻区域' : '并入上一个区域（显式分组为 tab）'}
                       disabled={groupTarget === undefined}
                       onClick={() => {
-                        if (groupTarget === undefined) return;
+                        if (groupTarget === undefined) { return; }
                         useLcosShellStore.getState().groupWindowRegions(region.id, groupTarget.region.id);
                       }}
                     >
@@ -515,6 +528,37 @@ export function ProfessionalWindowStage({ projectId }: ProfessionalWindowStagePr
       })}
     </div>
   );
+}
+
+
+/** Assembly chrome delegates geometry and grouping to the existing region owner. */
+function AssemblyWindowActions({ docked, canGroup, canUngroup, onDock, onGroup, onUngroup }: {
+  readonly docked: boolean;
+  readonly canGroup: boolean;
+  readonly canUngroup: boolean;
+  readonly onDock: () => void;
+  readonly onGroup: () => void;
+  readonly onUngroup: () => void;
+}): React.JSX.Element {
+  const [open, setOpen] = useState(false);
+  const trigger = useRef<HTMLButtonElement>(null);
+  const close = (): void => {
+    setOpen(false);
+    requestAnimationFrame(() => trigger.current?.focus({ preventScroll: true }));
+  };
+  const invoke = (action: () => void): void => { close(); action(); };
+  return <div onKeyDownCapture={(event) => {
+    if (open && event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); close(); }
+  }}>
+    <DropdownMenu open={open} onOpenChange={setOpen} align="bottom-right"
+      trigger={<button ref={trigger} type="button" data-lcos-window-icon-button aria-label="更多窗口操作" aria-haspopup="menu">
+        <img src={moreIcon} width={18} height={18} alt="" />
+      </button>}>
+      <DropdownMenuItem data-lcos-window-dock-toggle onClick={() => invoke(onDock)}>{docked ? '取消停靠' : '停靠到右侧'}</DropdownMenuItem>
+      <DropdownMenuItem data-lcos-window-group disabled={!canGroup} onClick={() => invoke(onGroup)}>并入上一个区域</DropdownMenuItem>
+      <DropdownMenuItem data-lcos-window-ungroup disabled={!canUngroup} onClick={() => invoke(onUngroup)}>取消分组</DropdownMenuItem>
+    </DropdownMenu>
+  </div>;
 }
 
 function ProfessionalBody({
