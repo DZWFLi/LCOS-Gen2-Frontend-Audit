@@ -160,6 +160,7 @@ import type { CanvasNode } from '@/components/Nodes/types';
 import type { AddNodeInput } from '@/handler/canvasCommand/uiIntent';
 import type { CanvasPointerRouterContext } from '@/handler/canvasPointerRouterContext';
 import type { PointerRecognizer } from '@/handler/pointerRouter';
+import type { CanvasViewport } from '@huabu/shared';
 import type { FrameFitResult, NestableNode } from '@huabu/shared/canvas-engine';
 
 
@@ -406,6 +407,8 @@ type CanvasProps = {
   shortcutsDisabled?: boolean;
   /** LCOS host seam: renderers/overlays/recognizers injected by the LCOS host. */
   hostExtension?: CanvasHostExtension;
+  /** Presentation-only first pose; canonical/saved viewport stays in canvasStore. */
+  initialViewportOverride?: CanvasViewport;
   /**
    * LCOS chrome mode: `lcos` hides Huabu product chrome（NodeToolbar / Controls /
    * MiniMap）而不关闭 kernel 事件与命令路径；`huabu` 为默认（原行为）。
@@ -417,6 +420,7 @@ type CanvasProps = {
 export const Canvas: React.FC<CanvasProps> = ({
   shortcutsDisabled = false,
   hostExtension,
+  initialViewportOverride,
   chromeMode = 'huabu',
 }) => {
   // LCOS host seam: merge host renderers over Huabu's built-in nodeTypes.
@@ -536,7 +540,10 @@ export const Canvas: React.FC<CanvasProps> = ({
     defaultViewport,
     fitInitialViewport,
     isPending: isInitialViewportPending,
-  } = useInitialCanvasViewport({ deferFit: chromeMode === 'lcos' });
+  } = useInitialCanvasViewport({
+    deferFit: chromeMode === 'lcos',
+    ...(initialViewportOverride === undefined ? {} : { initialViewportOverride }),
+  });
 
   // When locked, the user can neither drag, connect, nor select elements.
   // Gating the controlled `<ReactFlow>` props from this single state (rather

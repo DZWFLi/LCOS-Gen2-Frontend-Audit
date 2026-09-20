@@ -117,12 +117,37 @@ const page = await browser.newPage({ viewport: { width: 1366, height: 768 } });
 const failures = [];
 const evidence = {};
 const consoleErrors = [];
+const httpErrors = [];
 page.on('console', (message) => {
   if (message.type() === 'error') consoleErrors.push(message.text().slice(0, 300));
 });
 page.on('pageerror', (error) => consoleErrors.push(`pageerror: ${String(error.message).slice(0, 300)}`));
+page.on('response', (response) => {
+  if (response.status() >= 400) httpErrors.push(`${response.status()} ${response.url()}`);
+});
 const check = (condition, message) => { if (!condition) failures.push(message); };
 const shot = (name) => page.screenshot({ path: `${SHOTS}/${name}` });
+const cameraTransition = () => page.evaluate(async () => {
+  const module = await import('/src/lcos/shell/lcosShellStore.ts');
+  return module.useLcosShellStore.getState().worksiteCameraTransition;
+});
+const startCameraSamples = () => page.evaluate(() => {
+  const target = window;
+  target.__lcosCameraSamples = [];
+  const startedAt = performance.now();
+  target.__lcosCameraSampleTimer = window.setInterval(() => {
+    target.__lcosCameraSamples.push({
+      ms: Math.round(performance.now() - startedAt),
+      url: window.location.href,
+      style: document.querySelector('.react-flow__viewport')?.getAttribute('style') ?? null,
+    });
+  }, 16);
+});
+const stopCameraSamples = () => page.evaluate(() => {
+  const target = window;
+  window.clearInterval(target.__lcosCameraSampleTimer);
+  return target.__lcosCameraSamples;
+});
 
 try {
   const projects = unwrap(await core('/projects'));
@@ -133,7 +158,14 @@ try {
   // Reproducible source and target canvas setup. No production-only fixture
   // endpoint: this is exactly createCanvas + updateWorkspaceCanvasId.
   const sourceCanvasId = await ensureWorkspaceCanvas(workspaces, SOURCE_WORKSPACE, 'Wave6 Context Portal source');
-  const targetCanvasId = await ensureWorkspaceCanvas(workspaces, TARGET_WORKSPACE, 'Wave6 Context Portal target');
+  // Every run binds a fresh target. This proves the existing no-saved-viewport
+  // first-fit branch instead of inheriting state from an earlier test run.
+  const targetCanvasId = await createCanvas('Wave6 Context Portal fresh target');
+  await core(`/projects/${encodeURIComponent(PROJECT_ID)}/workspaces/${encodeURIComponent(TARGET_WORKSPACE)}`, {
+    method: 'PUT',
+    headers: jsonHeaders,
+    body: JSON.stringify({ canvasId: targetCanvasId }),
+  });
   const sourceNodeId = await ensureSourceNode(sourceCanvasId);
   evidence.fixture = { sourceWorkspaceId: SOURCE_WORKSPACE, sourceCanvasId, sourceNodeId, targetWorkspaceId: TARGET_WORKSPACE, targetCanvasId };
 
@@ -149,41 +181,92 @@ try {
   if (!sourceBox) throw new Error('source fixture node has no browser box');
   await page.mouse.click(sourceBox.x + sourceBox.width / 2, sourceBox.y + sourceBox.height / 2);
   await page.waitForTimeout(250);
-  await page.getByRole('button', { name: '放大' }).click();
-  await page.waitForTimeout(350);
+  // Capture the exact currently rendered source framing. The following
+  // approach visibly moves away from it, and return must restore this value;
+  // the test does not depend on a particular zoom increment or fit timing.
   const sourceViewport = await page.locator('.react-flow__viewport').getAttribute('style');
   const selectedBefore = await page.locator(`[data-id="${sourceNodeId}"].selected`).count();
   check(selectedBefore === 1, 'Context source node was not selected before entering Atlas');
-  check(!!sourceViewport && sourceViewport.includes('scale(1.2)'), `source viewport did not change through camera control: ${sourceViewport}`);
+  check(!!sourceViewport, 'Context source viewport was not readable before entering Atlas');
   evidence.source = { canvasId: sourceStageCanvas, selectedNodeId: sourceNodeId, selectedBefore, viewport: sourceViewport };
   await shot('wave6_context_portal_source.png');
 
   await page.locator('[data-lcos-context-instrument="atlas"]').click();
   await page.waitForTimeout(350);
-  const targetCard = page.locator('[data-lcos-atlas-card="scene"]').filter({ hasText: '施工主线' }).first();
-  check(await targetCard.count() === 1, 'Atlas target card “施工主线” not found');
-  await targetCard.getByRole('button', { name: '进入现场' }).click();
+  const enterTarget = page.locator('button[aria-label="进入集合 · 施工主线"]:not([disabled])').last();
+  check(await enterTarget.count() === 1, 'enabled Atlas target “施工主线” not found');
+  await startCameraSamples();
+  await enterTarget.click();
   await page.waitForURL(/\/projects\/[^/]+\/main\?workspaceId=workspace-real-main$/, { timeout: 30000 });
   await page.waitForSelector('[data-lcos-child-return]', { timeout: 30000 });
-  await page.waitForTimeout(1200);
-  evidence.child = { url: page.url(), canvasId: await page.locator('[data-lcos-worksite-stage]').getAttribute('data-lcos-canvas-id') };
+  const approachSamples = await stopCameraSamples();
+  const visibleApproachSamples = approachSamples.filter((sample) =>
+    sample.url.endsWith('/context') && sample.style !== null && sample.style !== sourceViewport);
+  check(visibleApproachSamples.length > 0, 'source approach produced no visible camera samples before routing');
+  evidence.approach = {
+    sampleCount: visibleApproachSamples.length,
+    first: visibleApproachSamples[0],
+    last: visibleApproachSamples.at(-1),
+  };
+  const childTransition = await cameraTransition();
+  const childViewport = await page.locator('.react-flow__viewport').getAttribute('style');
+  evidence.child = {
+    url: page.url(),
+    canvasId: await page.locator('[data-lcos-worksite-stage]').getAttribute('data-lcos-canvas-id'),
+    viewport: childViewport,
+    transition: childTransition,
+  };
   check(page.url().includes(`workspaceId=${TARGET_WORKSPACE}`), `child route did not identify target workspace: ${page.url()}`);
   check(evidence.child.canvasId === targetCanvasId, `child canvas mismatch: ${evidence.child.canvasId} !== ${targetCanvasId}`);
+  check(childTransition === null, `fresh target should consume transition and keep existing first-fit: ${JSON.stringify(childTransition)}`);
   await shot('wave6_context_portal_child.png');
 
+  // Give the target a real persisted viewport through the existing camera
+  // control, then return once. The second entry below now has a settle pose
+  // that can be interrupted by an immediate return.
+  await page.getByRole('button', { name: '放大' }).click();
+  await page.waitForTimeout(500);
   await page.locator('[data-lcos-child-return]').click();
   await page.waitForURL(new RegExp(`/projects/[^/]+/context$`), { timeout: 30000 });
   await page.waitForSelector(`[data-id="${sourceNodeId}"]`, { timeout: 30000 });
-  await page.waitForTimeout(1200);
+  await page.waitForTimeout(650);
+
+  // The second entry is an independent user action: make the exact source
+  // selection explicit again before testing an interrupted target settle.
+  const sourceNodeAgain = page.locator(`[data-id="${sourceNodeId}"]`);
+  const sourceBoxAgain = await sourceNodeAgain.boundingBox();
+  if (!sourceBoxAgain) throw new Error('returned source node has no browser box');
+  await page.mouse.click(
+    sourceBoxAgain.x + sourceBoxAgain.width / 2,
+    sourceBoxAgain.y + sourceBoxAgain.height / 2,
+  );
+  await page.waitForTimeout(150);
+
+  await page.locator('[data-lcos-context-instrument="atlas"]').click();
+  await page.waitForTimeout(250);
+  await page.locator('button[aria-label="进入集合 · 施工主线"]:not([disabled])').last().click();
+  await page.waitForURL(/\/projects\/[^/]+\/main\?workspaceId=workspace-real-main$/, { timeout: 30000 });
+  await page.waitForSelector('[data-lcos-child-return]', { timeout: 30000 });
+  const interruptedTargetTransition = await cameraTransition();
+  check(
+    interruptedTargetTransition?.kind === 'enter-settle',
+    `second entry did not expose a settle that quick return can interrupt: ${JSON.stringify(interruptedTargetTransition)}`,
+  );
+  await page.locator('[data-lcos-child-return]').click();
+  await page.waitForURL(new RegExp(`/projects/[^/]+/context$`), { timeout: 30000 });
+  await page.waitForSelector(`[data-id="${sourceNodeId}"]`, { timeout: 30000 });
+  await page.waitForTimeout(650);
   const returnedCanvasId = await page.locator('[data-lcos-worksite-stage]').getAttribute('data-lcos-canvas-id');
   const returnedViewport = await page.locator('.react-flow__viewport').getAttribute('style');
   const selectedAfter = await page.locator(`[data-id="${sourceNodeId}"].selected`).count();
+  const transitionAfterReturn = await cameraTransition();
   const returnedUrl = new URL(page.url());
   evidence.returned = { url: page.url(), canvasId: returnedCanvasId, viewport: returnedViewport, selectedNodeId: sourceNodeId, selectedAfter };
   check(returnedUrl.searchParams.get('workspaceId') === null, `return route retained child workspace query: ${page.url()}`);
   check(returnedCanvasId === sourceCanvasId, `return source canvas mismatch: ${returnedCanvasId} !== ${sourceCanvasId}`);
   check(returnedViewport === sourceViewport, `return viewport mismatch: ${returnedViewport} !== ${sourceViewport}`);
   check(selectedAfter === 1, 'source selection was not restored after returning from child worksite');
+  check(transitionAfterReturn === null, `quick return left a worksite camera transition behind: ${JSON.stringify(transitionAfterReturn)}`);
   check(consoleErrors.length === 0, `browser console errors: ${consoleErrors.join(' | ')}`);
   await shot('wave6_context_portal_return.png');
 } catch (error) {
@@ -198,5 +281,6 @@ console.log(JSON.stringify({
   failures,
   evidence,
   consoleErrors,
+  httpErrors,
 }, null, 2));
 if (failures.length > 0) process.exitCode = 1;

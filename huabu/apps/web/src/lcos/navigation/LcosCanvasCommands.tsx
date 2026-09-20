@@ -34,6 +34,7 @@ import useCanvasStore from '@/store/canvasStore';
 import { useLcosReferenceStore } from '../lcosReferenceState';
 import { useLcosShellStore } from '../shell/lcosShellStore';
 import { lcosTokens } from '../ui/lcosTokens';
+import { useReducedSpatialMotion } from '../ui/motion/useReducedSpatialMotion';
 
 import type { Node } from '@xyflow/react';
 
@@ -126,6 +127,8 @@ export function LcosCanvasCommands(): React.JSX.Element {
   const locateRequest = useLcosShellStore((s) => s.locateRequest);
   const consumeCamera = useLcosShellStore((s) => s.consumeCamera);
   const consumeLocate = useLcosShellStore((s) => s.consumeLocate);
+  const worksiteCameraTransition = useLcosShellStore((s) => s.worksiteCameraTransition);
+  const consumeWorksiteCameraTransition = useLcosShellStore((s) => s.consumeWorksiteCameraTransition);
   const activeSurface = useLcosShellStore((s) => s.activeSurface);
   const canvasId = useCanvasStore((s) => s.canvasId);
   const nodeCount = useCanvasStore((s) => s.nodes.length);
@@ -142,6 +145,8 @@ export function LcosCanvasCommands(): React.JSX.Element {
   const [arrivalTarget, setArrivalTarget] = useState<ArrivalTarget | null>(null);
   const locateGeneration = useRef(0);
   const arrivalTimer = useRef<number | null>(null);
+  const transitionSettledCanvas = useRef<string | null>(null);
+  const reducedMotion = useReducedSpatialMotion();
 
   const cancelArrivalTimer = (): void => {
     if (arrivalTimer.current !== null) {
@@ -159,6 +164,49 @@ export function LcosCanvasCommands(): React.JSX.Element {
     const result = fitBoundsWithInsets(bounds, { width: size.width, height: size.height }, HUD_INSETS);
     rf.setViewport(result, duration > 0 ? { duration } : undefined);
   };
+
+  useEffect(() => {
+    const transition = worksiteCameraTransition;
+    if (transition === null || transition.canvasId !== canvasId) return;
+    if (transition.targetViewport === undefined) {
+      consumeWorksiteCameraTransition(transition.id);
+      return;
+    }
+    const targetViewport = transition.targetViewport;
+
+    let active = true;
+    const duration = reducedMotion
+      ? 0
+      : transition.kind === 'return-restore'
+        ? 360
+        : 300;
+    void rf.setViewport(
+      targetViewport,
+      duration > 0 ? { duration } : undefined,
+    ).then(() => {
+      if (!active) return;
+      const shell = useLcosShellStore.getState();
+      if (shell.worksiteCameraTransition?.id !== transition.id) return;
+      if (useCanvasStore.getState().canvasId !== transition.canvasId) return;
+      useCanvasStore.getState().setViewport(targetViewport);
+      transitionSettledCanvas.current = transition.canvasId;
+      consumeWorksiteCameraTransition(transition.id);
+    }).catch(() => {
+      // RF can reject when a newer camera request interrupts this promise.
+      // Only the still-current request may be consumed here; a newer request
+      // owns the next visible state and must remain intact.
+      if (useLcosShellStore.getState().worksiteCameraTransition?.id === transition.id) {
+        consumeWorksiteCameraTransition(transition.id);
+      }
+    });
+    return () => { active = false; };
+  }, [
+    canvasId,
+    consumeWorksiteCameraTransition,
+    reducedMotion,
+    rf,
+    worksiteCameraTransition,
+  ]);
 
   useEffect(() => {
     if (!cameraRequest) return;
@@ -201,6 +249,8 @@ export function LcosCanvasCommands(): React.JSX.Element {
   const canvasLoading = useCanvasStore((s) => s.isLoading);
   useEffect(() => {
     if (canvasId === undefined || canvasLoading) return;
+    if (worksiteCameraTransition?.canvasId === canvasId) return;
+    if (transitionSettledCanvas.current === canvasId) return;
     let cancelled = false;
     let tries = 0;
 
@@ -241,7 +291,7 @@ export function LcosCanvasCommands(): React.JSX.Element {
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [canvasId, nodeCount, canvasLoading, registeredBindingCount, rf]);
+  }, [canvasId, nodeCount, canvasLoading, registeredBindingCount, rf, worksiteCameraTransition]);
 
   useEffect(() => {
     if (!locateRequest || locateRequest.surface !== activeSurface) return;

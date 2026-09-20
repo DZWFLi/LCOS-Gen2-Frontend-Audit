@@ -7,6 +7,11 @@
 
 import useCanvasStore from '@/store/canvasStore';
 
+import {
+  animateCurrentWorksiteCamera,
+  entryStartViewport,
+  worksiteCameraViewportSize,
+} from './worksiteCameraTransition';
 import { useLcosReferenceStore } from '../lcosReferenceState';
 import { useLcosShellStore, type LcosSurfaceKey } from '../shell/lcosShellStore';
 
@@ -19,6 +24,8 @@ export interface BeginChildWorksiteNavigationInput {
   readonly sourceWasChild: boolean;
   readonly targetSurface: LcosSurfaceKey;
   readonly targetWorkspace: Pick<Workspace, 'id' | 'canvasId'>;
+  /** Exact source projection to approach when the caller can resolve it. */
+  readonly sourceNodeId?: string;
   readonly navigate: (to: string) => void;
 }
 
@@ -33,10 +40,14 @@ export function beginChildWorksiteNavigation(
   input: BeginChildWorksiteNavigationInput,
 ): boolean {
   if (input.targetWorkspace.canvasId === undefined) return false;
+  const targetCanvasId = input.targetWorkspace.canvasId;
 
   const canvas = useCanvasStore.getState();
   const references = useLcosReferenceStore.getState().nodeEntityRefs;
   const selectedNodes = canvas.nodes.filter((node) => node.selected);
+  const approachNodeIds = input.sourceNodeId === undefined
+    ? selectedNodes.map((node) => node.id)
+    : [input.sourceNodeId];
   const sourceEntityRefs = selectedNodes.flatMap((node) => {
     const ref = references.get(node.id);
     return ref?.entityType !== undefined && ref.entityId !== undefined
@@ -44,19 +55,50 @@ export function beginChildWorksiteNavigation(
       : [];
   });
 
-  useLcosShellStore.getState().beginChildNavigation({
-    projectId: input.projectId,
-    sourceSurface: input.sourceSurface,
-    ...(input.sourceWorkspaceId === undefined ? {} : { sourceWorkspaceId: input.sourceWorkspaceId }),
-    sourceWasChild: input.sourceWasChild,
-    ...(canvas.canvasId === null ? {} : { sourceCanvasId: canvas.canvasId }),
-    ...(canvas.viewport === null ? {} : { sourceViewport: canvas.viewport }),
-    selectedNodeIds: selectedNodes.map((node) => node.id),
-    ...(sourceEntityRefs.length === 0 ? {} : { sourceEntityRefs }),
+  const sourceViewport = canvas.rfInstance?.getViewport() ?? canvas.viewport ?? undefined;
+  const shell = useLcosShellStore.getState();
+  const transitionId = shell.requestWorksiteCameraTransition({
+    canvasId: targetCanvasId,
+    kind: 'enter-settle',
   });
 
-  input.navigate(
-    `/projects/${encodeURIComponent(input.projectId)}/${input.targetSurface}?workspaceId=${encodeURIComponent(String(input.targetWorkspace.id))}`,
-  );
+  void (async () => {
+    const sourceApproachViewport = await animateCurrentWorksiteCamera({
+      direction: 'approach',
+      nodeIds: approachNodeIds,
+    });
+    const currentShell = useLcosShellStore.getState();
+    if (currentShell.worksiteCameraTransition?.id !== transitionId) return;
+
+    currentShell.beginChildNavigation({
+      projectId: input.projectId,
+      sourceSurface: input.sourceSurface,
+      ...(input.sourceWorkspaceId === undefined ? {} : { sourceWorkspaceId: input.sourceWorkspaceId }),
+      sourceWasChild: input.sourceWasChild,
+      ...(canvas.canvasId === null ? {} : { sourceCanvasId: canvas.canvasId }),
+      ...(sourceViewport === undefined ? {} : { sourceViewport }),
+      ...(sourceApproachViewport === undefined ? {} : { sourceApproachViewport }),
+      selectedNodeIds: selectedNodes.map((node) => node.id),
+      ...(sourceEntityRefs.length === 0 ? {} : { sourceEntityRefs }),
+    });
+
+    const loaded = await useCanvasStore.getState().switchCanvas(targetCanvasId);
+    const latestShell = useLcosShellStore.getState();
+    if (latestShell.worksiteCameraTransition?.id !== transitionId) return;
+    if (loaded) {
+      const targetViewport = useCanvasStore.getState().viewport ?? undefined;
+      latestShell.updateWorksiteCameraTransition(transitionId, {
+        ...(targetViewport === undefined
+          ? {}
+          : {
+              startViewport: entryStartViewport(targetViewport, worksiteCameraViewportSize()),
+              targetViewport,
+            }),
+      });
+    }
+    input.navigate(
+      `/projects/${encodeURIComponent(input.projectId)}/${input.targetSurface}?workspaceId=${encodeURIComponent(String(input.targetWorkspace.id))}`,
+    );
+  })();
   return true;
 }

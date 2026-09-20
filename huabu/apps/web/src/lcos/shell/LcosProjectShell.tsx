@@ -14,6 +14,7 @@ import { LcosWorksiteStage } from './LcosWorksiteStage';
 import { useLcosReferenceStore } from '../lcosReferenceState';
 import { beginChildWorksiteNavigation } from '../navigation/childWorksiteNavigation';
 import { waitForProjectedEntity } from '../navigation/waitForProjectedEntity';
+import { animateCurrentWorksiteCamera } from '../navigation/worksiteCameraTransition';
 import { childSurfaceForItem } from '../navigation/workspaceTargets';
 import { ProfessionalWindowStage } from '../professional/ProfessionalWindowStage';
 import { ContextWorksite } from '../surfaces/context/ContextWorksite';
@@ -139,16 +140,34 @@ export function LcosProjectShell({
     setReturning(true);
     setReturnError(undefined);
     void (async () => {
+      let transitionId: string | undefined;
       try {
         if (context?.projectId === projectId && context.sourceCanvasId !== undefined) {
+          const shell = useLcosShellStore.getState();
+          const currentCanvas = useCanvasStore.getState();
+          const outgoingTransition = shell.worksiteCameraTransition;
+          if (
+            outgoingTransition?.canvasId === currentCanvas.canvasId
+            && outgoingTransition.targetViewport !== undefined
+          ) {
+            // Preserve the destination's intended settled framing even when a
+            // quick return interrupts its visible interpolation midway.
+            currentCanvas.setViewport(outgoingTransition.targetViewport);
+          }
+          transitionId = shell.requestWorksiteCameraTransition({
+            canvasId: context.sourceCanvasId,
+            kind: 'return-restore',
+            ...(context.sourceApproachViewport === undefined
+              ? {}
+              : { startViewport: context.sourceApproachViewport }),
+            ...(context.sourceViewport === undefined
+              ? {}
+              : { targetViewport: context.sourceViewport }),
+          });
+          await animateCurrentWorksiteCamera({ direction: 'retreat' });
+          if (useLcosShellStore.getState().worksiteCameraTransition?.id !== transitionId) return;
           const loaded = await useCanvasStore.getState().switchCanvas(context.sourceCanvasId);
           if (!loaded) throw new Error('来源现场暂不可读取，请重试');
-          // Restore the exact source camera through Huabu's existing canvas
-          // store. This is a one-shot return restore; it does not create a
-          // second camera or persist navigation state as Core truth.
-          if (context.sourceViewport !== undefined) {
-            useCanvasStore.getState().setViewport(context.sourceViewport);
-          }
           const canvasState = useCanvasStore.getState();
           const currentNodeIds = new Set(canvasState.nodes.map((node) => node.id));
           const restoredNodeIds = new Set(
@@ -181,6 +200,9 @@ export function LcosProjectShell({
           : '';
         navigate(`/projects/${encodeURIComponent(projectId)}/${sourceSurface}${sourceQuery}`, { replace: true });
       } catch (error) {
+        if (transitionId !== undefined) {
+          useLcosShellStore.getState().consumeWorksiteCameraTransition(transitionId);
+        }
         setReturnError(error instanceof Error ? error.message : String(error));
       } finally {
         setReturning(false);

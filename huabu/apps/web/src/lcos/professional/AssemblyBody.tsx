@@ -538,6 +538,9 @@ export function AssemblyBody({
     if (workspace.canvasId === undefined) return;
     const targetSurface = childSurfaceForItem(item, workspace);
     if (targetSurface === undefined) return;
+    const sourceNodeId = [...useLcosReferenceStore.getState().nodeEntityRefs.entries()].find(
+      ([, ref]) => ref.entityId === item.entityRef.id && ref.entityType === item.entityRef.type,
+    )?.[0];
     beginChildWorksiteNavigation({
       projectId,
       sourceSurface: activeSurface,
@@ -545,6 +548,7 @@ export function AssemblyBody({
       sourceWasChild: new URLSearchParams(window.location.search).has('workspaceId'),
       targetSurface,
       targetWorkspace: workspace,
+      ...(sourceNodeId === undefined ? {} : { sourceNodeId }),
       navigate,
     });
   };

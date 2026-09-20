@@ -5,6 +5,10 @@
 
 import { Canvas } from '@/components/Panels/Canvas/Canvas';
 import { useLcosCanvasProps } from '@/lcos/useLcosCanvasProps';
+import useCanvasStore from '@/store/canvasStore';
+
+import { useLcosShellStore } from '../shell/lcosShellStore';
+import { useReducedSpatialMotion } from '../ui/motion/useReducedSpatialMotion';
 
 export interface CanvasHostBoundaryProps {
   readonly projectId: string;
@@ -16,5 +20,17 @@ export function CanvasHostBoundary({
   chromeMode = 'lcos',
 }: CanvasHostBoundaryProps): React.JSX.Element {
   const { hostExtension } = useLcosCanvasProps(projectId);
-  return <Canvas chromeMode={chromeMode} hostExtension={hostExtension} />;
+  const canvasId = useCanvasStore((state) => state.canvasId);
+  const transition = useLcosShellStore((state) => state.worksiteCameraTransition);
+  const reducedMotion = useReducedSpatialMotion();
+  const initialViewportOverride = !reducedMotion && transition?.canvasId === canvasId
+    ? transition.startViewport
+    : undefined;
+  return (
+    <Canvas
+      chromeMode={chromeMode}
+      hostExtension={hostExtension}
+      {...(initialViewportOverride === undefined ? {} : { initialViewportOverride })}
+    />
+  );
 }

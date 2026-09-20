@@ -312,6 +312,7 @@ it('keeps an explicit child-worksite return context separate from project truth'
     sourceWasChild: false,
     sourceCanvasId: 'canvas-main',
     sourceViewport: { x: 48, y: -24, zoom: 0.82 },
+    sourceApproachViewport: { x: 32, y: -38, zoom: 0.9 },
     selectedNodeIds: ['node-a', 'node-b'],
     sourceEntityRefs: [{ nodeId: 'node-a', entityType: 'artifact', entityId: 'artifact-a' }],
   });
@@ -319,11 +320,48 @@ it('keeps an explicit child-worksite return context separate from project truth'
     projectId: 'project-1',
     sourceCanvasId: 'canvas-main',
     sourceViewport: { x: 48, y: -24, zoom: 0.82 },
+    sourceApproachViewport: { x: 32, y: -38, zoom: 0.9 },
     selectedNodeIds: ['node-a', 'node-b'],
     sourceEntityRefs: [{ nodeId: 'node-a', entityType: 'artifact', entityId: 'artifact-a' }],
   }));
   store.clearChildNavigation();
   expect(useLcosShellStore.getState().childReturn).toBeNull();
+});
+
+it('keeps only the latest one-shot worksite camera transition', () => {
+  const store = useLcosShellStore.getState();
+  store.clear();
+  const first = store.requestWorksiteCameraTransition({
+    canvasId: 'canvas-child-a',
+    kind: 'enter-settle',
+  });
+  const second = store.requestWorksiteCameraTransition({
+    canvasId: 'canvas-child-b',
+    kind: 'enter-settle',
+  });
+  expect(second).not.toBe(first);
+
+  store.updateWorksiteCameraTransition(first, {
+    targetViewport: { x: 0, y: 0, zoom: 1 },
+  });
+  expect(useLcosShellStore.getState().worksiteCameraTransition).toMatchObject({
+    id: second,
+    canvasId: 'canvas-child-b',
+  });
+
+  store.updateWorksiteCameraTransition(second, {
+    startViewport: { x: 10, y: 20, zoom: 0.8 },
+    targetViewport: { x: 0, y: 0, zoom: 1 },
+  });
+  expect(useLcosShellStore.getState().worksiteCameraTransition).toMatchObject({
+    id: second,
+    startViewport: { x: 10, y: 20, zoom: 0.8 },
+    targetViewport: { x: 0, y: 0, zoom: 1 },
+  });
+  store.consumeWorksiteCameraTransition(first);
+  expect(useLcosShellStore.getState().worksiteCameraTransition?.id).toBe(second);
+  store.consumeWorksiteCameraTransition(second);
+  expect(useLcosShellStore.getState().worksiteCameraTransition).toBeNull();
 });
 
 it('drops a child return context when changing project', () => {

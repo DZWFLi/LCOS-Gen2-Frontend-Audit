@@ -55,6 +55,8 @@ export interface LcosChildReturn {
   readonly sourceCanvasId?: string;
   /** Snapshot of the Huabu viewport at entry; restored through the same canvas store on return. */
   readonly sourceViewport?: CanvasViewport;
+  /** The visible approach pose reached before entry; used only as the first return frame. */
+  readonly sourceApproachViewport?: CanvasViewport;
   readonly selectedNodeIds: readonly string[];
   /** Canonical entity refs for the selected nodes; node ids alone are not enough after reconcile. */
   readonly sourceEntityRefs?: readonly {
@@ -62,6 +64,16 @@ export interface LcosChildReturn {
     readonly entityType: string;
     readonly entityId: string;
   }[];
+}
+
+export interface LcosWorksiteCameraTransition {
+  readonly id: string;
+  readonly canvasId: string;
+  readonly kind: 'enter-settle' | 'return-restore';
+  /** First rendered pose for the destination Canvas mount. */
+  readonly startViewport?: CanvasViewport;
+  /** Exact settle pose owned by the destination Huabu viewport. */
+  readonly targetViewport?: CanvasViewport;
 }
 
 export type LcosCameraCommandKind = 'zoom-in' | 'zoom-out' | 'fit' | 'reset';
@@ -182,6 +194,8 @@ export interface LcosShellUiState {
   windowEnvironment: ProfessionalWindowEnvironmentV1 | null;
   /** Child worksite 的来源现场；刷新后允许丢失，返回按钮仍有安全 fallback。 */
   childReturn: LcosChildReturn | null;
+  /** One-shot camera intent consumed by the matching Huabu Canvas mount. */
+  worksiteCameraTransition: LcosWorksiteCameraTransition | null;
   setProject(projectId: string): void;
   setActiveSurface(surface: LcosSurfaceKey): void;
   setActiveWorkspaceId(workspaceId: string | null): void;
@@ -191,6 +205,14 @@ export interface LcosShellUiState {
   ): void;
   beginChildNavigation(returnContext: LcosChildReturn): void;
   clearChildNavigation(): void;
+  requestWorksiteCameraTransition(
+    transition: Omit<LcosWorksiteCameraTransition, 'id'>,
+  ): string;
+  updateWorksiteCameraTransition(
+    id: string,
+    patch: Pick<LcosWorksiteCameraTransition, 'startViewport' | 'targetViewport'>,
+  ): void;
+  consumeWorksiteCameraTransition(id: string): void;
   requestCamera(kind: LcosCameraCommandKind): void;
   requestLocate(request: LcosLocateRequest): void;
   consumeCamera(): void;
@@ -259,6 +281,7 @@ export const useLcosShellStore = create<LcosShellUiState>((set) => ({
   readerLastRevisions: {},
   windowEnvironment: null,
   childReturn: null,
+  worksiteCameraTransition: null,
   setProject: (projectId) => set((state) => {
     if (state.projectId === projectId) return state;
     if (state.projectId !== null) {
@@ -282,6 +305,7 @@ export const useLcosShellStore = create<LcosShellUiState>((set) => ({
       composerOpen: restored?.composerOpen ?? false,
       activeSurface: restored?.activeSurface ?? 'main',
       childReturn: null,
+      worksiteCameraTransition: null,
       activeWorkspaceId: null,
       surfaceCanvasId: {},
       cameraRequest: null,
@@ -297,6 +321,20 @@ export const useLcosShellStore = create<LcosShellUiState>((set) => ({
   setSurfaceCanvasMap: (map) => set({ surfaceCanvasId: map }),
   beginChildNavigation: (childReturn) => set({ childReturn }),
   clearChildNavigation: () => set({ childReturn: null }),
+  requestWorksiteCameraTransition: (transition) => {
+    const id = globalThis.crypto?.randomUUID?.()
+      ?? `worksite-camera-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    set({ worksiteCameraTransition: { id, ...transition } });
+    return id;
+  },
+  updateWorksiteCameraTransition: (id, patch) => set((state) =>
+    state.worksiteCameraTransition?.id === id
+      ? { worksiteCameraTransition: { ...state.worksiteCameraTransition, ...patch } }
+      : state),
+  consumeWorksiteCameraTransition: (id) => set((state) =>
+    state.worksiteCameraTransition?.id === id
+      ? { worksiteCameraTransition: null }
+      : state),
   requestCamera: (kind) =>
     set((s) => ({
       cameraRequest: { id: (s.cameraRequest?.id ?? 0) + 1, kind },
@@ -562,6 +600,7 @@ export const useLcosShellStore = create<LcosShellUiState>((set) => ({
       readerLastRevisions: {},
       windowEnvironment: null,
       childReturn: null,
+      worksiteCameraTransition: null,
     });
   },
 }));

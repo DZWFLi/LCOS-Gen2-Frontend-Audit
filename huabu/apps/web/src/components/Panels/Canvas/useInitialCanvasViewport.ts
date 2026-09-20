@@ -15,6 +15,20 @@ type InitialCanvasViewport = {
   nodeIdsToFit: string[];
 };
 
+export function resolveInitialCanvasViewport(input: {
+  readonly override?: CanvasViewport;
+  readonly viewport: CanvasViewport | null;
+  readonly nodeIds: readonly string[];
+}): InitialCanvasViewport {
+  if (input.override !== undefined) {
+    return { defaultViewport: input.override, nodeIdsToFit: [] };
+  }
+  if (input.viewport !== null) {
+    return { defaultViewport: input.viewport, nodeIdsToFit: [] };
+  }
+  return { nodeIdsToFit: [...input.nodeIds] };
+}
+
 export interface InitialCanvasViewportOptions {
   /**
    * LCOS owns the first frame through `LcosCanvasCommands`, which can account
@@ -23,6 +37,8 @@ export interface InitialCanvasViewportOptions {
    * text before LCOS gets a chance to frame it.
    */
   readonly deferFit?: boolean;
+  /** Presentation-only first pose; the saved viewport remains in canvasStore. */
+  readonly initialViewportOverride?: CanvasViewport;
 }
 
 /** Restore a saved viewport or fit persisted node bounds on first mount. */
@@ -32,8 +48,15 @@ export const useInitialCanvasViewport = (
   const deferFit = options.deferFit === true;
   const initialViewport = useMemo<InitialCanvasViewport>(() => {
     const { viewport, nodes } = useCanvasStore.getState();
-    if (viewport) return { defaultViewport: viewport, nodeIdsToFit: [] };
-    return { nodeIdsToFit: nodes.map((node) => node.id) };
+    return resolveInitialCanvasViewport({
+      ...(options.initialViewportOverride === undefined
+        ? {}
+        : { override: options.initialViewportOverride }),
+      viewport,
+      nodeIds: nodes.map((node) => node.id),
+    });
+    // Sample once for this Canvas mount. Later motion stays with React Flow.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   const [isPending, setIsPending] = useState(
     initialViewport.nodeIdsToFit.length > 0 && !deferFit,

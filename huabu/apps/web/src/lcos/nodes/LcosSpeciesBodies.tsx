@@ -388,6 +388,7 @@ function LcosSpeciesBody({
             sourceWasChild: false,
             targetSurface: 'workflow',
             targetWorkspace: workflowTarget,
+            sourceNodeId: input.nodeId,
             navigate,
           });
         }}

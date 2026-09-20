@@ -28,6 +28,11 @@ function subscribe(listener: () => void): () => void {
 const snapshot = () => getMedia()?.matches === true
 const serverSnapshot = () => false
 
+/** Read the shared media-query snapshot outside React event handlers. */
+export function prefersReducedSpatialMotion(): boolean {
+  return snapshot()
+}
+
 /** Shared singleton reduced-motion store for every Spatial Surface primitive/component. */
 export function useReducedSpatialMotion(): boolean {
   return useSyncExternalStore(subscribe, snapshot, serverSnapshot)

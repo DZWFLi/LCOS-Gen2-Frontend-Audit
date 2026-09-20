@@ -50,6 +50,9 @@ export function ContextWorksite({
     const childTargets = workspaceTargetsForItem(item, workspaces);
     const childTarget = selectedWorkspace ?? (childTargets.length === 1 ? childTargets[0] : undefined);
     const childSurface = childSurfaceForItem(item, childTarget);
+    const projectedNodeId = [...useLcosReferenceStore.getState().nodeEntityRefs.entries()].find(
+      ([, ref]) => ref.entityId === item.entityRef.id && ref.entityType === item.entityRef.type,
+    )?.[0];
     if (childTarget !== undefined && childSurface !== undefined) {
       const shell = useLcosShellStore.getState();
       const entered = beginChildWorksiteNavigation({
@@ -59,6 +62,7 @@ export function ContextWorksite({
         sourceWasChild: isChildWorksite,
         targetSurface: childSurface,
         targetWorkspace: childTarget,
+        ...(projectedNodeId === undefined ? {} : { sourceNodeId: projectedNodeId }),
         navigate,
       });
       if (entered) setAtlasOpen(false);
@@ -66,15 +70,12 @@ export function ContextWorksite({
     }
     if (childTargets.length > 0) return false;
     // 有明确 Workspace 映射时进入子现场；其余实体只有已有投影才允许定位，避免“点一下只关闭”。
-    const found = [...useLcosReferenceStore.getState().nodeEntityRefs.entries()].find(
-      ([, ref]) => ref.entityId === item.entityRef.id && ref.entityType === item.entityRef.type,
-    );
-    if (found === undefined) return false;
+    if (projectedNodeId === undefined) return false;
     useLcosShellStore.getState().requestLocate({
       reqId: `atlas-${Date.now()}`,
       surface: 'context',
       ...(canvasId === undefined ? {} : { canvasId }),
-      nodeId: found[0],
+      nodeId: projectedNodeId,
       status: 'projected',
     });
     setAtlasOpen(false);
