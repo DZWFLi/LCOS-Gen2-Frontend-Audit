@@ -1,7 +1,9 @@
 # Gen2 Provider / Agentlet `waiting_input` 真实纵切交接
 
-日期：2026-09-20  
-分支：`codex/provider-waiting-input`  
+日期：2026-09-20
+
+分支：`codex/provider-waiting-input`
+
 范围：ACP `permission_request` → Core Run `waiting_input` → Work View → 原回答路由 → 同一 ACP request 恢复
 
 ## 结论
