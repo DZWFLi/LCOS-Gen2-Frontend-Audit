@@ -1,6 +1,6 @@
 // LcosCanvasCommands — 画布内命令消费者（canvas-local overlay）。
 // 订阅 shell store 的 camera/locate 请求并作用于唯一 Huabu RF instance；
-// 只调用 RF 相机命令（zoomIn/zoomOut/setViewport/focusNodesOnCanvas），
+// 只调用 RF 相机命令（zoomIn/zoomOut/setViewport/locateNodesOnCanvas），
 // 不建立第二 camera、不读写 node geometry truth。
 //
 // R2 返工：`fit` 不再用 RF 的裸 fitView（那会把内容很少的画布放大到 217%~348%，
@@ -15,8 +15,10 @@ import {
   fitBoundsWithInsets,
   initialArrivalState,
   initialLocatorState,
+  placeLocatorAnchorOutsideObstacles,
   reduceArrivalState,
   reduceLocatorState,
+  toScreenRect,
   type SafeInsets,
   type ArrivalState,
   type LocatorState,
@@ -26,8 +28,7 @@ import { useEffect, useReducer, useRef, useState } from 'react';
 
 
 import {
-  focusNodeGroupOnCanvas,
-  focusNodesOnCanvas,
+  locateNodesOnCanvas,
 } from '@/components/Panels/CanvasLayerPanel/focusNodesOnCanvas';
 import useCanvasStore from '@/store/canvasStore';
 
@@ -46,13 +47,6 @@ const HUD_INSETS: SafeInsets = {
   bottom: 24 + 56 + 16, // Composer 高约 56
 };
 
-const LOCATOR_SAFE_INSETS = {
-  left: HUD_INSETS.left,
-  right: HUD_INSETS.right,
-  top: HUD_INSETS.top,
-  bottom: HUD_INSETS.bottom,
-};
-
 const ARRIVAL_LIFETIME_MS = 720;
 
 interface ArrivalTarget {
@@ -65,6 +59,23 @@ interface ArrivalTarget {
 interface Box {
   width: number;
   height: number;
+}
+
+type LocatorScreenRect = ReturnType<typeof toScreenRect>;
+
+function canvasScreenRect(rect: DOMRect): LocatorScreenRect {
+  return { left: rect.left, top: rect.top, right: rect.right, bottom: rect.bottom };
+}
+
+function intersectScreenRect(a: LocatorScreenRect, b: LocatorScreenRect): LocatorScreenRect {
+  const left = Math.max(a.left, b.left);
+  const top = Math.max(a.top, b.top);
+  return {
+    left,
+    top,
+    right: Math.max(left + 1, Math.min(a.right, b.right)),
+    bottom: Math.max(top + 1, Math.min(a.bottom, b.bottom)),
+  };
 }
 
 function boxOf(node: Node): Box {
@@ -125,6 +136,7 @@ function hasKnownSize(node: Node): boolean {
 export function LcosCanvasCommands(): React.JSX.Element {
   const cameraRequest = useLcosShellStore((s) => s.cameraRequest);
   const locateRequest = useLcosShellStore((s) => s.locateRequest);
+  const windowEnvironment = useLcosShellStore((s) => s.windowEnvironment);
   const consumeCamera = useLcosShellStore((s) => s.consumeCamera);
   const consumeLocate = useLcosShellStore((s) => s.consumeLocate);
   const worksiteCameraTransition = useLcosShellStore((s) => s.worksiteCameraTransition);
@@ -326,6 +338,7 @@ export function LcosCanvasCommands(): React.JSX.Element {
     }
 
     let active = true;
+    let completed = false;
     const cancelForUserGesture = (): void => {
       if (!active || locateGeneration.current !== generation) return;
       active = false;
@@ -347,16 +360,21 @@ export function LcosCanvasCommands(): React.JSX.Element {
     // Selection and camera share the same Huabu canvas-local owner. Temporal
     // grouping never creates a second selection/store/camera path.
     useCanvasStore.getState().selectNodes(presentNodeIds);
-    const flowSize = flowRoot?.getBoundingClientRect();
-    const focus = presentNodeIds.length > 1
-      && flowSize !== undefined
-      && flowSize.width > 0
-      && flowSize.height > 0
-      ? focusNodeGroupOnCanvas(rf, presentNodeIds, {
-          width: flowSize.width,
-          height: flowSize.height,
-        })
-      : focusNodesOnCanvas(rf, presentNodeIds);
+    const flowRect = flowRoot?.getBoundingClientRect();
+    const rootSafeRect = flowRect === undefined
+      ? undefined
+      : canvasScreenRect(flowRect);
+    const publishedSafeRect = windowEnvironment === null
+      ? rootSafeRect
+      : toScreenRect(windowEnvironment.safeRect);
+    const focus = flowRect === undefined || rootSafeRect === undefined || publishedSafeRect === undefined
+      ? Promise.resolve(false)
+      : locateNodesOnCanvas(rf, presentNodeIds, {
+          canvasRect: rootSafeRect,
+          safeRect: intersectScreenRect(rootSafeRect, publishedSafeRect),
+          duration: reducedMotion ? 0 : 800,
+          padding: 24,
+        });
     void focus.then((settled) => {
       if (!active || locateGeneration.current !== generation) return;
       if (!settled) {
@@ -369,7 +387,7 @@ export function LcosCanvasCommands(): React.JSX.Element {
         return;
       }
 
-      // The focus helper resolves from Huabu's setCenter promise. Arrival is
+      // The locate helper resolves from Huabu's setViewport promise. Arrival is
       // therefore driven by the actual camera settle, never by a guessed
       // timeout. The request remains alive until the target-local cue closes.
       dispatchLocator({ type: 'camera-settled' });
@@ -377,6 +395,7 @@ export function LcosCanvasCommands(): React.JSX.Element {
       cancelArrivalTimer();
       arrivalTimer.current = window.setTimeout(() => {
         if (locateGeneration.current !== generation) return;
+        completed = true;
         dispatchLocator({ type: 'arrival-done' });
         dispatchArrival({ type: 'arrival-complete' });
         setArrivalTarget(null);
@@ -390,6 +409,7 @@ export function LcosCanvasCommands(): React.JSX.Element {
       flowRoot?.removeEventListener('pointerdown', cancelForUserGesture);
       flowRoot?.removeEventListener('wheel', cancelForUserGesture);
       flowRoot?.removeEventListener('touchstart', cancelForUserGesture);
+      if (completed) return;
       locateGeneration.current += 1;
       cancelArrivalTimer();
       dispatchLocator({ type: 'cancel' });
@@ -409,6 +429,8 @@ export function LcosCanvasCommands(): React.JSX.Element {
     <>
       <span
         data-lcos-canvas-commands
+        data-lcos-locator-phase={locatorState.phase}
+        data-lcos-arrival-phase={arrivalState.phase}
         aria-hidden
         className="pointer-events-none absolute top-1 left-1 text-[10px] opacity-60"
         style={{ display: 'none' }}
@@ -424,6 +446,7 @@ export function LcosCanvasCommands(): React.JSX.Element {
         locatorState={locatorState}
         arrivalState={arrivalState}
         arrivalTarget={arrivalTarget}
+        windowEnvironment={windowEnvironment}
       />
     </>
   );
@@ -438,6 +461,7 @@ function LcosLocatorCue({
   locatorState,
   arrivalState,
   arrivalTarget,
+  windowEnvironment,
 }: {
   readonly request: ReturnType<typeof useLcosShellStore.getState>['locateRequest'];
   readonly activeSurface: ReturnType<typeof useLcosShellStore.getState>['activeSurface'];
@@ -447,6 +471,7 @@ function LcosLocatorCue({
   readonly locatorState: LocatorState;
   readonly arrivalState: ArrivalState;
   readonly arrivalTarget: ArrivalTarget | null;
+  readonly windowEnvironment: ReturnType<typeof useLcosShellStore.getState>['windowEnvironment'];
 }): React.JSX.Element | null {
   const presentationRequest = request ?? (
     arrivalTarget === null
@@ -498,24 +523,11 @@ function LcosLocatorCue({
     width: width * viewport.zoom,
     height: height * viewport.zoom,
   };
-  const professionalStage = document.querySelector('[data-lcos-professional-stage]');
-  const professionalRect = professionalStage instanceof HTMLElement
-    ? professionalStage.getBoundingClientRect()
-    : undefined;
-  const rightInset = professionalRect !== undefined && professionalRect.left > rootRect.left
-    ? Math.max(LOCATOR_SAFE_INSETS.right, rootRect.right - professionalRect.left + 16)
-    : LOCATOR_SAFE_INSETS.right;
-  const safeLeft = rootRect.left + LOCATOR_SAFE_INSETS.left;
-  const safeTop = rootRect.top + LOCATOR_SAFE_INSETS.top;
-  const safeRect = {
-    left: safeLeft,
-    top: safeTop,
-    // On a narrow viewport a professional window can consume almost the
-    // entire width. Keep a one-pixel mathematical safe rect instead of
-    // feeding an inverted rectangle into the pure geometry function.
-    right: Math.max(safeLeft + 1, rootRect.right - rightInset),
-    bottom: Math.max(safeTop + 1, rootRect.bottom - LOCATOR_SAFE_INSETS.bottom),
-  };
+  const rootSafeRect = canvasScreenRect(rootRect);
+  const safeRect = windowEnvironment === null
+    ? rootSafeRect
+    : intersectScreenRect(rootSafeRect, toScreenRect(windowEnvironment.safeRect));
+  const occupiedRects = windowEnvironment?.occupiedRects.map(toScreenRect) ?? [];
   const geometry = computeLocatorGeometry({
     safeRect,
     targetRect: {
@@ -551,7 +563,12 @@ function LcosLocatorCue({
   if (locatorState.phase === 'arriving' || locatorState.phase === 'hidden') return null;
   if (geometry.state === 'local') return null;
 
-  const anchor = geometry.edgeAnchor ?? geometry.directionAnchor ?? geometry.targetCenter;
+  const anchor = placeLocatorAnchorOutsideObstacles(
+    geometry.edgeAnchor ?? geometry.directionAnchor ?? geometry.targetCenter,
+    safeRect,
+    occupiedRects,
+    18,
+  );
   const angle = Math.atan2(geometry.direction.y, geometry.direction.x) * 180 / Math.PI;
   return (
     <div

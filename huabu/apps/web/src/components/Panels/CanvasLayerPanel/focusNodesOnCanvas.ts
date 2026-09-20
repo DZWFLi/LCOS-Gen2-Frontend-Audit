@@ -14,6 +14,13 @@ type NodeBounds = {
 
 type ViewportSize = { width: number; height: number };
 
+export type ScreenRect = {
+  left: number;
+  top: number;
+  right: number;
+  bottom: number;
+};
+
 /** Keep the same flow-space point at the centre when the canvas is resized. */
 export const anchorViewportCentre = (
   viewport: Viewport,
@@ -60,6 +67,57 @@ export const revealBoundsInViewport = (
     dy = padding - top;
   } else if (bottom > safeBottom) {
     dy = safeBottom - bottom;
+  }
+
+  if (dx === 0 && dy === 0) return viewport;
+  return { x: viewport.x + dx, y: viewport.y + dy, zoom: viewport.zoom };
+};
+
+/**
+ * Reveal flow-space bounds inside one screen-space safe rectangle.
+ *
+ * `canvasRect` and `safeRect` use viewport/client coordinates. The returned
+ * viewport remains React Flow's canvas-local transform, so Professional
+ * Window geometry never becomes a second camera owner.
+ */
+export const revealBoundsInScreenRect = (
+  viewport: Viewport,
+  canvasRect: ScreenRect,
+  safeRect: ScreenRect,
+  bounds: NodeBounds,
+  padding = 24,
+): Viewport => {
+  const available = {
+    left: Math.max(canvasRect.left, safeRect.left) + padding,
+    top: Math.max(canvasRect.top, safeRect.top) + padding,
+    right: Math.min(canvasRect.right, safeRect.right) - padding,
+    bottom: Math.min(canvasRect.bottom, safeRect.bottom) - padding,
+  };
+  if (available.right <= available.left || available.bottom <= available.top) {
+    return viewport;
+  }
+
+  const left = canvasRect.left + bounds.x * viewport.zoom + viewport.x;
+  const top = canvasRect.top + bounds.y * viewport.zoom + viewport.y;
+  const right = left + bounds.width * viewport.zoom;
+  const bottom = top + bounds.height * viewport.zoom;
+
+  let dx = 0;
+  if (right - left > available.right - available.left) {
+    dx = (available.left + available.right) / 2 - (left + right) / 2;
+  } else if (left < available.left) {
+    dx = available.left - left;
+  } else if (right > available.right) {
+    dx = available.right - right;
+  }
+
+  let dy = 0;
+  if (bottom - top > available.bottom - available.top) {
+    dy = (available.top + available.bottom) / 2 - (top + bottom) / 2;
+  } else if (top < available.top) {
+    dy = available.top - top;
+  } else if (bottom > available.bottom) {
+    dy = available.bottom - bottom;
   }
 
   if (dx === 0 && dy === 0) return viewport;
@@ -151,6 +209,37 @@ export const focusNodesOnCanvas = (
   const cy = bounds.y + bounds.height / 2;
   const zoom = Math.min(rfInstance.getZoom(), 1);
   return rfInstance.setCenter(cx, cy, { duration, zoom }).then(
+    () => true,
+    () => false,
+  );
+};
+
+/**
+ * Locator camera command: preserve zoom and apply only the minimum pan needed
+ * to reveal the current node union inside T4's published safe rectangle.
+ */
+export const locateNodesOnCanvas = (
+  rfInstance: ReactFlowInstance,
+  nodeIds: string[],
+  input: {
+    canvasRect: ScreenRect;
+    safeRect: ScreenRect;
+    duration?: number;
+    padding?: number;
+  },
+): Promise<boolean> => {
+  const bounds = getReliableNodeBounds(rfInstance, nodeIds);
+  if (!bounds) return Promise.resolve(false);
+  const current = rfInstance.getViewport();
+  const next = revealBoundsInScreenRect(
+    current,
+    input.canvasRect,
+    input.safeRect,
+    bounds,
+    input.padding,
+  );
+  if (next === current) return Promise.resolve(true);
+  return rfInstance.setViewport(next, { duration: input.duration ?? 800 }).then(
     () => true,
     () => false,
   );

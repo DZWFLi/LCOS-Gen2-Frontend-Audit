@@ -10,6 +10,7 @@ import { describe, it } from 'node:test';
 
 import {
   computeLocatorGeometry,
+  placeLocatorAnchorOutsideObstacles,
   toScreenRect,
   type ScreenRect,
 } from '../src/spatial/locatorGeometry.js';
@@ -113,5 +114,18 @@ describe('locatorGeometry', () => {
       right: 110,
       bottom: 70,
     });
+  });
+
+  it('浮动窗口只避让 Locator cue，不改变 safeRect', () => {
+    const safeRect: ScreenRect = { left: 0, top: 0, right: 1000, bottom: 800 };
+    const anchor = { x: 800, y: 400 };
+    const placed = placeLocatorAnchorOutsideObstacles(
+      anchor,
+      safeRect,
+      [{ left: 700, top: 200, right: 980, bottom: 700 }],
+      16,
+    );
+    assert.deepEqual(safeRect, { left: 0, top: 0, right: 1000, bottom: 800 });
+    assert.ok(placed.x <= 684 || placed.x >= 996 || placed.y <= 184 || placed.y >= 716);
   });
 });

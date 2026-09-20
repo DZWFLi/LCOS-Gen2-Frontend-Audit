@@ -61,6 +61,39 @@ export function toScreenRect(rect: { x: number; y: number; width: number; height
   };
 }
 
+function pointInsideRect(point: Point, rect: ScreenRect, clearance: number): boolean {
+  return point.x > rect.left - clearance
+    && point.x < rect.right + clearance
+    && point.y > rect.top - clearance
+    && point.y < rect.bottom + clearance;
+}
+
+/**
+ * Keep a screen-space Locator cue out of T4's floating occupied regions.
+ * This only moves the cue; it never shrinks safeRect or mutates Camera.
+ */
+export function placeLocatorAnchorOutsideObstacles(
+  anchor: Point,
+  safeRect: ScreenRect,
+  occupiedRects: readonly ScreenRect[],
+  clearance = 12,
+): Point {
+  if (!occupiedRects.some((rect) => pointInsideRect(anchor, rect, clearance))) return anchor;
+  const clamp = (value: number, min: number, max: number): number => Math.min(max, Math.max(min, value));
+  const candidates = occupiedRects.flatMap((rect) => [
+    { x: rect.left - clearance, y: anchor.y },
+    { x: rect.right + clearance, y: anchor.y },
+    { x: anchor.x, y: rect.top - clearance },
+    { x: anchor.x, y: rect.bottom + clearance },
+  ]).map((point) => ({
+    x: clamp(point.x, safeRect.left + clearance, safeRect.right - clearance),
+    y: clamp(point.y, safeRect.top + clearance, safeRect.bottom - clearance),
+  })).filter((point) => !occupiedRects.some((rect) => pointInsideRect(point, rect, clearance)));
+  if (candidates.length === 0) return anchor;
+  return candidates.reduce((nearest, candidate) =>
+    distance(anchor, candidate) < distance(anchor, nearest) ? candidate : nearest);
+}
+
 function center(rect: ScreenRect): Point {
   return { x: (rect.left + rect.right) / 2, y: (rect.top + rect.bottom) / 2 };
 }

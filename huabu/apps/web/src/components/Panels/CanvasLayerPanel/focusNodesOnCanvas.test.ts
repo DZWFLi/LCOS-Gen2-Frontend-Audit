@@ -9,7 +9,9 @@ import {
   focusNodeGroupOnCanvas,
   focusNodesOnCanvas,
   getReliableNodeBounds,
+  locateNodesOnCanvas,
   revealBoundsInViewport,
+  revealBoundsInScreenRect,
 } from './focusNodesOnCanvas';
 
 import type { ReactFlowInstance } from '@xyflow/react';
@@ -149,5 +151,37 @@ describe('canvas viewport anchoring', () => {
         { x: 0, y: 10, width: 300, height: 80 },
       ),
     ).toEqual({ x: -50, y: 20, zoom: 2 });
+  });
+
+  it('reveals bounds inside an offset professional-window safe rect', () => {
+    expect(
+      revealBoundsInScreenRect(
+        { x: 0, y: 0, zoom: 1 },
+        { left: 100, top: 50, right: 1100, bottom: 850 },
+        { left: 100, top: 50, right: 700, bottom: 850 },
+        { x: 720, y: 240, width: 160, height: 100 },
+        20,
+      ),
+    ).toEqual({ x: -300, y: 0, zoom: 1 });
+  });
+
+  it('locates through the RF viewport promise and preserves zoom', async () => {
+    const { instance } = createInstance();
+    const setViewport = vi.fn().mockResolvedValue(undefined);
+    Object.assign(instance, {
+      getViewport: () => ({ x: 0, y: 0, zoom: 0.75 }),
+      setViewport,
+    });
+
+    await expect(locateNodesOnCanvas(instance, ['second'], {
+      canvasRect: { left: 0, top: 0, right: 1200, bottom: 800 },
+      safeRect: { left: 0, top: 0, right: 760, bottom: 800 },
+      duration: 0,
+      padding: 20,
+    })).resolves.toBe(true);
+
+    expect(setViewport).toHaveBeenCalledOnce();
+    expect(setViewport.mock.calls[0]?.[0].zoom).toBe(0.75);
+    expect(setViewport.mock.calls[0]?.[1]).toEqual({ duration: 0 });
   });
 });

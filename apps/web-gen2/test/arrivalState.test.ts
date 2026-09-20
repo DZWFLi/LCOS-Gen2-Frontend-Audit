@@ -1,5 +1,5 @@
 // T2 C2-3A · Locator / Arrival reducer tests（卡 §56 矩阵）。
-// idle→travelling；travelling→arriving；arriving→settled(idle)；新代取消旧代；
+// idle→travelling；travelling→arriving；arriving→settled；新代取消旧代；
 // project/canvas 切换 cancel；同代重复点击 no-op；reduced-motion 语义路径不变。
 
 import assert from 'node:assert/strict';
@@ -58,14 +58,14 @@ describe('locatorState reducer', () => {
 });
 
 describe('arrivalState reducer', () => {
-  it('初始 idle；travel-start → travelling；camera-settled → arriving；arrival-complete → idle', () => {
+  it('初始 idle；travel-start → travelling；camera-settled → arriving；arrival-complete → settled', () => {
     assert.equal(initialArrivalState.phase, 'idle');
     let s = reduceArrivalState(initialArrivalState, { type: 'travel-start' });
     assert.equal(s.phase, 'travelling');
     s = reduceArrivalState(s, { type: 'camera-settled' });
     assert.equal(s.phase, 'arriving');
     s = reduceArrivalState(s, { type: 'arrival-complete' });
-    assert.equal(s.phase, 'idle');
+    assert.equal(s.phase, 'settled');
   });
 
   it('新代 cancel → cancelled（project/canvas 切换也走 cancel）', () => {
