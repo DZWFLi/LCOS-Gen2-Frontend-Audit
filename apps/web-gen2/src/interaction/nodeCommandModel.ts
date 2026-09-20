@@ -28,6 +28,7 @@ export type LcosNodeCommandId =
   | 'open'
   | 'compose'
   | 'reference'
+  | 'color-pin'
   // 画布机械（复用 Huabu 既有命令，不重写 store）
   | 'convert-text'
   | 'convert-note'
@@ -161,6 +162,7 @@ export function buildLcosNodeCommands(input: LcosNodeCommandInput): readonly Lco
 
   // 关系
   if (bound) commands.push(referenceCommand(input));
+  if (bound) commands.push({ id: 'color-pin', label: '标为颜色组', group: '关系' });
 
   // 编辑
   if (input.nodeType === 'note' && surface.autoHeight) {

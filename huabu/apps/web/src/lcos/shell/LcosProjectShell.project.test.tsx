@@ -10,6 +10,7 @@ const renders = vi.hoisted(() => [] as { projectId: string; targets: (string | u
 vi.mock('react-router-dom', () => ({ Link: () => null, useNavigate: () => vi.fn() }));
 vi.mock('@/store/canvasStore', () => ({ default: (select: (s: { nodes: [] }) => unknown) => select({ nodes: [] }) }));
 vi.mock('./LcosGlobalHud', () => ({ LcosGlobalHud: () => null }));
+vi.mock('../pin/LcosColorPinProvider', () => ({ LcosColorPinProvider: ({ children }: { children: React.ReactNode }) => children }));
 vi.mock('./LcosWorksiteStage', () => ({ LcosWorksiteStage: () => null }));
 vi.mock('../surfaces/main/MainWorksite', () => ({ MainWorksite: () => null }));
 vi.mock('../surfaces/context/ContextWorksite', () => ({ ContextWorksite: () => null }));

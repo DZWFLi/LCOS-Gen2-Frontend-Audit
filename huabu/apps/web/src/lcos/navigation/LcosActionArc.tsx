@@ -15,6 +15,7 @@
 //   - 每个动作都有真实 owner（canvas store / shell store / preview workspace），不写第二套 store。
 
 import {
+  colorPinTargetFromEntityRef,
   buildLcosNodeCommands,
   descriptorFor,
   primaryNodeCommands,
@@ -49,6 +50,7 @@ import { openPreviewNode } from '@/store/previewWorkspace/actions';
 
 import { resolveActionArcGeometry } from './actionArcGeometry';
 import { useLcosReferenceStore } from '../lcosReferenceState';
+import { useOptionalLcosColorPins } from '../pin/LcosColorPinProvider';
 import { useLcosShellStore } from '../shell/lcosShellStore';
 import { lcosGlassStyle, lcosTokens } from '../ui/lcosTokens';
 import { LcosActionOrbitMotion, LcosActionArcMotionHost } from '../ui/nearfield/LcosActionOrbitMotion';
@@ -115,6 +117,7 @@ export function LcosActionArc(): React.JSX.Element | null {
   const [contextMenu, setContextMenu] = useState<{ nodeId: string; x: number; y: number } | null>(null);
   const composerOpen = useLcosShellStore((state) => state.composerOpen);
   const professionalWindowOpen = useLcosShellStore((state) => state.windows.length > 0);
+  const colorPins = useOptionalLcosColorPins();
 
   // 近场入口只在"恰好选中一个节点"时出现（多选由 MultiSelect 承担），
   // 且该类型的旧工具条已被本 Arc 覆盖 —— 未覆盖类型（pdf/office/web/sketch/question/frame/text）
@@ -276,6 +279,16 @@ export function LcosActionArc(): React.JSX.Element | null {
         break;
       case 'reference':
         useLcosReferenceStore.getState().toggleNodeReference(nodeId);
+        break;
+      case 'color-pin':
+        if (colorPins !== null && ref !== undefined && shell.projectId !== null) {
+          colorPins.openAuthoring({
+            targetRef: colorPinTargetFromEntityRef(shell.projectId, ref),
+            label: ref.descriptor?.title ?? title,
+          });
+          setMoreOpen(false);
+          setContextMenu(null);
+        }
         break;
       case 'auto-height':
         canvas.setNoteHeightMode([nodeId], heightMode === 'auto' ? 'fixed' : 'auto');

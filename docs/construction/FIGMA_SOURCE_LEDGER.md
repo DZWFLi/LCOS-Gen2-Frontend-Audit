@@ -1,6 +1,6 @@
 # FIGMA_SOURCE_LEDGER — 设计→源码采用账本
 
-初始化：2026-09-13。最近更新：2026-09-14（R1：设计系统 → 代码组件族）。
+初始化：2026-09-13。最近更新：2026-09-20（Color Pin project owner vertical slice）。
 Figma 文件 `nFUdroLvI5qJZuYTW8h2rF`；机器入口 = `deliverables/GEN2_新前端重新总装正本_20260913/references/figma-master/unification/`，本地全设计包 `E:\Codex 项目\OS开发\exports\LCOS_Figma_全设计包_20260913\unification\`（含 `token-style-component-manifest.json`、`specs/`、`structures/`、`svg/`）。
 
 PNG 只做整页视觉走查；exact node/component/variant、variables/styles、structures/specs、SVG 才是施工输入。
@@ -13,7 +13,7 @@ PNG 只做整页视觉走查；exact node/component/variant、variables/styles�
 | ID | Figma component（nodeId / 变体轴） | 变体（取值 = Figma 原文） | 实测几何（structures/） | 代码 target | production caller | gallery | 生产可达变体 | 未达变体归属 |
 |---|---|---|---|---|---|---|---|---|
 | FIG-FAM-SHELL | 统一 / ProjectShell `5386:436`｜轴 `现场` | Main / Context / Workflow（1440×900） | 变体框 1440×900 | `lcos/shell/LcosProjectShell.tsx`（根 `data-lcos-family="project-shell"`） | `lcos/app/LcosProjectRoute.tsx` → `/projects/:id/:surface` | `/playground/lcos-families` ProjectShell 段 | Main（生产 Main 路由实测 `data-lcos-variant=main`） | Context/Workflow 同组件同路由，切现场即达 |
-| FIG-FAM-NAV | 统一 / NavigatorIsland `5384:367`｜轴 `状态` | 静息 / 彩色标 / 搜索 / hover / pressed / focus / disabled / loading / error / degraded / selected（11） | h48 · pad 6/8 · gap 8 · r999 · 键 36（图标 19）· 输入 210 · Pin 角标 22 r11 → 静息 52、彩色标 184、搜索 402 | `lcos/ui/families/LcosNavigatorIslandView.tsx` + `lcos/navigation/LcosNavigatorIsland.tsx`（Core 搜索接线） | 同上容器：`LcosGlobalHud` → 生产 Main（实测 island 存在） | 11 状态全渲染（e2e 断言唯一取值数 = 11） | 静息 / 搜索 / loading / error / disabled | 彩色标 需 Core Pin/颜色组 producer（T2/T6）；hover/pressed/focus/selected/degraded 由 CSS 与键盘真实触发 |
+| FIG-FAM-NAV | 统一 / NavigatorIsland `5384:367`｜轴 `状态` | 静息 / 彩色标 / 搜索 / hover / pressed / focus / disabled / loading / error / degraded / selected（11） | h48 · pad 6/8 · gap 8 · r999 · 键 36（图标 19）· 输入 210 · Pin 角标 22 r11 → 静息 52、彩色标 184、搜索 402 | `lcos/ui/families/LcosNavigatorIslandView.tsx` + `lcos/navigation/LcosNavigatorIsland.tsx`（搜索）+ `lcos/pin/ColorPinHud.tsx`（颜色组） | `LcosGlobalHud` → `ColorPinHud` → NavigatorIsland；project projection owner = `LcosColorPinProvider`（挂在 ready ProjectSession） | 11 状态全渲染（e2e 断言唯一取值数 = 11） | 静息 / 搜索 / loading / error / disabled / 彩色标（只显示有成员的 definition） | hover/pressed/focus/selected/degraded 由 CSS 与键盘真实触发；typed entity target 仍受 V0 contract 限制 |
 | FIG-FAM-RAIL | 统一 / Railway `5385:283`｜轴 `目的地` | 1 / 4 | pad 8 · gap 6 · item 36 r10 · r26 → 目的地=1 52×52、=4 52×178；高度随真实 item 数量增长 | `lcos/ui/families/LcosRailwayView.tsx` + `lcos/shell/LcosRailway.tsx` | `LcosGlobalHud`；空 order 不挂空壳，旧种子中的三 root workspace 被过滤 | 目的地 1 与 4 两变体 | 显式 Core `orderedRefs` 的读取与弹性呈现；root Surface 只在底部 Dock | 具体 Worksite 激活、Drop 收编、reorder/CAS、真实 hover preview 仍为 GAP；不得再写“三现场真实切换” |
 | FIG-FAM-SPATIAL | Shell / CameraControl · collapsed `5386:274` | 折叠（最新设计包只冻结该态） | x24 · bottom24 · 52×48 · r20 · grid glyph 17 | `lcos/ui/families/LcosSpatialNavigatorView.tsx` + `lcos/navigation/LcosSpatialNavigator.tsx` | `useLcosCanvasProps.spatialNavigator` → 唯一 Huabu Canvas | 折叠 production 截图 + 展开 mechanics 浏览器验收 | 折叠态；展开态按 T2 C2-3B 信息层级并只用现有 token | 最新 Figma 未冻结展开态像素稿；不得自行新增装饰或第二 camera/minimap |
 | FIG-FAM-WIN | 统一 / ProfessionalWindowChrome `5387:331`｜轴 `布局` + TEXT 窗口标题 | 浮动 / 停靠 / 分组（640×48） | h48 · pad 8/24 · gap 8 · 标题 22 行高 · 图标键 32 r999 | `lcos/ui/families/LcosWindowChrome.tsx` | `lcos/professional/ProfessionalWindowStage.tsx`（阅读/Assembly/工作台共用顶栏） | 3 布局 + 标题 + 多窗口 tab | 浮动（生产仅浮动；停靠/分组需 Stage 拓扑动作） | 停靠 / 分组 → R3（Professional/Assembly/Reader） |
@@ -64,7 +64,7 @@ PNG 只做整页视觉走查；exact node/component/variant、variables/styles�
 ## 四、R1 遗留缺口（诚实登记，不得改写为完成）
 
 1. page 13 的 Collection `5333:96`/`5334:46`、TaskCard `5335:110`、Portal `5348:1151` **未随 `structures/` 导出**，只有变体轴与变体框尺寸 → 内层细分几何未采用 Figma，只采用「轴 + 体块 + 身份」。
-2. Pin / 颜色组的 Core producer 不存在（无 pin/color-group 客户端）→ 导航岛「彩色标」在生产不可达。
+2. Pin / 颜色组 producer 已由 `CoreColorPinClient` + `LcosColorPinProvider` + `ColorPinHud` 接通，导航岛「彩色标」可由真实 membership 到达；当前 `SpatialMarkerTargetRefV0.kind='entity'` 仍不携带 `entityType`，所以跨实体表同 ID 必须 fail-close，最终 typed target migration 仍归 T6/shared Core。
 3. `manifest.limitations` 原样保留：无 Code Connect 生产绑定；窗口 chrome 只规定 header 几何，docking/grouping 运行时仍是 source binding；Navigator loading/error/degraded 共用壳几何，需就近组合反馈原语；**深色值是导出的，但本次人工走查只看过浅色**（R1 已用 e2e 断计算样式变化，未做人工深色走查）。
 4. SVG 资产 `svg/5385-212.svg`、`5385-215.svg`、`5385-218.svg`（导航岛 Pin 角标）尚未采用：当前用 lucide `Pin` + 22×22 圆角底近似，未使用 Figma 原生 SVG。
 5. `lcos/ui/presets.ts` 为空文件（0 字节），Wave 0 遗留；本 Wave 未使用。

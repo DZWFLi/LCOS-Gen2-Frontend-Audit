@@ -70,6 +70,7 @@ test('R2 命令模型：note + 已绑定 Core 的近场主入口是打开/Compos
   assert.equal(byId(commands, 'reference')?.capability, 'reference');
   assert.equal(byId(commands, 'auto-height')?.label, '自动高度');
   assert.equal(byId(commands, 'compose')?.label, '围绕此对象工作');
+  assert.equal(byId(commands, 'color-pin')?.label, '标为颜色组');
   assert.equal(byId(commands, 'assembly'), undefined, 'Assembly 保持独立项目级入口');
 
   const primary = primaryNodeCommands(commands);
@@ -87,6 +88,7 @@ test('R2 命令模型：note + 已绑定 Core 的近场主入口是打开/Compos
   // 未绑定时删除是真的可用
   const unbound = buildLcosNodeCommands(base);
   assert.equal(byId(unbound, 'delete')?.disabledReason, undefined);
+  assert.equal(byId(unbound, 'color-pin'), undefined);
 });
 
 test('R2 命令模型：note 近场顺序受 引用能力 影响（不支持引用时给真实 reason）', () => {

@@ -207,6 +207,14 @@ export { CoreSkillCatalogClient } from './backend/skills.js';
 export { CoreColorPinClient } from './backend/colorPins.js';
 export type { ColorPinAssignInputV1, ColorPinMutationReceiptV1, ColorPinRemoveReceiptV1 } from './backend/colorPins.js';
 export { CoreNavigationClient } from './backend/navigation.js';
+export {
+  colorPinTargetKey,
+  colorPinTargetFromEntityRef,
+  usedColorPinDefinitions,
+  colorPinMembershipsByDefinition,
+  colorPinMembershipsByTarget,
+  colorPinMembershipsForTarget,
+} from './presentation/colorPinPresentation.js';
 export { CoreConnectorClient } from './backend/connectors.js';
 export { CoreHealthClient } from './backend/health.js';
 export { CoreTemporalClient } from './backend/temporal.js';

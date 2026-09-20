@@ -12,7 +12,7 @@ import { useLcosShellStore, type LcosSurfaceKey } from './lcosShellStore';
 import { LcosSurfaceDock } from './LcosSurfaceDock';
 import { useLcosWorksiteNav } from '../app/useLcosWorksiteNav';
 import { LcosFocusWhere } from '../navigation/LcosFocusWhere';
-import { LcosNavigatorIsland } from '../navigation/LcosNavigatorIsland';
+import { ColorPinHud } from '../pin/ColorPinHud';
 
 import type { RailwayDestinationProjection } from '../navigation/railwayProjection';
 
@@ -66,7 +66,7 @@ export function LcosGlobalHud(props: LcosGlobalHudProps): React.JSX.Element {
 
   return (
     <>
-      <LcosNavigatorIsland
+      <ColorPinHud
         projectId={props.projectId}
         surfaceByWorkspace={props.surfaceByWorkspace}
         canvasBySurface={props.canvasBySurface}

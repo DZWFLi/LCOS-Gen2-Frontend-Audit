@@ -14,8 +14,8 @@ import { waitForProjectedEntity } from './waitForProjectedEntity';
 import { createLcosCoreSession } from '../app/lcosCoreClient';
 import { useLcosWorksiteNav } from '../app/useLcosWorksiteNav';
 import { useLcosReferenceStore } from '../lcosReferenceState';
-import { SURFACE_LABEL, useLcosShellStore, type LcosSurfaceKey } from '../shell/lcosShellStore';
 import { lcosHudEdgeOffsets } from '../shell/lcosHudPlacement';
+import { SURFACE_LABEL, useLcosShellStore, type LcosSurfaceKey } from '../shell/lcosShellStore';
 import { lcosGlassStyle, lcosTokens } from '../ui/lcosTokens';
 
 
@@ -42,6 +42,8 @@ export function LcosFocusWhere(props: LcosFocusWhereProps): React.JSX.Element {
   const activeSurface = useLcosShellStore((s) => s.activeSurface);
   const windowEnvironment = useLcosShellStore((s) => s.windowEnvironment);
   const requestLocate = useLcosShellStore((s) => s.requestLocate);
+  const focusWhereRequest = useLcosShellStore((s) => s.focusWhereRequest);
+  const consumeFocusWhere = useLcosShellStore((s) => s.consumeFocusWhere);
   const [open, setOpen] = useState(false);
   const [rows, setRows] = useState<readonly OccurrenceRow[]>([]);
   const [entityTitle, setEntityTitle] = useState<string | null>(null);
@@ -69,7 +71,11 @@ export function LcosFocusWhere(props: LcosFocusWhereProps): React.JSX.Element {
     setOpen(false);
   }, [invalidatePendingCollect]);
 
-  const collect = useCallback(async (): Promise<void> => {
+  const collect = useCallback(async (requested?: {
+    readonly entityType: string;
+    readonly entityId: string;
+    readonly title?: string;
+  }): Promise<void> => {
     arrival.current?.abort();
     setArriving(false);
     const generation = collectGeneration.current + 1;
@@ -79,14 +85,17 @@ export function LcosFocusWhere(props: LcosFocusWhereProps): React.JSX.Element {
       .nodes.filter((n) => n.selected)
       .map((n) => n.id);
     const nodeId = selected[0];
-    if (!nodeId) {
+    if (requested === undefined && !nodeId) {
       setUnavailable('没有选中的对象 · 先选择一个节点再按 F');
       setRows([]);
       setEntityTitle(null);
       setOpen(true);
       return;
     }
-    const ref = useLcosReferenceStore.getState().nodeEntityRefs.get(nodeId);
+    const selectedRef = nodeId === undefined
+      ? undefined
+      : useLcosReferenceStore.getState().nodeEntityRefs.get(nodeId);
+    const ref = requested ?? selectedRef;
     if (!ref) {
       setUnavailable('该对象暂时无法定位');
       setRows([]);
@@ -94,17 +103,17 @@ export function LcosFocusWhere(props: LcosFocusWhereProps): React.JSX.Element {
       setOpen(true);
       return;
     }
-    // 同现场 occurrences：同一 entity 的所有投影
+    // 同现场 occurrences：同一 canonical entity 的所有投影。
     const own: OccurrenceRow[] = [];
     const currentNodeIds = new Set(useCanvasStore.getState().nodes.map((node) => node.id));
     for (const [nid, r] of useLcosReferenceStore.getState().nodeEntityRefs) {
-      if (currentNodeIds.has(nid) && r.entityId === ref.entityId && r.entityType === ref.entityType && nid !== nodeId) {
+      if (currentNodeIds.has(nid) && r.entityId === ref.entityId && r.entityType === ref.entityType) {
         own.push({
           key: nid,
           nodeId: nid,
           surface: activeSurface,
           label: occurrenceRowLabel({ surface: activeSurface, workspaceName: undefined }),
-          current: false,
+          current: nid === nodeId,
           entityTitle: null,
         });
       }
@@ -139,10 +148,16 @@ export function LcosFocusWhere(props: LcosFocusWhereProps): React.JSX.Element {
     }
     const merged = [...own, ...cross];
     setRows(merged);
-    setEntityTitle(ref.descriptor?.title ?? null);
+    setEntityTitle(requested?.title ?? selectedRef?.descriptor?.title ?? null);
     setUnavailable(undefined);
     setOpen(true);
   }, [activeSurface, props.projectId, props.canvasBySurface, bindingStore]);
+
+  useEffect(() => {
+    if (focusWhereRequest === undefined || focusWhereRequest === null) return;
+    consumeFocusWhere?.();
+    void collect(focusWhereRequest);
+  }, [collect, consumeFocusWhere, focusWhereRequest]);
 
   const goToOccurrence = async (row: OccurrenceRow, surface: LcosSurfaceKey): Promise<void> => {
     if (!row.entityId || !row.entityType || (arrival.current && !arrival.current.signal.aborted)) return;
@@ -200,7 +215,7 @@ export function LcosFocusWhere(props: LcosFocusWhereProps): React.JSX.Element {
 
   if (!open) return <div data-lcos-focus-where data-open="false" className="hidden" aria-hidden />;
 
-  const edgeOffsets = lcosHudEdgeOffsets(windowEnvironment, {
+  const edgeOffsets = lcosHudEdgeOffsets(windowEnvironment ?? null, {
     width: window.innerWidth,
     height: window.innerHeight,
   });

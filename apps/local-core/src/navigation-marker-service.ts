@@ -67,15 +67,31 @@ export class NavigationMarkerService {
     }
   }
 
-  // ---------- kind: entity（Note / Conversation / Scope / Workspace） ----------
+  // ---------- kind: entity（Note / Conversation / Scope / Workspace / Artifact） ----------
 
   #resolveEntity(projectId: string, entityId: string): NavigationResolutionV0 {
-    // Note：按 anchor 归属 surface；无 canonical 坐标（worldPosition 留空，诚实）。
+    // V0 的 entity ref 没有 entityType。先按 exact id 收齐当前项目候选；只有
+    // 唯一候选才能解析。跨表同 id 时按查询顺序挑一个会把 pin 带到错误对象。
     const note = this.#metadata.getNote(entityId)
-    if (note !== undefined) return this.#resolveNote(projectId, note)
+    const projectNote = note !== undefined && String(note.projectId) === String(projectId) ? note : undefined
+    const conversation = this.#metadata.getConnectedConversation(projectId, entityId)
+    const scope = this.#findScope(projectId, entityId)
+    const workspaceValue = this.#metadata.getWorkspace(entityId)
+    const workspace = workspaceValue !== undefined && String(workspaceValue.projectId) === String(projectId)
+      ? workspaceValue
+      : undefined
+    const artifactValue = this.#metadata.getArtifact(entityId)
+    const artifact = artifactValue !== undefined && String(artifactValue.projectId) === String(projectId)
+      ? artifactValue
+      : undefined
+    const candidateCount = [projectNote, conversation, scope, workspace, artifact]
+      .filter((candidate) => candidate !== undefined).length
+    if (candidateCount !== 1) return { status: 'unresolved', reason: 'target-missing' }
+
+    // Note：按 anchor 归属 surface；无 canonical 坐标（worldPosition 留空，诚实）。
+    if (projectNote !== undefined) return this.#resolveNote(projectId, projectNote)
 
     // Conversation：Subcanvas 本身就是导航目的地。
-    const conversation = this.#metadata.getConnectedConversation(projectId, entityId)
     if (conversation !== undefined) {
       return {
         status: 'resolved',
@@ -89,7 +105,6 @@ export class NavigationMarkerService {
     }
 
     // Scope：自身即 surface（root → main）。
-    const scope = this.#findScope(projectId, entityId)
     if (scope !== undefined) {
       const surface = this.#surfaceForScope(scope)
       if (surface === undefined) return { status: 'unresolved', reason: 'unknown-surface' }
@@ -100,8 +115,7 @@ export class NavigationMarkerService {
     }
 
     // Workspace（Scene）：frame 存在时给出中心点（实时读取，不复制）。
-    const workspace = this.#metadata.getWorkspace(entityId)
-    if (workspace !== undefined && String(workspace.projectId) === String(projectId)) {
+    if (workspace !== undefined) {
       const frame = workspace.frameBounds
       return {
         status: 'resolved',
@@ -111,6 +125,21 @@ export class NavigationMarkerService {
           surfaceKind: 'scene',
           anchorRef: entityId,
           ...(frame === undefined ? {} : { worldPosition: { x: frame.x + frame.width / 2, y: frame.y + frame.height / 2 } }),
+        },
+      }
+    }
+
+    // Artifact：Color Pin 的 canonical object target。V0 target ref 仍是 untyped
+    // entity id；这里仅做 exact-id/project validation，不读取 ProjectionBinding、
+    // 不制造坐标。实际 occurrence 枚举继续由前端既有 Focus/Where 完成。
+    if (artifact !== undefined) {
+      return {
+        status: 'resolved',
+        target: {
+          projectId,
+          surfaceRef: 'main',
+          surfaceKind: 'main',
+          anchorRef: entityId,
         },
       }
     }

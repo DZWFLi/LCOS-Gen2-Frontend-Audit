@@ -16,6 +16,7 @@ import { beginChildWorksiteNavigation } from '../navigation/childWorksiteNavigat
 import { waitForProjectedEntity } from '../navigation/waitForProjectedEntity';
 import { animateCurrentWorksiteCamera } from '../navigation/worksiteCameraTransition';
 import { childSurfaceForItem } from '../navigation/workspaceTargets';
+import { LcosColorPinProvider } from '../pin/LcosColorPinProvider';
 import { ProfessionalWindowStage } from '../professional/ProfessionalWindowStage';
 import { ContextWorksite } from '../surfaces/context/ContextWorksite';
 import { MainWorksite } from '../surfaces/main/MainWorksite';
@@ -224,7 +225,7 @@ export function LcosProjectShell({
           <LcosWorksiteStageLoading status={shellStatus === 'ready' ? 'loading' : shellStatus} onRetry={onRetry} />
         </div>
       ) : (
-        <>
+        <LcosColorPinProvider projectId={projectId}>
           {/* 工作现场舞台（唯一 Canvas）；Main/Context/Workflow 各自壳（空态/仪器差异） */}
           <div className="absolute inset-0">
             {childUnavailable ? (
@@ -367,7 +368,7 @@ export function LcosProjectShell({
               />
             </>
           )}
-        </>
+        </LcosColorPinProvider>
       )}
     </div>
   );

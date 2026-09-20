@@ -65,10 +65,8 @@ function setup() {
   const presentation = new PresentationApplicationService(repository, repository, undefined, events)
   const mutationSafety = new MutationSafetyService(repository, presentation, events)
   const resolver = new NavigationMarkerService(repository)
-  return { dbPath, repository, projectId, rootScopeId, ctxScopeId, wfScopeId, viewInCtx, mutationSafety, resolver }
+  return { dbPath, repository, projectId, rootScopeId, ctxScopeId, wfScopeId, artifactId: String(briefView.artifactId), viewInCtx, mutationSafety, resolver }
 }
-
-type Setup = ReturnType<typeof setup>
 
 async function setupWithServer() {
   const s = setup()
@@ -135,6 +133,10 @@ describe('P0-2 resolveNavigationTarget（七 Surface + invariants）', () => {
     expect(s.resolver.resolveNavigationTarget(s.projectId, { projectId: s.projectId, kind: 'entity', id: workspaceId }).target?.surfaceKind).toBe('scene')
     expect(s.resolver.resolveNavigationTarget(s.projectId, { projectId: s.projectId, kind: 'surface', id: 'main' }).target?.surfaceKind).toBe('main')
     expect(s.resolver.resolveNavigationTarget(s.projectId, { projectId: s.projectId, kind: 'surface', id: 'assembly' }).target?.surfaceKind).toBe('assembly')
+    expect(s.resolver.resolveNavigationTarget(s.projectId, { projectId: s.projectId, kind: 'entity', id: s.artifactId })).toEqual({
+      status: 'resolved',
+      target: { projectId: s.projectId, surfaceRef: 'main', surfaceKind: 'main', anchorRef: s.artifactId },
+    })
   })
 
   it('target move 后 resolve 返回当前位置——Core 不复制坐标（acceptance 3）', () => {
@@ -172,6 +174,24 @@ describe('P0-2 resolveNavigationTarget（七 Surface + invariants）', () => {
     const rootNote = s.resolver.resolveNavigationTarget(s.projectId, { projectId: s.projectId, kind: 'entity', id: 'note-root-1' })
     expect(rootNote.target?.surfaceKind).toBe('main')
     expect(rootNote.target?.worldPosition).toBeUndefined()
+  })
+
+  it('untyped entity id 跨表冲突时 fail-close，不按查询顺序猜对象', () => {
+    const s = setup()
+    s.repository.upsertNote({
+      id: s.artifactId,
+      projectId: s.projectId as never,
+      anchor: { type: 'project' },
+      body: 'same exact id as artifact',
+      createdAt: AT,
+      updatedAt: AT,
+    })
+
+    expect(s.resolver.resolveNavigationTarget(s.projectId, {
+      projectId: s.projectId,
+      kind: 'entity',
+      id: s.artifactId,
+    })).toEqual({ status: 'unresolved', reason: 'target-missing' })
   })
 
   it('未知 surface 词汇 / 未知 kind 诚实失败', () => {
@@ -293,5 +313,41 @@ describe('HTTP 路由（/projects/:id/spatial-markers + /navigation/resolve）',
       body: JSON.stringify({ targetRef: { projectId: s.projectId, kind: 'view', id: String(s.viewInCtx.id) }, scope: 'local', sourceSurfaceRef: `scope:${s.rootScopeId}` }),
     })
     expect(rootScopeAlias.status).toBe(422)
+  })
+})
+
+describe('Color Pin canonical entity vertical slice', () => {
+  it('assigns one Artifact identity shared by Main/Context views, then remove survives repository reload', async () => {
+    const s = await setupWithServer()
+    const views = s.repository.get(s.projectId)!.artifactViews
+      .filter((view) => String(view.artifactId) === s.artifactId)
+    expect(views.length).toBeGreaterThanOrEqual(2)
+
+    const assignResponse = await fetch(`${s.baseUrl}/projects/${s.projectId}/color-pins/memberships`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        targetRef: { projectId: s.projectId, kind: 'entity', id: s.artifactId },
+        color: '#3366FF',
+        label: 'Blue',
+      }),
+    })
+    expect(assignResponse.status).toBe(201)
+    const assigned = await assignResponse.json() as { value: { membership: { id: string; targetRef: unknown } } }
+    expect(assigned.value.membership.targetRef).toEqual({ projectId: s.projectId, kind: 'entity', id: s.artifactId })
+
+    const reloadAfterAssign = new SqliteMetadataRepository(s.dbPath)
+    repositories.push(reloadAfterAssign)
+    expect(reloadAfterAssign.listColorPinMemberships(s.projectId)).toHaveLength(1)
+
+    const removeResponse = await fetch(
+      `${s.baseUrl}/projects/${s.projectId}/color-pins/memberships/${assigned.value.membership.id}`,
+      { method: 'DELETE' },
+    )
+    expect(removeResponse.status).toBe(200)
+
+    const reloadAfterRemove = new SqliteMetadataRepository(s.dbPath)
+    repositories.push(reloadAfterRemove)
+    expect(reloadAfterRemove.listColorPinMemberships(s.projectId)).toEqual([])
   })
 })

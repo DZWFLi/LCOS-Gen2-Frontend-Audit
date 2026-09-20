@@ -43,6 +43,14 @@ export interface LcosLocateRequest {
   readonly status?: 'projected' | 'unprojected' | 'unavailable';
 }
 
+/** Known canonical entity handed to the existing Focus/Where occurrence resolver. */
+export interface LcosFocusWhereRequest {
+  readonly reqId: string;
+  readonly entityType: string;
+  readonly entityId: string;
+  readonly title?: string;
+}
+
 /**
  * Same-tab return context for a Context/Workflow child worksite.
  * This is UI navigation state only; the workspace and canvas remain owned by Core/Huabu.
@@ -179,6 +187,7 @@ export interface LcosShellUiState {
   /** 画布内待执行命令（route-level 组件发布，canvas-local overlay 消费）。 */
   cameraRequest: { id: number; kind: LcosCameraCommandKind } | null;
   locateRequest: LcosLocateRequest | null;
+  focusWhereRequest: LcosFocusWhereRequest | null;
   composerOpen: boolean;
   composerTarget: LcosComposerTarget | null;
   composerPrompt: string;
@@ -215,8 +224,10 @@ export interface LcosShellUiState {
   consumeWorksiteCameraTransition(id: string): void;
   requestCamera(kind: LcosCameraCommandKind): void;
   requestLocate(request: LcosLocateRequest): void;
+  requestFocusWhere(request: LcosFocusWhereRequest): void;
   consumeCamera(): void;
   consumeLocate(): void;
+  consumeFocusWhere(): void;
   openComposer(target: LcosComposerTarget): void;
   closeComposer(): void;
   setComposerPrompt(prompt: string): void;
@@ -272,6 +283,7 @@ export const useLcosShellStore = create<LcosShellUiState>((set) => ({
   surfaceCanvasId: {},
   cameraRequest: null,
   locateRequest: null,
+  focusWhereRequest: null,
   composerOpen: false,
   composerTarget: null,
   composerPrompt: '',
@@ -310,6 +322,7 @@ export const useLcosShellStore = create<LcosShellUiState>((set) => ({
       surfaceCanvasId: {},
       cameraRequest: null,
       locateRequest: null,
+      focusWhereRequest: null,
     };
   }),
   setActiveSurface: (activeSurface) => set({ activeSurface }),
@@ -340,8 +353,10 @@ export const useLcosShellStore = create<LcosShellUiState>((set) => ({
       cameraRequest: { id: (s.cameraRequest?.id ?? 0) + 1, kind },
     })),
   requestLocate: (request) => set({ locateRequest: request }),
+  requestFocusWhere: (request) => set({ focusWhereRequest: request }),
   consumeCamera: () => set({ cameraRequest: null }),
   consumeLocate: () => set({ locateRequest: null }),
+  consumeFocusWhere: () => set({ focusWhereRequest: null }),
   openComposer: (composerTarget) => set({ composerOpen: true, composerTarget }),
   closeComposer: () => set({ composerOpen: false }),
   setComposerPrompt: (composerPrompt) => set({ composerPrompt }),
@@ -591,6 +606,7 @@ export const useLcosShellStore = create<LcosShellUiState>((set) => ({
       surfaceCanvasId: {},
       cameraRequest: null,
       locateRequest: null,
+      focusWhereRequest: null,
       composerOpen: false,
       composerTarget: null,
       composerPrompt: '',
