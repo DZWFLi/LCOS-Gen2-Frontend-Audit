@@ -118,7 +118,11 @@ npx tsx --test apps/web-gen2/test/g09-host.test.ts
 → 13/13 PASS（含 Core archived guard、当前画布删除与 binding 解绑）
 
 LCOS_E2E_WEB_URL=http://localhost:5276 node scripts/e2e/archive-lifecycle.mjs
-→ 脚本具备 fail-fast 断言；当前 pending-version 实现合并后待 root 在稳定隔离栈重跑
+→ PASS（全新 SQLite / Huabu workspace / 主画布冷启动）
+→ oldSpatialId=node-0426ad91-01f9-40c9-959f-de7db85dbba7
+→ freshSpatialId=node-d93f3970-8213-42f4-a785-d59cac5f9e7a
+→ reloadSpatialId=node-d93f3970-8213-42f4-a785-d59cac5f9e7a
+→ consoleErrors=[] / pageErrors=[] / http=[]
 
 Assembly archive entrance targeted test
 → PASS
@@ -154,7 +158,7 @@ Assembly
 
 主线冷启动复验进一步证明，初次全量 reconcile 在 20 秒窗口内仍可能尚未完成；删除机制本身可由手动 reconcile 立即触发，暖态也可通过。因此追加当前画布 fast path，把用户刚完成的 archive 从全量 sweep 的耗时中解耦。它不会猜 lifecycle：若 fresh Core graph 中对象仍 active / 不存在，拒绝删除；只有 canonical archived truth 才调用现有 orphan removal。
 
-历史调试轮曾生成 `C:\Users\1\AppData\Local\Temp\archive-lifecycle-pass.png`；该图早于最终中央 pending-version 调度，不能作为当前提交的闭环证据。
+最终冷启动复验截图：`C:\Users\1\AppData\Local\Temp\archive-lifecycle-pass.png`。本次使用全新 SQLite、Huabu workspace 和现场画布；E2E 先通过正式空态入口建立主画布，没有复用历史数据或手工 reconcile。
 
 ## 未完成
 

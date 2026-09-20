@@ -53,6 +53,12 @@ await runScenario({
       body: JSON.stringify({ operationId: `e2e-prepare-${Date.now()}` }),
     });
     await h.goto(`/projects/${PROJECT}/main`);
+    await h.page.waitForSelector('.react-flow, [data-lcos-worksite-stage-empty="main"]', { timeout: 40_000 });
+    if (!await h.has('.react-flow')) {
+      const establish = h.page.getByRole('button', { name: '建立主画布' });
+      h.requireEqual(await establish.count(), 1, 'fresh fixture 应提供唯一的主画布建立入口');
+      await establish.click();
+    }
     await h.requireSelector('.react-flow', { timeout: 40_000 });
     await h.requireSelector('.react-flow__node', { timeout: 40_000 });
     const oldBinding = await poll(binding, Boolean, 'active Artifact never received a ProjectionBinding');
