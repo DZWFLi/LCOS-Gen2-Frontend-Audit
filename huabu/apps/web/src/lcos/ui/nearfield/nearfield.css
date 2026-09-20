@@ -163,16 +163,8 @@
   color: var(--lcos-text-primary); background: transparent;
 }
 .lcos-composer-submit { margin-right: -6px; }
-.lcos-composer-tool-face {
-  display: grid; place-items: center; width: 32px; height: 32px; border-radius: 50%;
-  box-shadow: inset 0 0 0 .5px var(--lcos-color-border-subtle);
-  background: var(--lcos-surface-base); transition: background 120ms ease, opacity 120ms ease;
-}
-.lcos-composer-submit .lcos-composer-tool-face {
-  background: var(--lcos-color-bg-inverse); color: var(--lcos-color-text-on-inverse);
-}
-.lcos-composer-tool-hit:hover:not(:disabled) .lcos-composer-tool-face { box-shadow: inset 0 0 0 1px var(--gen2-accent); }
-.lcos-composer-view button:disabled { cursor: not-allowed; opacity: .45; }
+/* Tool faces come from Oreo Icon Button. Keep only the existing row placement. */
+.lcos-composer-view button:not([data-lcos-control-skin='oreo']):disabled { cursor: not-allowed; opacity: .45; }
 .lcos-composer-view button:not(:disabled) { cursor: pointer; }
 .lcos-composer-view button:focus-visible { outline: 2px solid var(--lcos-pin-violet); outline-offset: 2px; }
 .lcos-composer-feedback { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; font-size: 12px; line-height: 18px; overflow-wrap: anywhere; }
@@ -244,7 +236,6 @@
 .lcos-composer-view[data-presentation='inline'] .lcos-composer-editor { border-radius: 0; box-shadow: none; }
 .lcos-composer-view[data-presentation='inline'] .lcos-composer-reference-label { font-size: 12px; }
 .lcos-composer-view[data-presentation='inline'] .lcos-composer-feedback { gap: 12px; }
-.lcos-composer-recovery-action,
 .lcos-composer-view[data-presentation='inline'] .lcos-composer-receiver {
   align-self: flex-start; display: inline-flex; align-items: center; width: fit-content;
   min-height: 44px; padding: 6px 12px;
@@ -259,3 +250,13 @@
 .lcos-action-orb-placement { pointer-events: auto; }
 
 .lcos-composer-identity { position: relative; }
+
+/* Only this instance's typography/height overrides its Oreo mother. */
+.lcos-composer-recovery-action[data-lcos-control-skin='oreo'] {
+  --lcos-control-face-height: 44px;
+  --lcos-control-font: 'Noto Sans SC';
+  --lcos-control-font-size: 12px;
+  --lcos-control-font-weight: 400;
+  align-self: flex-start;
+  inline-size: fit-content;
+}

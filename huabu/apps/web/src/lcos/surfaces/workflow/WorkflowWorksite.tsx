@@ -61,7 +61,7 @@ export function WorkflowWorksite({
   const [handOpen, setHandOpen] = useState(false);
 
   return (
-    <div data-lcos-workflow-worksite className="relative h-full w-full">
+    <div data-lcos-workflow-worksite data-hand-open={handOpen ? 'true' : undefined} className="relative h-full w-full">
       <LcosWorksiteStage
         projectId={projectId}
         surface={surface}

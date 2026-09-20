@@ -1,5 +1,6 @@
 import { motion, useIsPresent, useReducedMotion } from 'motion/react';
 
+import { ContextAtlasLayout } from './ContextAtlasLayout';
 import { LightCurtainBackdrop, LightCurtainDismissPlane } from '../spatial/LightCurtainBackdrop';
 import { PRESENTATION_EXIT } from '../spatial/presentationMotion';
 
@@ -32,10 +33,7 @@ export function ContextAtlasView({ header, children, onClose }: ContextAtlasView
     >
       <LightCurtainBackdrop kind="atlas" />
       <LightCurtainDismissPlane disabled={!present} onClose={onClose} />
-      <div className="lcos-atlas-light-curtain-inner">
-        <div className="lcos-atlas-light-curtain-head">{header}</div>
-        {children}
-      </div>
+      <ContextAtlasLayout header={header}>{children}</ContextAtlasLayout>
     </motion.div>
   );
 }

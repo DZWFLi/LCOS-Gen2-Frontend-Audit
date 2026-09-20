@@ -8,3 +8,17 @@
 /* Native backdrop button: a drag originating in content is not a blank click. */
 .lcos-atlas-dismiss-plane { position:fixed; inset:0; width:100%; height:100%; padding:0; margin:0; border:0; background:transparent; cursor:default; }
 [data-presentation-present='false'] { pointer-events:none; }
+
+/* Full-scene Figma layer order: content alpha is separate from the fog alpha.
+   Only the already loaded worksite stage recedes. HUD/Composer/Window siblings
+   and explicit load/error surfaces keep their original treatment. */
+[data-lcos-context-worksite] > [data-lcos-worksite-stage],
+[data-lcos-workflow-worksite] > [data-lcos-worksite-stage] {
+  transition: opacity 200ms ease-out;
+}
+[data-lcos-context-worksite][data-atlas-open='true'] > [data-lcos-worksite-stage] { opacity:.22; }
+[data-lcos-workflow-worksite][data-hand-open='true'] > [data-lcos-worksite-stage] { opacity:.66; }
+@media (prefers-reduced-motion:reduce) {
+  [data-lcos-context-worksite] > [data-lcos-worksite-stage],
+  [data-lcos-workflow-worksite] > [data-lcos-worksite-stage] { transition:none; }
+}

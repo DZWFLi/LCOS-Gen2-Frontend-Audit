@@ -1,3 +1,5 @@
+@import './oreo-controls.css';
+
 /* Shared interaction affordance only; each Figma family still owns face/size/material. */
 :where(.lcos-btn, .lcos-icon-btn) { font: inherit; cursor: pointer; -webkit-tap-highlight-color: transparent; }
 :where(.lcos-btn, .lcos-icon-btn):disabled { cursor: not-allowed; }
