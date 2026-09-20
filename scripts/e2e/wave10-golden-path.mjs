@@ -5,9 +5,9 @@
 // 失败路径：Core 断开（网络级）→ 诚实离线态 + 重试；waiting 回答真实 409 → 输入保留；复核 capability 真实禁用原因。
 import { chromium } from 'playwright-core';
 
-const SHOTS = 'C:/Users/1/AppData/Local/Temp/trae/screenshots';
-const EXE = 'C:/Users/1/AppData/Local/ms-playwright/chromium-1234/chrome-win64/chrome.exe';
-const BASE = 'http://localhost:5173';
+const SHOTS = process.env.LCOS_E2E_SHOTS ?? 'C:/Users/1/AppData/Local/Temp/trae/screenshots';
+const EXE = process.env.LCOS_E2E_CHROMIUM ?? 'C:/Users/1/AppData/Local/ms-playwright/chromium-1234/chrome-win64/chrome.exe';
+const BASE = process.env.LCOS_E2E_BASE ?? 'http://localhost:5173';
 const PROJECT = 'lcos-gen2-dev';
 const out = { steps: {}, failures: {}, restart: {}, consoleErrors: [] };
 
