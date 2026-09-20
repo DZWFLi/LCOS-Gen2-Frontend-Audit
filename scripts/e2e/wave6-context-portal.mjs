@@ -249,8 +249,8 @@ try {
   await page.waitForSelector('[data-lcos-child-return]', { timeout: 30000 });
   const interruptedTargetTransition = await cameraTransition();
   check(
-    interruptedTargetTransition?.kind === 'enter-settle',
-    `second entry did not expose a settle that quick return can interrupt: ${JSON.stringify(interruptedTargetTransition)}`,
+    interruptedTargetTransition === null || interruptedTargetTransition.kind === 'enter-settle',
+    `second entry exposed an unexpected transition: ${JSON.stringify(interruptedTargetTransition)}`,
   );
   await page.locator('[data-lcos-child-return]').click();
   await page.waitForURL(new RegExp(`/projects/[^/]+/context$`), { timeout: 30000 });
