@@ -192,6 +192,18 @@ async function render(projectId: string): Promise<void> {
   });
 }
 
+it('opens the canonical archive body from Assembly instead of fabricating a second page', async () => {
+  mocks.warehouse.mockResolvedValue({ items: [] });
+  mocks.workspaces.mockResolvedValue([]);
+  await render('project-a');
+  await act(async () => mocks.warehouse.mock.results[0]?.value);
+  const archive = [...host.querySelectorAll<HTMLButtonElement>('button')]
+    .find((button) => button.textContent?.includes('查看归档'));
+  if (!archive) throw new Error('archive entry missing');
+  await act(async () => archive.click());
+  expect(mocks.openWindow).toHaveBeenCalledWith('archive', '归档');
+});
+
 it('cannot let a late A response replace the already loaded B warehouse', async () => {
   const a = deferred<{ items: readonly unknown[] }>();
   const b = deferred<{ items: readonly unknown[] }>();

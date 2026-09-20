@@ -109,6 +109,8 @@ export interface CollaborationSubscribeOptions {
   readonly runtimeId?: string;
   /** 测试注入用；默认全局 EventSource。 */
   readonly eventSourceFactory?: (url: string) => EventSource;
+  /** Shared project-event owner hook. Consumers may invalidate non-conversation projections without opening a second SSE. */
+  readonly onProjectEvent?: (event: ProjectEventEnvelope) => void;
 }
 
 export class CoreCollaborationClient {
@@ -302,6 +304,7 @@ export class CoreCollaborationClient {
         return;
       }
       if (envelope === undefined) return;
+      options.onProjectEvent?.(envelope);
       if (envelope.type === 'run.changed') {
         emit('session.changed');
         emit('timeline.appended');

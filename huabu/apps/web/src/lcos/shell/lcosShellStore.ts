@@ -121,7 +121,8 @@ export type LcosProfessionalBodyKey =
   | 'portal-preview'
   | 'runtime-doctor'
   | 'capture-inbox'
-  | 'connector-source';
+  | 'connector-source'
+  | 'archive';
 
 export interface LcosWindow {
   readonly id: string;

@@ -14,6 +14,7 @@ import {
   CoreColorPinClient,
   CoreNavigationClient,
   CoreTemporalClient,
+  CoreArtifactClient,
   HttpClient,
   type CoreEnvelopeError,
 } from '@local-creative-os/web-gen2';
@@ -40,6 +41,7 @@ export interface LcosCoreSession {
   readonly navigation: CoreNavigationClient;
   /** R4 Context Temporal Rail：durable canonical facts 的只读投影。 */
   readonly temporal: CoreTemporalClient;
+  readonly artifacts: CoreArtifactClient;
 }
 
 export interface LcosCoreSessionOptions {
@@ -69,6 +71,7 @@ export function createLcosCoreSession(
     colorPins: new CoreColorPinClient(http),
     navigation: new CoreNavigationClient(http),
     temporal: new CoreTemporalClient(http),
+    artifacts: new CoreArtifactClient(http),
   };
 }
 

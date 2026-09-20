@@ -14,18 +14,19 @@
 // - 回到来源：按 Core identity 解析当前投影节点后 requestLocate —— 不依赖任何旧 rect。
 
 import { CoreArtifactClient, HttpError } from '@local-creative-os/web-gen2';
-import { FileImage, FileText } from 'lucide-react';
+import { Archive, ArchiveRestore, FileImage, FileText } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { createLcosCoreSession } from '../app/lcosCoreClient';
+import { useLcosHostStore } from '../host/lcosHostState';
 import { useLcosReferenceStore } from '../lcosReferenceState';
 import { useLcosShellStore } from '../shell/lcosShellStore';
 import { LcosSurfaceFeedback } from '../ui/LcosSurfaceFeedback';
 import { lcosTokens } from '../ui/lcosTokens';
 import { ReaderContentView } from '../ui/professional/ReaderContentView';
 
-import type { RevisionCompareResultV1 } from '@local-creative-os/web-gen2';
 import type { LcosReaderPositionV1 } from '../shell/lcosShellStore';
+import type { RevisionCompareResultV1 } from '@local-creative-os/web-gen2';
 
 export interface ArtifactReaderBodyProps {
   readonly projectId: string;
@@ -109,6 +110,7 @@ export function ArtifactReaderBody({ projectId, artifactId, revisionId, onReturn
   const [compareBusy, setCompareBusy] = useState(false);
   const [lastTrace, setLastTrace] = useState<string | undefined>(undefined);
   const [note, setNote] = useState<string | undefined>(undefined);
+  const [lifecycleBusy, setLifecycleBusy] = useState(false);
   const contentRef = useRef<HTMLDivElement>(null);
   const [readerZoom, setReaderZoom] = useState(100);
 
@@ -356,6 +358,23 @@ export function ArtifactReaderBody({ projectId, artifactId, revisionId, onReturn
   const fileName = detail.artifact.title;
   const currentRevisionId = detail.currentRevisionId === undefined ? undefined : String(detail.currentRevisionId);
   const isHistorical = loadedRevisionId !== undefined && currentRevisionId !== undefined && loadedRevisionId !== currentRevisionId;
+  const archived = detail.artifact.archivedAt !== undefined;
+
+  const toggleArchive = (): void => {
+    setLifecycleBusy(true);
+    setNote(undefined);
+    const mutation = archived
+      ? artifacts.restoreArtifact(projectId, String(detail.artifact.id))
+      : artifacts.archiveArtifact(projectId, String(detail.artifact.id));
+    void mutation
+      .then(async (artifact) => {
+        setDetail((current) => current === null ? current : { ...current, artifact });
+        await useLcosHostStore.getState().host?.reconcile('mutation');
+        setNote(archived ? '已恢复；对象会按当前现场重新落位。' : '已归档；对象已退出活跃现场，内容仍可只读查看。');
+      })
+      .catch((error: unknown) => setNote(error instanceof Error ? error.message : '归档状态更新失败'))
+      .finally(() => setLifecycleBusy(false));
+  };
 
   return (
     <div data-lcos-reader className="lcos-reader-body">
@@ -371,6 +390,16 @@ export function ArtifactReaderBody({ projectId, artifactId, revisionId, onReturn
         <span className="shrink-0 rounded-full px-2 py-0.5 text-[10px]" style={{ background: lcosTokens.color.raised, color: lcosTokens.color.muted }}>
           {revision ? `${revision.id.slice(0, 8)} · ${revision.status}` : '无 revision'}
         </span>
+      </div>
+
+      <div className="flex items-center justify-between gap-2">
+        {archived ? (
+          <span data-lcos-reader-archived className="text-xs" style={{ color: lcosTokens.color.muted }}>归档对象 · 只读</span>
+        ) : <span />}
+        <button type="button" data-lcos-reader-lifecycle={archived ? 'restore' : 'archive'} disabled={lifecycleBusy} onClick={toggleArchive} className="flex min-h-11 items-center gap-1 rounded-full px-3 text-xs disabled:opacity-50" style={{ background: lcosTokens.color.raised, color: lcosTokens.color.text }}>
+          {archived ? <ArchiveRestore className="h-3.5 w-3.5" aria-hidden /> : <Archive className="h-3.5 w-3.5" aria-hidden />}
+          {lifecycleBusy ? '处理中…' : archived ? '恢复' : '归档'}
+        </button>
       </div>
 
       {detail.artifact.availability !== 'available' && (

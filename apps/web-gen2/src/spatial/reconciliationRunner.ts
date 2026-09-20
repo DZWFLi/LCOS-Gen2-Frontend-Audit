@@ -233,7 +233,10 @@ export class ReconciliationRunner {
   async runOnce(): Promise<ReconciliationResult> {
     const { projectId, canvasId } = this.deps;
     const graph = await this.deps.projects.getProjectGraph(projectId);
-    const rawArtifacts = Array.isArray(graph?.artifacts) ? (graph.artifacts as unknown[]) : [];
+    const allArtifacts = Array.isArray(graph?.artifacts) ? (graph.artifacts as unknown[]) : [];
+    // Archived entities remain in Project Graph truth but leave every active spatial projection.
+    const rawArtifacts = allArtifacts.filter((artifact) =>
+      typeof artifact !== 'object' || artifact === null || (artifact as { archivedAt?: unknown }).archivedAt === undefined);
     const targetWorkspace = graph?.workspaces?.find((workspace) => String(workspace.canvasId ?? '') === canvasId);
     const viewPresentation = viewPresentationByArtifact(
       (Array.isArray(graph?.artifactViews) ? graph.artifactViews : []) as readonly {

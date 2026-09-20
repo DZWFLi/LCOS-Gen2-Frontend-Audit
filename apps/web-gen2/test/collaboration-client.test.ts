@@ -366,14 +366,17 @@ test('subscribe：复用既有 /events SSE，run.changed → session.changed + t
   const { http } = stubHttp({});
   const collaboration = new CoreCollaborationClient(http);
   const received: string[] = [];
+  const projectEvents: string[] = [];
   const unsubscribe = collaboration.subscribe('p-1', 'c-1', (event) => received.push(event.kind), {
     eventSourceFactory: (url) => new FakeEventSource(url) as unknown as EventSource,
+    onProjectEvent: (event) => projectEvents.push(event.type),
   });
   assert.notEqual(unsubscribe, undefined);
   listeners.get('project-event')?.({ data: JSON.stringify({ ok: true, value: { type: 'run.changed' } }) });
   listeners.get('project-event')?.({ data: JSON.stringify({ ok: true, value: { type: 'continuity.changed' } }) });
   listeners.get('project-event')?.({ data: 'not-json' });
   assert.deepEqual(received, ['session.changed', 'timeline.appended', 'session.changed', 'capability.changed']);
+  assert.deepEqual(projectEvents, ['run.changed', 'continuity.changed']);
   unsubscribe?.();
   assert.equal(closedAt, `${BASE}/projects/p-1/events`);
 });

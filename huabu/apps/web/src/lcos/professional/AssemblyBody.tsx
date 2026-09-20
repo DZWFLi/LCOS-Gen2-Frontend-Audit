@@ -16,7 +16,7 @@ import {
   isCoreAbortError,
   type AssemblySourceTabV1,
 } from '@local-creative-os/web-gen2';
-import { BookOpen, FileAudio, FileImage, FileText, FolderOpen, MessageCircle, PlusCircle, Search, Send } from 'lucide-react';
+import { Archive, BookOpen, FileAudio, FileImage, FileText, FolderOpen, MessageCircle, PlusCircle, Search, Send } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import { useNavigate } from 'react-router-dom';
 
@@ -695,6 +695,16 @@ export function AssemblyBody({
             {bay?.warehouse?.items.length ?? 0} 项
             {bay?.warehouse?.totalApprox === undefined ? '' : ` · 约 ${bay.warehouse.totalApprox} 项`}
           </span>
+          <button
+            type="button"
+            data-lcos-open-archive
+            onClick={() => openWindow('archive', '归档')}
+            className="flex min-h-11 w-fit items-center gap-1 rounded-full px-3 text-xs"
+            style={{ background: lcosTokens.color.raised, color: lcosTokens.color.text }}
+          >
+            <Archive className="h-3.5 w-3.5" aria-hidden />
+            查看归档
+          </button>
 
           {bay?.warehouseStatus === 'loading' && (
             <div className="py-10"><LcosSurfaceFeedback presentation="loading" message="正在读取项目仓库…" /></div>

@@ -17,6 +17,7 @@ export interface CoreSearchParams {
   limit?: number;
   types?: SearchEntityTypeV0[];
   usedHereTarget?: CoreSearchUsedHereTarget;
+  includeArchived?: boolean;
 }
 
 export class CoreSearchClient {
@@ -34,6 +35,7 @@ export class CoreSearchClient {
         `usedHereTarget=${encodeURIComponent(`${params.usedHereTarget.kind}:${params.usedHereTarget.id}`)}`,
       );
     }
+    if (params.includeArchived === true) parts.push('includeArchived=true');
     return coreRequest<SearchResultVNext>(
       this.http,
       'GET',

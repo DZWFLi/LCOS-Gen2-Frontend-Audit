@@ -13,6 +13,7 @@ import { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useCloseOnEscape } from '@/hooks/useCloseOnEscape';
 
 
+import { ArchiveBody } from './ArchiveBody';
 import { ArtifactReaderBody } from './ArtifactReaderBody';
 import { AssemblyBody } from './AssemblyBody';
 import { ConversationWorkViewBody } from './ConversationWorkViewBody';
@@ -549,6 +550,8 @@ function ProfessionalBody({
           {...(onReturnReaderSource === undefined ? {} : { onReturnToSource: onReturnReaderSource })}
         />
       );
+    case 'archive':
+      return <ArchiveBody projectId={projectId} />;
     case 'conversation':
       return <ConversationWorkViewBody projectId={projectId} connectedConversationId={target} />;
     case 'portal-preview':

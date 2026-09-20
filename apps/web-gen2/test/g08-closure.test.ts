@@ -183,7 +183,7 @@ test('ReconciliationRunner.runOnce: projects artifacts, reconciles relations, pr
   }
 });
 
-test('ReconciliationRunner.runOnce: prunes orphan artifact node bindings when the artifact is gone', async () => {
+test('ReconciliationRunner.runOnce: prunes missing and archived artifact bindings from the active canvas', async () => {
   const nodes = new Set<string>();
   let deleted: string[] = [];
   let nodeSeq = 0;
@@ -204,7 +204,7 @@ test('ReconciliationRunner.runOnce: prunes orphan artifact node bindings when th
       if (type === 'DELETE_NODES') {
         const ids = (body as { commands: { nodeIds: string[] }[] }).commands[0].nodeIds;
         ids.forEach((id) => nodes.delete(id));
-        deleted = ids;
+        deleted.push(...ids);
         return jsonResponse(createdResponse());
       }
       return jsonResponse({});
@@ -213,20 +213,22 @@ test('ReconciliationRunner.runOnce: prunes orphan artifact node bindings when th
 
     const bindings = new ProjectionBindingRegistry(new MemoryBindingStore());
     await bindings.bind({ projectId: 'p1', canvasId: CANVAS, spatialKind: 'node', spatialId: 'node-ghost', entityType: 'artifact', entityId: 'ghost' });
+    await bindings.bind({ projectId: 'p1', canvasId: CANVAS, spatialKind: 'node', spatialId: 'node-archived', entityType: 'artifact', entityId: 'a2' });
 
     const nodeProjector = new ProjectToSpaceProjection(rfs, bindings);
     const relationProjector = new RelationProjection(rfs, { async createRelation() { return { id: 'rel' }; }, async deleteRelation() {} }, bindings, 'p1');
 
-    const projects = { getProjectGraph: async () => ({ artifacts: [{ id: 'a1' }] }) } as never;
+    const projects = { getProjectGraph: async () => ({ artifacts: [{ id: 'a1' }, { id: 'a2', archivedAt: '2026-09-20T00:00:00.000Z' }] }) } as never;
     const relations = { listRelations: async () => [] } as never;
 
     const runner = new ReconciliationRunner({ projectId: 'p1', canvasId: CANVAS, projects, relations, nodeProjector, relationProjector, bindings } as never);
     const result = await runner.runOnce();
 
-    assert.equal(result.removedOrphanNodes, 1);
+    assert.equal(result.removedOrphanNodes, 2);
     assert.equal(result.artifactsProjected, 1);
-    assert.deepEqual(deleted, ['node-ghost']);
+    assert.deepEqual(deleted.sort(), ['node-archived', 'node-ghost']);
     assert.equal(await bindings.findNode('p1', CANVAS, 'artifact', 'ghost'), undefined);
+    assert.equal(await bindings.findNode('p1', CANVAS, 'artifact', 'a2'), undefined);
     assert.equal((await bindings.findNode('p1', CANVAS, 'artifact', 'a1'))?.spatialId, 'node-1');
   }
 });

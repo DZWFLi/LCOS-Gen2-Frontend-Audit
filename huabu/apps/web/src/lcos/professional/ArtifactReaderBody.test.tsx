@@ -9,6 +9,8 @@ import {
   readerSourceTraceLabelV1,
 } from './ArtifactReaderBody';
 
+import type * as WebGen2 from '@local-creative-os/web-gen2';
+
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
 const detailFor = vi.hoisted(() => vi.fn());
@@ -16,6 +18,8 @@ const revisionsFor = vi.hoisted(() => vi.fn());
 const textFor = vi.hoisted(() => vi.fn());
 const blobFor = vi.hoisted(() => vi.fn());
 const compareFor = vi.hoisted(() => vi.fn());
+const archiveFor = vi.hoisted(() => vi.fn());
+const restoreFor = vi.hoisted(() => vi.fn());
 
 // reference / shell store 用轻量替身：本用例验证的是 reader 如何**使用**既有 owner
 // （草稿引用 / Composer 草稿 / locate），而不是这些 owner 自身的实现。
@@ -28,7 +32,7 @@ const readerPositions = vi.hoisted(() => ({} as Record<string, { scrollTop: numb
 const readerLastRevisions = vi.hoisted(() => ({} as Record<string, string>));
 
 vi.mock('@local-creative-os/web-gen2', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@local-creative-os/web-gen2')>();
+  const actual = await importOriginal<typeof WebGen2>();
   return {
     ...actual,
     CoreArtifactClient: class {
@@ -37,6 +41,8 @@ vi.mock('@local-creative-os/web-gen2', async (importOriginal) => {
       getFileRecordText = textFor;
       getFileRecordContent = blobFor;
       compareRevisions = compareFor;
+      archiveArtifact = archiveFor;
+      restoreArtifact = restoreFor;
     },
     HttpError: class extends Error {
       readonly status = 500;
@@ -78,9 +84,10 @@ function detail(
   currentRevisionId: string,
   kind: 'markdown' | 'image' = 'markdown',
   availability: 'available' | 'missing' | 'stale' = 'available',
+  archivedAt?: string,
 ) {
   return {
-    artifact: { id: artifactId, projectId: 'project-1', title: `${artifactId}.md`, kind, managed: true, availability },
+    artifact: { id: artifactId, projectId: 'project-1', title: `${artifactId}.md`, kind, managed: true, availability, ...(archivedAt === undefined ? {} : { archivedAt }) },
     currentRevisionId,
     revisions: [
       { id: 'revision-old', status: 'superseded', source: 'import', createdAt: '2026-01-01T00:00:00Z' },
@@ -128,6 +135,8 @@ afterEach(() => {
   textFor.mockReset();
   blobFor.mockReset();
   compareFor.mockReset();
+  archiveFor.mockReset();
+  restoreFor.mockReset();
   addEntityToDraft.mockReset();
   orderedNodeReferences.mockReset();
   orderedNodeReferences.mockReturnValue([]);
@@ -140,6 +149,23 @@ afterEach(() => {
 });
 
 describe('ArtifactReaderBody real content', () => {
+  it('keeps archived content readable and restores the same Artifact identity', async () => {
+    const archivedAt = '2026-09-20T00:00:00.000Z';
+    detailFor.mockResolvedValue(detail('artifact-archived', 'revision-current', 'markdown', 'available', archivedAt));
+    revisionsFor.mockResolvedValue([revision('artifact-archived', 'revision-current', 'file-current')]);
+    textFor.mockResolvedValue('# Archived body');
+    restoreFor.mockResolvedValue(detail('artifact-archived', 'revision-current').artifact);
+    const { container } = await render('artifact-archived');
+    await act(async () => textFor.mock.results[0]?.value);
+
+    expect(container.querySelector('[data-lcos-reader-archived]')?.textContent).toContain('只读');
+    expect(container.textContent).toContain('Archived body');
+    click(container, '[data-lcos-reader-lifecycle="restore"]');
+    await act(async () => restoreFor.mock.results[0]?.value);
+    expect(restoreFor).toHaveBeenCalledWith('project-1', 'artifact-archived');
+    expect(container.querySelector('[data-lcos-reader-archived]')).toBeNull();
+  });
+
   it('reads the currentRevisionId even when it is not the first listed revision', async () => {
     detailFor.mockResolvedValue(detail('artifact-1', 'revision-current'));
     revisionsFor.mockResolvedValue([

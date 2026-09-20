@@ -11,6 +11,8 @@ import useCanvasStore from '@/store/canvasStore';
 import { LcosGlobalHud } from './LcosGlobalHud';
 import { useLcosShellStore, type LcosSurfaceKey } from './lcosShellStore';
 import { LcosWorksiteStage } from './LcosWorksiteStage';
+import { useCollaborationSessionStore } from '../collaboration/collaborationSessionStore';
+import { useLcosHostStore } from '../host/lcosHostState';
 import { useLcosReferenceStore } from '../lcosReferenceState';
 import { beginChildWorksiteNavigation } from '../navigation/childWorksiteNavigation';
 import { waitForProjectedEntity } from '../navigation/waitForProjectedEntity';
@@ -78,6 +80,11 @@ export function LcosProjectShell({
   const [mainHandOpen, setMainHandOpen] = useState(false);
   const [returning, setReturning] = useState(false);
   const [returnError, setReturnError] = useState<string | undefined>(undefined);
+  const watchArtifactChanges = useCollaborationSessionStore((s) => s.watchArtifactChanges);
+
+  useEffect(() => watchArtifactChanges(projectId, () => {
+    void useLcosHostStore.getState().host?.reconcile('mutation');
+  }), [projectId, watchArtifactChanges]);
 
   const resolvePortalTarget = (canvasId: string): PortalTargetResolution | undefined => {
     const workspace = workspaces.find((candidate) => candidate.canvasId === canvasId);

@@ -7,9 +7,8 @@
 //
 // 不缓存真相；投影缺席/失败如实呈现（loading / error），不伪造 ready。
 
-import { create } from 'zustand';
-
 import { CoreCollaborationClient } from '@local-creative-os/web-gen2';
+import { create } from 'zustand';
 
 import { createLcosCoreSession } from '../app/lcosCoreClient';
 
@@ -35,12 +34,15 @@ interface CollaborationSessionState {
   readonly unwatch: (projectId: string, conversationId: string) => void;
   /** 立即重取（手动刷新 / 动作回执后）。 */
   readonly refresh: (projectId: string, conversationId: string) => Promise<void>;
+  /** Subscribe to canonical Artifact invalidations through the same project SSE. */
+  readonly watchArtifactChanges: (projectId: string, listener: () => void) => () => void;
 }
 
 // module 级运行态（不进 React 树）：project → watcher 集合 / SSE 关闭器 / facade。
 const watchersByProject = new Map<string, Set<string>>();
 const subscriptionByProject = new Map<string, () => void>();
 const clientByProject = new Map<string, CoreCollaborationClient>();
+const artifactListenersByProject = new Map<string, Set<() => void>>();
 
 function collaborationFor(projectId: string): CoreCollaborationClient {
   const existing = clientByProject.get(projectId);
@@ -88,8 +90,21 @@ export const useCollaborationSessionStore = create<CollaborationSessionState>((s
       for (const conversationId of watched) {
         void get().refresh(projectId, conversationId);
       }
+    }, {
+      onProjectEvent: (event) => {
+        if (event.type !== 'artifact.changed') return;
+        for (const listener of artifactListenersByProject.get(projectId) ?? []) listener();
+      },
     });
     if (close !== undefined) subscriptionByProject.set(projectId, close);
+  };
+
+  const releaseProjectSubscriptionIfUnused = (projectId: string): void => {
+    if ((watchersByProject.get(projectId)?.size ?? 0) > 0) return;
+    if ((artifactListenersByProject.get(projectId)?.size ?? 0) > 0) return;
+    subscriptionByProject.get(projectId)?.();
+    subscriptionByProject.delete(projectId);
+    clientByProject.delete(projectId);
   };
 
   return {
@@ -115,13 +130,27 @@ export const useCollaborationSessionStore = create<CollaborationSessionState>((s
       watchers.delete(conversationId);
       if (watchers.size === 0) {
         watchersByProject.delete(projectId);
-        subscriptionByProject.get(projectId)?.();
-        subscriptionByProject.delete(projectId);
-        clientByProject.delete(projectId);
+        releaseProjectSubscriptionIfUnused(projectId);
       }
     },
 
     refresh,
+
+    watchArtifactChanges: (projectId, listener) => {
+      let listeners = artifactListenersByProject.get(projectId);
+      if (listeners === undefined) {
+        listeners = new Set();
+        artifactListenersByProject.set(projectId, listeners);
+      }
+      listeners.add(listener);
+      ensureProjectSubscription(projectId);
+      return () => {
+        const current = artifactListenersByProject.get(projectId);
+        current?.delete(listener);
+        if (current?.size === 0) artifactListenersByProject.delete(projectId);
+        releaseProjectSubscriptionIfUnused(projectId);
+      };
+    },
   };
 });
 

@@ -50,6 +50,23 @@ export interface RevisionCompareResultV1 {
 export class CoreArtifactClient {
   constructor(private readonly http: HttpClient) {}
 
+  listArtifacts(projectId: string, lifecycle: 'active' | 'archived' | 'all' = 'active'): Promise<Artifact[]> {
+    return coreRequest<Artifact[]>(this.http, 'GET',
+      `/projects/${encodeURIComponent(projectId)}/artifacts?lifecycle=${encodeURIComponent(lifecycle)}`);
+  }
+
+  archiveArtifact(projectId: string, artifactId: string): Promise<Artifact> {
+    return coreRequest<Artifact>(this.http, 'POST',
+      `/projects/${encodeURIComponent(projectId)}/artifacts/${encodeURIComponent(artifactId)}/archive`,
+      { body: { operationId: crypto.randomUUID() } });
+  }
+
+  restoreArtifact(projectId: string, artifactId: string): Promise<Artifact> {
+    return coreRequest<Artifact>(this.http, 'POST',
+      `/projects/${encodeURIComponent(projectId)}/artifacts/${encodeURIComponent(artifactId)}/restore`,
+      { body: { operationId: crypto.randomUUID() } });
+  }
+
   /** GET /artifacts/:artifactId. */
   getArtifactDetail(artifactId: string): Promise<ArtifactDetailProjection> {
     return coreRequest<ArtifactDetailProjection>(

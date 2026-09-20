@@ -157,6 +157,26 @@ test('artifacts.listArtifactRevisions: returns revisions array', async () => {
   assert.equal(revs[0]?.id, 'rev1');
 });
 
+test('artifacts archive lifecycle: lists explicit cold state and mutates the same canonical id', async () => {
+  const seen: Array<{ method: string; url: string }> = [];
+  const http = makeHttp((req) => {
+    seen.push({ method: req.method, url: req.url });
+    return jsonResponse({ ok: true, value: req.method === 'GET'
+      ? [{ id: 'a1', projectId: 'p1', title: 'Doc', kind: 'text', archivedAt: '2026-09-20T00:00:00.000Z' }]
+      : { id: 'a1', projectId: 'p1', title: 'Doc', kind: 'text' } });
+  });
+  const artifacts = new CoreArtifactClient(http);
+  const archived = await artifacts.listArtifacts('p1', 'archived');
+  assert.equal(archived[0]?.id, 'a1');
+  assert.equal((await artifacts.archiveArtifact('p1', 'a1')).id, 'a1');
+  assert.equal((await artifacts.restoreArtifact('p1', 'a1')).id, 'a1');
+  assert.deepEqual(seen, [
+    { method: 'GET', url: `${BASE}/projects/p1/artifacts?lifecycle=archived` },
+    { method: 'POST', url: `${BASE}/projects/p1/artifacts/a1/archive` },
+    { method: 'POST', url: `${BASE}/projects/p1/artifacts/a1/restore` },
+  ]);
+});
+
 test('artifacts.searchArtifactTitles: encodes q and never behaves as listAll', async () => {
   const http = makeHttp((req) => {
     assert.equal(req.url, `${BASE}/projects/p1/artifacts/search?q=hello%20world`);
@@ -230,10 +250,10 @@ test('relations: valid Core entity types (artifact/note/scope/view/workspace) ro
 
 // ---- §10 search ----
 
-test('search: builds q/limit/types/usedHereTarget and returns SearchResultVNext raw', async () => {
+test('search: builds q/limit/types/usedHereTarget/includeArchived and returns SearchResultVNext raw', async () => {
   const result = { hits: [{ entityId: 'a1', entityType: 'artifact', title: 'Doc', score: 1 }], query: 'doc' } as unknown as SearchResultVNext;
   const http = makeHttp((req) => {
-    assert.equal(req.url, `${BASE}/projects/p1/search?q=hello%20world&limit=20&types=artifact%2Cnote&usedHereTarget=workspace%3Aw1`);
+    assert.equal(req.url, `${BASE}/projects/p1/search?q=hello%20world&limit=20&types=artifact%2Cnote&usedHereTarget=workspace%3Aw1&includeArchived=true`);
     return jsonResponse({ ok: true, value: result });
   });
   const value = await new CoreSearchClient(http).searchProject('p1', {
@@ -241,6 +261,7 @@ test('search: builds q/limit/types/usedHereTarget and returns SearchResultVNext 
     limit: 20,
     types: ['artifact', 'note'],
     usedHereTarget: { kind: 'workspace', id: 'w1' },
+    includeArchived: true,
   });
   assert.deepEqual(value, result);
 });
