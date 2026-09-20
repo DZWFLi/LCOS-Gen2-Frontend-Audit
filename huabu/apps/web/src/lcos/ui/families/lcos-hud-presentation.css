@@ -318,6 +318,7 @@
   text-overflow: ellipsis;
   cursor: pointer;
 }
+[data-lcos-window-tab-label] { display: block; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 [data-lcos-window-tab][data-lcos-variant='selected'] { background: var(--gen2-raised); color: var(--gen2-text); font-weight: 500; }
 [data-lcos-window-tab]:focus-visible { outline: 2px solid var(--lcos-pin-violet); outline-offset: -2px; }
 [data-lcos-window-actions] { display: flex; align-items: center; gap: 4px; flex: 0 0 auto; }
@@ -340,38 +341,6 @@
 [data-lcos-window-icon-button]:hover:not(:disabled) { background: var(--gen2-raised); color: var(--gen2-text); }
 [data-lcos-window-icon-button]:disabled { opacity: 0.45; cursor: not-allowed; }
 [data-lcos-window-icon-button]:focus-visible { outline: 2px solid var(--lcos-pin-violet); outline-offset: -2px; }
-
-/* Feedback: exact exported 18px glyphs; 38px single-line silhouette, no artificial spinner or timer. */
-[data-lcos-family='surface-feedback'] {
-  display: inline-flex;
-  align-items: center;
-  box-sizing: border-box;
-  gap: 8px;
-  min-height: 38px;
-  max-width: 100%;
-  padding: 10px 12px;
-  border: 0;
-  border-radius: var(--lcos-radius-medium);
-  background: var(--lcos-surface-elevated);
-  color: var(--lcos-text-primary);
-  font: 400 13px/18px var(--lcos-hud-font);
-}
-[data-lcos-feedback-message] { min-width: 0; overflow-wrap: anywhere; }
-[data-lcos-feedback-action] {
-  appearance: none;
-  align-self: center;
-  flex: none;
-  min-height: 28px;
-  padding: 2px 8px;
-  border: 0;
-  border-radius: var(--lcos-radius-capsule);
-  font: 500 11px/18px var(--lcos-hud-font);
-  color: var(--gen2-text);
-  background: transparent;
-  cursor: pointer;
-}
-[data-lcos-feedback-action]:hover:not(:disabled) { background: var(--gen2-raised); }
-[data-lcos-feedback-action]:disabled { opacity: 0.45; cursor: not-allowed; }
 
 /* Shell identity: preserve the production Link, not a second navigation component. */
 [data-lcos-project-identity] {
@@ -480,7 +449,6 @@
   [data-lcos-railway-item] { width: 44px; height: 44px; }
   [data-lcos-pin-count-mark] { opacity: 1; }
   [data-lcos-window-icon-button] { width: 44px; }
-  [data-lcos-feedback-action] { min-height: 44px; }
 }
 @media (prefers-reduced-motion: reduce) {
   [data-lcos-family='navigator-island'], [data-lcos-family='railway'],

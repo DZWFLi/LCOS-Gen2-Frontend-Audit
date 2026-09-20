@@ -42,8 +42,16 @@ export function LcosWindowChrome({
   overflowTrigger,
   busy = false,
 }: LcosWindowChromeProps): React.JSX.Element {
+  const managedOverflow = primaryActions !== undefined && primaryActions !== null
+    && overflowTrigger !== undefined && overflowTrigger !== null;
   return (
-    <div data-lcos-family="window-chrome" data-lcos-variant={layout} data-lcos-window-busy={busy ? 'true' : undefined}>
+    <div
+      data-lcos-window-managed-overflow={managedOverflow ? 'true' : undefined}
+      data-lcos-family="window-chrome"
+      data-lcos-variant={layout}
+      data-lcos-window-busy={busy ? 'true' : undefined}
+      aria-busy={busy || undefined}
+    >
       {tabs.length > 0 ? (
         <div data-lcos-window-tabs aria-label={title}>{tabs.map((tab) => (
           <LcosButton
@@ -55,7 +63,7 @@ export function LcosWindowChrome({
             aria-current={tab.selected ? 'true' : undefined}
             onClick={() => onSelectTab?.(tab.value ?? tab.key)}
           >
-            {tab.label}
+            <span data-lcos-window-tab-label title={tab.label}>{tab.label}</span>
           </LcosButton>
         ))}</div>
       ) : (

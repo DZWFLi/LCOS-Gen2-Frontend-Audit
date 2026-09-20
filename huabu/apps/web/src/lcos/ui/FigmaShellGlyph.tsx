@@ -23,11 +23,22 @@ const GLYPHS = { bench, collection, context, disabled, empty, error, focus,
   grid, loading, normal, plus, project, recovery, root, search, workflow } as const;
 export type FigmaShellGlyphName = keyof typeof GLYPHS;
 
-export function FigmaShellGlyph({ name, size = 21, className }: {
+export function FigmaShellGlyph({ name, size = 21, className, monochrome = false }: {
   readonly name: FigmaShellGlyphName;
   readonly size?: number;
   readonly className?: string;
+  /** Opt-in for single-ink exported glyphs; never recolours multi-colour assets. */
+  readonly monochrome?: boolean;
 }): React.JSX.Element {
+  if (monochrome) {
+    return <span data-lcos-figma-glyph={name} data-lcos-glyph-monochrome
+      className={className} aria-hidden="true" style={{
+        display: 'block', width: size, height: size, flexShrink: 0,
+        backgroundColor: 'currentColor', maskImage: `url("${GLYPHS[name]}")`,
+        WebkitMaskImage: `url("${GLYPHS[name]}")`, maskSize: '100% 100%',
+        WebkitMaskSize: '100% 100%', maskRepeat: 'no-repeat', WebkitMaskRepeat: 'no-repeat',
+      }} />;
+  }
   return <img data-lcos-figma-glyph={name} className={className}
     src={GLYPHS[name]} alt="" aria-hidden draggable={false} width={size} height={size}
     style={{ display: 'block', width: size, height: size, flexShrink: 0 }} />;

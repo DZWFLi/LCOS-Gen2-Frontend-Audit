@@ -1,3 +1,6 @@
+import { ReaderContentTabsView } from './ReaderContentTabsView';
+
+import type { ReaderContentTabsViewProps } from './ReaderContentTabsView';
 import type { ReactNode } from 'react';
 
 import './professional-reading.css';
@@ -8,6 +11,8 @@ export interface ReaderGroupPresentation {
   readonly content: ReactNode;
   /** Existing window/group owner supplies the real tabs and actions, if any. */
   readonly tabs?: ReactNode;
+  /** Explicit descriptor seam; legacy opaque tabs keep priority and are never parsed. */
+  readonly contentTabs?: ReaderContentTabsViewProps;
   readonly footer?: ReactNode;
 }
 
@@ -35,15 +40,22 @@ export function ReaderGroupView({
         <div className="lcos-reader-group-selector">{groupSelector}</div>
       ) : null}
       <div className="lcos-reader-group-columns">
-        {groups.map((group) => (
+        {groups.map((group, index) => (
           <section
             key={group.id}
+            data-reader-group-index={index}
             data-reader-group-id={group.id}
             aria-label={group.label}
             hidden={presentation === 'single' && group.id !== activeGroupId}
             className="lcos-reader-group"
           >
-            {group.tabs === undefined ? null : <div className="lcos-reader-group-tabs">{group.tabs}</div>}
+            {group.tabs !== undefined ? (
+              <div className="lcos-reader-group-tabs">{group.tabs}</div>
+            ) : group.contentTabs !== undefined ? (
+              <div className="lcos-reader-group-tabs">
+                <ReaderContentTabsView {...group.contentTabs} />
+              </div>
+            ) : null}
             <div className="lcos-reader-group-content">{group.content}</div>
             {group.footer === undefined ? null : <footer className="lcos-reader-group-footer">{group.footer}</footer>}
           </section>
