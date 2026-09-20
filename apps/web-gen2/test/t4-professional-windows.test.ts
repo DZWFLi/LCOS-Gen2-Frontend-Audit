@@ -173,6 +173,21 @@ test('CoreConversationClient.listConnectedConversations unwraps the envelope', a
   assert.equal(d.captured[0]?.method, 'GET');
 });
 
+test('CoreConversationClient.getReceiverBinding reads the canonical active receiver', async () => {
+  const d = deferredHttp();
+  const client = new CoreConversationClient(d.http);
+  const promise = client.getReceiverBinding('p1');
+  d.release('/receiver-binding', {
+    schemaVersion: 1,
+    projectId: 'p1',
+    connectedConversationIds: ['c1'],
+    activeReceiverId: 'c1',
+    revision: 3,
+  });
+  assert.equal((await promise).activeReceiverId, 'c1');
+  assert.equal(d.captured[0]?.method, 'GET');
+});
+
 // ---- work view epoch guard ----
 
 test('work view: late response from target A never pollutes target B (generation guard)', async () => {

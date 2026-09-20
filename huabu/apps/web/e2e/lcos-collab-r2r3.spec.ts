@@ -23,6 +23,7 @@ import {
   readRailOrder,
   railwayItemKeys,
   railwayScroller,
+  seedReceiverConversations,
   seedRailwayFixture,
   writeRailOrder,
   type RailwayFixture,
@@ -396,6 +397,13 @@ let fixture: RailwayFixture;
 test.beforeAll(async () => { fixture = await seedRailwayFixture(); });
 
 test('R3-1. Railway 专用 fixture：destination 全部来自 Core 真值（非 page-local graph）', async ({ page }) => {
+  const consoleErrors: string[] = [];
+  const pageErrors: string[] = [];
+  page.on('console', (message) => {
+    if (message.type() === 'error') consoleErrors.push(message.text());
+  });
+  page.on('pageerror', (error) => pageErrors.push(error.message));
+
   const graph = await coreJson('GET', `/projects/${fixture.projectId}/graph`);
   const scopes = (graph.value.scopes ?? []) as Array<{ id: string; kind: string }>;
   const workspaces = (graph.value.workspaces ?? []) as Array<{ id: string; preferredSurface?: string; scopeId: string }>;
@@ -408,11 +416,31 @@ test('R3-1. Railway 专用 fixture：destination 全部来自 Core 真值（非 
   const order = await readRailOrder(fixture.projectId);
   expect(order.refs.map((ref) => ref.viewId)).toEqual([...fixture.destIds]);
 
+  const receiver = await seedReceiverConversations(fixture.projectId);
   await enterRailProject(page, fixture);
+  expect(page.url()).toContain(`/projects/${fixture.projectId}/main`);
+  expect((await page.title()).trim().length).toBeGreaterThan(0);
+  await expect(page.locator('vite-error-overlay')).toHaveCount(0);
   expect(await page.locator('[data-lcos-railway]').count()).toBe(1);
-  expect(Number(await page.locator('[data-lcos-railway]').getAttribute('data-lcos-railway-version')))
+  const railway = page.locator('[data-lcos-railway]');
+  expect(Number(await railway.getAttribute('data-lcos-railway-version')))
     .toBeGreaterThanOrEqual(fixture.version);
-  expect(await railwayItemKeys(page)).toEqual(fixture.destIds.map((id) => `scene:${id}`));
+  await expect(railway).toHaveAttribute('data-lcos-railway-canonical-total', String(fixture.destIds.length));
+  expect(await railwayItemKeys(page)).toEqual(fixture.destIds.slice(0, 4).map((id) => `scene:${id}`));
+
+  const overflowTrigger = page.locator('[data-lcos-railway-overflow-trigger]');
+  await expect(overflowTrigger).toContainText(`+${fixture.destIds.length - 4}`);
+  await overflowTrigger.click();
+  await expect(page.locator('[data-lcos-railway-overflow]')).toBeVisible();
+  await expect(page.locator('[data-lcos-railway-overflow-row]')).toHaveCount(fixture.destIds.length - 4);
+
+  const island = railwayScroller(page);
+  const receiverButton = page.locator(`[data-lcos-railway-receiver="${receiver.conv1}"]`);
+  await expect(receiverButton).toBeVisible();
+  expect(await island.locator('[data-lcos-railway-receiver]').count(), 'Receiver 必须在 ordered island 之外').toBe(0);
+  await expect(receiverButton).toHaveAttribute('data-lcos-receive-state', 'rest');
+  expect(consoleErrors, `Railway 页面出现 console.error：${consoleErrors.join(' | ')}`).toEqual([]);
+  expect(pageErrors, `Railway 页面出现 pageerror：${pageErrors.join(' | ')}`).toEqual([]);
 });
 
 test('R3-2. Navigate：点击 destination 真正进入该 child workspace，不误切成 root Surface 语义', async ({ page }) => {

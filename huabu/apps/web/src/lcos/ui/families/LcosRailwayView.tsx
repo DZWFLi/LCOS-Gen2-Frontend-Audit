@@ -6,6 +6,7 @@
 import { FigmaShellGlyph } from '../FigmaShellGlyph';
 import { LcosIconButton } from '../primitives/LcosIconButton';
 
+import type { RailwayReceivePresentation } from '../../navigation/railwayReceivePresentation';
 import type { FigmaShellGlyphName } from '../FigmaShellGlyph';
 import type { ComponentType, DragEvent, ReactNode } from 'react';
 
@@ -26,6 +27,8 @@ export interface LcosRailwayViewItem {
   readonly onDrop?: (event: DragEvent<HTMLButtonElement>) => void;
   readonly onDragEnd?: (event: DragEvent<HTMLButtonElement>) => void;
   readonly reorderDropTarget?: boolean;
+  /** Shared Semantic Drop projection for this exact live target. */
+  readonly receivePresentation?: RailwayReceivePresentation;
   /** Opens the canonical destination peek while the pointer/focus is on this item. */
   readonly onPeekEnter?: () => void;
   readonly onPeekLeave?: () => void;
@@ -40,11 +43,30 @@ export interface LcosRailwayViewItem {
 export interface LcosRailwayViewProps {
   readonly items: readonly LcosRailwayViewItem[];
   readonly onSelect?: (key: string) => void;
+  /** Complete Core order count, including compatibility rows hidden from the island. */
+  readonly canonicalTotal?: number;
+  /** Count represented by the real overflow view, never a decorative approximation. */
+  readonly overflowCount?: number;
+  readonly overflowOpen?: boolean;
+  readonly onOverflowToggle?: () => void;
+  readonly overflow?: ReactNode;
+  /** Canonical active Receiver identity, kept outside the ordered destination island. */
+  readonly receiver?: ReactNode;
   /** 额外脚注（例如 rail order 读取结果）；不参与变体。 */
   readonly footer?: string;
 }
 
-export function LcosRailwayView({ items, onSelect, footer }: LcosRailwayViewProps): React.JSX.Element {
+export function LcosRailwayView({
+  items,
+  onSelect,
+  canonicalTotal = items.length,
+  overflowCount = 0,
+  overflowOpen = false,
+  onOverflowToggle,
+  overflow,
+  receiver,
+  footer,
+}: LcosRailwayViewProps): React.JSX.Element {
   const railwayHeight =
     items.length === 0 ? 0 : 16 + items.length * 36 + (items.length - 1) * 6;
   return (
@@ -54,6 +76,7 @@ export function LcosRailwayView({ items, onSelect, footer }: LcosRailwayViewProp
       <div
         data-lcos-family="railway"
         data-lcos-variant-count={items.length}
+        data-lcos-railway-canonical-total={canonicalTotal}
         role="navigation"
         aria-label="现场目的地"
         style={{
@@ -69,6 +92,7 @@ export function LcosRailwayView({ items, onSelect, footer }: LcosRailwayViewProp
             <div
               key={item.key}
               data-lcos-railway-entry={item.key}
+              data-lcos-receive-state={item.receivePresentation}
               onMouseEnter={item.onPeekEnter}
               onMouseLeave={item.onPeekLeave}
               onBlur={(event) => {
@@ -84,6 +108,7 @@ export function LcosRailwayView({ items, onSelect, footer }: LcosRailwayViewProp
                 draggable={item.draggable}
                 data-lcos-railway-item={item.key}
                 data-lcos-railway-reorder-target={item.reorderDropTarget ? 'true' : undefined}
+                data-lcos-receive-state={item.receivePresentation}
                 data-lcos-variant={variant}
                 aria-current={item.selected ? 'page' : undefined}
                 disabled={item.disabled}
@@ -105,6 +130,21 @@ export function LcosRailwayView({ items, onSelect, footer }: LcosRailwayViewProp
           );
         })}
       </div>
+      {overflowCount > 0 && (
+        <div data-lcos-railway-overflow-shell>
+          <button
+            type="button"
+            data-lcos-railway-overflow-trigger
+            aria-label={`显示其余 ${overflowCount} 个 Railway 目的地`}
+            aria-expanded={overflowOpen}
+            onClick={onOverflowToggle}
+          >
+            +{overflowCount}
+          </button>
+          {overflowOpen && overflow}
+        </div>
+      )}
+      {receiver}
       {footer && <span data-lcos-railway-footer>{footer}</span>}
     </>
   );

@@ -166,6 +166,25 @@ describe('R1 共享组件族', () => {
     outside.remove();
   });
 
+  it('Railway +N opens a real overflow view and keeps Receiver below the ordered island', () => {
+    const el = render(
+      <LcosRailwayView
+        items={[{ key: 'scene:a', label: 'A', icon: () => <span /> }]}
+        canonicalTotal={3}
+        overflowCount={2}
+        overflowOpen
+        overflow={<div data-lcos-railway-overflow>scene:b · scene:c</div>}
+        receiver={<button type="button" data-lcos-railway-receiver="conversation-1">Receiver</button>}
+      />,
+    );
+    const rail = el.querySelector('[data-lcos-family="railway"]');
+    expect(rail?.getAttribute('data-lcos-railway-canonical-total')).toBe('3');
+    expect(el.querySelector('[data-lcos-railway-overflow-trigger]')?.textContent).toBe('+2');
+    expect(el.querySelector('[data-lcos-railway-overflow]')?.textContent).toContain('scene:c');
+    expect(el.querySelector('[data-lcos-railway-receiver="conversation-1"]')).not.toBeNull();
+    expect(rail?.contains(el.querySelector('[data-lcos-railway-receiver]'))).toBe(false);
+  });
+
   it('ProfessionalWindowChrome 覆盖 浮动/停靠/分组，并渲染窗口标题与 tab', () => {
     for (const layout of WINDOW_LAYOUTS) {
       const el = render(<LcosWindowChrome layout={layout} title="阅读 · 创意简报" />);

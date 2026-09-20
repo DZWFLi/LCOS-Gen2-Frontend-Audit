@@ -9,6 +9,7 @@ import type {
   ConversationIdentityChainV1,
   ConversationReachResultV0,
   ConversationWorkViewAggregateV1,
+  ProjectReceiverBindingV1,
 } from '@local-creative-os/contracts';
 import { HttpClient } from './client.js';
 import { coreRequest } from './coreTypes.js';
@@ -25,6 +26,19 @@ export class CoreConversationClient {
       this.http,
       'GET',
       `/projects/${encodeURIComponent(projectId)}/connected-conversations`,
+      { signal },
+    );
+  }
+
+  /** GET /projects/:pid/receiver-binding → 当前 canonical active receiver。 */
+  getReceiverBinding(
+    projectId: string,
+    signal?: AbortSignal,
+  ): Promise<ProjectReceiverBindingV1> {
+    return coreRequest<ProjectReceiverBindingV1>(
+      this.http,
+      'GET',
+      `/projects/${encodeURIComponent(projectId)}/receiver-binding`,
       { signal },
     );
   }
