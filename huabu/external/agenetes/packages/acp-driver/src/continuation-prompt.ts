@@ -1,5 +1,6 @@
 import { reportEntryState } from './session.js';
 
+import type { PermissionNotifier } from './client.js';
 import type { AcpSessionEntry } from './session-registry.js';
 import type {
   ContentBlock as AcpContentBlock,
@@ -37,6 +38,7 @@ export async function promptExistingAcpSession(
   entry: AcpSessionEntry,
   text: string,
   signal?: AbortSignal,
+  onPermissionRequest?: PermissionNotifier,
 ): Promise<AcpContinuationPromptReceipt> {
   if (entry.selectionsReplay !== null) await entry.selectionsReplay;
   let assembled = '';
@@ -48,11 +50,13 @@ export async function promptExistingAcpSession(
       assembled += textFromUpdate(update);
     },
     signal,
-    (request) => {
-      // Continuation has no interactive permission UI. Fail closed and let
-      // the ACP client cancel the pending tool turn instead of auto-allowing.
-      entry.client.resolvePermission(request.requestId, { cancelled: true });
-    },
+    onPermissionRequest ??
+      ((request) => {
+        // A continuation without an LCOS-correlated input owner still fails
+        // closed. The Host route supplies a notifier only after validating
+        // the canonical Run + external Task correlation.
+        entry.client.resolvePermission(request.requestId, { cancelled: true });
+      }),
   );
   if (!entry.persistedToDisk) {
     entry.persistedToDisk = true;

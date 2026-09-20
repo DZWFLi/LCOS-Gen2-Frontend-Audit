@@ -2,7 +2,7 @@ import { createHash } from 'node:crypto'
 import { mkdir, readFile, realpath, stat, writeFile } from 'node:fs/promises'
 import { basename, dirname, extname, isAbsolute, relative, resolve } from 'node:path'
 
-import type { RunInputRequestV1, RuntimePersistenceContract } from '@local-creative-os/contracts'
+import type { ProviderRunEventV1, RunInputRequestV1, RuntimePersistenceContract } from '@local-creative-os/contracts'
 import type {
   Artifact,
   ArtifactReturn,
@@ -170,7 +170,34 @@ export class RuntimeResultIngestionService {
     return this.ingest(envelope)
   }
 
-  async ingest(envelope: BridgeResultEnvelopeV0): Promise<IngestedRuntimeResult> {
+  /**
+   * Consume a normalized live provider event through the same durable
+   * ResultEnvelope path used by Bridge polling. RuntimeBinding correlation is
+   * therefore checked once, pending input is persisted once, and replay keeps
+   * the existing idempotency/conflict semantics.
+   */
+  async ingestProviderEvent(event: ProviderRunEventV1): Promise<IngestedRuntimeResult> {
+    return this.ingest({
+      contractVersion: 'bridge-result-v1',
+      taskId: event.correlation.externalTaskId,
+      lcosRunId: event.correlation.lcosRunId,
+      providerStatus: 'waiting_input',
+      inputRequest: {
+        requestId: event.request.requestId,
+        question: event.request.prompt,
+        options: event.request.options,
+        allowFreeText: event.request.allowFreeText,
+        ...(event.request.contextVersion === undefined ? {} : { contextVersion: event.request.contextVersion }),
+        ...(event.occurredAt === undefined ? {} : { createdAt: event.occurredAt }),
+      },
+      changedFiles: [],
+    }, 'huabu-acp')
+  }
+
+  async ingest(
+    envelope: BridgeResultEnvelopeV0,
+    responseTarget: 'bridge' | 'huabu-acp' = 'bridge',
+  ): Promise<IngestedRuntimeResult> {
     const run = this.repository.getRun(envelope.lcosRunId as RunId)
     if (run === undefined) throw error('TASK_NOT_FOUND', 'Canonical Run was not found.')
     const binding = this.repository.getRuntimeBinding(run.id)
@@ -224,6 +251,7 @@ export class RuntimeResultIngestionService {
         question: request.question,
         options: request.options,
         allowFreeText: request.allowFreeText,
+        responseTarget,
         ...(request.contextVersion === undefined ? {} : { contextVersion: request.contextVersion }),
         status: 'pending',
         selectedOptions: [],

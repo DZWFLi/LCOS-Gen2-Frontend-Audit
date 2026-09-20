@@ -526,6 +526,7 @@ export interface RunInputRequestV1 {
   readonly question: string
   readonly options: readonly string[]
   readonly allowFreeText: boolean
+  readonly responseTarget?: 'bridge' | 'huabu-acp'
   readonly contextVersion?: number
   readonly status: RunInputRequestStatus
   readonly answerText?: string
@@ -934,6 +935,8 @@ export * from './work-view.js'
 export * from './provider-capability.js'
 
 export * from './continuation-provider.js'
+
+export * from './provider-run-event.js'
 
 export * from './boundary-evaluator.js'
 

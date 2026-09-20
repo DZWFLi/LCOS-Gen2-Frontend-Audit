@@ -147,7 +147,7 @@ describe('migration v53 continuation_operation_journal', () => {
 
     const upgraded = new SqliteMetadataRepository(dbPath)
     repositories.push(upgraded)
-    expect(upgraded.schemaVersion).toBe(54)
+    expect(upgraded.schemaVersion).toBe(55)
     // 旧数据保留
     expect(upgraded.getProject('p-legacy')?.name).toBe('Legacy Project')
     // 新表可用，外键指向旧项目

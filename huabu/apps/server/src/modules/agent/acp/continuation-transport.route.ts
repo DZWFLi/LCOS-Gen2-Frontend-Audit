@@ -17,6 +17,17 @@ import {
 } from '@agenetes/acp-driver';
 import { getAgentletGateway } from '@agenetes/agentlet-host';
 
+import {
+  forwardAcpPermissionRequestToCore,
+  type LcosRunCorrelation,
+} from './provider-run-event-sink.js';
+import {
+  answerProviderRunInput,
+  registerProviderRunInput,
+  removeProviderRunInput,
+} from './provider-run-input-registry.js';
+
+import type { PermissionNotifier } from '@agenetes/acp-driver';
 import type { AgentletConnection } from '@agenetes/agentlet-host';
 import type { SpawnParams } from '@agentlet/protocol';
 import type { FastifyPluginAsync } from 'fastify';
@@ -43,6 +54,13 @@ interface PromptBody {
   readonly externalSessionId?: unknown;
   readonly text?: unknown;
   readonly runtimeScope?: unknown;
+  readonly runCorrelation?: unknown;
+}
+
+interface AnswerProviderInputBody {
+  readonly correlation?: unknown;
+  readonly requestId?: unknown;
+  readonly selectedOptions?: unknown;
 }
 
 interface ContinuationErrorBody {
@@ -122,6 +140,7 @@ function asPromptBody(body: PromptBody):
       readonly externalSessionId: string;
       readonly text: string;
       readonly runtimeScope?: string;
+      readonly runCorrelation?: LcosRunCorrelation;
     }
   | undefined {
   const threadId = asThreadId(body.threadId);
@@ -133,12 +152,37 @@ function asPromptBody(body: PromptBody):
     body.text.trim() === ''
   )
     return undefined;
+  if (
+    body.runCorrelation !== undefined &&
+    (!isRecord(body.runCorrelation) ||
+      typeof body.runCorrelation.lcosRunId !== 'string' ||
+      body.runCorrelation.lcosRunId.trim() === '' ||
+      typeof body.runCorrelation.externalTaskId !== 'string' ||
+      body.runCorrelation.externalTaskId.trim() === '' ||
+      Object.keys(body.runCorrelation).some(
+        (key) => !['lcosRunId', 'externalTaskId'].includes(key),
+      ))
+  ) {
+    return undefined;
+  }
   return {
     threadId,
     externalSessionId,
     text: body.text,
     ...(typeof body.runtimeScope === 'string' && body.runtimeScope.trim() !== ''
       ? { runtimeScope: body.runtimeScope.trim() }
+      : {}),
+    ...(isRecord(body.runCorrelation) &&
+    typeof body.runCorrelation.lcosRunId === 'string' &&
+    body.runCorrelation.lcosRunId.trim() !== '' &&
+    typeof body.runCorrelation.externalTaskId === 'string' &&
+    body.runCorrelation.externalTaskId.trim() !== ''
+      ? {
+          runCorrelation: {
+            lcosRunId: body.runCorrelation.lcosRunId.trim(),
+            externalTaskId: body.runCorrelation.externalTaskId.trim(),
+          },
+        }
       : {}),
   };
 }
@@ -206,6 +250,65 @@ function projectSession(connection: AgentletConnection): {
 }
 
 const continuationTransportRoutes: FastifyPluginAsync = async (app) => {
+  app.post<{ Body: AnswerProviderInputBody }>(
+    '/continuation/input-request',
+    async (request, reply) => {
+      const body = request.body ?? {};
+      const correlation = isRecord(body.correlation)
+        ? body.correlation
+        : undefined;
+      if (
+        correlation === undefined ||
+        typeof correlation.lcosRunId !== 'string' ||
+        correlation.lcosRunId.trim() === '' ||
+        typeof correlation.externalTaskId !== 'string' ||
+        correlation.externalTaskId.trim() === '' ||
+        typeof body.requestId !== 'string' ||
+        body.requestId.trim() === '' ||
+        !Array.isArray(body.selectedOptions) ||
+        body.selectedOptions.some((value) => typeof value !== 'string')
+      ) {
+        return reply
+          .status(400)
+          .send(
+            errorBody(
+              'invalid_input_response',
+              'Run correlation, requestId and selectedOptions are required.',
+            ),
+          );
+      }
+      const result = answerProviderRunInput(
+        {
+          lcosRunId: correlation.lcosRunId.trim(),
+          externalTaskId: correlation.externalTaskId.trim(),
+        },
+        body.requestId.trim(),
+        body.selectedOptions as string[],
+      );
+      if (result === 'not_found') {
+        return reply
+          .status(404)
+          .send(
+            errorBody(
+              'provider_input_not_found',
+              'No suspended ACP permission request matches this Run correlation.',
+            ),
+          );
+      }
+      if (result !== 'answered') {
+        return reply
+          .status(409)
+          .send(
+            errorBody(
+              result,
+              'The selected option cannot resolve this ACP permission request.',
+            ),
+          );
+      }
+      return { handled: true };
+    },
+  );
+
   app.get<{ Params: AgentletParams }>(
     '/continuation/agentlets/:agentletId/sessions',
     async (request, reply) => {
@@ -424,8 +527,62 @@ const continuationTransportRoutes: FastifyPluginAsync = async (app) => {
             ),
           );
       }
+      const runCorrelation = input.runCorrelation;
+      const registeredRequestIds = new Set<string>();
       try {
-        const result = await promptExistingAcpSession(owner, input.text);
+        const result = await promptExistingAcpSession(
+          owner,
+          input.text,
+          undefined,
+          runCorrelation === undefined
+            ? undefined
+            : (permissionRequest: Parameters<PermissionNotifier>[0]) => {
+                const coreBaseUrl = process.env.LCOS_CORE_URL;
+                const coreApiToken = process.env.LOCAL_CORE_API_TOKEN;
+                if (
+                  coreBaseUrl === undefined ||
+                  coreBaseUrl.trim() === '' ||
+                  coreApiToken === undefined ||
+                  coreApiToken.trim() === ''
+                ) {
+                  app.log.error(
+                    'LCOS_CORE_URL and LOCAL_CORE_API_TOKEN are required to forward a correlated ACP permission request.',
+                  );
+                  owner.client.resolvePermission(permissionRequest.requestId, {
+                    cancelled: true,
+                  });
+                  return;
+                }
+                registerProviderRunInput(
+                  runCorrelation,
+                  permissionRequest.requestId,
+                  permissionRequest.options.map((option) => option.optionId),
+                  owner,
+                );
+                registeredRequestIds.add(permissionRequest.requestId);
+                void forwardAcpPermissionRequestToCore(
+                  coreBaseUrl,
+                  coreApiToken,
+                  runCorrelation,
+                  permissionRequest,
+                ).catch((error: unknown) => {
+                  removeProviderRunInput(
+                    runCorrelation,
+                    permissionRequest.requestId,
+                  );
+                  registeredRequestIds.delete(permissionRequest.requestId);
+                  app.log.error(
+                    { err: error },
+                    'Failed to forward ACP permission request to Local Core.',
+                  );
+                  // A mismatched or unavailable Core never becomes implicit
+                  // approval. Resolve the exact suspended request as denied.
+                  owner.client.resolvePermission(permissionRequest.requestId, {
+                    cancelled: true,
+                  });
+                });
+              },
+        );
         return {
           threadId: input.threadId,
           externalSessionId: owner.sessionId,
@@ -442,6 +599,12 @@ const continuationTransportRoutes: FastifyPluginAsync = async (app) => {
               error instanceof Error ? error.message : String(error),
             ),
           );
+      } finally {
+        if (runCorrelation !== undefined) {
+          for (const requestId of registeredRequestIds) {
+            removeProviderRunInput(runCorrelation, requestId);
+          }
+        }
       }
     },
   );

@@ -14,6 +14,7 @@ import { FileObservationService } from './file-observation-service.js'
 import { ProjectWatcherService } from './project-watcher-service.js'
 import { RuntimeResultIngestionService } from './runtime-result-ingestion.js'
 import { RuntimeReviewService } from './runtime-review-service.js'
+import { HuabuAgentletHostTransportV1 } from './huabu-agentlet-host-transport.js'
 
 export { getHealthStatus } from './health.js'
 export { ExplicitProjectCatalog } from './project-catalog.js'
@@ -56,6 +57,7 @@ export type {
 } from './runtime-result-ingestion.js'
 export type {
   BridgeRuntimePort,
+  ProviderInputResponsePort,
   BridgeResultEnvelopeV0,
   BridgeTaskEnvelopeV0,
   BridgeTaskEnvelopeV1,
@@ -110,6 +112,15 @@ async function main(): Promise<void> {
   const bridgeProjectId = process.env.LOCAL_CORE_BRIDGE_PROJECT_ID ?? 'mvp-fast-build'
   const runtimeReviewService = new RuntimeReviewService(metadataRepository)
   const runtimeAdapter = new RuntimeAdapterService(metadataRepository, bridge, bridgeProjectId)
+  if (process.env.HUABU_HOST_URL !== undefined) {
+    const huabuHostToken = process.env.HUABU_HOST_TOKEN ?? process.env.HUABU_CONNECTION_TOKEN
+    runtimeAdapter.attachProviderInputResponsePort(
+      new HuabuAgentletHostTransportV1({
+        hostBaseUrl: process.env.HUABU_HOST_URL,
+        ...(huabuHostToken === undefined ? {} : { authToken: huabuHostToken }),
+      }),
+    )
+  }
   const runtimeApplicationService = new RuntimeApplicationService(
     metadataRepository,
     new ContextManifestService(metadataRepository),

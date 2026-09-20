@@ -49,7 +49,7 @@ export interface HuabuAgentletTransportV1 {
   getSession(agentletId: string, sessionId: string): Promise<HuabuAgentletSessionInfoV1 | undefined>
   sendResource(params: { readonly agentletId: string; readonly sessionId: string; readonly text?: string; readonly resourceRef?: string }): Promise<void>
   /** Shared ACP client/handle prompt seam. Raw gateway send is forbidden. */
-  sendPrompt?(params: { readonly agentletId: string; readonly threadId: string; readonly runtimeScope?: string; readonly externalSessionId: string; readonly transportSessionId?: string; readonly text: string }): Promise<{ readonly externalSessionId: string; readonly transportSessionId: string; readonly threadId: string; readonly text?: string; readonly stopReason?: string }>
+  sendPrompt?(params: { readonly agentletId: string; readonly threadId: string; readonly runtimeScope?: string; readonly externalSessionId: string; readonly transportSessionId?: string; readonly text: string; readonly runCorrelation?: { readonly lcosRunId: string; readonly externalTaskId: string } }): Promise<{ readonly externalSessionId: string; readonly transportSessionId: string; readonly threadId: string; readonly text?: string; readonly stopReason?: string }>
   /** 真实 donor probe；未知字段不得猜 true。 */
   probe(): Promise<{ readonly session: Readonly<Partial<Record<'createSession' | 'continueExisting' | 'send' | 'status' | 'cancel' | 'recoverExisting', CapabilityClaimV1>>>; readonly limitations?: readonly string[] }>
 }

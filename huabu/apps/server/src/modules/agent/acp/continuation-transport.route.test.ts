@@ -6,6 +6,7 @@ import Fastify, { type FastifyInstance } from 'fastify';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import continuationTransportRoutes from './continuation-transport.route.js';
+import { clearProviderRunInputsForTests } from './provider-run-input-registry.js';
 
 import type { AcpSessionEntry } from '@agenetes/acp-driver';
 
@@ -29,9 +30,12 @@ let app: FastifyInstance | undefined;
 
 afterEach(async () => {
   acpSessionRegistry.remove('machine-a', 'run-1');
+  clearProviderRunInputsForTests();
   await app?.close();
   app = undefined;
   mocks.gateway = null;
+  vi.unstubAllEnvs();
+  vi.unstubAllGlobals();
   vi.clearAllMocks();
 });
 
@@ -290,5 +294,146 @@ describe('ACP continuation Host transport facade', () => {
     });
     expect(prompt).toHaveBeenCalledTimes(1);
     expect(owner.persistedToDisk).toBe(true);
+
+    const malformedCorrelation = await app.inject({
+      method: 'POST',
+      url: '/api/acp/continuation/agentlets/machine-a/sessions/transport-1/prompt',
+      payload: {
+        threadId: 'run-1',
+        externalSessionId: 'native-1',
+        text: '继续',
+        runCorrelation: { lcosRunId: 'run-1' },
+      },
+    });
+    expect(malformedCorrelation.statusCode).toBe(400);
+    expect(prompt).toHaveBeenCalledTimes(1);
+  });
+
+  it('forwards the ACP permission_request from the live owner to Local Core with Run correlation', async () => {
+    const gateway = connectedGateway();
+    gateway.getSession.mockReturnValue({
+      sessionId: 'transport-1',
+      agentletId: 'machine-a',
+      role: 'agent-session',
+      metadata: {},
+      status: 'connected',
+      connectedAt: new Date(0),
+      sessionProfile: {
+        appId: 'run-1',
+        agentletId: 'machine-a',
+        agent: { pid: 42, cwd: 'E:/work', command: 'codex --acp' },
+      },
+      agentletProfile: undefined,
+      send: () => undefined,
+      onMessage: () => undefined,
+      onLifecycle: () => undefined,
+      disconnect: () => undefined,
+    });
+    let finishPrompt: (() => void) | undefined;
+    const resumed = new Promise<void>((resolve) => {
+      finishPrompt = resolve;
+    });
+    const prompt = vi.fn(async (...args: unknown[]) => {
+      const onPermission = args[4] as (request: unknown) => void;
+      onPermission({
+        requestId: 'permission-1',
+        toolCall: { title: 'Approve file write' },
+        options: [{ optionId: 'allow-once', name: 'Allow once', kind: 'allow_once' }],
+      });
+      await resumed;
+      return { stopReason: 'end_turn' };
+    });
+    const resolvePermission = vi.fn(() => {
+      finishPrompt?.();
+      return true;
+    });
+    const owner = {
+      agentletId: 'machine-a',
+      threadId: 'run-1',
+      sessionId: 'native-1',
+      selectionsReplay: Promise.resolve(),
+      persistedToDisk: false,
+      client: {
+        isClosed: false,
+        prompt,
+        resolvePermission,
+        shutdown: vi.fn(),
+      },
+    } as unknown as AcpSessionEntry;
+    acpSessionRegistry.set('machine-a', 'run-1', owner);
+    vi.stubEnv('LCOS_CORE_URL', 'http://127.0.0.1:43121');
+    vi.stubEnv('LOCAL_CORE_API_TOKEN', 'core-token');
+    const posted: Array<{ url: string; body: unknown }> = [];
+    vi.stubGlobal('fetch', vi.fn(async (input: URL | RequestInfo, init?: RequestInit) => {
+      posted.push({ url: String(input), body: JSON.parse(String(init?.body)) });
+      return new Response('{}', { status: 200 });
+    }));
+    app = Fastify({ logger: false });
+    await app.register(continuationTransportRoutes, { prefix: '/api/acp' });
+
+    const promptResponse = app.inject({
+      method: 'POST',
+      url: '/api/acp/continuation/agentlets/machine-a/sessions/transport-1/prompt',
+      payload: {
+        threadId: 'run-1',
+        externalSessionId: 'native-1',
+        text: '继续',
+        runCorrelation: { lcosRunId: 'run-1', externalTaskId: 'task-1' },
+      },
+    });
+
+    await vi.waitFor(() => expect(posted).toHaveLength(1));
+    expect(posted[0]).toEqual({
+      url: 'http://127.0.0.1:43121/runtime/provider-events',
+      body: {
+        contractVersion: 'provider-run-event-v1',
+        type: 'waiting_input',
+        correlation: { lcosRunId: 'run-1', externalTaskId: 'task-1' },
+        request: {
+          requestId: 'permission-1',
+          prompt: 'Approve file write',
+          options: ['allow-once'],
+          allowFreeText: false,
+        },
+      },
+    });
+    const answerResponse = await app.inject({
+      method: 'POST',
+      url: '/api/acp/continuation/input-request',
+      payload: {
+        correlation: { lcosRunId: 'run-1', externalTaskId: 'task-1' },
+        requestId: 'permission-1',
+        selectedOptions: ['allow-once'],
+      },
+    });
+    expect(answerResponse.statusCode).toBe(200);
+    expect(resolvePermission).toHaveBeenCalledWith('permission-1', {
+      optionId: 'allow-once',
+    });
+    const response = await promptResponse;
+    expect(response.statusCode).toBe(200);
+
+    const replay = await app.inject({
+      method: 'POST',
+      url: '/api/acp/continuation/input-request',
+      payload: {
+        correlation: { lcosRunId: 'run-1', externalTaskId: 'task-1' },
+        requestId: 'permission-1',
+        selectedOptions: ['allow-once'],
+      },
+    });
+    expect(replay.statusCode).toBe(200);
+    expect(resolvePermission).toHaveBeenCalledTimes(1);
+
+    const conflictingReplay = await app.inject({
+      method: 'POST',
+      url: '/api/acp/continuation/input-request',
+      payload: {
+        correlation: { lcosRunId: 'run-1', externalTaskId: 'task-1' },
+        requestId: 'permission-1',
+        selectedOptions: ['deny'],
+      },
+    });
+    expect(conflictingReplay.statusCode).toBe(409);
   });
 });

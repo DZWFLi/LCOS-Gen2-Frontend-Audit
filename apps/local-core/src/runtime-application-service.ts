@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto'
 
-import type { AnswerRunInputRequestV1, CompiledContextPromptV1, ContextCacheTelemetryV1, ContinuityAttachBundleV1, ContextManifestOrderedItemV0, RunReview } from '@local-creative-os/contracts'
+import type { AnswerRunInputRequestV1, CompiledContextPromptV1, ContextCacheTelemetryV1, ContinuityAttachBundleV1, ContextManifestOrderedItemV0, ProviderRunEventV1, RunReview } from '@local-creative-os/contracts'
 import type { JsonValue, ProjectId, Run, RunEvent, RunId, RunResultPolicy, RuntimeDispatch } from '@local-creative-os/domain'
 import type { RuntimeProviderStatus } from '@local-creative-os/contracts'
 
@@ -238,6 +238,15 @@ export class RuntimeApplicationService {
     })
   }
 
+  async ingestProviderEvent(event: ProviderRunEventV1): Promise<RuntimeRunActionResult> {
+    const runId = event.correlation.lcosRunId as RunId
+    const before = this.review.getRunReview(runId)
+    await this.ingestion.ingestProviderEvent(event)
+    const review = this.review.getRunReview(runId)
+    this.#publishRunTransitions(before, review)
+    return { review }
+  }
+
   async finalize(
     runId: RunId,
     decision: 'completed' | 'retrying',
@@ -253,11 +262,16 @@ export class RuntimeApplicationService {
   async answerInput(runId: RunId, input: AnswerRunInputRequestV1): Promise<RuntimeRunActionResult> {
     const current = this.repository.getRunInputRequest(input.requestId)
     if (current === undefined || current.runId !== String(runId)) throw new Error('INPUT_REQUEST_NOT_FOUND')
-    if (current.status === 'answered') return { review: this.review.getRunReview(runId) }
-    if (current.status !== 'pending') throw new Error('INPUT_REQUEST_NOT_PENDING')
     const selectedOptions = [...new Set(input.selectedOptions ?? [])]
-    if (selectedOptions.some((option) => !current.options.includes(option))) throw new Error('INPUT_OPTION_INVALID')
     const answerText = input.text?.trim()
+    if (current.status === 'answered') {
+      const sameAnswer = (current.answerText ?? undefined) === (answerText || undefined)
+        && JSON.stringify(current.selectedOptions) === JSON.stringify(selectedOptions)
+      if (!sameAnswer) throw new Error('INPUT_RESPONSE_IDEMPOTENCY_CONFLICT')
+      return { review: this.review.getRunReview(runId) }
+    }
+    if (current.status !== 'pending') throw new Error('INPUT_REQUEST_NOT_PENDING')
+    if (selectedOptions.some((option) => !current.options.includes(option))) throw new Error('INPUT_OPTION_INVALID')
     if (answerText && !current.allowFreeText) throw new Error('FREE_TEXT_NOT_ALLOWED')
     if (!answerText && selectedOptions.length === 0) throw new Error('INPUT_RESPONSE_EMPTY')
 
@@ -265,7 +279,7 @@ export class RuntimeApplicationService {
       requestId: input.requestId,
       ...(answerText ? { text: answerText } : {}),
       selectedOptions,
-    }))
+    }, current.responseTarget ?? 'bridge'))
     if (result.providerError === undefined) {
       const answeredAt = this.now()
       this.repository.answerRunInputRequest(runId, {
@@ -317,31 +331,7 @@ export class RuntimeApplicationService {
       const before = this.review.getRunReview(runId)
       await action()
       const review = this.review.getRunReview(runId)
-      if (before.run.status !== 'running' && review.run.status === 'running') {
-        this.emit(runId, 'run.started', { projectId: String(review.run.projectId) })
-      }
-      if (before.run.status !== 'waiting_input' && review.run.status === 'waiting_input') {
-        const inputRequest = review.inputRequest
-        this.emit(runId, 'run.waiting_input', {
-          projectId: String(review.run.projectId),
-          ...(inputRequest === undefined ? {} : { requestId: inputRequest.requestId, question: inputRequest.question }),
-        })
-      }
-      if (before.presentationPhase !== 'review' && review.presentationPhase === 'review') {
-        this.emit(runId, 'run.review_ready', { projectId: String(review.run.projectId) })
-      }
-      if (before.run.status !== 'completed' && review.run.status === 'completed') {
-        this.emit(runId, 'run.completed', { projectId: String(review.run.projectId) })
-        // 无 ArtifactReturn 的 analyze/reply 路径也会在这里完成；统一走 authoritative intake（幂等）。
-        void this.intakeContinuityReturn(runId)
-      }
-      if (before.run.status !== 'cancelled' && review.run.status === 'cancelled') {
-        this.emit(runId, 'run.cancelled', { projectId: String(review.run.projectId) })
-      }
-      if (before.run.status !== 'failed' && review.run.status === 'failed') {
-        this.emit(runId, 'run.failed', { projectId: String(review.run.projectId) })
-      }
-      this.#observeSessionLifecycle(review)
+      this.#publishRunTransitions(before, review)
       return { review }
     } catch (error: unknown) {
       if (!(error instanceof RuntimeAdapterError)) throw error
@@ -356,6 +346,34 @@ export class RuntimeApplicationService {
         providerError: error.detail,
       }
     }
+  }
+
+  #publishRunTransitions(before: RunReview, review: RunReview): void {
+    const runId = review.run.id
+    if (before.run.status !== 'running' && review.run.status === 'running') {
+      this.emit(runId, 'run.started', { projectId: String(review.run.projectId) })
+    }
+    if (before.run.status !== 'waiting_input' && review.run.status === 'waiting_input') {
+      const inputRequest = review.inputRequest
+      this.emit(runId, 'run.waiting_input', {
+        projectId: String(review.run.projectId),
+        ...(inputRequest === undefined ? {} : { requestId: inputRequest.requestId, question: inputRequest.question }),
+      })
+    }
+    if (before.presentationPhase !== 'review' && review.presentationPhase === 'review') {
+      this.emit(runId, 'run.review_ready', { projectId: String(review.run.projectId) })
+    }
+    if (before.run.status !== 'completed' && review.run.status === 'completed') {
+      this.emit(runId, 'run.completed', { projectId: String(review.run.projectId) })
+      void this.intakeContinuityReturn(runId)
+    }
+    if (before.run.status !== 'cancelled' && review.run.status === 'cancelled') {
+      this.emit(runId, 'run.cancelled', { projectId: String(review.run.projectId) })
+    }
+    if (before.run.status !== 'failed' && review.run.status === 'failed') {
+      this.emit(runId, 'run.failed', { projectId: String(review.run.projectId) })
+    }
+    this.#observeSessionLifecycle(review)
   }
 
   /** Phase 5：run 状态 → 会话 phase（七态投影；服务内部做多 run 感知与合法转移）。 */

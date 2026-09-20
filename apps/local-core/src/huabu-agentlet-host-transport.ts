@@ -8,6 +8,7 @@
  */
 
 import type { CapabilityClaimV1 } from '@local-creative-os/contracts'
+import type { ProviderInputResponsePort } from './runtime-adapter.js'
 import { classifyHuabuTransportErrorV1, type HuabuAgentletSessionInfoV1, type HuabuAgentletTransportV1 } from './huabu-agentlet-continuation-adapter.js'
 
 interface HostTransportResponse<T> {
@@ -63,7 +64,7 @@ export interface HuabuAgentletHostTransportOptionsV1 {
   readonly timeoutMs?: number
 }
 
-export class HuabuAgentletHostTransportV1 implements HuabuAgentletTransportV1 {
+export class HuabuAgentletHostTransportV1 implements HuabuAgentletTransportV1, ProviderInputResponsePort {
   readonly kind = 'huabu-agentlet-host'
   private readonly timeoutMs: number
   private readonly agentletId: string
@@ -176,7 +177,7 @@ export class HuabuAgentletHostTransportV1 implements HuabuAgentletTransportV1 {
     throw new Error('prompt transport is not wired through the Huabu ACP session owner')
   }
 
-  async sendPrompt(params: { readonly agentletId: string; readonly threadId: string; readonly runtimeScope?: string; readonly externalSessionId: string; readonly transportSessionId?: string; readonly text: string }): Promise<HostTransportPrompt> {
+  async sendPrompt(params: { readonly agentletId: string; readonly threadId: string; readonly runtimeScope?: string; readonly externalSessionId: string; readonly transportSessionId?: string; readonly text: string; readonly runCorrelation?: { readonly lcosRunId: string; readonly externalTaskId: string } }): Promise<HostTransportPrompt> {
     return this.request<HostTransportPrompt>(
       `/api/acp/continuation/agentlets/${encodeURIComponent(params.agentletId)}/sessions/${encodeURIComponent(params.transportSessionId ?? params.externalSessionId)}/prompt`,
       'POST',
@@ -185,8 +186,31 @@ export class HuabuAgentletHostTransportV1 implements HuabuAgentletTransportV1 {
         ...(params.runtimeScope === undefined ? {} : { runtimeScope: params.runtimeScope }),
         externalSessionId: params.externalSessionId,
         text: params.text,
+        ...(params.runCorrelation === undefined ? {} : { runCorrelation: params.runCorrelation }),
       },
     )
+  }
+
+  async answerProviderInput(
+    runId: string,
+    externalTaskId: string,
+    response: { readonly requestId: string; readonly text?: string; readonly selectedOptions?: readonly string[] },
+  ): Promise<boolean> {
+    try {
+      await this.request<{ readonly handled: true }>(
+        '/api/acp/continuation/input-request',
+        'POST',
+        {
+          correlation: { lcosRunId: runId, externalTaskId },
+          requestId: response.requestId,
+          selectedOptions: response.selectedOptions ?? [],
+        },
+      )
+      return true
+    } catch (error: unknown) {
+      if (error instanceof HuabuHostHttpError && error.status === 404) return false
+      throw error
+    }
   }
 
   private async request<T>(path: string, method: 'GET' | 'POST', body?: unknown): Promise<T> {

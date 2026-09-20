@@ -67,4 +67,24 @@ describe('promptExistingAcpSession', () => {
       cancelled: true,
     });
   });
+
+  it('surfaces the real ACP permission request to a correlated continuation owner', async () => {
+    const request = {
+      requestId: 'permission-1',
+      toolCall: { title: 'Write the approved draft' },
+      options: [{ optionId: 'allow-once', name: 'Allow once', kind: 'allow_once' as const }],
+    };
+    const prompt = vi.fn(async (...args: unknown[]) => {
+      const onPermission = args[4] as (value: typeof request) => void;
+      onPermission(request);
+      return { stopReason: 'end_turn' };
+    });
+    const owner = entry(prompt);
+    const onPermission = vi.fn();
+
+    await promptExistingAcpSession(owner, '需要工具', undefined, onPermission);
+
+    expect(onPermission).toHaveBeenCalledWith(request);
+    expect(owner.client.resolvePermission).not.toHaveBeenCalled();
+  });
 });

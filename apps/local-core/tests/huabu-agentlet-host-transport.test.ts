@@ -76,6 +76,10 @@ class HostProtocolServer {
       response.end(JSON.stringify({ agentletId: 'machine-a', threadId: 'thread-1', externalSessionId: 'native-1', transportSessionId: 'session-1', text: 'continued', stopReason: 'end_turn' }))
       return
     }
+    if (request.method === 'POST' && path.endsWith('/continuation/input-request')) {
+      response.end(JSON.stringify({ handled: true }))
+      return
+    }
     response.statusCode = 404
     response.end(JSON.stringify({ error: { code: 'session_not_found', message: 'missing' } }))
   }
@@ -141,6 +145,28 @@ describe('HuabuAgentletHostTransportV1', () => {
     expect(receipt).toMatchObject({ externalSessionId: 'native-1', transportSessionId: 'session-1', threadId: 'thread-1', text: 'continued' })
     expect(server.requests).toHaveLength(1)
     expect(server.requests[0]?.body).toEqual({ threadId: 'thread-1', runtimeScope: 'project-1', externalSessionId: 'native-1', text: '继续' })
+  })
+
+  it('returns a Run answer to the exact Huabu ACP input owner', async () => {
+    server = new HostProtocolServer()
+    await server.start()
+    const transport = new HuabuAgentletHostTransportV1({ hostBaseUrl: server.url(), authToken: 'host-token' })
+
+    await expect(transport.answerProviderInput('run-1', 'task-1', {
+      requestId: 'permission-1',
+      selectedOptions: ['allow-once'],
+    })).resolves.toBe(true)
+
+    expect(server.requests[0]).toMatchObject({
+      method: 'POST',
+      url: '/api/acp/continuation/input-request',
+      authorization: 'Bearer host-token',
+      body: {
+        correlation: { lcosRunId: 'run-1', externalTaskId: 'task-1' },
+        requestId: 'permission-1',
+        selectedOptions: ['allow-once'],
+      },
+    })
   })
 
   it('classifies Host HTTP failures and timeout without pretending success', async () => {

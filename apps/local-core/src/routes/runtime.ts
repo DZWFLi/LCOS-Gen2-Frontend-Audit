@@ -24,6 +24,59 @@ export async function handleRuntimeRoute(ctx: RuntimeRouteContext): Promise<bool
   const { method, pathname, request, response, controller, metadata, runtimeApplication, ocr, sessionLifecycle } = ctx
   const { sendJson, failure, readJsonBody, isRecord } = ctx.helpers
 
+  const providerEventMatch = /^\/runtime\/provider-events$/.exec(pathname)
+  if (method === 'POST' && providerEventMatch !== null) {
+    if (runtimeApplication === undefined) {
+      sendJson(response, 503, failure('UNAVAILABLE', 'Runtime execution service is not configured.'))
+      return true
+    }
+    const input = await readJsonBody(request, controller.signal)
+    const correlation = isRecord(input) && isRecord(input.correlation) ? input.correlation : undefined
+    const providerRequest = isRecord(input) && isRecord(input.request) ? input.request : undefined
+    if (!isRecord(input)
+      || input.contractVersion !== 'provider-run-event-v1'
+      || input.type !== 'waiting_input'
+      || correlation === undefined
+      || typeof correlation.lcosRunId !== 'string'
+      || typeof correlation.externalTaskId !== 'string'
+      || providerRequest === undefined
+      || typeof providerRequest.requestId !== 'string'
+      || typeof providerRequest.prompt !== 'string'
+      || !Array.isArray(providerRequest.options)
+      || providerRequest.options.some((item) => typeof item !== 'string')
+      || typeof providerRequest.allowFreeText !== 'boolean'
+      || (providerRequest.contextVersion !== undefined && !Number.isInteger(providerRequest.contextVersion))
+      || (input.occurredAt !== undefined && typeof input.occurredAt !== 'string')
+      || Object.keys(input).some((key) => !['contractVersion', 'type', 'correlation', 'request', 'occurredAt'].includes(key))) {
+      sendJson(response, 400, failure('INVALID_ARGUMENT', 'Provider waiting_input event requires exact Run correlation, request id, prompt and options.'))
+      return true
+    }
+    try {
+      sendJson(response, 200, {
+        ok: true,
+        value: await runtimeApplication.ingestProviderEvent({
+          contractVersion: 'provider-run-event-v1',
+          type: 'waiting_input',
+          correlation: {
+            lcosRunId: correlation.lcosRunId,
+            externalTaskId: correlation.externalTaskId,
+          },
+          request: {
+            requestId: providerRequest.requestId,
+            prompt: providerRequest.prompt,
+            options: providerRequest.options as string[],
+            allowFreeText: providerRequest.allowFreeText,
+            ...(providerRequest.contextVersion === undefined ? {} : { contextVersion: providerRequest.contextVersion as number }),
+          },
+          ...(input.occurredAt === undefined ? {} : { occurredAt: input.occurredAt }),
+        }),
+      })
+    } catch (error: unknown) {
+      sendJson(response, 409, failure('CONFLICT', error instanceof Error ? error.message : 'Provider event correlation was rejected.'))
+    }
+    return true
+  }
+
   // Phase 5 Live Session Binding：会话七态读面 + 恢复动作。
   const sessionLifecycleMatch = /^\/projects\/([^/]+)\/session-lifecycle$/.exec(pathname)
   if (method === 'GET' && sessionLifecycleMatch !== null) {

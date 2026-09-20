@@ -155,6 +155,18 @@ export interface BridgeRuntimePort {
   }>
 }
 
+export interface ProviderInputResponsePort {
+  answerProviderInput(
+    runId: string,
+    externalTaskId: string,
+    response: {
+      readonly requestId: string
+      readonly text?: string
+      readonly selectedOptions?: readonly string[]
+    },
+  ): Promise<boolean>
+}
+
 export interface BridgeResultEnvelopeV0 {
   readonly contractVersion: 'bridge-result-v0' | 'bridge-result-v1'
   readonly taskId: string
@@ -264,6 +276,8 @@ function automaticProvidersFromEnvironment(): ReadonlySet<AutomaticRuntimeProvid
 }
 
 export class RuntimeAdapterService {
+  private providerInputResponsePort: ProviderInputResponsePort | undefined
+
   constructor(
     private readonly repository: RuntimePersistenceContract & RuntimeProjectReader,
     private readonly bridge: BridgeRuntimePort,
@@ -273,6 +287,10 @@ export class RuntimeAdapterService {
     private readonly automaticProviders: ReadonlySet<AutomaticRuntimeProvider> = automaticProvidersFromEnvironment(),
   ) {
     if (bridgeProjectId.trim() === '') throw new Error('Bridge project routing ID is required.')
+  }
+
+  attachProviderInputResponsePort(port: ProviderInputResponsePort): void {
+    this.providerInputResponsePort = port
   }
 
   async dispatch(runId: RunId): Promise<RuntimeBinding> {
@@ -394,7 +412,11 @@ export class RuntimeAdapterService {
     })
   }
 
-  async answerInput(runId: RunId, response: { readonly requestId: string; readonly text?: string; readonly selectedOptions?: readonly string[] }): Promise<RuntimeBinding> {
+  async answerInput(
+    runId: RunId,
+    response: { readonly requestId: string; readonly text?: string; readonly selectedOptions?: readonly string[] },
+    responseTarget: 'bridge' | 'huabu-acp' = 'bridge',
+  ): Promise<RuntimeBinding> {
     const run = this.requireRun(runId)
     if (run.status !== 'waiting_input') {
       throw new RuntimeAdapterError({
@@ -405,7 +427,7 @@ export class RuntimeAdapterService {
       })
     }
     const binding = this.repository.getRuntimeBinding(runId)
-    if (binding?.externalTaskId === undefined || this.bridge.answerInput === undefined) {
+    if (binding?.externalTaskId === undefined) {
       throw new RuntimeAdapterError({
         code: 'CONTRACT_UNSUPPORTED',
         message: 'Bridge does not support answering input requests.',
@@ -413,7 +435,40 @@ export class RuntimeAdapterService {
         provider: run.provider,
       })
     }
-    await this.bridge.answerInput(binding.externalTaskId, response)
+    if (responseTarget === 'huabu-acp' && this.providerInputResponsePort === undefined) {
+      throw new RuntimeAdapterError({
+        code: 'CONTRACT_UNSUPPORTED',
+        message: 'Huabu ACP input response transport is not configured.',
+        retryable: true,
+        provider: run.provider,
+      })
+    }
+    const handledByProvider = responseTarget !== 'huabu-acp'
+      ? false
+      : await this.providerInputResponsePort!.answerProviderInput(
+        String(runId),
+        binding.externalTaskId,
+        response,
+      )
+    if (responseTarget === 'huabu-acp' && !handledByProvider) {
+      throw new RuntimeAdapterError({
+        code: 'PROVIDER_INPUT_NOT_FOUND',
+        message: 'Huabu no longer owns the suspended ACP permission request.',
+        retryable: false,
+        provider: run.provider,
+      })
+    }
+    if (responseTarget === 'bridge') {
+      if (this.bridge.answerInput === undefined) {
+        throw new RuntimeAdapterError({
+          code: 'CONTRACT_UNSUPPORTED',
+          message: 'Bridge does not support answering input requests.',
+          retryable: false,
+          provider: run.provider,
+        })
+      }
+      await this.bridge.answerInput(binding.externalTaskId, response)
+    }
     const timestamp = this.now()
     this.repository.updateRunStatus(runId, 'queued', timestamp)
     return this.repository.updateRuntimeBinding({

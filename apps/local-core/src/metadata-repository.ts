@@ -328,7 +328,8 @@ export class SqliteMetadataRepository {
     if (current === 51) { this.#migrate_052_from_v51(); current = 52 }
     if (current === 52) { this.#migrate_053_from_v52(); current = 53 }
     if (current === 53) { this.#migrate_054_from_v53(); current = 54 }
-    if (current !== 54) throw new Error(`Unsupported metadata schema version ${current}.`)
+    if (current === 54) { this.#migrate_055_from_v54(); current = 55 }
+    if (current !== 55) throw new Error(`Unsupported metadata schema version ${current}.`)
   }
 
   #migrate_037_from_v36(): void {
@@ -414,6 +415,33 @@ export class SqliteMetadataRepository {
       BEGIN;
       ALTER TABLE workspaces ADD COLUMN canvas_id TEXT;
       PRAGMA user_version = 54;
+      COMMIT;
+    `)
+  }
+
+  #migrate_055_from_v54(): void {
+    // Persist the owner of a pending input response so Core restart cannot
+    // accidentally answer a Huabu ACP permission through the Bridge path.
+    this.#database.exec(`
+      BEGIN;
+      CREATE TABLE IF NOT EXISTS run_input_requests (
+        request_id TEXT PRIMARY KEY,
+        run_id TEXT NOT NULL REFERENCES runs(id) ON DELETE CASCADE,
+        question TEXT NOT NULL,
+        options_json TEXT NOT NULL DEFAULT '[]',
+        allow_free_text INTEGER NOT NULL DEFAULT 1 CHECK(allow_free_text IN (0,1)),
+        context_version INTEGER,
+        status TEXT NOT NULL CHECK(status IN ('pending','answered','cancelled')),
+        answer_text TEXT,
+        selected_options_json TEXT NOT NULL DEFAULT '[]',
+        created_at TEXT NOT NULL,
+        answered_at TEXT,
+        updated_at TEXT NOT NULL
+      );
+      ALTER TABLE run_input_requests
+        ADD COLUMN response_target TEXT NOT NULL DEFAULT 'bridge'
+        CHECK(response_target IN ('bridge','huabu-acp'));
+      PRAGMA user_version = 55;
       COMMIT;
     `)
   }
@@ -6520,6 +6548,7 @@ export class SqliteMetadataRepository {
         && existing.question === value.question
         && JSON.stringify(existing.options) === JSON.stringify(value.options)
         && existing.allowFreeText === value.allowFreeText
+        && (existing.responseTarget ?? 'bridge') === (value.responseTarget ?? 'bridge')
         && existing.contextVersion === value.contextVersion
       if (!sameIdentity) throw new Error('INPUT_REQUEST_IDEMPOTENCY_CONFLICT')
       // A delayed provider sync must never reopen a question the user already answered or cancelled.
@@ -6527,9 +6556,9 @@ export class SqliteMetadataRepository {
     }
     this.#database.prepare(`
       INSERT INTO run_input_requests(
-        request_id, run_id, question, options_json, allow_free_text, context_version, status,
+        request_id, run_id, question, options_json, allow_free_text, response_target, context_version, status,
         answer_text, selected_options_json, created_at, answered_at, updated_at
-      ) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       ON CONFLICT(request_id) DO UPDATE SET
         status = excluded.status,
         answer_text = excluded.answer_text,
@@ -6538,7 +6567,7 @@ export class SqliteMetadataRepository {
         updated_at = excluded.updated_at
     `).run(
       value.requestId, value.runId, value.question, JSON.stringify(value.options), value.allowFreeText ? 1 : 0,
-      value.contextVersion ?? null, value.status, value.answerText ?? null, JSON.stringify(value.selectedOptions),
+      value.responseTarget ?? 'bridge', value.contextVersion ?? null, value.status, value.answerText ?? null, JSON.stringify(value.selectedOptions),
       value.createdAt, value.answeredAt ?? null, value.answeredAt ?? value.createdAt,
     )
   }
@@ -6590,6 +6619,7 @@ export class SqliteMetadataRepository {
       question: String(row.question),
       options: json<readonly string[]>(row.options_json as SQLInputValue),
       allowFreeText: Number(row.allow_free_text) === 1,
+      responseTarget: String(row.response_target ?? 'bridge') as NonNullable<RunInputRequestV1['responseTarget']>,
       ...(row.context_version === null || row.context_version === undefined ? {} : { contextVersion: Number(row.context_version) }),
       status: String(row.status) as RunInputRequestV1['status'],
       ...(row.answer_text ? { answerText: String(row.answer_text) } : {}),
