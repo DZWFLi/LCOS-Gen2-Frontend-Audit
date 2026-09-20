@@ -23,6 +23,7 @@
 [data-lcos-family='window-chrome'],
 [data-lcos-family='surface-dock'],
 [data-lcos-family='camera-controls'],
+[data-lcos-family='spatial-navigator'],
 [data-lcos-project-identity] {
   box-sizing: border-box;
   background: var(--lcos-hud-surface);
@@ -596,6 +597,83 @@
 [data-lcos-camera-separator] { width: 1px; height: 20px; margin: 0 2px; background: var(--lcos-color-border-subtle); }
 [data-lcos-family='camera-controls'][data-lcos-camera-collapsed='true'] { width: 52px; height: 48px; min-height: 48px; padding: 2px 4px; }
 
+/* Spatial Navigator: Figma freezes the 52×48 collapsed camera tile
+ * (5386:274). T2 C2-3B supplies the expanded information hierarchy; every
+ * mechanic is injected by Canvas.tsx from the current React Flow context. */
+[data-lcos-family='spatial-navigator'] {
+  position: absolute;
+  left: 24px;
+  bottom: 24px;
+  z-index: 30;
+  pointer-events: auto;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  width: 232px;
+  padding: var(--lcos-space-8);
+  gap: var(--lcos-space-8);
+  border-radius: 20px;
+}
+[data-lcos-family='spatial-navigator'][data-lcos-expanded='false'] {
+  width: 52px;
+  height: 48px;
+  padding: 2px 4px;
+}
+[data-lcos-family='spatial-navigator'] button {
+  appearance: none;
+  display: grid;
+  place-items: center;
+  box-sizing: border-box;
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 12px;
+  color: var(--gen2-text);
+  background: transparent;
+  cursor: pointer;
+}
+[data-lcos-family='spatial-navigator'] button:hover:not(:disabled) { background: var(--gen2-raised); }
+[data-lcos-family='spatial-navigator'] button:focus-visible { outline: 2px solid var(--lcos-pin-violet); outline-offset: -2px; }
+[data-lcos-spatial-navigator-map] {
+  display: grid;
+  place-items: center;
+  width: 216px;
+  height: 132px;
+  overflow: hidden;
+  border-radius: var(--lcos-radius-medium);
+  background: var(--gen2-canvas);
+}
+[data-lcos-spatial-navigator-empty-map] {
+  grid-template-columns: auto 1fr;
+  gap: var(--lcos-space-8);
+  width: 100% !important;
+  height: 100% !important;
+  color: var(--gen2-muted) !important;
+  font: 400 12px/18px var(--lcos-hud-font);
+}
+.lcos-spatial-navigator__minimap.react-flow__panel {
+  position: relative;
+  inset: auto;
+  width: 216px;
+  height: 132px;
+  margin: 0;
+}
+[data-lcos-spatial-navigator-controls] {
+  display: grid;
+  grid-template-columns: repeat(4, 44px);
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+}
+[data-lcos-spatial-navigator-zoom] {
+  color: var(--gen2-muted) !important;
+  font: 400 12px/18px var(--lcos-hud-font);
+  font-variant-numeric: tabular-nums;
+}
+
 /* Constraint-based narrow composition; no font scaling and no hidden action buttons. */
 @media (max-width: 720px) {
   [data-lcos-family='window-chrome'] { padding-inline: 12px; }
@@ -619,7 +697,8 @@
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
   [data-lcos-family='navigator-island'], [data-lcos-family='railway'],
   [data-lcos-family='window-chrome'], [data-lcos-family='surface-dock'],
-  [data-lcos-family='camera-controls'], [data-lcos-project-identity] {
+  [data-lcos-family='camera-controls'], [data-lcos-family='spatial-navigator'],
+  [data-lcos-project-identity] {
     background: var(--lcos-hud-surface);
   }
 }

@@ -46,6 +46,8 @@ export interface HuabuCanvasHostExtension {
   };
   /** Neutral binding-aware body resolver (T1 Glyth seam); opaque resolver fn. */
   readonly resolveNodeBody?: unknown;
+  /** Mirrors Huabu's neutral spatial navigator render-function seam. */
+  readonly spatialNavigator?: (controls: unknown) => ReactNode;
 }
 
 /**
@@ -88,5 +90,8 @@ export function hostExtensionFromSeam(seam: HostSeam): HuabuCanvasHostExtension 
         }
       : undefined,
     resolveNodeBody: seam.resolveNodeBody,
+    spatialNavigator: seam.spatialNavigator as
+      | ((controls: unknown) => ReactNode)
+      | undefined,
   };
 }

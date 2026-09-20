@@ -155,7 +155,10 @@ import {
   revealBoundsInViewport,
 } from '../CanvasLayerPanel/focusNodesOnCanvas.ts';
 
-import type { CanvasHostExtension } from '../../../lcos-seam/types';
+import type {
+  CanvasHostExtension,
+  CanvasSpatialNavigatorRenderer,
+} from '../../../lcos-seam/types';
 import type { CanvasNode } from '@/components/Nodes/types';
 import type { AddNodeInput } from '@/handler/canvasCommand/uiIntent';
 import type { CanvasPointerRouterContext } from '@/handler/canvasPointerRouterContext';
@@ -403,6 +406,63 @@ const CanvasInteractivityControl: React.FC<{
   );
 };
 
+/**
+ * Bridges Huabu mechanics into a host presentation without exposing the
+ * React Flow instance or creating a second camera. It stays inside
+ * `<ReactFlow>` so the MiniMap and viewport hooks bind the current canvas.
+ */
+const CanvasSpatialNavigatorMount: React.FC<{
+  renderer: CanvasSpatialNavigatorRenderer;
+  minimapEnabled: boolean;
+  gridEnabled: boolean;
+  interactivityLocked: boolean;
+  onToggleInteractivity: () => void;
+  onToggleMinimap: () => void;
+  onToggleGrid: () => void;
+}> = React.memo(({
+  renderer,
+  minimapEnabled,
+  gridEnabled,
+  interactivityLocked,
+  onToggleInteractivity,
+  onToggleMinimap,
+  onToggleGrid,
+}) => {
+  const zoom = useStore((state) => state.transform[2]);
+  const miniMap = useMemo(
+    () => minimapEnabled ? (
+      <MiniMap
+        pannable
+        zoomable
+        ariaLabel="当前画布小地图"
+        className="lcos-spatial-navigator__minimap border-edge-default rounded-md border shadow-sm"
+      />
+    ) : null,
+    [minimapEnabled],
+  );
+  const controls = useMemo(() => ({
+    zoom,
+    minimapEnabled,
+    gridEnabled,
+    interactivityLocked,
+    miniMap,
+    toggleInteractivity: onToggleInteractivity,
+    toggleMinimap: onToggleMinimap,
+    toggleGrid: onToggleGrid,
+  }), [
+    zoom,
+    minimapEnabled,
+    gridEnabled,
+    interactivityLocked,
+    miniMap,
+    onToggleInteractivity,
+    onToggleMinimap,
+    onToggleGrid,
+  ]);
+
+  return <>{renderer(controls)}</>;
+});
+
 type CanvasProps = {
   shortcutsDisabled?: boolean;
   /** LCOS host seam: renderers/overlays/recognizers injected by the LCOS host. */
@@ -443,6 +503,9 @@ export const Canvas: React.FC<CanvasProps> = ({
   const expandedNodeId = usePreviewWorkspaceStore(selectActiveNodeId);
   const canvasId = useCanvasStore((state) => state.canvasId);
   const minimapEnabled = useCanvasStore((state) => state.minimapEnabled);
+  const gridEnabled = useCanvasStore((state) => state.gridEnabled);
+  const toggleMinimap = useCanvasStore((state) => state.toggleMinimap);
+  const toggleGrid = useCanvasStore((state) => state.toggleGrid);
   const pendingNodeType = useToolStore((state) => state.pendingNodeType);
   // Whether a stroke-level sketch selection is active — suppresses node
   // toolbars so a mixed lasso never shows them (boolean selector).
@@ -550,6 +613,9 @@ export const Canvas: React.FC<CanvasProps> = ({
   // than mutating the React Flow store) keeps the lock from being reverted
   // when a tool-derived prop value changes.
   const [interactivityLocked, setInteractivityLocked] = useState(false);
+  const toggleInteractivity = useCallback(() => {
+    setInteractivityLocked((previous) => !previous);
+  }, []);
 
   const isNotMouse = useIsNotMouse();
   const inputMode = useEffectiveInputMode();
@@ -1722,28 +1788,42 @@ export const Canvas: React.FC<CanvasProps> = ({
           onSelect={handleConnectedKindPick}
           onDismiss={dismissConnectPicker}
         />
-        <Background color="var(--canvas-grid)" gap={GRID_SIZE} />
+        {gridEnabled && <Background color="var(--canvas-grid)" gap={GRID_SIZE} />}
 
         {hostExtension?.overlays?.map((overlay) => (
           <Fragment key={overlay.key}>{overlay.node}</Fragment>
         ))}
 
-        {chromeMode !== 'lcos' && (
-          <Controls position="bottom-left" showInteractive={false}>
-            <CanvasZoomLevel />
-            <CanvasInteractivityControl
-              locked={interactivityLocked}
-              onToggle={() => setInteractivityLocked((prev) => !prev)}
+        {chromeMode === 'lcos' ? (
+          hostExtension?.spatialNavigator ? (
+            <CanvasSpatialNavigatorMount
+              renderer={hostExtension.spatialNavigator}
+              minimapEnabled={minimapEnabled}
+              gridEnabled={gridEnabled}
+              interactivityLocked={interactivityLocked}
+              onToggleInteractivity={toggleInteractivity}
+              onToggleMinimap={toggleMinimap}
+              onToggleGrid={toggleGrid}
             />
-          </Controls>
-        )}
-        {chromeMode !== 'lcos' && minimapEnabled && (
-          <MiniMap
-            pannable
-            zoomable
-            ariaLabel="Minimap"
-            className="border-edge-default rounded-md border shadow-sm"
-          />
+          ) : null
+        ) : (
+          <>
+            <Controls position="bottom-left" showInteractive={false}>
+              <CanvasZoomLevel />
+              <CanvasInteractivityControl
+                locked={interactivityLocked}
+                onToggle={toggleInteractivity}
+              />
+            </Controls>
+            {minimapEnabled && (
+              <MiniMap
+                pannable
+                zoomable
+                ariaLabel="Minimap"
+                className="border-edge-default rounded-md border shadow-sm"
+              />
+            )}
+          </>
         )}
 
         {/* Sketch overlay inside ReactFlow so it shares stacking context with Panel */}

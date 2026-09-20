@@ -103,10 +103,10 @@ vi.mock('./referenceClickSuppressor', () => ({
 }));
 vi.mock('./LcosHostOverlay', () => ({ LcosHostOverlay: () => null }));
 vi.mock('./host/LcosCameraMotionPolicy', () => ({ LcosCameraMotionPolicy: () => null }));
-vi.mock('./navigation/LcosCameraControls', () => ({ LcosCameraControls: () => null }));
 vi.mock('./navigation/LcosCanvasCommands', () => ({ LcosCanvasCommands: () => null }));
 vi.mock('./navigation/LcosActionArc', () => ({ LcosActionArc: () => null }));
 vi.mock('./navigation/LcosEdgeArc', () => ({ LcosEdgeArc: () => null }));
+vi.mock('./navigation/LcosSpatialNavigator', () => ({ LcosSpatialNavigator: () => null }));
 
 import { useLcosReferenceStore } from './lcosReferenceState';
 import { useLcosCanvasProps } from './useLcosCanvasProps';

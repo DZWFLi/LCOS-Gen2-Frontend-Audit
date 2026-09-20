@@ -322,6 +322,7 @@ function writeViewportToStorage(
 // survives refreshes / restarts.
 
 const MINIMAP_STORAGE_KEY = 'huabu.minimapEnabled';
+const GRID_STORAGE_KEY = 'huabu.gridEnabled';
 
 function readMinimapEnabledFromStorage(): boolean {
   try {
@@ -335,6 +336,24 @@ function readMinimapEnabledFromStorage(): boolean {
 function writeMinimapEnabledToStorage(value: boolean): void {
   try {
     localStorage.setItem(MINIMAP_STORAGE_KEY, String(value));
+  } catch {
+    // Ignore quota / private-mode errors; in-memory state still toggles.
+  }
+}
+
+function readGridEnabledFromStorage(): boolean {
+  try {
+    const value = localStorage.getItem(GRID_STORAGE_KEY);
+    return value === null ? true : value === 'true';
+  } catch {
+    // Grid is the established Huabu default when storage is unavailable.
+    return true;
+  }
+}
+
+function writeGridEnabledToStorage(value: boolean): void {
+  try {
+    localStorage.setItem(GRID_STORAGE_KEY, String(value));
   } catch {
     // Ignore quota / private-mode errors; in-memory state still toggles.
   }
@@ -810,6 +829,9 @@ type RFState = {
   /** MiniMap: whether the React Flow MiniMap overlay is visible. */
   minimapEnabled: boolean;
   toggleMinimap: () => void;
+  /** Background grid visibility; a global, discardable UI preference. */
+  gridEnabled: boolean;
+  toggleGrid: () => void;
 
   moveNodeIntoFrame: (
     nodeId: string,
@@ -3683,6 +3705,12 @@ const useCanvasStore = create<RFState>()(
       const next = !get().minimapEnabled;
       writeMinimapEnabledToStorage(next);
       set({ minimapEnabled: next });
+    },
+    gridEnabled: readGridEnabledFromStorage(),
+    toggleGrid: () => {
+      const next = !get().gridEnabled;
+      writeGridEnabledToStorage(next);
+      set({ gridEnabled: next });
     },
 
     moveNodeIntoFrame: (nodeId, frameId, reorderTarget) => {

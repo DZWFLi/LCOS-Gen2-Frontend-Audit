@@ -19,6 +19,14 @@ test('hostExtensionFromSeam: empty seam collapses to a stock extension', () => {
   assert.equal(ext.nodeTypes, undefined);
   assert.equal(ext.overlays, undefined);
   assert.equal(ext.recognizers, undefined);
+  assert.equal(ext.spatialNavigator, undefined);
+});
+
+test('hostExtensionFromSeam: spatial navigator renderer keeps its identity', () => {
+  const spatialNavigator = () => null;
+  const seam = createHostSeam(fakeHost, { spatialNavigator });
+  const ext = hostExtensionFromSeam(seam);
+  assert.equal(ext.spatialNavigator, spatialNavigator);
 });
 
 test('hostExtensionFromSeam: recognizer descriptors pass through as opaque entries', () => {

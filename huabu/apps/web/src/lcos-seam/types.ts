@@ -79,6 +79,26 @@ export interface CanvasHostOverlay {
 }
 
 /**
+ * Huabu-owned mechanics exposed to one host-supplied spatial navigator.
+ * The renderer runs inside the existing React Flow context and never receives
+ * the mutable instance or a second viewport/store.
+ */
+export interface CanvasSpatialNavigatorControls {
+  readonly zoom: number;
+  readonly minimapEnabled: boolean;
+  readonly gridEnabled: boolean;
+  readonly interactivityLocked: boolean;
+  readonly miniMap: ReactNode;
+  readonly toggleInteractivity: () => void;
+  readonly toggleMinimap: () => void;
+  readonly toggleGrid: () => void;
+}
+
+export type CanvasSpatialNavigatorRenderer = (
+  controls: CanvasSpatialNavigatorControls,
+) => ReactNode;
+
+/**
  * Semantic connect seam, node-id based and deliberately domain-free: the
  * canvas gesture only knows Huabu node ids, and the host app resolves them
  * back to Core entities (A05). Returns the ready edge id when a semantic edge
@@ -124,4 +144,9 @@ export interface CanvasHostExtension {
    * replaces a built-in node renderer, never a second renderer registry.
    */
   readonly resolveNodeBody?: CanvasNodeBodySeam;
+  /**
+   * Host presentation for the existing Huabu camera/minimap/grid mechanics.
+   * Canvas suppresses the stock Controls/MiniMap branch while this is mounted.
+   */
+  readonly spatialNavigator?: CanvasSpatialNavigatorRenderer;
 }

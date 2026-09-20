@@ -79,6 +79,8 @@ export interface HostSeam {
    * undefined (native body). See huabu lcos-seam CanvasHostExtension.
    */
   resolveNodeBody: unknown;
+  /** Host-owned presentation renderer; Huabu remains the mechanics owner. */
+  spatialNavigator: unknown;
 }
 
 /** Optional injections when building the seam (A01: renderer registration; A03: recognizers). */
@@ -91,6 +93,8 @@ export interface HostSeamOptions {
   readonly recognizers?: readonly LcosRecognizerDescriptor[];
   /** Neutral body resolver (T1 Glyth seam); absent = native bodies everywhere. */
   readonly resolveNodeBody?: unknown;
+  /** Optional renderer invoked inside the existing Huabu React Flow context. */
+  readonly spatialNavigator?: unknown;
 }
 
 /**
@@ -106,6 +110,7 @@ export function createHostSeam(host: Gen2Host | (() => Gen2Host), options: HostS
     overlays: [...(options.overlays ?? [])],
     recognizers: [...(options.recognizers ?? [])],
     resolveNodeBody: options.resolveNodeBody,
+    spatialNavigator: options.spatialNavigator,
     connectIntent: {
       onConnect: async (ctx) => {
         const resolution = resolveConnectKind(ctx);

@@ -36,14 +36,21 @@ import { LcosHostOverlay } from './LcosHostOverlay';
 import { createLcosRecognizers } from './lcosRecognizers';
 import { useLcosReferenceStore } from './lcosReferenceState';
 import { LcosActionArc } from './navigation/LcosActionArc';
-import { LcosCameraControls } from './navigation/LcosCameraControls';
 import { LcosCanvasCommands } from './navigation/LcosCanvasCommands';
 import { LcosEdgeArc } from './navigation/LcosEdgeArc';
+import { LcosSpatialNavigator } from './navigation/LcosSpatialNavigator';
 import { createLcosNodePresentationSeam } from './nodes/createLcosNodePresentationSeam';
 import { stageProjectedSources } from './nodes/stageProjectedSources';
 import { installReferenceClickSuppressor } from './referenceClickSuppressor';
 
-import type { CanvasHostExtension } from '@/lcos-seam/types';
+import type {
+  CanvasHostExtension,
+  CanvasSpatialNavigatorControls,
+} from '@/lcos-seam/types';
+
+const renderSpatialNavigator = (
+  controls: CanvasSpatialNavigatorControls,
+): React.JSX.Element => <LcosSpatialNavigator {...controls} />;
 
 export interface LcosCanvasProps {
   hostExtension?: CanvasHostExtension;
@@ -93,7 +100,6 @@ export function useLcosCanvasProps(projectId: string): LcosCanvasProps {
         { key: 'lcos/host-overlay', node: <LcosHostOverlay /> },
         // Wave 4：canvas-local 相机/命令（唯一 Huabu camera，非第二视图）
         { key: 'lcos/canvas-commands', node: <LcosCanvasCommands /> },
-        { key: 'lcos/camera-controls', node: <LcosCameraControls /> },
         // R2：节点命令菜单（T3 Action Arc）—— 画布内唯一节点命令入口（节点近场）
         { key: 'lcos/action-arc', node: <LcosActionArc /> },
         // R2：边命令入口（替换旧 EdgeStyleToolbar 的可见壳）
@@ -104,6 +110,9 @@ export function useLcosCanvasProps(projectId: string): LcosCanvasProps {
       recognizers: createLcosRecognizers().map((recognizer) => ({ recognizer })),
       // Wave 3：binding-aware 全节点 presentation seam（原生 body 仅 fallback）。
       resolveNodeBody: createLcosNodePresentationSeam(),
+      // R6/T1: Canvas.tsx produces every mechanic and invokes this renderer
+      // inside the current React Flow context. No camera or minimap is copied.
+      spatialNavigator: renderSpatialNavigator,
     });
     // hostExtensionFromSeam returns the mirrored (web-gen2) shape; the Huabu
     // consumer re-declares the same structural type, so an explicit cast is
