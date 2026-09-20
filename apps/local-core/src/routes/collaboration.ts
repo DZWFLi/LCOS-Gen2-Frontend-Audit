@@ -5,6 +5,7 @@ import type { ConversationImportService } from '../conversation-import-service.j
 import type { ContinuationProviderAdapterV1 } from '@local-creative-os/contracts'
 import type { SqliteMetadataRepository } from '../metadata-repository.js'
 import { routeRequireProject, type RouteHttpHelpers } from './route-context.js'
+import { parseOrderedReferences } from './conversation-continuation.js'
 
 export interface CollaborationRouteContext {
   readonly method: string
@@ -78,10 +79,19 @@ export async function handleCollaborationRoute(ctx: CollaborationRouteContext): 
       return true
     }
     if (Array.isArray(raw.targetRefs) && raw.targetRefs.length > 0) {
-      ctx.helpers.sendJson(ctx.response, 409, ctx.helpers.failure('CONFLICT', 'Context attachment for direct continuation send is not implemented; references were not dropped.'))
+      ctx.helpers.sendJson(ctx.response, 409, ctx.helpers.failure('CONFLICT', 'Continuation context must use typed orderedReferences; display refs were not dropped.'))
       return true
     }
-    if (Object.keys(raw).some((key) => !['conversationId', 'messageId', 'continuationOperationId', 'text', 'targetRefs'].includes(key))) {
+    let orderedReferences: readonly import('@local-creative-os/contracts').OrderedRunReferenceV2[] | undefined
+    if (raw.orderedReferences !== undefined) {
+      const parsed = parseOrderedReferences(raw.orderedReferences)
+      if ('error' in parsed) {
+        ctx.helpers.sendJson(ctx.response, 400, ctx.helpers.failure('INVALID_ARGUMENT', parsed.error))
+        return true
+      }
+      orderedReferences = parsed.value
+    }
+    if (Object.keys(raw).some((key) => !['conversationId', 'messageId', 'continuationOperationId', 'text', 'targetRefs', 'orderedReferences'].includes(key))) {
       ctx.helpers.sendJson(ctx.response, 400, ctx.helpers.failure('INVALID_ARGUMENT', 'Unexpected field in collaboration send input.'))
       return true
     }
@@ -112,9 +122,16 @@ export async function handleCollaborationRoute(ctx: CollaborationRouteContext): 
         ctx.helpers.sendJson(ctx.response, 409, ctx.helpers.failure('CONFLICT', 'This prompt already crossed the provider boundary and its outcome is unknown; reconcile before retrying.'))
         return true
       }
-      const sent = await ctx.continuation.sendPrompt(projectId, raw.continuationOperationId, { kind: 'prompt', text: raw.text }, ctx.adapter, raw.messageId)
+      const sent = await ctx.continuation.sendPrompt(
+        projectId,
+        raw.continuationOperationId,
+        { kind: 'prompt', text: raw.text },
+        ctx.adapter,
+        raw.messageId,
+        { ...(orderedReferences === undefined ? {} : { orderedReferences }), messageId: raw.messageId },
+      )
       if (sent.outcome === 'outcome_unknown' || sent.outcome === 'unresolved') {
-        ctx.helpers.sendJson(ctx.response, 409, ctx.helpers.failure('CONFLICT', sent.error?.message ?? 'Prompt outcome is unknown; reconcile before retrying.'))
+        ctx.helpers.sendJson(ctx.response, 409, ctx.helpers.failure('CONFLICT', `${sent.error?.message ?? 'Prompt outcome is unknown; reconcile before retrying.'} Receipt: ${sent.action}/${sent.outcome}/${sent.observedAt}.`))
         return true
       }
       if (sent.outcome !== 'sent') {
@@ -124,7 +141,7 @@ export async function handleCollaborationRoute(ctx: CollaborationRouteContext): 
         if (sent.outcome === 'failed' || sent.outcome === 'unsupported') {
           ctx.conversations.releaseContinuationPrompt(projectId, connected.conversationSessionId, raw.messageId)
         }
-        ctx.helpers.sendJson(ctx.response, 409, ctx.helpers.failure('CONFLICT', sent.error?.message ?? 'Provider did not accept the prompt.'))
+        ctx.helpers.sendJson(ctx.response, 409, ctx.helpers.failure('CONFLICT', `${sent.error?.message ?? 'Provider did not accept the prompt.'} Receipt: ${sent.action}/${sent.outcome}/${sent.observedAt}.`))
         return true
       }
       if (sent.responseText === undefined || sent.responseText.trim() === '') {

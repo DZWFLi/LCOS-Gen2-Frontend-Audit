@@ -67,13 +67,31 @@ describe('shared Composer receiver mapping', () => {
     });
   });
 
-  it('continuation refuses non-empty draft references instead of dropping them', () => {
+  it('continuation carries supported draft references as typed orderedReferences', () => {
     const continuationTarget = {
       ...target('connected-A'),
       intent: 'continue' as const,
       continuationOperationId: 'operation-A',
       messageId: 'message-A',
     };
-    expect(canSubmitComposerContinuation(continuationTarget, '继续', [{ entityType: 'artifact', entityId: 'a-1' }])).toBe(false);
+    const refs = [{ entityType: 'artifact', entityId: 'a-1' }];
+    expect(canSubmitComposerContinuation(continuationTarget, '继续', refs)).toBe(true);
+    expect(buildComposerContinuationInput({
+      conversationId: 'connected-A',
+      continuationOperationId: 'operation-A',
+      messageId: 'message-A',
+      text: '继续',
+      refs,
+    }).orderedReferences).toEqual([{ order: 0, ref: { type: 'artifact', artifactId: 'a-1' } }]);
+  });
+
+  it('continuation blocks references without an authoritative typed mapping', () => {
+    const continuationTarget = {
+      ...target('connected-A'),
+      intent: 'continue' as const,
+      continuationOperationId: 'operation-A',
+      messageId: 'message-A',
+    };
+    expect(canSubmitComposerContinuation(continuationTarget, '继续', [{ entityType: 'note', entityId: 'n-1' }])).toBe(false);
   });
 });

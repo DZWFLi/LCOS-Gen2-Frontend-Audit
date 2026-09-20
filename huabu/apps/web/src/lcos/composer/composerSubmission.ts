@@ -2,6 +2,7 @@ import type { CoreEntityRefLike } from '../referenceBridge';
 import type { LcosComposerTarget } from '../shell/lcosShellStore';
 import type { CollaborationSendInputV1 } from '@local-creative-os/contracts';
 import type { CreateRunInputV1 } from '@local-creative-os/web-gen2';
+import { buildSelectedContextReferences } from '../professional/conversationContinuationActions';
 
 
 
@@ -62,13 +63,14 @@ export function canSubmitComposerContinuation(
   instruction: string,
   refs: readonly CoreEntityRefLike[],
 ): boolean {
+  const selected = buildSelectedContextReferences(refs);
   return (
     target.intent === 'continue' &&
     instruction.trim().length > 0 &&
     target.receiverConversationId !== undefined &&
     target.continuationOperationId !== undefined &&
     target.messageId !== undefined &&
-    refs.length === 0 &&
+    selected.unsupportedEntityTypes.length === 0 &&
     target.receiverBlockedReason === undefined
   );
 }
@@ -76,10 +78,11 @@ export function canSubmitComposerContinuation(
 export function buildComposerContinuationInput(
   input: ComposerContinuationSubmissionInput,
 ): CollaborationSendInputV1 {
+  const selected = buildSelectedContextReferences(input.refs);
   return {
     conversationId: input.conversationId,
     text: input.text.trim(),
-    ...(input.refs.length === 0 ? {} : { targetRefs: input.refs.map((ref) => `${ref.entityType}:${ref.entityId}`) }),
+    ...(selected.orderedReferences.length === 0 ? {} : { orderedReferences: selected.orderedReferences }),
     continuationOperationId: input.continuationOperationId,
     messageId: input.messageId,
   };

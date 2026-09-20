@@ -92,7 +92,7 @@ function parseSubmit(raw: unknown): { readonly input: Omit<ContinuationSubmitReq
 const REF_TYPES = ['artifact', 'view', 'scope', 'workspace', 'conversation', 'component'] as const
 
 /** 最小运行时校验：orderedReferences 数组 → OrderedRunReferenceV2（非法项整体拒绝，不静默丢弃）。 */
-function parseOrderedReferences(raw: unknown): { readonly value: readonly import('@local-creative-os/contracts').OrderedRunReferenceV2[] } | { readonly error: string } {
+export function parseOrderedReferences(raw: unknown): { readonly value: readonly import('@local-creative-os/contracts').OrderedRunReferenceV2[] } | { readonly error: string } {
   if (!Array.isArray(raw)) return { error: 'orderedReferences must be an array.' }
   const value: import('@local-creative-os/contracts').OrderedRunReferenceV2[] = []
   for (const [index, entry] of raw.entries()) {

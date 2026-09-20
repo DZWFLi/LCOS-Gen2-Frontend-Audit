@@ -120,6 +120,16 @@ export function RecoverySection({ collaboration, projectId, operations, onRefres
             </span>
           )}
 
+          {operation.promptReceipts && operation.promptReceipts.length > 0 && (
+            <div className="flex flex-col gap-1" data-lcos-prompt-receipts>
+              {operation.promptReceipts.map((entry) => (
+                <span key={entry.messageId} data-lcos-prompt-receipt={entry.messageId} className="break-all text-[10px]" style={{ color: entry.receipt.outcome === 'unsupported' || entry.receipt.outcome === 'failed' ? lcosTokens.color.danger : lcosTokens.color.muted }}>
+                  消息 {entry.messageId.slice(0, 8)} · attach {entry.attachReceipt?.outcome ?? '未请求'} · send {entry.sendReceipt?.outcome ?? '未发送'}
+                </span>
+              ))}
+            </div>
+          )}
+
           {operation.allowedActions.length === 0 ? (
             <span className="text-[10px]" style={{ color: lcosTokens.color.muted }}>
               当前没有允许的恢复动作（guard 未放行）

@@ -80,12 +80,30 @@ describe('migration v53 continuation_operation_journal', () => {
       provider: 'workbuddy',
       steps: { external_create: 'not_started', core_bind: 'not_started', attach: 'not_started', projection: 'not_started' },
       cancel: 'none',
+      promptReceipts: [{
+        messageId: 'message-receipt',
+        orderedReferences: [{ order: 0, ref: { type: 'artifact', artifactId: 'artifact-1' } }],
+        receipt: {
+          schemaVersion: 1, operationId: 'op-migrate', correlationId: 'message-receipt', provider: 'workbuddy', adapterId: 'huabu-v1',
+          action: 'attach_context', outcome: 'unsupported', contextAttached: false, nativeFork: false, degradedFromNativeFork: false,
+          retryAction: 'reconcile', error: { code: 'attach_context_unsupported', message: 'unsupported', retryable: false, outcomeUnknown: false },
+          observedAt: '2026-09-12T00:00:00.000Z',
+        },
+        attachReceipt: {
+          schemaVersion: 1, operationId: 'op-migrate', correlationId: 'message-receipt', provider: 'workbuddy', adapterId: 'huabu-v1',
+          action: 'attach_context', outcome: 'unsupported', contextAttached: false, nativeFork: false, degradedFromNativeFork: false,
+          retryAction: 'reconcile', error: { code: 'attach_context_unsupported', message: 'unsupported', retryable: false, outcomeUnknown: false },
+          observedAt: '2026-09-12T00:00:00.000Z',
+        },
+        updatedAt: '2026-09-12T00:00:00.000Z',
+      }],
       revision: 0,
       createdAt: '2026-09-12T00:00:00.000Z',
       updatedAt: '2026-09-12T00:00:00.000Z',
     }
     metadata.saveContinuationOperationJournal(row)
     expect(metadata.getContinuationOperationJournal(projectId, 'op-migrate')?.operationId).toBe('op-migrate')
+    expect(metadata.getContinuationOperationJournal(projectId, 'op-migrate')?.promptReceipts?.[0]?.attachReceipt?.outcome).toBe('unsupported')
     expect(metadata.listContinuationOperationJournals(projectId).length).toBe(1)
 
     // 幂等 upsert：同一 operationId 覆盖（journal_json 更新）。

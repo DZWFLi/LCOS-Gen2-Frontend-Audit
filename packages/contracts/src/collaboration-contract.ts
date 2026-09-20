@@ -255,6 +255,9 @@ export interface CollaborationSendInputV1 {
   /** The already-bound continuation operation that owns the provider session. */
   readonly continuationOperationId: string
   readonly text: string
+  /** Composer 的一次性引用快照；Core 会先交给 T6 attach seam，不从 UI/selection 重新抓取。 */
+  readonly orderedReferences?: readonly import('./run-assembly.js').OrderedRunReferenceV2[]
+  /** 旧 caller 的显示/诊断键，不能替代 orderedReferences 的 typed truth。 */
   readonly targetRefs?: readonly string[]
 }
 

@@ -129,6 +129,35 @@ describe('collaboration-send：原会话纵切', () => {
     expect(importer.getMessages(sessionId, { limit: 20 }).some((message) => message.sourceEventId?.startsWith('turn-refs:'))).toBe(false)
   })
 
+  it('typed orderedReferences 在 Huabu attach unsupported 时 fail-close，并按 messageId 持久 receipt', async () => {
+    const { baseUrl, projectId, conversationId, sessionId, importer, continuation } = await setup()
+    const first = await send(baseUrl, projectId, conversationId, {
+      messageId: 'turn-context-a',
+      continuationOperationId: 'op-send',
+      text: '带第一组引用发送',
+      orderedReferences: [{ order: 0, ref: { type: 'artifact', artifactId: 'artifact-a' } }],
+    })
+    expect(first.status).toBe(409)
+    expect(DevFakeAgentletTransportV1.lastInstance?.promptCalls).toBe(0)
+    const firstProjection = continuation.read(projectId, 'op-send')
+    expect(firstProjection?.promptReceipts?.find((receipt) => receipt.messageId === 'turn-context-a')?.receipt).toMatchObject({
+      action: 'attach_context',
+      outcome: 'unsupported',
+      contextAttached: false,
+    })
+
+    const second = await send(baseUrl, projectId, conversationId, {
+      messageId: 'turn-context-b',
+      continuationOperationId: 'op-send',
+      text: '带第二组引用发送',
+      orderedReferences: [{ order: 0, ref: { type: 'view', viewId: 'view-b' } }],
+    })
+    expect(second.status).toBe(409)
+    const secondProjection = continuation.read(projectId, 'op-send')
+    expect(secondProjection?.promptReceipts?.map((receipt) => receipt.messageId)).toEqual(['turn-context-a', 'turn-context-b'])
+    expect(importer.getMessages(sessionId, { limit: 20 }).some((message) => message.sourceEventId?.startsWith('turn-context-'))).toBe(false)
+  })
+
   it('provider 明确失败会释放 pending reservation，允许同 messageId 安全重试', async () => {
     const { baseUrl, projectId, conversationId } = await setup()
     DevFakeAgentletTransportV1.lastInstance?.failNextPromptOnce()

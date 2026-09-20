@@ -94,6 +94,23 @@ test('send 走 connected conversation collaboration-send，保留 caller identit
   assert.equal(calls.some((call) => call.url.endsWith('/runs')), false);
 });
 
+test('send 透传一次性 typed orderedReferences，交给 Core 的 attach seam', async () => {
+  const { http, calls } = stubHttp({
+    'POST http://core.test/projects/project-1/connected-conversations/conversation-1/collaboration-send': {
+      value: { receipt: { schemaVersion: 1, command: 'send', acceptedAt: '2026-09-20T00:00:00.000Z', conversationId: 'conversation-1', continuationOperationId: 'continuation-1' } },
+    },
+  });
+  const collaboration = new CoreCollaborationClient(http);
+  await collaboration.send('project-1', {
+    conversationId: 'conversation-1',
+    continuationOperationId: 'continuation-1',
+    messageId: 'message-with-context',
+    text: '继续并参考当前 artifact',
+    orderedReferences: [{ order: 0, ref: { type: 'artifact', artifactId: 'artifact-1' } }],
+  });
+  assert.deepEqual((calls[0]?.body as { orderedReferences: unknown[] }).orderedReferences, [{ order: 0, ref: { type: 'artifact', artifactId: 'artifact-1' } }]);
+});
+
 test('delegate 409 → needs_recovery 产品错误（不泄 transport 细节）', async () => {
   const http = new HttpClient({
     baseUrl: BASE,

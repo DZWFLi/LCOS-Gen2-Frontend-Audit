@@ -346,12 +346,31 @@ export class ConversationContinuationService {
     payload: ProviderSendPayloadV1,
     adapter: ContinuationProviderAdapterV1,
     correlationId = operationId,
+    options: {
+      readonly orderedReferences?: readonly OrderedRunReferenceV2[]
+      readonly messageId?: string
+    } = {},
   ): Promise<ProviderContinuationOperationResultV1> {
     const row = this.metadata.getContinuationOperationJournal(projectId, operationId)
     if (row === undefined) throw new Error('Continuation operation not found.')
+    const orderedReferences = options.orderedReferences ?? []
+    const existingReceipt = options.messageId === undefined
+      ? undefined
+      : row.promptReceipts?.find((entry) => entry.messageId === options.messageId)
+    if (existingReceipt !== undefined && JSON.stringify(existingReceipt.orderedReferences) !== JSON.stringify(orderedReferences)) {
+      return this.promptReceipt(
+        row,
+        adapter.adapterId,
+        options.messageId,
+        orderedReferences,
+        'failed',
+        'prompt_reference_conflict',
+        'The same messageId was already used with a different context reference set.',
+      )
+    }
     const externalSessionId = row.externalEvidence?.externalSessionId
     if (externalSessionId === undefined) {
-      return {
+      const unresolved: ProviderContinuationOperationResultV1 = {
         schemaVersion: 1,
         operationId,
         correlationId,
@@ -367,8 +386,27 @@ export class ConversationContinuationService {
         error: { code: 'no_external_identity', message: 'No external session identity to send to.', retryable: false, outcomeUnknown: true },
         observedAt: new Date().toISOString(),
       }
+      this.recordPromptReceipt(projectId, operationId, options.messageId, orderedReferences, unresolved, 'send', row.revision)
+      return unresolved
     }
-    return adapter.send({
+
+    const attachAlreadyConfirmed = existingReceipt?.attachReceipt?.outcome === 'attached'
+      && existingReceipt.attachReceipt.contextAttached === true
+    if (orderedReferences.length > 0 && !attachAlreadyConfirmed) {
+      const attachReceipt = await adapter.attachContext({
+        operationId,
+        correlationId,
+        provider: row.provider,
+        externalSessionId,
+        bundle: continuationBundleForRowV1(row, orderedReferences),
+      })
+      this.recordPromptReceipt(projectId, operationId, options.messageId, orderedReferences, attachReceipt, 'attach', row.revision)
+      // An unsupported/failed/unknown attach must stop before prompt send. The
+      // caller keeps the same messageId and the journal receipt exposes the
+      // only safe recovery action; no provider prompt is silently sent.
+      if (!(attachReceipt.outcome === 'attached' && attachReceipt.contextAttached)) return attachReceipt
+    }
+    const sent = await adapter.send({
       operationId,
       correlationId,
       provider: row.provider,
@@ -378,6 +416,87 @@ export class ConversationContinuationService {
       ...(row.externalEvidence?.transportSessionId === undefined ? {} : { transportSessionId: row.externalEvidence.transportSessionId }),
       payload,
     })
+    this.recordPromptReceipt(projectId, operationId, options.messageId, orderedReferences, sent, 'send')
+    return sent
+  }
+
+  /** Persist one message-scoped provider receipt in the existing journal JSON. */
+  recordPromptReceipt(
+    projectId: string,
+    operationId: string,
+    messageId: string | undefined,
+    orderedReferences: readonly OrderedRunReferenceV2[],
+    receipt: ProviderContinuationOperationResultV1,
+    phase: 'attach' | 'send',
+    expectedRevision?: number,
+  ): void {
+    if (messageId === undefined) return
+    const row = this.metadata.getContinuationOperationJournal(projectId, operationId)
+    if (row === undefined) throw new Error('Continuation operation not found.')
+    this.assertStale(row, expectedRevision)
+    const promptReceipts = [...(row.promptReceipts ?? [])]
+    const index = promptReceipts.findIndex((entry) => entry.messageId === messageId)
+    const existing = index < 0 ? undefined : promptReceipts[index]
+    if (existing !== undefined && JSON.stringify(existing.orderedReferences) !== JSON.stringify(orderedReferences)) {
+      throw new Error('The same messageId was already used with a different context reference set.')
+    }
+    const nextReceipt = {
+      messageId,
+      orderedReferences: [...orderedReferences],
+      receipt,
+      ...(phase === 'attach'
+        ? { attachReceipt: receipt }
+        : { sendReceipt: receipt, ...(existing?.attachReceipt === undefined ? {} : { attachReceipt: existing.attachReceipt }) }),
+      updatedAt: new Date().toISOString(),
+    }
+    if (index < 0) promptReceipts.push(nextReceipt)
+    else promptReceipts[index] = nextReceipt
+    const next: ContinuationOperationJournalRowV1 = {
+      ...row,
+      promptReceipts,
+      revision: row.revision + 1,
+      updatedAt: new Date().toISOString(),
+    }
+    const persisted = this.metadata.saveContinuationOperationJournalIfRevision(next, row.revision)
+    if (!persisted) {
+      const fresh = this.metadata.getContinuationOperationJournal(projectId, operationId)
+      throw new ContinuationStaleRevisionError(operationId, row.revision, fresh?.revision ?? row.revision)
+    }
+    this.events.publish(projectId, {
+      channel: 'continuity',
+      type: 'continuity.changed',
+      entityRefs: [operationId],
+      payload: { kind: 'continuation.prompt_receipt_recorded', operationId, messageId, outcome: receipt.outcome, action: receipt.action, revision: next.revision },
+    })
+  }
+
+  private promptReceipt(
+    row: ContinuationOperationJournalRowV1,
+    adapterId: string,
+    messageId: string | undefined,
+    orderedReferences: readonly OrderedRunReferenceV2[],
+    outcome: 'failed',
+    code: string,
+    message: string,
+  ): ProviderContinuationOperationResultV1 {
+    const receipt: ProviderContinuationOperationResultV1 = {
+      schemaVersion: 1,
+      operationId: row.operationId,
+      correlationId: row.operationId,
+      provider: row.provider,
+      adapterId,
+      action: 'attach_context',
+      outcome,
+      ...(row.externalEvidence?.externalSessionId === undefined ? {} : { externalSessionId: row.externalEvidence.externalSessionId }),
+      contextAttached: false,
+      nativeFork: false,
+      degradedFromNativeFork: false,
+      retryAction: 'reconcile',
+      error: { code, message, retryable: false, outcomeUnknown: false },
+      observedAt: new Date().toISOString(),
+    }
+    if (messageId !== undefined) this.recordPromptReceipt(row.projectId, row.operationId, messageId, orderedReferences, receipt, 'attach', row.revision)
+    return receipt
   }
 
   /** Notify existing collaboration subscribers after a prompt turn is committed. */
@@ -694,9 +813,12 @@ export function createContinuationOperationId(): string {
 }
 
 /** 由 journal 行构建最小 ContinuityAttachBundle（T7 adapter 输入；不携带第二份 context truth）。 */
-export function continuationBundleForRowV1(row: ContinuationOperationJournalRowV1): ContinuityAttachBundleV1 {
+export function continuationBundleForRowV1(
+  row: ContinuationOperationJournalRowV1,
+  orderedReferences: readonly OrderedRunReferenceV2[] = row.orderedReferences ?? [],
+): ContinuityAttachBundleV1 {
   const generatedAt = new Date().toISOString()
-  const references = row.orderedReferences ?? []
+  const references = orderedReferences
   const intent = {
     type: 'continue_work' as const,
     objectViewIds: references.map(referenceViewIdForBundleV1),

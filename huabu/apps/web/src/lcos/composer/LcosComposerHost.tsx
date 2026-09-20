@@ -19,6 +19,7 @@ import {
   canSubmitComposerContinuation,
   canSubmitComposerTarget,
 } from './composerSubmission';
+import { buildSelectedContextReferences } from '../professional/conversationContinuationActions';
 import { LcosReceiverIdentity } from './LcosReceiverIdentity';
 import { createLcosCoreSession } from '../app/lcosCoreClient';
 import { rectFromDomRect } from '../drop/dropTargetRegistry';
@@ -89,9 +90,12 @@ export function LcosComposerHost({
   const registerTarget = useLcosDropStore((s) => s.registerTarget);
   const unregisterTarget = useLcosDropStore((s) => s.unregisterTarget);
   const isContinuation = composerTarget?.intent === 'continue';
+  const unsupportedContinuationRefs = isContinuation
+    ? buildSelectedContextReferences(draftRefs).unsupportedEntityTypes
+    : [];
   const continuationBlockedReason = isContinuation
     ? composerTarget?.receiverBlockedReason
-      ?? (draftRefs.length > 0 ? '续聊暂不支持携带当前上下文引用；请先移除引用' : undefined)
+      ?? (unsupportedContinuationRefs.length > 0 ? `当前草稿包含暂不支持的续聊引用：${unsupportedContinuationRefs.join('、')}` : undefined)
       ?? (composerTarget?.receiverConversationId === undefined
         ? '当前会话身份尚未解析，暂不能继续'
         : composerTarget.continuationOperationId === undefined || composerTarget.messageId === undefined

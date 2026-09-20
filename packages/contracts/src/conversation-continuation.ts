@@ -16,6 +16,7 @@
 
 import type { ConnectedConversationV1 } from './receiver.js'
 import type { OrderedRunReferenceV2 } from './run-assembly.js'
+import type { ProviderContinuationOperationResultV1 } from './continuation-provider.js'
 
 /** 四种续工模式（README「续工」统一语义：continue existing / native full-history fork / selected-context new session / blank new session）。 */
 export type ContinuationModeV1 =
@@ -77,6 +78,17 @@ export interface ContinuationOperationJournalRowV1 {
   readonly errorEvidence?: string
   /** 提交时用户显式选择的引用（与 Run 同型的 OrderedRunReferenceV2；恢复 bundle 从它构建真实上下文）。 */
   readonly orderedReferences?: readonly OrderedRunReferenceV2[]
+  /** 每条续聊 prompt 的 context attach 证据；同一 operation 可承接不同消息引用。 */
+  readonly promptReceipts?: readonly {
+    readonly messageId: string
+    readonly orderedReferences: readonly OrderedRunReferenceV2[]
+    /** Latest provider receipt for this message. Kept for compact diagnostics. */
+    readonly receipt: ProviderContinuationOperationResultV1
+    /** Attach evidence is retained when a later send attempt also has a receipt. */
+    readonly attachReceipt?: ProviderContinuationOperationResultV1
+    readonly sendReceipt?: ProviderContinuationOperationResultV1
+    readonly updatedAt: string
+  }[]
   /** journal 自身的乐观并发版本：每次步骤推进递增；side-effect action 执行前必须 fresh read。 */
   readonly revision: number
   readonly createdAt: string
@@ -157,6 +169,14 @@ export interface ContinuationRecoveryProjectionV1 {
   readonly cancel: ContinuationCancelStateV1
   readonly externalEvidence?: ContinuationExternalEvidenceV1
   readonly errorEvidence?: string
+  readonly promptReceipts?: readonly {
+    readonly messageId: string
+    readonly orderedReferences: readonly OrderedRunReferenceV2[]
+    readonly receipt: ProviderContinuationOperationResultV1
+    readonly attachReceipt?: ProviderContinuationOperationResultV1
+    readonly sendReceipt?: ProviderContinuationOperationResultV1
+    readonly updatedAt: string
+  }[]
   readonly revision: number
   readonly allowedActions: Readonly<{ action: ContinuationActionV1; requiresFreshRead: boolean; reason?: string }[]>
   readonly createdAt: string
@@ -296,6 +316,7 @@ export function projectContinuationRecoveryV1(
     cancel: row.cancel,
     ...(row.externalEvidence === undefined ? {} : { externalEvidence: row.externalEvidence }),
     ...(row.errorEvidence === undefined ? {} : { errorEvidence: row.errorEvidence }),
+    ...(row.promptReceipts === undefined ? {} : { promptReceipts: row.promptReceipts }),
     revision: row.revision,
     allowedActions,
     createdAt: row.createdAt,

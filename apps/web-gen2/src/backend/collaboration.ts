@@ -613,6 +613,7 @@ export class CoreCollaborationClient {
             continuationOperationId: sendInput.continuationOperationId,
             messageId: sendInput.messageId,
             text: input.text,
+            ...(input.orderedReferences === undefined ? {} : { orderedReferences: input.orderedReferences }),
             ...(input.targetRefs === undefined ? {} : { targetRefs: input.targetRefs }),
           },
         },
