@@ -75,7 +75,9 @@ Reader archive
 - `apps/web-gen2/src/backend/collaboration.ts` — 既有项目 SSE 暴露 `onProjectEvent`
 - `huabu/apps/web/src/lcos/collaboration/collaborationSessionStore.ts` — `watchArtifactChanges` 复用同一 project SSE
 - `apps/web-gen2/src/host/lifecycleReconciler.ts` — `HostLifecycleReconciler.onMutationSuccess`：mutation 与 project-open reconcile 竞争时保留 pending version，直到真实 sweep 跑过；并发 mutation 继续合并
-- `apps/web-gen2/src/host/projectionFacade.ts` — `Gen2Host.notifyMutationSuccess`：UI / SSE 使用的无副作用通知入口
+- `apps/web-gen2/src/host/projectionFacade.ts`
+  - `Gen2Host.removeArchivedArtifactFromCurrentCanvas`：fresh Core graph 确认 `archivedAt` 后，仅删除当前 canvas 的 Artifact node / binding
+  - `Gen2Host.notifyMutationSuccess`：关系与其余投影的完整 reconcile 通知入口
 - `huabu/apps/web/src/lcos/shell/LcosProjectShell.tsx` — `artifact.changed` caller → 当前 host mutation reconcile
 
 ### UI consumer
@@ -97,6 +99,7 @@ Reader archive
 - active reconciler 定向测试：archived binding 被列为 orphan 并删除。
 - UI 组件链：Assembly 打开 canonical Archive body；归档条目可打开 Reader；Reader 显示只读并恢复同一 identity。
 - production race 修复：project-open reconcile 在途时 `Gen2Host.reconcile('mutation')` 会诚实返回 `false`；调用方不再丢弃该信号，而是等待当前（可能已经 retarget 的）host 可执行后再跑。
+- cold-start fast path：Reader 的 Core archive 成功后，先核 fresh graph，再复用 `nodeProjector.removeOrphanNode` 退出当前画布；随后仍通知中央 reconciler。RFS 删除失败不会倒写成 Core 失败，UI 保留 archived truth 并显示“归档已保存，画布仍在同步”。Restore 不走 fast path，继续由普通 reconcile 创建新 node / binding 和 fresh placement。
 - fail-fast headless：归档后旧 binding / node 均消失；恢复后的 spatial id 与归档前不同；reload 后仍是恢复生成的新 binding，因此没有复用旧 node id 或旧坐标。
 
 ### 命令与结果
@@ -109,7 +112,10 @@ npm run test --workspace @local-creative-os/web-gen2 ...
 → 338/338 PASS
 
 npm run test -- --run ArchiveBody.test.tsx ArtifactReaderBody.test.tsx
-→ 19/19 PASS
+→ 21/21 PASS
+
+npx tsx --test apps/web-gen2/test/g09-host.test.ts
+→ 13/13 PASS（含 Core archived guard、当前画布删除与 binding 解绑）
 
 LCOS_E2E_WEB_URL=http://localhost:5276 node scripts/e2e/archive-lifecycle.mjs
 → 脚本具备 fail-fast 断言；当前 pending-version 实现合并后待 root 在稳定隔离栈重跑
@@ -145,6 +151,8 @@ Assembly
 首次失败定位到 production caller 的时序竞争：Archive mutation 完成时 project-open reconciliation 仍在途，`Gen2Host.reconcile('mutation')` 返回 `false`；旧 caller 没有重试，因此旧 node / binding 会残留。修复后 fail-fast 场景要求旧 binding 变为不存在、旧节点文本计数归零，再允许进入恢复步骤；恢复又要求新 spatial id 与旧值不同，reload 后 id 不变。任一条件不成立脚本都非零退出。
 
 修复落在既有 `HostLifecycleReconciler`：`onMutationSuccess` 递增 pending version；若 sweep 因 project-open 在途或 cooldown 未执行，内部只保留一枚定时器继续重排；只有某次真实 sweep 覆盖当前最新 version 后才清账。Reader / Archive / SSE 只 fire-and-forget 通知当前 host，不各自创建 polling，也不把 timer 绑在已被 retarget 的 UI caller 上。
+
+主线冷启动复验进一步证明，初次全量 reconcile 在 20 秒窗口内仍可能尚未完成；删除机制本身可由手动 reconcile 立即触发，暖态也可通过。因此追加当前画布 fast path，把用户刚完成的 archive 从全量 sweep 的耗时中解耦。它不会猜 lifecycle：若 fresh Core graph 中对象仍 active / 不存在，拒绝删除；只有 canonical archived truth 才调用现有 orphan removal。
 
 历史调试轮曾生成 `C:\Users\1\AppData\Local\Temp\archive-lifecycle-pass.png`；该图早于最终中央 pending-version 调度，不能作为当前提交的闭环证据。
 

@@ -383,6 +383,27 @@ export class Gen2Host {
     return this.reconciler.runNow(trigger);
   }
 
+  /**
+   * Archive fast path for the current canvas only. Core remains the lifecycle
+   * authority: a node is removed only after a fresh graph read confirms the
+   * canonical Artifact is archived. Full reconciliation still follows for
+   * relations and every other projection.
+   */
+  async removeArchivedArtifactFromCurrentCanvas(artifactId: string): Promise<boolean> {
+    const graph = await this.projects.getProjectGraph(this.projectId);
+    const artifact = graph?.artifacts.find((candidate) => String(candidate.id) === artifactId);
+    if (artifact?.archivedAt === undefined) return false;
+
+    const binding = await this.bindings.findNode(
+      this.projectId,
+      this.canvasId,
+      'artifact',
+      artifactId,
+    );
+    if (binding !== undefined) await this.nodeProjector.removeOrphanNode(binding);
+    return true;
+  }
+
   /** Coalesced mutation invalidation; retained until a sweep can actually run. */
   notifyMutationSuccess(): void {
     this.reconciler.onMutationSuccess();

@@ -278,6 +278,68 @@ test('Gen2Host: wire nodeIdFor + connect through Core Relation -> Edge', async (
   assert.equal(await host.nodeIdFor('artifact', 'a1'), 'node-a');
 });
 
+test('Gen2Host: archive fast path verifies Core state before removing the current-canvas node', async () => {
+  const storedBindings = new Map<string, unknown>();
+  let archived = false;
+  const http = new HttpClient({
+    baseUrl: 'http://core.test',
+    fetch: async (input, init) => {
+      const url = String(input);
+      const method = init?.method ?? 'GET';
+      const body = JSON.parse((init?.body?.toString() ?? '{}'));
+      if (url.endsWith('/projects/p1/graph')) {
+        return jsonResponse({
+          ok: true,
+          value: {
+            artifacts: [{ id: 'a1', ...(archived ? { archivedAt: '2026-09-20T00:00:00.000Z' } : {}) }],
+          },
+        });
+      }
+      if (url.includes('/spatial/bindings')) {
+        const key = `${body.canvasId ?? ''}|${body.spatialKind ?? ''}|${body.entityType ?? ''}|${body.entityId ?? ''}`;
+        if (method === 'GET') return jsonResponse({ ok: true, value: [...storedBindings.values()] });
+        if (method === 'PUT') {
+          storedBindings.set(`${key}|${body.spatialId}`, body);
+          return jsonResponse({ ok: true, value: body });
+        }
+        if (method === 'DELETE') {
+          for (const storedKey of [...storedBindings.keys()]) {
+            if (storedKey.startsWith(key)) storedBindings.delete(storedKey);
+          }
+          return jsonResponse({ ok: true, value: null });
+        }
+      }
+      return jsonResponse({ ok: true, value: [] });
+    },
+  });
+  const deletedNodeIds: string[] = [];
+  const rfs = makeRfs((body) => {
+    if (cmdType(body) === 'DELETE_NODES') {
+      deletedNodeIds.push(...(body as { commands: { nodeIds: string[] }[] }).commands[0].nodeIds);
+      return jsonResponse(createdResponse(undefined));
+    }
+    return jsonResponse({});
+  });
+  const host = new Gen2Host({ http, rfs, projectId: 'p1' });
+  await host.bindings.bind({
+    projectId: 'p1',
+    canvasId: CANVAS,
+    spatialKind: 'node',
+    spatialId: 'node-a',
+    entityType: 'artifact',
+    entityId: 'a1',
+  });
+
+  assert.equal(await host.removeArchivedArtifactFromCurrentCanvas('a1'), false);
+  assert.deepEqual(deletedNodeIds, [], 'active Core Artifact must never be removed');
+  assert.equal(await host.nodeIdFor('artifact', 'a1'), 'node-a');
+
+  archived = true;
+  assert.equal(await host.removeArchivedArtifactFromCurrentCanvas('a1'), true);
+  assert.deepEqual(deletedNodeIds, ['node-a']);
+  assert.equal(await host.nodeIdFor('artifact', 'a1'), undefined);
+});
+
 test('createHostSeam: wires SemanticConnectIntent to Gen2Host.connect (Core Relation -> Edge)', async () => {
   const fakeHost = { connect: async (from: unknown, to: unknown, kind: unknown) => ({ relationId: 'rel-s', changeSetId: 'cs-s', edgeBinding: { spatialId: 'edge-s' } }) } as never as Gen2Host;
   const seam = createHostSeam(fakeHost);

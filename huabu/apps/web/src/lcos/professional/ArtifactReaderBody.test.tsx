@@ -8,6 +8,7 @@ import {
   readerCitationBlockV1,
   readerSourceTraceLabelV1,
 } from './ArtifactReaderBody';
+import { useLcosHostStore } from '../host/lcosHostState';
 
 import type * as WebGen2 from '@local-creative-os/web-gen2';
 
@@ -145,6 +146,7 @@ afterEach(() => {
   nodeEntityRefs.clear();
   window.sessionStorage.clear();
   clearReaderSessionContinuity();
+  useLcosHostStore.getState().setHost(null);
   vi.restoreAllMocks();
 });
 
@@ -164,6 +166,64 @@ describe('ArtifactReaderBody real content', () => {
     await act(async () => restoreFor.mock.results[0]?.value);
     expect(restoreFor).toHaveBeenCalledWith('project-1', 'artifact-archived');
     expect(container.querySelector('[data-lcos-reader-archived]')).toBeNull();
+  });
+
+  it('removes an archived Artifact from the current canvas before scheduling full reconcile', async () => {
+    detailFor.mockResolvedValue(detail('artifact-active', 'revision-current'));
+    revisionsFor.mockResolvedValue([revision('artifact-active', 'revision-current', 'file-current')]);
+    textFor.mockResolvedValue('# Active body');
+    archiveFor.mockResolvedValue(detail(
+      'artifact-active',
+      'revision-current',
+      'markdown',
+      'available',
+      '2026-09-20T00:00:00.000Z',
+    ).artifact);
+    const removeArchivedArtifactFromCurrentCanvas = vi.fn().mockResolvedValue(true);
+    const notifyMutationSuccess = vi.fn();
+    useLcosHostStore.getState().setHost({
+      removeArchivedArtifactFromCurrentCanvas,
+      notifyMutationSuccess,
+    } as unknown as WebGen2.Gen2Host);
+
+    const { container } = await render('artifact-active');
+    click(container, '[data-lcos-reader-lifecycle="archive"]');
+    await act(async () => archiveFor.mock.results[0]?.value);
+    await act(async () => Promise.resolve());
+
+    expect(removeArchivedArtifactFromCurrentCanvas).toHaveBeenCalledWith('artifact-active');
+    expect(notifyMutationSuccess).toHaveBeenCalledOnce();
+    expect(removeArchivedArtifactFromCurrentCanvas.mock.invocationCallOrder[0])
+      .toBeLessThan(notifyMutationSuccess.mock.invocationCallOrder[0]);
+  });
+
+  it('keeps the canonical archived state when current-canvas removal fails', async () => {
+    detailFor.mockResolvedValue(detail('artifact-rfs-failure', 'revision-current'));
+    revisionsFor.mockResolvedValue([revision('artifact-rfs-failure', 'revision-current', 'file-current')]);
+    textFor.mockResolvedValue('# Active body');
+    archiveFor.mockResolvedValue(detail(
+      'artifact-rfs-failure',
+      'revision-current',
+      'markdown',
+      'available',
+      '2026-09-20T00:00:00.000Z',
+    ).artifact);
+    const removeArchivedArtifactFromCurrentCanvas = vi.fn().mockRejectedValue(new Error('RFS unavailable'));
+    const notifyMutationSuccess = vi.fn();
+    useLcosHostStore.getState().setHost({
+      removeArchivedArtifactFromCurrentCanvas,
+      notifyMutationSuccess,
+    } as unknown as WebGen2.Gen2Host);
+
+    const { container } = await render('artifact-rfs-failure');
+    click(container, '[data-lcos-reader-lifecycle="archive"]');
+    await act(async () => archiveFor.mock.results[0]?.value);
+    await act(async () => Promise.resolve());
+
+    expect(container.querySelector('[data-lcos-reader-archived]')).not.toBeNull();
+    expect(container.textContent).toContain('归档已保存，画布仍在同步');
+    expect(container.textContent).not.toContain('归档状态更新失败');
+    expect(notifyMutationSuccess).toHaveBeenCalledOnce();
   });
 
   it('reads the currentRevisionId even when it is not the first listed revision', async () => {
