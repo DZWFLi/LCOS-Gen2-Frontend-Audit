@@ -1,7 +1,7 @@
 import { motion, useReducedMotion } from 'motion/react';
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 
-import { temporalFocusTick } from './temporalFocusProfile';
+import { temporalEpisodeFocusFace, temporalFocusTick } from './temporalFocusProfile';
 import {
   nextEnabledTemporalIndex,
   temporalRatioToY,
@@ -13,6 +13,8 @@ import {
 } from './temporalNavigation';
 import { bindTemporalWheel } from './temporalWheel';
 import { PRESENTATION_SPRING } from '../spatial/presentationMotion';
+
+import type { TemporalLengthTier } from './temporalLength';
 import './context-spatial.css';
 
 export interface TemporalRailItemView {
@@ -20,7 +22,18 @@ export interface TemporalRailItemView {
   readonly label: string;
   /** Position inside the current producer-owned time window, not a timestamp. */
   readonly ratio: number;
+  readonly lengthTier: TemporalLengthTier;
+  readonly staticWidth: number;
   readonly disabled?: boolean;
+}
+
+export interface TemporalRailWindowView {
+  readonly startIndex: number;
+  readonly endIndex: number;
+  readonly totalCount: number;
+  readonly positionRatio: number;
+  readonly spanRatio: number;
+  readonly label: string;
 }
 
 /** Presentation states only. This is not a Core event or episode schema. */
@@ -31,6 +44,7 @@ export interface TemporalRailViewProps {
   readonly activeId?: string;
   readonly reason?: string;
   readonly state?: TemporalRailVisualState;
+  readonly window?: TemporalRailWindowView;
   /** Change this when the existing owner replaces the worksite or time window. */
   readonly scopeKey?: string;
   readonly onActivate?: (item: TemporalRailItemView) => void;
@@ -45,7 +59,7 @@ const STATE_COPY: Readonly<Record<TemporalRailVisualState, string>> = {
 };
 
 export function TemporalRailView({
-  items, activeId, reason, state, scopeKey, onActivate, onWindowShift, onPreviewChange, onRetry,
+  items, activeId, reason, state, window, scopeKey, onActivate, onWindowShift, onPreviewChange, onRetry,
 }: TemporalRailViewProps): React.JSX.Element {
   const reducedMotion = useReducedMotion();
   const railRef = useRef<HTMLElement>(null);
@@ -64,11 +78,17 @@ export function TemporalRailView({
     [items],
   );
   const unavailablePositions = items.length - sorted.length;
+  const isEmpty = sorted.length === 0;
   const visualState = state ?? (sorted.length > 0 ? 'ready' : 'empty');
   const enabled = sorted.filter((item) => item.disabled !== true);
   const tabId = enabled.find((item) => item.id === rovingId)?.id
     ?? enabled.find((item) => item.id === activeId)?.id ?? enabled[0]?.id;
   const previewItem = sorted.find((item) => item.id === previewId && item.disabled !== true) ?? null;
+  const usableRailHeight = Math.max(0, railHeight - TEMPORAL_TOP_PADDING - TEMPORAL_BOTTOM_PADDING);
+  const bandHeight = window === undefined ? 0 : Math.max(18, Math.min(usableRailHeight, usableRailHeight * window.spanRatio));
+  const bandTop = window === undefined
+    ? TEMPORAL_TOP_PADDING
+    : TEMPORAL_TOP_PADDING + Math.max(0, usableRailHeight - bandHeight) * window.positionRatio;
 
   const setPreview = (item: TemporalRailItemView | null): void => {
     const id = item?.id ?? null;
@@ -83,19 +103,26 @@ export function TemporalRailView({
   useLayoutEffect(() => {
     const rail = railRef.current;
     if (rail === null) return;
-    const publish = (): void => setRailHeight(Math.min(TEMPORAL_MAX_RAIL_HEIGHT, Math.max(0, rail.clientHeight)));
+    const publish = (): void => {
+      const measured = Math.max(rail.clientHeight, rail.getBoundingClientRect().height);
+      // CSS can arrive after the first layout effect. Keep the 555px design
+      // default until a non-zero measurement exists, otherwise fisheye clamps
+      // permanently to the first tick in browsers without ResizeObserver.
+      if (!Number.isFinite(measured) || measured <= 0) return;
+      setRailHeight(Math.min(TEMPORAL_MAX_RAIL_HEIGHT, measured));
+    };
     publish();
     const observer = typeof ResizeObserver === 'function' ? new ResizeObserver(publish) : null;
     observer?.observe(rail);
     return () => observer?.disconnect();
-  }, []);
+  }, [isEmpty]);
 
   useEffect(() => {
     const rail = railRef.current;
     if (rail === null) return;
     // Keep wheel local even while the producer is unavailable. Never zoom the host.
     return bindTemporalWheel(rail, (direction) => callbacks.current.onWindowShift?.(direction));
-  }, []);
+  }, [isEmpty]);
 
   useEffect(() => {
     if (previewRef.current === null) return;
@@ -152,6 +179,7 @@ export function TemporalRailView({
       aria-valuemin={0}
       aria-valuemax={railHeight}
       aria-valuenow={focusY ?? 0}
+      aria-valuetext={window?.label}
       tabIndex={enabled.length === 0 ? 0 : -1}
       onPointerMove={(event) => {
         if (reducedMotion || sorted.length === 0) return;
@@ -194,6 +222,19 @@ export function TemporalRailView({
         buttons.current.get(item.id)?.focus({ preventScroll: true });
       }}
     >
+      {window !== undefined && window.totalCount > 0 ? <>
+        <div
+          className="lcos-temporal-window-band"
+          data-temporal-window-band
+          data-window-start={window.startIndex}
+          data-window-end={window.endIndex}
+          style={{ top: bandTop, height: bandHeight }}
+          aria-hidden
+        />
+        <output className="lcos-temporal-window-range" title={window.label}>
+          {window.startIndex + 1}–{window.endIndex + 1} / {window.totalCount}
+        </output>
+      </> : null}
       {sorted.length > 0 ? <div className="lcos-temporal-ticks" aria-hidden>
         {Array.from({ length: temporalTickCount(railHeight) }, (_, index) => {
           const baseY = TEMPORAL_TOP_PADDING + index * TEMPORAL_TICK_STEP;
@@ -211,12 +252,13 @@ export function TemporalRailView({
           ref={(node) => { if (node) buttons.current.set(item.id, node); else buttons.current.delete(item.id); }}
           type="button"
           data-temporal-item={item.id}
+          data-length-tier={item.lengthTier}
           data-active={activeId === item.id ? 'true' : undefined}
           data-preview={preview ? 'true' : undefined}
           disabled={item.disabled}
           tabIndex={item.id === tabId ? 0 : -1}
           className="lcos-temporal-item"
-          style={{ top: baseY - 12 }}
+          style={{ top: baseY - 12, '--lcos-temporal-item-width': `${item.staticWidth}px` } as React.CSSProperties}
           initial={false}
           animate={{ x: 0, scale: 1 }}
           transition={reducedMotion ? { duration: 0 } : PRESENTATION_SPRING}
@@ -229,7 +271,17 @@ export function TemporalRailView({
           onClick={() => { if (item.disabled !== true) onActivate?.(item); }}
           aria-label={item.label}
           aria-current={activeId === item.id ? 'true' : undefined}
-        ><i aria-hidden /><span>{item.label}</span></motion.button>;
+        ><motion.i
+          aria-hidden
+          initial={false}
+          animate={temporalEpisodeFocusFace({
+            staticWidth: item.staticWidth,
+            y: baseY,
+            focusY,
+            reducedMotion: reducedMotion === true,
+          })}
+          transition={reducedMotion ? { duration: 0 } : PRESENTATION_SPRING}
+        /><span>{item.label}</span></motion.button>;
       })}
       {message || unavailablePositions > 0 ? <div className="lcos-temporal-feedback" role="status">
         {message ? <span>{message}</span> : null}

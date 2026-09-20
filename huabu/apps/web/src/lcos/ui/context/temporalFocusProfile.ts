@@ -29,21 +29,47 @@ export const TEMPORAL_FOCUS_FALLOFF: readonly number[] = [
   0,
 ];
 
+function focusExtension(distance: number): number | undefined {
+  const lower = Math.floor(distance);
+  const a = TEMPORAL_FOCUS_FALLOFF[lower];
+  if (a === undefined) return undefined;
+  const b = TEMPORAL_FOCUS_FALLOFF[lower + 1] ?? 0;
+  return a + (b - a) * (distance - lower);
+}
+
 export function temporalFocusTick(index: number, focusY: number | null, reducedMotion: boolean) {
   const y = TEMPORAL_TOP_PADDING + index * TEMPORAL_TICK_STEP;
   const width = temporalTickLength(index);
   const rest = { width, height: 1, backgroundColor: '#a8b8ac' };
   if (reducedMotion || focusY === null || !Number.isFinite(focusY)) return rest;
   const distance = Math.abs(y - focusY) / TEMPORAL_TICK_STEP;
-  const lower = Math.floor(distance);
-  const a = TEMPORAL_FOCUS_FALLOFF[lower];
-  if (a === undefined) return rest;
-  const b = TEMPORAL_FOCUS_FALLOFF[lower + 1] ?? 0;
-  const extension = a + (b - a) * (distance - lower);
+  const extension = focusExtension(distance);
+  if (extension === undefined) return rest;
   const focused = index === Math.max(0, Math.round((focusY - TEMPORAL_TOP_PADDING) / TEMPORAL_TICK_STEP));
   return {
     width: Math.min(44, width + extension),
-    height: focused ? 3 : 1,
-    backgroundColor: focused ? '#263f30' : '#a8b8ac',
+    height: focused ? 4 : 1,
+    backgroundColor: focused ? '#000000' : '#a8b8ac',
+  };
+}
+
+/** T5 §8.6/8.7: add the same bell falloff on top of a canonical group's L0–L4 width. */
+export function temporalEpisodeFocusFace(input: {
+  readonly staticWidth: number;
+  readonly y: number;
+  readonly focusY: number | null;
+  readonly reducedMotion: boolean;
+}) {
+  const staticWidth = Math.max(0, Number.isFinite(input.staticWidth) ? input.staticWidth : 0);
+  const rest = { width: staticWidth, height: 2, backgroundColor: '#789082' };
+  if (input.reducedMotion || input.focusY === null || !Number.isFinite(input.focusY)) return rest;
+  const distance = Math.abs(input.y - input.focusY) / TEMPORAL_TICK_STEP;
+  const extension = focusExtension(distance);
+  if (extension === undefined) return rest;
+  const focused = distance < 0.5;
+  return {
+    width: focused ? 44 : Math.min(44, staticWidth + extension),
+    height: focused ? 4 : 2,
+    backgroundColor: focused ? '#000000' : '#789082',
   };
 }

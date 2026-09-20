@@ -5,9 +5,15 @@ import {
   projectTemporalGroupTargets,
   temporalPartialReason,
 } from './temporalTargetProjection';
+import {
+  projectTemporalGroupWindow,
+  shiftTemporalWindowStart,
+  temporalGroupRatio,
+} from './temporalWindow';
 import { createLcosCoreSession } from '../../app/lcosCoreClient';
 import { useLcosReferenceStore } from '../../lcosReferenceState';
 import { useLcosShellStore } from '../../shell/lcosShellStore';
+import { temporalLengthPresentation } from '../../ui/context/temporalLength';
 import { TemporalRailView, type TemporalRailItemView } from '../../ui/context/TemporalRailView';
 
 import type { TemporalIndexV1 } from '@local-creative-os/contracts';
@@ -18,15 +24,12 @@ export interface TemporalRailProps {
   readonly canvasId?: string;
 }
 
-function ratioFor(index: number, count: number): number {
-  return count <= 1 ? 0.5 : index / (count - 1);
-}
-
 export function TemporalRail({ projectId, workspaceId, canvasId }: TemporalRailProps): React.JSX.Element {
   const [index, setIndex] = useState<TemporalIndexV1 | null>(null);
   const [state, setState] = useState<'loading' | 'empty' | 'ready' | 'error'>('loading');
   const [reason, setReason] = useState<string>();
   const [activationReason, setActivationReason] = useState<string>();
+  const [windowStart, setWindowStart] = useState(0);
   const nodeEntityRefs = useLcosReferenceStore((referenceState) => referenceState.nodeEntityRefs);
 
   useEffect(() => {
@@ -38,6 +41,7 @@ export function TemporalRail({ projectId, workspaceId, canvasId }: TemporalRailP
     }
     const controller = new AbortController();
     setState('loading');
+    setWindowStart(0);
     setReason(undefined);
     setActivationReason(undefined);
     const session = createLcosCoreSession();
@@ -54,22 +58,44 @@ export function TemporalRail({ projectId, workspaceId, canvasId }: TemporalRailP
     return () => controller.abort();
   }, [projectId, workspaceId]);
 
-  const groups = useMemo(() => index?.mid ?? [], [index]);
+  const allGroups = useMemo(() => index?.mid ?? [], [index]);
+  const window = useMemo(
+    () => projectTemporalGroupWindow(allGroups, windowStart),
+    [allGroups, windowStart],
+  );
+  const groups = window.groups;
   const projections = useMemo(
     () => new Map(groups.map((group) => [group.id, projectTemporalGroupTargets(group, nodeEntityRefs)])),
     [groups, nodeEntityRefs],
   );
-  const items = useMemo<readonly TemporalRailItemView[]>(() => groups.map((group, itemIndex) => {
+  const items = useMemo<readonly TemporalRailItemView[]>(() => groups.map((group) => {
     const projection = projections.get(group.id);
     const located = projection?.projectedTargetCount ?? 0;
     const targetSummary = `可定位 ${located}/${group.targets.length} 个目标`;
+    const length = temporalLengthPresentation({ eventCount: group.eventCount, targetCount: group.targets.length });
     return {
       id: group.id,
       label: `${new Date(group.start).toLocaleString()} · ${group.eventCount} 条记录 · ${targetSummary}`,
-      ratio: ratioFor(itemIndex, groups.length),
+      ratio: temporalGroupRatio(group, groups),
+      lengthTier: length.tier,
+      staticWidth: length.width,
       disabled: projection === undefined || projection.nodeIds.length === 0,
     };
   }), [groups, projections]);
+
+  const windowView = useMemo(() => {
+    const first = groups[0];
+    const last = groups.at(-1);
+    if (first === undefined || last === undefined) return undefined;
+    return {
+      startIndex: window.startIndex,
+      endIndex: window.endIndex,
+      totalCount: window.totalCount,
+      positionRatio: window.positionRatio,
+      spanRatio: window.spanRatio,
+      label: `${new Date(first.start).toLocaleString()} — ${new Date(last.end).toLocaleString()}`,
+    };
+  }, [groups, window]);
 
   const activate = (item: TemporalRailItemView): void => {
     const group = groups.find((candidate) => candidate.id === item.id);
@@ -87,9 +113,18 @@ export function TemporalRail({ projectId, workspaceId, canvasId }: TemporalRailP
 
   return <TemporalRailView
     items={items}
+    window={windowView}
     reason={activationReason ?? reason}
     state={activationReason === undefined ? state : 'recovery'}
-    scopeKey={workspaceId}
+    scopeKey={`${workspaceId ?? 'none'}:${window.startIndex}`}
     onActivate={activate}
+    onWindowShift={(direction) => {
+      setActivationReason(undefined);
+      setWindowStart((current) => shiftTemporalWindowStart({
+        currentStart: current,
+        direction,
+        totalCount: allGroups.length,
+      }));
+    }}
   />;
 }

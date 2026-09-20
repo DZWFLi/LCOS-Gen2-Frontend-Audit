@@ -102,8 +102,22 @@ describe('Stage6 real React presentation', () => {
 
   it('moves DOM focus, skips unavailable entries and cleans the preview on scope change', async () => {
     const preview = vi.fn();
-    const items = [{ id: 'a', label: '第一组', ratio: .1 }, { id: 'b', label: '不可用', ratio: .5, disabled: true }, { id: 'c', label: '第三组', ratio: .9 }];
-    await render(<TemporalRailView items={items} onPreviewChange={preview} scopeKey="one" />);
+    const items = [
+      { id: 'a', label: '第一组', ratio: .1, lengthTier: 'L0' as const, staticWidth: 8 },
+      { id: 'b', label: '不可用', ratio: .5, lengthTier: 'L2' as const, staticWidth: 16, disabled: true },
+      { id: 'c', label: '第三组', ratio: .9, lengthTier: 'L4' as const, staticWidth: 34 },
+    ];
+    await render(<TemporalRailView
+      items={items}
+      window={{ startIndex: 2, endIndex: 4, totalCount: 9, positionRatio: .4, spanRatio: 1 / 3, label: '9月3日 — 9月5日' }}
+      onPreviewChange={preview}
+      scopeKey="one"
+    />);
+    expect(host.querySelector('[data-temporal-window-band]')?.getAttribute('data-window-start')).toBe('2');
+    expect(host.textContent).toContain('3–5 / 9');
+    expect(Number(host.querySelector('[data-lcos-temporal-rail]')?.getAttribute('aria-valuemax'))).toBeGreaterThan(0);
+    expect(button('[data-temporal-item="c"]').dataset.lengthTier).toBe('L4');
+    expect(button('[data-temporal-item="c"]').style.getPropertyValue('--lcos-temporal-item-width')).toBe('34px');
     await act(async () => button('[data-temporal-item="a"]').focus());
     await act(async () => { button('[data-temporal-item="a"]').dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true, cancelable: true })); });
     expect(document.activeElement).toBe(button('[data-temporal-item="c"]'));
