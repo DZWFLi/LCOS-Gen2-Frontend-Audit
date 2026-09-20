@@ -43,11 +43,24 @@ const SURFACE_PREFERENCE: Readonly<Record<LcosSurfaceKey, string>> = {
   workflow: 'workflow',
 };
 
-function buildSurfaceCanvasMap(workspaces: readonly Workspace[]): Partial<Record<LcosSurfaceKey, string>> {
+/**
+ * Resolve only the three root surface workspaces for SurfaceDock.
+ *
+ * A canonical Workflow scope can own several child workspaces, all carrying
+ * `preferredSurface: workflow`. Those are explicit `?workspaceId=` targets;
+ * they must never make the root `/projects/:id/workflow` route ambiguous.
+ * The root scope id comes from the Core graph, so this selection does not
+ * infer a target from a title, order, or the first array item.
+ */
+export function buildSurfaceCanvasMap(
+  workspaces: readonly Workspace[],
+  rootScopeId: string,
+): Partial<Record<LcosSurfaceKey, string>> {
   const bySurface = new Map<LcosSurfaceKey, readonly Workspace[]>();
   for (const workspace of workspaces) {
     const pref = workspace.preferredSurface as LcosSurfaceKey | undefined;
     if (!pref || !Object.prototype.hasOwnProperty.call(SURFACE_PREFERENCE, pref)) continue;
+    if (String(workspace.scopeId) !== rootScopeId) continue;
     bySurface.set(pref, [...(bySurface.get(pref) ?? []), workspace]);
   }
   const map: Partial<Record<LcosSurfaceKey, string>> = {};
@@ -62,6 +75,7 @@ export function useLcosWorksite(projectId: string): LcosWorksiteState {
   const [workspaces, setWorkspaces] = useState<readonly Workspace[]>([]);
   const [surfaceByWorkspace, setSurfaceByWorkspace] = useState<Readonly<Map<string, LcosSurfaceKey>>>(new Map());
   const [projectName, setProjectName] = useState<string | null>(null);
+  const [rootScopeId, setRootScopeId] = useState<string | undefined>(undefined);
   const [status, setStatus] = useState<WorksiteStatus>('loading');
   const [statusDetail, setStatusDetail] = useState<string | undefined>(undefined);
   const [reloadKey, setReloadKey] = useState(0);
@@ -74,13 +88,19 @@ export function useLcosWorksite(projectId: string): LcosWorksiteState {
     setStatus('loading');
     void (async () => {
       try {
-        const [list, ws] = await Promise.all([
+        const [list, ws, graph] = await Promise.all([
           session.projects.listProjects(),
           session.projects.getWorkspaces(projectId),
+          session.projects.getProjectGraph(projectId),
         ]);
         if (cancelled) return;
+        const nextRootScopeId = graph?.scopes.find((scope) => scope.kind === 'root')?.id;
+        if (nextRootScopeId === undefined) {
+          throw new Error('Project graph has no canonical root scope.');
+        }
         const matched = list.find((p) => p.id === projectId);
         setProjectName(matched?.name ?? null);
+        setRootScopeId(String(nextRootScopeId));
         const workspaceSurface = new Map<string, LcosSurfaceKey>();
         for (const workspace of ws) {
           const pref = workspace.preferredSurface as LcosSurfaceKey | undefined;
@@ -88,7 +108,7 @@ export function useLcosWorksite(projectId: string): LcosWorksiteState {
           workspaceSurface.set(String(workspace.id), pref);
         }
         setSurfaceByWorkspace(workspaceSurface);
-        setSurfaceCanvasMap(buildSurfaceCanvasMap(ws));
+        setSurfaceCanvasMap(buildSurfaceCanvasMap(ws, String(nextRootScopeId)));
         setWorkspaces(ws);
         setStatus('ready');
       } catch (error) {
@@ -118,26 +138,30 @@ export function useLcosWorksite(projectId: string): LcosWorksiteState {
         // 两个 setter 各自独立调用。
         const next = workspaces.map((candidate) => String(candidate.id) === workspaceId ? updated : candidate);
         setWorkspaces(next);
-        setSurfaceCanvasMap(buildSurfaceCanvasMap(next));
+        if (rootScopeId !== undefined) setSurfaceCanvasMap(buildSurfaceCanvasMap(next, rootScopeId));
         return created.canvasId;
       } catch (error) {
         setStatusDetail(error instanceof Error ? error.message : String(error));
         return undefined;
       }
     },
-    [workspaces, session, projectId, setSurfaceCanvasMap],
+    [projectId, rootScopeId, session, setSurfaceCanvasMap, workspaces],
   );
 
   const ensureSurfaceCanvas = useCallback(
     async (surface: LcosSurfaceKey, force = false): Promise<string | undefined> => {
       const existing = surfaceCanvasId[surface];
       if (!force && existing) return existing;
-      const candidates = workspaces.filter((workspace) => workspace.preferredSurface === SURFACE_PREFERENCE[surface]);
+      const candidates = workspaces.filter((workspace) =>
+        workspace.preferredSurface === SURFACE_PREFERENCE[surface]
+        && rootScopeId !== undefined
+        && String(workspace.scopeId) === rootScopeId,
+      );
       // Root navigation cannot silently choose among same-surface workspaces.
       if (candidates.length !== 1 || candidates[0] === undefined) return undefined;
       return ensureWorkspaceCanvas(String(candidates[0].id), force);
     },
-    [ensureWorkspaceCanvas, surfaceCanvasId, workspaces],
+    [ensureWorkspaceCanvas, rootScopeId, surfaceCanvasId, workspaces],
   );
 
   const retry = useCallback(() => {
