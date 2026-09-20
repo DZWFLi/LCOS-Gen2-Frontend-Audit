@@ -12,22 +12,31 @@ import { LcosWorksiteStage } from '../../shell/LcosWorksiteStage';
 import { WorkflowHandView } from '../../ui/workflow/WorkflowHandView';
 
 import type { LcosSurfaceKey } from '../../shell/lcosShellStore';
+import type { Workspace } from '@local-creative-os/domain';
 
 export interface WorkflowWorksiteProps {
   readonly projectId: string;
   readonly surface: LcosSurfaceKey;
   readonly canvasId?: string;
+  readonly workspaces: readonly Workspace[];
+  readonly isChildWorksite?: boolean;
   readonly ensureCanvas: (surface: LcosSurfaceKey, force?: boolean) => Promise<string | undefined>;
 }
 
 export interface WorkflowHandOverlayProps {
   readonly projectId: string;
+  readonly workspaces: readonly Workspace[];
+  readonly sourceSurface: 'main' | 'workflow';
+  readonly sourceWasChild: boolean;
   readonly open: boolean;
   readonly onClose: () => void;
 }
 
-/** 可由 Main / Workflow 现场共同呼出的手牌；不拥有 Canvas 或业务 truth。 */
-export function WorkflowHandOverlay({ projectId, open, onClose }: WorkflowHandOverlayProps): React.JSX.Element | null {
+/**
+ * 可由 Main / Workflow 现场共同呼出的手牌；不拥有 Canvas 或业务 truth。
+ * TaskCard 进入能力只委托给既有 child-worksite navigation owner。
+ */
+export function WorkflowHandOverlay({ projectId, workspaces, sourceSurface, sourceWasChild, open, onClose }: WorkflowHandOverlayProps): React.JSX.Element | null {
   useCloseOnEscape(open, onClose);
   return (
     <WorkflowHandView key={projectId} open={open} header={<>
@@ -36,7 +45,7 @@ export function WorkflowHandOverlay({ projectId, open, onClose }: WorkflowHandOv
         <X className="h-[22px] w-[22px]" aria-hidden />
       </button>
     </>}>
-      <WorkflowCardPool projectId={projectId} />
+      <WorkflowCardPool projectId={projectId} workspaces={workspaces} sourceSurface={sourceSurface} sourceWasChild={sourceWasChild} />
     </WorkflowHandView>
   );
 }
@@ -45,6 +54,8 @@ export function WorkflowWorksite({
   projectId,
   surface,
   canvasId,
+  workspaces,
+  isChildWorksite = false,
   ensureCanvas,
 }: WorkflowWorksiteProps): React.JSX.Element {
   const [handOpen, setHandOpen] = useState(false);
@@ -71,7 +82,7 @@ export function WorkflowWorksite({
         <Hand className="h-4 w-4" aria-hidden />
       </button>
 
-      <WorkflowHandOverlay projectId={projectId} open={handOpen} onClose={() => setHandOpen(false)} />
+      <WorkflowHandOverlay projectId={projectId} workspaces={workspaces} sourceSurface="workflow" sourceWasChild={isChildWorksite} open={handOpen} onClose={() => setHandOpen(false)} />
     </div>
   );
 }

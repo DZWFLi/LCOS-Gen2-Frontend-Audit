@@ -1,9 +1,10 @@
 import { describe, expect, it } from 'vitest';
 
-import { toWorkflowHandCards, workflowComposerTarget } from './WorkflowCardPool';
+import { resolveWorkflowCardEntry, toWorkflowHandCards, workflowComposerTarget } from './WorkflowCardPool';
 import { isWorkflowCardItem, isWorkflowMaterialItem, isWorkflowReceiverItem } from './workflowCardSemantics';
 
 import type { WarehouseItemV1 } from '@local-creative-os/contracts';
+import type { Workspace } from '@local-creative-os/domain';
 
 function item(kind: WarehouseItemV1['kind']): WarehouseItemV1 {
   return {
@@ -12,6 +13,22 @@ function item(kind: WarehouseItemV1['kind']): WarehouseItemV1 {
     kind,
     title: kind,
     usageCount: 0,
+  };
+}
+
+function workspace(id: string, scopeId: string, canvasId?: string): Workspace {
+  return {
+    id: id as Workspace['id'],
+    projectId: 'project-1' as Workspace['projectId'],
+    scopeId: scopeId as Workspace['scopeId'],
+    name: id,
+    intent: null,
+    viewport: { x: 0, y: 0, zoom: 1 },
+    focusedViewIds: [],
+    visibleLayers: ['core'],
+    contextPolicy: 'selection-only',
+    ...(canvasId === undefined ? {} : { canvasId }),
+    updatedAt: '2026-09-20T00:00:00.000Z',
   };
 }
 
@@ -53,5 +70,33 @@ describe('Workflow card pool UX semantics', () => {
     const conversationTarget = workflowComposerTarget(conversation, 'workspace-workflow');
     expect(conversationTarget.receiverConversationId).toBe('conversation-1');
     expect(conversationTarget.receiverBlockedReason).toBeUndefined();
+  });
+
+  it('enters only the single exact workflow scope target and never resolves skills or titles as workspaces', () => {
+    const cards = toWorkflowHandCards(
+      [item('workflow')],
+      [{ id: 'skill-1', source: 'system', name: 'workflow-1', description: 'same-looking title' }],
+    );
+    const workflow = cards.find((card) => card.entityType === 'workflow');
+    const skill = cards.find((card) => card.entityType === 'skill');
+    expect(workflow).toBeDefined();
+    expect(skill).toBeDefined();
+    if (workflow === undefined || skill === undefined) throw new Error('expected workflow and skill cards');
+
+    expect(resolveWorkflowCardEntry(workflow, [workspace('workspace-1', 'workflow-1', 'canvas-1')])).toMatchObject({
+      status: 'ready',
+      targetSurface: 'workflow',
+      targetWorkspace: { id: 'workspace-1', canvasId: 'canvas-1' },
+    });
+    expect(resolveWorkflowCardEntry(workflow, [])).toMatchObject({ status: 'unavailable', code: 'target_missing' });
+    expect(resolveWorkflowCardEntry(workflow, [workspace('workspace-1', 'workflow-1')])).toMatchObject({ status: 'unavailable', code: 'canvas_missing' });
+    expect(resolveWorkflowCardEntry(workflow, [
+      workspace('workspace-1', 'workflow-1', 'canvas-1'),
+      workspace('workspace-2', 'workflow-1', 'canvas-2'),
+    ])).toMatchObject({ status: 'unavailable', code: 'target_ambiguous' });
+    expect(resolveWorkflowCardEntry(skill, [workspace('workspace-by-title', 'unrelated', 'canvas-3')])).toMatchObject({
+      status: 'unavailable',
+      code: 'skill_without_worksite',
+    });
   });
 });

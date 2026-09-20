@@ -24,6 +24,13 @@ export interface WorkflowTaskCardViewProps {
   readonly previewUrl?: string;
   readonly state: WorkflowTaskCardVisualState;
   readonly onUse?: () => void;
+  /** Single pointer activation only changes local preview presentation. */
+  readonly onPreview?: () => void;
+  /** Double click / Enter delegates navigation to the canonical target owner. */
+  readonly onEnter?: () => void;
+  readonly entryHint?: string;
+  /** Honest target state; onEnter may still exist to surface a fail-close reason. */
+  readonly entryAvailable?: boolean;
   readonly dataSource?: string;
   readonly dataEntity?: string;
   /** Transitional selector for the current production/e2e contract. */
@@ -36,6 +43,10 @@ export function WorkflowTaskCardView({
   previewUrl,
   state,
   onUse,
+  onPreview,
+  onEnter,
+  entryHint,
+  entryAvailable = false,
   disabledReason,
   dataSource,
   dataEntity,
@@ -45,6 +56,8 @@ export function WorkflowTaskCardView({
   const focus = useDescendantFocus();
   const disabled = state === '不可用';
   const actionAllowed = onUse !== undefined && !disabled;
+  const previewAllowed = onPreview !== undefined && !disabled;
+  const enterAllowed = onEnter !== undefined && !disabled;
   const secondary =
     state === '草稿中'
       ? '已加入草稿 · 未发送'
@@ -59,10 +72,37 @@ export function WorkflowTaskCardView({
         {...(legacyWorkflowKind === undefined ? {} : { 'data-lcos-workflow-card': legacyWorkflowKind })}
         data-lcos-workflow-task-card
         data-state={state}
+        data-preview={state === '预览' ? 'true' : undefined}
+        data-entry-available={entryAvailable ? 'true' : 'false'}
         className="lcos-workflow-task-card"
         tabIndex={disabled ? -1 : 0}
+        role="group"
+        aria-roledescription="工作流任务卡"
         aria-disabled={disabled || undefined}
-        aria-label={`${title} · ${secondary}`}
+        aria-label={`${title} · ${secondary}${entryHint ? ` · ${entryHint}` : ''}`}
+        onClick={(event) => {
+          if (!previewAllowed) return;
+          const target = event.target;
+          if (target instanceof Element && target.closest('button,a,input,select,textarea')) return;
+          onPreview();
+        }}
+        onDoubleClick={(event) => {
+          if (!enterAllowed) return;
+          const target = event.target;
+          if (target instanceof Element && target.closest('button,a,input,select,textarea')) return;
+          event.preventDefault();
+          onEnter();
+        }}
+        onKeyDown={(event) => {
+          if (event.target !== event.currentTarget || disabled) return;
+          if (event.key === 'Enter' && enterAllowed) {
+            event.preventDefault();
+            onEnter();
+          } else if (event.key === ' ' && previewAllowed) {
+            event.preventDefault();
+            onPreview();
+          }
+        }}
         initial={reducedMotion ? false : { opacity: 0, y: 112, scale: 0.82 }}
         animate={presentationPose(reducedMotion, focus.focused || state === '键盘焦点', disabled)}
         exit={{ opacity: 0, y: reducedMotion ? 0 : 42, scale: reducedMotion ? 1 : 0.8, transition: reducedMotion ? { duration: 0 } : PRESENTATION_EXIT }}

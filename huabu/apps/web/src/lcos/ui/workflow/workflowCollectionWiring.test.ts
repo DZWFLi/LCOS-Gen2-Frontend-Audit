@@ -27,7 +27,7 @@ describe('Workflow Collection 真实 caller 接线', () => {
   it('Workflow Worksite 继续由唯一 WorkflowCardPool 提供卡池', () => {
     const source = read('huabu/apps/web/src/lcos/surfaces/workflow/WorkflowWorksite.tsx');
     expect(source).toContain("import { WorkflowCardPool } from './WorkflowCardPool';");
-    expect(source).toContain('<WorkflowCardPool projectId={projectId} />');
+    expect(source).toContain('<WorkflowCardPool projectId={projectId} workspaces={workspaces} sourceSurface={sourceSurface} sourceWasChild={sourceWasChild} />');
   });
 
   it('Main workflow 节点来自 Core scope 的单一投影绑定，不创建第二 store', () => {

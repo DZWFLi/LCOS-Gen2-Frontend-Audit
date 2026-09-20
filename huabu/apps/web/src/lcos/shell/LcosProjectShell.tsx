@@ -239,6 +239,8 @@ export function LcosProjectShell({
                 projectId={projectId}
                 surface={active}
                 canvasId={effectiveCanvasBySurface[active]}
+                workspaces={workspaces}
+                isChildWorksite={childWorkspaceId !== undefined}
                 ensureCanvas={ensureActiveCanvas}
               />
             ) : (
@@ -333,7 +335,14 @@ export function LcosProjectShell({
               >
                 <Hand size={18} aria-hidden />
               </button>
-              <WorkflowHandOverlay projectId={projectId} open={mainHandOpen} onClose={() => setMainHandOpen(false)} />
+              <WorkflowHandOverlay
+                projectId={projectId}
+                workspaces={workspaces}
+                sourceSurface="main"
+                sourceWasChild={childWorkspaceId !== undefined}
+                open={mainHandOpen}
+                onClose={() => setMainHandOpen(false)}
+              />
             </>
           )}
         </>

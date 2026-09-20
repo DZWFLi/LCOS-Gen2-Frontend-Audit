@@ -112,3 +112,57 @@
  .lcos-workflow-hand-cards { height:auto; display:grid; grid-template-columns:repeat(auto-fit,224px); justify-content:center; padding-inline:0; gap:22px; overflow:visible; }
  .lcos-workflow-hand-cards > .lcos-workflow-task-slot:nth-child(n) { transform:none; margin:0; height:324px; }
 }
+
+/* The production pool has semantic lane sections. Keep task cards in the
+   first viewport and let compact material/receiver lanes follow below; they
+   must never push the primary TaskCard off-screen. */
+.lcos-workflow-hand-cards {
+  height:430px;
+  display:flex;
+  flex-direction:column;
+  align-items:stretch;
+  gap:28px;
+  overflow-x:hidden;
+  overflow-y:auto;
+  padding:18px 18px 54px;
+}
+.lcos-workflow-hand-cards > [data-lcos-card-lane='task'] { order:-1; flex:0 0 auto; min-width:0; }
+.lcos-workflow-card-lane-grid { min-width:0; }
+.lcos-workflow-card-lane-grid--task {
+  min-height:380px;
+  display:flex;
+  align-items:flex-start;
+  overflow-x:auto;
+  overflow-y:hidden;
+  padding:18px 72px 38px;
+  scrollbar-width:none;
+}
+.lcos-workflow-card-lane-grid--task::-webkit-scrollbar { display:none; }
+.lcos-workflow-card-lane-grid--task > .lcos-workflow-task-slot + .lcos-workflow-task-slot { margin-left:-64px; }
+.lcos-workflow-card-lane-grid--task > .lcos-workflow-task-slot:nth-child(5n+1) { transform:translateY(56px) rotate(-4deg); }
+.lcos-workflow-card-lane-grid--task > .lcos-workflow-task-slot:nth-child(5n+2) { transform:translateY(28px) rotate(-2deg); }
+.lcos-workflow-card-lane-grid--task > .lcos-workflow-task-slot:nth-child(5n+3) { transform:none; }
+.lcos-workflow-card-lane-grid--task > .lcos-workflow-task-slot:nth-child(5n+4) { transform:translateY(28px) rotate(2deg); }
+.lcos-workflow-card-lane-grid--task > .lcos-workflow-task-slot:nth-child(5n+5) { transform:translateY(56px) rotate(4deg); }
+.lcos-workflow-card-lane-grid--task > .lcos-workflow-task-slot:first-child { margin-left:auto; }
+.lcos-workflow-card-lane-grid--task > .lcos-workflow-task-slot:last-child { margin-right:auto; }
+.lcos-workflow-card-lane-grid--task > .lcos-workflow-task-slot:only-child { margin-inline:auto; transform:none; }
+.lcos-workflow-card-lane-grid--task > .lcos-workflow-task-slot:is(:hover,:focus-within) { z-index:2; }
+.lcos-workflow-card-lane-grid--task:has(.lcos-workflow-task-slot:hover) .lcos-workflow-task-slot:not(:hover),
+.lcos-workflow-card-lane-grid--task:has(.lcos-workflow-task-slot:focus-within) .lcos-workflow-task-slot:not(:focus-within) { opacity:.68; filter:saturate(.74); }
+.lcos-workflow-card-lane-grid--material,
+.lcos-workflow-card-lane-grid--receiver {
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(224px,1fr));
+  gap:12px;
+}
+.lcos-workflow-task-card[data-state='预览'] > .lcos-workflow-task-plate {
+  border:2px solid var(--gen2-accent);
+  box-shadow:0 12px 28px rgba(31,46,61,.14),0 0 0 4px color-mix(in srgb,var(--gen2-accent) 10%,transparent);
+}
+
+@media (max-width:760px), (prefers-reduced-motion:reduce) {
+  .lcos-workflow-hand-cards { height:auto; min-height:324px; display:flex; padding:18px 0 40px; gap:22px; overflow-y:auto; }
+  .lcos-workflow-card-lane-grid--task { min-height:324px; display:grid; grid-template-columns:repeat(auto-fit,224px); justify-content:center; padding:0; gap:22px; overflow:visible; }
+  .lcos-workflow-card-lane-grid--task > .lcos-workflow-task-slot:nth-child(n) { height:324px; margin:0; transform:none; transition:none; }
+}

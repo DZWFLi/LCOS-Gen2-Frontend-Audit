@@ -64,9 +64,24 @@ describe('Stage6 real React presentation', () => {
 
   it('keeps task draft entry separate from Run and from image retry', async () => {
     const use = vi.fn();
-    await render(<WorkflowTaskCardView title="任务" state="悬停" onUse={use} />);
+    const preview = vi.fn();
+    const enter = vi.fn();
+    await render(<WorkflowTaskCardView title="任务" state="悬停" onUse={use} onPreview={preview} onEnter={enter} entryHint="双击或按 Enter 进入" />);
     await act(async () => button('[data-lcos-card-take]').click());
     expect(use).toHaveBeenCalledTimes(1);
+    expect(preview).not.toHaveBeenCalled();
+    expect(enter).not.toHaveBeenCalled();
+
+    const card = host.querySelector('[data-lcos-workflow-task-card]');
+    if (!(card instanceof HTMLElement)) throw new Error('Expected task card');
+    await act(async () => card.dispatchEvent(new MouseEvent('click', { bubbles: true })));
+    expect(preview).toHaveBeenCalledTimes(1);
+    expect(use).toHaveBeenCalledTimes(1);
+    await act(async () => card.dispatchEvent(new MouseEvent('dblclick', { bubbles: true, cancelable: true })));
+    expect(enter).toHaveBeenCalledTimes(1);
+    await act(async () => card.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true })));
+    expect(enter).toHaveBeenCalledTimes(2);
+
     await render(<WorkflowTaskCardView title="任务" state="草稿中" onUse={use} />);
     // Stage4 caller contract keeps draft take available; it must not create a Run.
     expect(host.querySelector('[data-lcos-card-take]')).not.toBeNull();
