@@ -82,7 +82,7 @@ describe('promptExistingAcpSession', () => {
     const owner = entry(prompt);
     const onPermission = vi.fn();
 
-    await promptExistingAcpSession(owner, '需要工具', undefined, onPermission);
+    await promptExistingAcpSession(owner, '需要工具', undefined, undefined, onPermission);
 
     expect(onPermission).toHaveBeenCalledWith(request);
     expect(owner.client.resolvePermission).not.toHaveBeenCalled();

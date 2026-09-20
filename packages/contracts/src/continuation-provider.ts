@@ -11,6 +11,7 @@
  */
 
 import type { ContinuityAttachBundleV1 } from './continuity.js'
+import type { OrderedRunReferenceV2 } from './run-assembly.js'
 import type {
   ContinuationProviderIdV1,
   ProviderContinuationCapabilitySnapshotV1,
@@ -70,7 +71,51 @@ export interface AttachContextInputV1 {
   readonly provider: string
   readonly agentletId?: string
   readonly externalSessionId: string
+  readonly transportSessionId?: string
+  readonly threadId?: string
+  /** Caller-owned prompt identity. Required for message-scoped idempotency. */
+  readonly messageId?: string
+  /** Reference identity/order only. Content remains owned by Core. */
+  readonly orderedReferences?: readonly OrderedRunReferenceV2[]
+  /** Frozen revision/hash metadata only; attach preflight never carries body text. */
+  readonly contextResolution?: readonly ProviderContextResolutionEvidenceV1[]
   readonly bundle: ContinuityAttachBundleV1
+}
+
+/** Provider-confirmed binding that must accompany the immediately following prompt. */
+export interface ProviderContextAttachmentV1 {
+  readonly attachmentId: string
+  readonly messageId: string
+  readonly correlationId: string
+  readonly orderedReferences: readonly OrderedRunReferenceV2[]
+  readonly contextResolution: readonly ProviderContextResolutionEvidenceV1[]
+  /** Core-resolved text evidence for providers that explicitly support ACP embedded context. */
+  readonly resolvedReferences: readonly ProviderResolvedContextReferenceV1[]
+}
+
+export interface ProviderResolvedContextReferenceV1 {
+  readonly order: number
+  readonly mode: 'full' | 'summary' | 'structure'
+  readonly ref: OrderedRunReferenceV2['ref']
+  readonly title: string
+  readonly mimeType: 'text/plain'
+  readonly text: string
+}
+
+/**
+ * Small durable evidence that pins one caller reference to the exact Core
+ * revision used for a message-scoped attach. Text stays in the filesystem;
+ * retries re-read this revision and verify its content hash.
+ */
+export interface ProviderContextResolutionEvidenceV1 {
+  readonly order: number
+  readonly mode: 'full' | 'summary' | 'structure'
+  readonly ref: OrderedRunReferenceV2['ref']
+  readonly artifactId: string
+  readonly revisionId: string
+  readonly fileRecordId: string
+  readonly contentHash: string
+  readonly title: string
 }
 
 /** send payload：prompt 或 resource；contextAttachRequested 仅当 request 明示允许 first-send degrade 时使用。 */
@@ -79,6 +124,7 @@ export interface ProviderSendPayloadV1 {
   readonly text?: string
   readonly resourceRef?: string
   readonly contextAttachRequested?: boolean
+  readonly contextAttachment?: ProviderContextAttachmentV1
 }
 
 export interface SendInputV1 {
@@ -173,6 +219,9 @@ export interface ProviderContinuationOperationResultV1 {
   readonly threadId?: string
   /** Assistant text returned by a send operation. The Core caller decides how to persist it. */
   readonly responseText?: string
+  /** Present only after the provider explicitly accepts a message-scoped context binding. */
+  readonly contextAttachmentId?: string
+  readonly messageId?: string
   readonly pid?: number
   readonly cwd?: string
   readonly contextAttached: boolean

@@ -80,6 +80,11 @@ class HostProtocolServer {
       response.end(JSON.stringify({ handled: true }))
       return
     }
+    if (request.method === 'POST' && path.endsWith('/sessions/session-1/context-attachments')) {
+      const input = body as { messageId: string; correlationId: string }
+      response.end(JSON.stringify({ attachmentId: `attachment:${input.messageId}`, messageId: input.messageId, correlationId: input.correlationId }))
+      return
+    }
     response.statusCode = 404
     response.end(JSON.stringify({ error: { code: 'session_not_found', message: 'missing' } }))
   }
@@ -166,6 +171,32 @@ describe('HuabuAgentletHostTransportV1', () => {
         requestId: 'permission-1',
         selectedOptions: ['allow-once'],
       },
+    })
+  })
+
+  it('gets an explicit message-scoped attach receipt before forwarding the same manifest with the prompt', async () => {
+    server = new HostProtocolServer()
+    await server.start()
+    const transport = new HuabuAgentletHostTransportV1({ hostBaseUrl: server.url(), agentletId: 'machine-a' })
+    const orderedReferences = [{ order: 0, mode: 'summary' as const, ref: { type: 'artifact' as const, artifactId: 'artifact-1', revisionId: 'revision-1' } }]
+    const contextResolution = [{ ...orderedReferences[0]!, artifactId: 'artifact-1', revisionId: 'revision-1', fileRecordId: 'file-1', contentHash: 'hash-1', title: 'Brief' }]
+    const resolvedReferences = [{ ...orderedReferences[0]!, title: 'Brief', mimeType: 'text/plain' as const, text: 'UNIQUE-ATTACH-7429' }]
+    const attached = await transport.attachContext({
+      agentletId: 'machine-a', threadId: 'thread-1', externalSessionId: 'native-1', transportSessionId: 'session-1',
+      messageId: 'message-1', correlationId: 'corr-1', orderedReferences, contextResolution,
+    })
+    expect(attached).toEqual({ attachmentId: 'attachment:message-1', messageId: 'message-1', correlationId: 'corr-1' })
+
+    await transport.sendPrompt({
+      agentletId: 'machine-a', threadId: 'thread-1', externalSessionId: 'native-1', transportSessionId: 'session-1', text: '继续',
+      contextAttachment: { ...attached, orderedReferences, contextResolution, resolvedReferences },
+    })
+    expect(server.requests).toHaveLength(2)
+    expect(server.requests[0]?.url).toContain('/context-attachments')
+    expect(server.requests[0]?.body).toMatchObject({ orderedReferences, contextResolution })
+    expect(JSON.stringify(server.requests[0]?.body)).not.toContain('UNIQUE-ATTACH-7429')
+    expect(server.requests[1]?.body).toMatchObject({
+      contextAttachment: { attachmentId: 'attachment:message-1', messageId: 'message-1', correlationId: 'corr-1', orderedReferences, contextResolution, resolvedReferences },
     })
   })
 

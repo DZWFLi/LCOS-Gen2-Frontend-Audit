@@ -200,13 +200,13 @@ describe('step progression and allowedActions', () => {
     expect(actions).not.toContain('recover_external')
   })
 
-  it('bind confirmed + attach failed → retry_attach; projection failed → retry_projection', async () => {
+  it('does not advertise operation-level retry_attach without a messageId; projection failure still exposes retry_projection', async () => {
     const { service, projectId, conversationId } = await setup()
     service.submit(submitInput(projectId, conversationId))
     service.advanceStep(projectId, 'op-1', { step: 'external_create', outcome: 'confirmed', externalEvidence: evidence() })
     service.advanceStep(projectId, 'op-1', { step: 'core_bind', outcome: 'confirmed' })
     const attach = service.advanceStep(projectId, 'op-1', { step: 'attach', outcome: 'failed' })
-    expect(attach.allowedActions.some((action) => action.action === 'retry_attach')).toBe(true)
+    expect(attach.allowedActions.some((action) => action.action === 'retry_attach')).toBe(false)
 
     service.advanceStep(projectId, 'op-1', { step: 'attach', outcome: 'confirmed' })
     const projection = service.advanceStep(projectId, 'op-1', { step: 'projection', outcome: 'failed' })

@@ -1,4 +1,5 @@
-import { mkdtemp, rm } from 'node:fs/promises'
+import { createHash } from 'node:crypto'
+import { mkdtemp, rm, stat, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
@@ -55,9 +56,11 @@ interface FakeTransportOverrides {
   readonly sendError?: Error
   readonly sendPromptError?: Error
   readonly sendPromptResult?: { readonly externalSessionId: string; readonly transportSessionId: string; readonly threadId: string; readonly text?: string; readonly stopReason?: string }
+  readonly attachContextError?: Error
+  readonly attachContextResult?: { readonly attachmentId: string; readonly messageId: string; readonly correlationId: string }
   readonly getSessionResult?: HuabuAgentletSessionInfoV1 | undefined
   readonly listAgents?: readonly HuabuAgentletSessionInfoV1[]
-  readonly probeClaims?: Readonly<Partial<Record<'createSession' | 'continueExisting' | 'send' | 'status' | 'cancel' | 'recoverExisting', CapabilityClaimV1>>>
+  readonly probeClaims?: Readonly<Partial<Record<'createSession' | 'continueExisting' | 'attachContext' | 'send' | 'status' | 'cancel' | 'recoverExisting', CapabilityClaimV1>>>
 }
 
 class FakeHuabuTransport implements HuabuAgentletTransportV1 {
@@ -65,6 +68,8 @@ class FakeHuabuTransport implements HuabuAgentletTransportV1 {
   spawnCalls = 0
   readonly getSessionCalls: string[] = []
   readonly stopCalls: string[] = []
+  readonly attachCalls: string[] = []
+  readonly promptContexts: unknown[] = []
   private readonly overrides: FakeTransportOverrides
 
   constructor(overrides: FakeTransportOverrides = {}) {
@@ -98,12 +103,19 @@ class FakeHuabuTransport implements HuabuAgentletTransportV1 {
     if (this.overrides.sendError !== undefined) throw this.overrides.sendError
   }
 
-  async sendPrompt(_params: { readonly agentletId: string; readonly threadId: string; readonly runtimeScope?: string; readonly externalSessionId: string; readonly transportSessionId?: string; readonly text: string }): Promise<{ readonly externalSessionId: string; readonly transportSessionId: string; readonly threadId: string; readonly text?: string; readonly stopReason?: string }> {
+  async attachContext(params: { readonly agentletId: string; readonly threadId: string; readonly externalSessionId: string; readonly transportSessionId?: string; readonly messageId: string; readonly correlationId: string; readonly orderedReferences: readonly { readonly order: number; readonly ref: unknown }[]; readonly contextResolution: readonly unknown[] }): Promise<{ readonly attachmentId: string; readonly messageId: string; readonly correlationId: string }> {
+    this.attachCalls.push(params.messageId)
+    if (this.overrides.attachContextError !== undefined) throw this.overrides.attachContextError
+    return this.overrides.attachContextResult ?? { attachmentId: `attachment:${params.messageId}`, messageId: params.messageId, correlationId: params.correlationId }
+  }
+
+  async sendPrompt(params: { readonly agentletId: string; readonly threadId: string; readonly runtimeScope?: string; readonly externalSessionId: string; readonly transportSessionId?: string; readonly text: string; readonly contextAttachment?: unknown }): Promise<{ readonly externalSessionId: string; readonly transportSessionId: string; readonly threadId: string; readonly text?: string; readonly stopReason?: string }> {
+    this.promptContexts.push(params.contextAttachment)
     if (this.overrides.sendPromptError !== undefined) throw this.overrides.sendPromptError
     return this.overrides.sendPromptResult ?? { externalSessionId: 'native-1', transportSessionId: 'transport-1', threadId: 'thread-1', text: '已继续', stopReason: 'end_turn' }
   }
 
-  async probe(): Promise<{ readonly session: Readonly<Partial<Record<'createSession' | 'continueExisting' | 'send' | 'status' | 'cancel' | 'recoverExisting', CapabilityClaimV1>>>; readonly limitations?: readonly string[] }> {
+  async probe(): Promise<{ readonly session: Readonly<Partial<Record<'createSession' | 'continueExisting' | 'attachContext' | 'send' | 'status' | 'cancel' | 'recoverExisting', CapabilityClaimV1>>>; readonly limitations?: readonly string[] }> {
     return { session: this.overrides.probeClaims ?? {}, limitations: ['fake transport'] }
   }
 }
@@ -177,8 +189,9 @@ describe('adapter create / continue / send / status / cancel / recover（unknown
     expect(bad.error?.outcomeUnknown).toBe(false)
   })
 
-  it('nativeFork and attachContext are unsupported until an authoritative probe', async () => {
-    const adapter = new HuabuAgentletContinuationAdapterV1(new FakeHuabuTransport(), { adapterId: 'adapter-a' })
+  it('nativeFork stays unsupported while message-scoped attach requires an exact owner and returns a provider receipt', async () => {
+    const transport = new FakeHuabuTransport()
+    const adapter = new HuabuAgentletContinuationAdapterV1(transport, { adapterId: 'adapter-a' })
     const fork = await adapter.nativeFork({
       operationId: 'op-3', correlationId: 'corr-3', provider: 'codex', sourceExternalSessionId: 'ext-1', bundle: bundleFixture('p-1'),
     })
@@ -186,10 +199,18 @@ describe('adapter create / continue / send / status / cancel / recover（unknown
     expect(fork.degradedFromNativeFork).toBe(true)
 
     const attach = await adapter.attachContext({
-      operationId: 'op-4', correlationId: 'corr-4', provider: 'codex', externalSessionId: 'ext-1', bundle: bundleFixture('p-1'),
+      operationId: 'op-4', correlationId: 'corr-4', provider: 'codex', externalSessionId: 'ext-1', transportSessionId: 'transport-1', threadId: 'thread-1', messageId: 'message-1', orderedReferences: [{ order: 0, ref: { type: 'artifact', artifactId: 'artifact-1' } }], contextResolution: [{ order: 0, mode: 'full', ref: { type: 'artifact', artifactId: 'artifact-1' }, artifactId: 'artifact-1', revisionId: 'revision-1', fileRecordId: 'file-1', contentHash: 'hash-1', title: 'Brief' }], bundle: bundleFixture('p-1'),
     })
-    expect(attach.outcome).toBe('unsupported')
-    expect(attach.contextAttached).toBe(false)
+    expect(attach).toMatchObject({ outcome: 'attached', contextAttached: true, contextAttachmentId: 'attachment:message-1', messageId: 'message-1' })
+    expect(transport.attachCalls).toEqual(['message-1'])
+  })
+
+  it('attach timeout is outcome_unknown and never falls through to prompt', async () => {
+    const adapter = new HuabuAgentletContinuationAdapterV1(new FakeHuabuTransport({ attachContextError: new Error('attach timed out') }), { adapterId: 'adapter-a' })
+    const attach = await adapter.attachContext({
+      operationId: 'op-4b', correlationId: 'corr-4b', provider: 'codex', externalSessionId: 'ext-1', threadId: 'thread-1', messageId: 'message-1', orderedReferences: [{ order: 0, ref: { type: 'artifact', artifactId: 'artifact-1' } }], contextResolution: [{ order: 0, mode: 'full', ref: { type: 'artifact', artifactId: 'artifact-1' }, artifactId: 'artifact-1', revisionId: 'revision-1', fileRecordId: 'file-1', contentHash: 'hash-1', title: 'Brief' }], bundle: bundleFixture('p-1'),
+    })
+    expect(attach).toMatchObject({ outcome: 'outcome_unknown', retryAction: 'reconcile', contextAttached: false, messageId: 'message-1' })
   })
 
   it('send is honest unsupported until the Huabu ACP session owner is exposed', async () => {
@@ -322,7 +343,8 @@ describe('T7 receipt → T6 journal 集成（Provider 成功/Core 失败 + cance
     const root = await mkdtemp(join(tmpdir(), 'lcos-continuation-adapter-'))
     cleanup.push(root)
     const graph = createMvpSampleSnapshot(join(root, 'project'), '2026-09-12T00:00:00.000Z')
-    const metadata = new SqliteMetadataRepository(join(root, 'metadata.sqlite'))
+    const databasePath = join(root, 'metadata.sqlite')
+    const metadata = new SqliteMetadataRepository(databasePath)
     repositories.push(metadata)
     metadata.save(graph)
     const events = new ProjectEventHub()
@@ -336,7 +358,7 @@ describe('T7 receipt → T6 journal 集成（Provider 成功/Core 失败 + cance
       provider: 'codex',
       label: '续工目标',
     })
-    return { root, metadata, service, projectId, conversationId: conversation.id }
+    return { root, databasePath, metadata, service, projectId, conversationId: conversation.id }
   }
 
   function submitInput(projectId: string, conversationId: string, operationId: string): ContinuationSubmitRequestV1 {
@@ -372,6 +394,176 @@ describe('T7 receipt → T6 journal 集成（Provider 成功/Core 失败 + cance
     const actions = failed.allowedActions.map((action) => action.action)
     expect(actions).toContain('recover_bind')
     expect(actions).not.toContain('recover_external')
+  })
+
+  it('pins the original revision across send-unknown, Current mutation, and database reload without repeating attach', async () => {
+    const { root, databasePath, metadata, service, projectId, conversationId } = await setupT6()
+    const operationId = 'op-pinned-context-retry'
+    const messageId = 'message-pinned-context'
+    const orderedReferences = [{ order: 0, ref: { type: 'artifact' as const, artifactId: 'artifact-brief' } }]
+    service.submit(submitInput(projectId, conversationId, operationId))
+    service.advanceStep(projectId, operationId, {
+      step: 'external_create',
+      outcome: 'confirmed',
+      externalEvidence: {
+        schemaVersion: 1,
+        provider: 'codex',
+        externalSessionId: 'native-1',
+        transportSessionId: 'transport-1',
+        threadId: 'core-thread-1',
+        correlationId: operationId,
+        createdAt: '2026-09-12T00:00:00.000Z',
+      },
+    })
+
+    const firstTransport = new FakeHuabuTransport({ sendPromptError: new Error('prompt timed out') })
+    const firstAdapter = new HuabuAgentletContinuationAdapterV1(firstTransport, { adapterId: 'adapter-a' })
+    const first = await service.sendPrompt(
+      projectId,
+      operationId,
+      { kind: 'prompt', text: 'Use the attached brief.' },
+      firstAdapter,
+      messageId,
+      { messageId, orderedReferences },
+    )
+    expect(first.outcome).toBe('outcome_unknown')
+    expect(firstTransport.attachCalls).toEqual([messageId])
+    expect(firstTransport.promptContexts).toHaveLength(1)
+    expect(JSON.stringify(firstTransport.promptContexts[0])).toContain('PortaSplit MVP Brief')
+    const frozen = metadata.getContinuationOperationJournal(projectId, operationId)?.promptReceipts?.[0]?.contextResolution?.[0]
+    expect(frozen).toMatchObject({ artifactId: 'artifact-brief', revisionId: 'revision-brief-initial' })
+
+    const artifact = metadata.getArtifact('artifact-brief')!
+    const previousRevision = metadata.getArtifactRevision('revision-brief-initial')!
+    const nextBody = '# Replacement Brief\n\nUNIQUE-NEW-CURRENT-MUST-NOT-LEAK\n'
+    const nextPath = join(root, 'project', 'brief-v2.md')
+    await writeFile(nextPath, nextBody, 'utf8')
+    const nextStat = await stat(nextPath)
+    const nextHash = createHash('sha256').update(nextBody, 'utf8').digest('hex')
+    const nextFileRecord = {
+      id: 'file-brief-v2' as typeof previousRevision.fileRecordId,
+      projectId: artifact.projectId,
+      observedPath: nextPath,
+      observedHash: nextHash as typeof previousRevision.contentHash,
+      size: nextStat.size,
+      modifiedAt: nextStat.mtime.toISOString(),
+      mimeType: 'text/markdown',
+      availability: 'current' as const,
+      observedAt: '2026-09-12T00:01:00.000Z',
+    }
+    metadata.commitManagedTextRevision({
+      artifact,
+      previousRevision,
+      newFileRecord: nextFileRecord,
+      newRevision: {
+        id: 'revision-brief-v2' as typeof previousRevision.id,
+        artifactId: artifact.id,
+        fileRecordId: nextFileRecord.id,
+        contentHash: nextFileRecord.observedHash,
+        source: 'external',
+        status: 'current',
+        parentRevisionId: previousRevision.id,
+        createdAt: '2026-09-12T00:01:00.000Z',
+      },
+    })
+    expect(metadata.getArtifact('artifact-brief')?.currentRevisionId).toBe('revision-brief-v2')
+
+    metadata.close()
+    const reopened = new SqliteMetadataRepository(databasePath)
+    repositories.push(reopened)
+    const resumed = new ConversationContinuationService(reopened, new ProjectEventHub())
+    const retryTransport = new FakeHuabuTransport()
+    const retryAdapter = new HuabuAgentletContinuationAdapterV1(retryTransport, { adapterId: 'adapter-a' })
+    const retry = await resumed.sendPrompt(
+      projectId,
+      operationId,
+      { kind: 'prompt', text: 'Use the attached brief.' },
+      retryAdapter,
+      messageId,
+      { messageId, orderedReferences },
+    )
+    expect(retry.outcome).toBe('sent')
+    expect(retryTransport.attachCalls).toEqual([])
+    expect(retryTransport.promptContexts).toHaveLength(1)
+    expect(JSON.stringify(retryTransport.promptContexts[0])).toContain('PortaSplit MVP Brief')
+    expect(JSON.stringify(retryTransport.promptContexts[0])).not.toContain('UNIQUE-NEW-CURRENT-MUST-NOT-LEAK')
+    expect(reopened.getContinuationOperationJournal(projectId, operationId)?.promptReceipts?.[0]?.contextResolution?.[0]).toEqual(frozen)
+  })
+
+  it('fails closed before attach when multiple resolved references exceed the message context budget', async () => {
+    const { root, metadata, service, projectId, conversationId } = await setupT6()
+    const operationId = 'op-context-budget'
+    service.submit(submitInput(projectId, conversationId, operationId))
+    service.advanceStep(projectId, operationId, {
+      step: 'external_create',
+      outcome: 'confirmed',
+      externalEvidence: {
+        schemaVersion: 1,
+        provider: 'codex',
+        externalSessionId: 'native-budget',
+        transportSessionId: 'transport-budget',
+        threadId: 'core-thread-budget',
+        correlationId: operationId,
+        createdAt: '2026-09-12T00:00:00.000Z',
+      },
+    })
+
+    const artifact = metadata.getArtifact('artifact-brief')!
+    const previousRevision = metadata.getArtifactRevision('revision-brief-initial')!
+    const largeBody = `# Large context\n\n${'x'.repeat(110_000)}`
+    const largePath = join(root, 'project', 'brief-large.md')
+    await writeFile(largePath, largeBody, 'utf8')
+    const largeStat = await stat(largePath)
+    const largeHash = createHash('sha256').update(largeBody, 'utf8').digest('hex')
+    const fileRecord = {
+      id: 'file-brief-large' as typeof previousRevision.fileRecordId,
+      projectId: artifact.projectId,
+      observedPath: largePath,
+      observedHash: largeHash as typeof previousRevision.contentHash,
+      size: largeStat.size,
+      modifiedAt: largeStat.mtime.toISOString(),
+      mimeType: 'text/markdown',
+      availability: 'current' as const,
+      observedAt: '2026-09-12T00:02:00.000Z',
+    }
+    metadata.commitManagedTextRevision({
+      artifact,
+      previousRevision,
+      newFileRecord: fileRecord,
+      newRevision: {
+        id: 'revision-brief-large' as typeof previousRevision.id,
+        artifactId: artifact.id,
+        fileRecordId: fileRecord.id,
+        contentHash: fileRecord.observedHash,
+        source: 'external',
+        status: 'current',
+        parentRevisionId: previousRevision.id,
+        createdAt: '2026-09-12T00:02:00.000Z',
+      },
+    })
+
+    const transport = new FakeHuabuTransport()
+    const adapter = new HuabuAgentletContinuationAdapterV1(transport, { adapterId: 'adapter-a' })
+    const result = await service.sendPrompt(
+      projectId,
+      operationId,
+      { kind: 'prompt', text: 'Use both references.' },
+      adapter,
+      'message-budget',
+      {
+        messageId: 'message-budget',
+        orderedReferences: [
+          { order: 0, ref: { type: 'artifact', artifactId: 'artifact-brief' } },
+          { order: 1, ref: { type: 'artifact', artifactId: 'artifact-brief' } },
+        ],
+      },
+    )
+    expect(result).toMatchObject({
+      outcome: 'unsupported',
+      error: { code: 'context_budget_exceeded' },
+    })
+    expect(transport.attachCalls).toEqual([])
+    expect(transport.promptContexts).toEqual([])
   })
 
   it('cancel 三态上链：adapter timeout receipt → journal outcome_unknown → reconcile 收敛 confirmed', async () => {

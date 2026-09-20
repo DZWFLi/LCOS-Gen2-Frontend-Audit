@@ -18,7 +18,7 @@ rl.on('line', (line) => {
       id: message.id,
       result: {
         protocolVersion: 1,
-        agentCapabilities: {},
+        agentCapabilities: { promptCapabilities: { embeddedContext: true } },
         agentInfo: { name: 't7-acp-fixture-agent', version: '1.0.0' },
       },
     }) + '\n')
@@ -30,6 +30,12 @@ rl.on('line', (line) => {
     }) + '\n')
   } else if (message.method === 'session/prompt') {
     const sessionId = message.params?.sessionId ?? 't7-fixture-session'
+    const attachedText = (message.params?.prompt ?? [])
+      .filter((block) => block?.type === 'resource')
+      .map((block) => block?.resource?.text ?? '')
+      .join('\n')
+    const uniqueToken = attachedText.match(/UNIQUE-[A-Z0-9-]+/)?.[0]
+    const replyText = uniqueToken === undefined ? 'fixture context missing' : `fixture used ${uniqueToken}`
     process.stdout.write(JSON.stringify({
       jsonrpc: '2.0',
       method: 'session/update',
@@ -37,7 +43,7 @@ rl.on('line', (line) => {
         sessionId,
         update: {
           sessionUpdate: 'agent_message_chunk',
-          content: { type: 'text', text: 'fixture continued' },
+          content: { type: 'text', text: replyText },
         },
       },
     }) + '\n')

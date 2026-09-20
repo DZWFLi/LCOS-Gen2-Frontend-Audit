@@ -16,7 +16,10 @@
 
 import type { ConnectedConversationV1 } from './receiver.js'
 import type { OrderedRunReferenceV2 } from './run-assembly.js'
-import type { ProviderContinuationOperationResultV1 } from './continuation-provider.js'
+import type {
+  ProviderContextResolutionEvidenceV1,
+  ProviderContinuationOperationResultV1,
+} from './continuation-provider.js'
 
 /** 四种续工模式（README「续工」统一语义：continue existing / native full-history fork / selected-context new session / blank new session）。 */
 export type ContinuationModeV1 =
@@ -82,6 +85,8 @@ export interface ContinuationOperationJournalRowV1 {
   readonly promptReceipts?: readonly {
     readonly messageId: string
     readonly orderedReferences: readonly OrderedRunReferenceV2[]
+    /** Exact Core revision/hash pins; compact and safe to retain across restart. */
+    readonly contextResolution?: readonly ProviderContextResolutionEvidenceV1[]
     /** Latest provider receipt for this message. Kept for compact diagnostics. */
     readonly receipt: ProviderContinuationOperationResultV1
     /** Attach evidence is retained when a later send attempt also has a receipt. */
@@ -172,6 +177,7 @@ export interface ContinuationRecoveryProjectionV1 {
   readonly promptReceipts?: readonly {
     readonly messageId: string
     readonly orderedReferences: readonly OrderedRunReferenceV2[]
+    readonly contextResolution?: readonly ProviderContextResolutionEvidenceV1[]
     readonly receipt: ProviderContinuationOperationResultV1
     readonly attachReceipt?: ProviderContinuationOperationResultV1
     readonly sendReceipt?: ProviderContinuationOperationResultV1
@@ -277,8 +283,10 @@ export function deriveContinuationAllowedActionsV1(
   // external confirmed → bind 可恢复。
   const externalReady = steps.external_create === 'confirmed' || steps.external_create === 'not_applicable'
   if (externalReady && canRecoverStep(steps, 'core_bind', 'confirmed')) push('recover_bind', true, steps.core_bind === 'failed' ? 'bind 失败，重试绑定同一外部 session' : undefined)
-  // bind confirmed → attach 可恢复。
-  if (steps.core_bind === 'confirmed' && canRecoverStep(steps, 'attach', true)) push('retry_attach', true)
+  // Message-scoped attach recovery requires messageId + frozen resolution.
+  // The operation-level action envelope cannot select that receipt, so it
+  // must not advertise a retry button that would call the provider without
+  // authoritative message context. sendPrompt retries by stable messageId.
   // attach confirmed → projection 可恢复。
   if (steps.attach === 'confirmed' && canRecoverStep(steps, 'projection', true)) push('retry_projection', true)
 

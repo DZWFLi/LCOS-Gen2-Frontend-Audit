@@ -7,7 +7,7 @@
  * `server/*` frames directly to the daemon.
  */
 
-import type { CapabilityClaimV1 } from '@local-creative-os/contracts'
+import type { CapabilityClaimV1, OrderedRunReferenceV2, ProviderContextAttachmentV1, ProviderContextResolutionEvidenceV1 } from '@local-creative-os/contracts'
 import type { ProviderInputResponsePort } from './runtime-adapter.js'
 import { classifyHuabuTransportErrorV1, type HuabuAgentletSessionInfoV1, type HuabuAgentletTransportV1 } from './huabu-agentlet-continuation-adapter.js'
 
@@ -51,6 +51,12 @@ interface HostTransportPrompt {
   readonly stopReason?: string
 }
 
+interface HostTransportAttachment {
+  readonly attachmentId: string
+  readonly messageId: string
+  readonly correlationId: string
+}
+
 export interface HuabuAgentletHostTransportOptionsV1 {
   /** Huabu HTTP origin, e.g. http://127.0.0.1:3001. */
   readonly hostBaseUrl: string
@@ -74,7 +80,7 @@ export class HuabuAgentletHostTransportV1 implements HuabuAgentletTransportV1, P
     this.agentletId = options.agentletId ?? process.env.HUABU_AGENTLET_ID ?? 'lcos-default-agentlet'
   }
 
-  async probe(): Promise<{ readonly session: Readonly<Partial<Record<'createSession' | 'continueExisting' | 'send' | 'status' | 'cancel' | 'recoverExisting', CapabilityClaimV1>>>; readonly limitations?: readonly string[] }> {
+  async probe(): Promise<{ readonly session: Readonly<Partial<Record<'createSession' | 'continueExisting' | 'attachContext' | 'send' | 'status' | 'cancel' | 'recoverExisting', CapabilityClaimV1>>>; readonly limitations?: readonly string[] }> {
     try {
       await this.list(this.agentletId)
       const now = new Date().toISOString()
@@ -91,6 +97,7 @@ export class HuabuAgentletHostTransportV1 implements HuabuAgentletTransportV1, P
         limitations: [
           'create/continue/cancel are delegated to Huabu Host but are not probed because they have external side effects',
           'prompt send is declared by the canonical ACP owner implementation and still requires an exact bound continuation owner',
+          'attachContext is session-specific and remains unknown until the live ACP owner confirms embeddedContext support',
         ],
       }
     } catch (error: unknown) {
@@ -177,7 +184,22 @@ export class HuabuAgentletHostTransportV1 implements HuabuAgentletTransportV1, P
     throw new Error('prompt transport is not wired through the Huabu ACP session owner')
   }
 
-  async sendPrompt(params: { readonly agentletId: string; readonly threadId: string; readonly runtimeScope?: string; readonly externalSessionId: string; readonly transportSessionId?: string; readonly text: string; readonly runCorrelation?: { readonly lcosRunId: string; readonly externalTaskId: string } }): Promise<HostTransportPrompt> {
+  async attachContext(params: { readonly agentletId: string; readonly threadId: string; readonly externalSessionId: string; readonly transportSessionId?: string; readonly messageId: string; readonly correlationId: string; readonly orderedReferences: readonly OrderedRunReferenceV2[]; readonly contextResolution: readonly ProviderContextResolutionEvidenceV1[] }): Promise<HostTransportAttachment> {
+    return this.request<HostTransportAttachment>(
+      `/api/acp/continuation/agentlets/${encodeURIComponent(params.agentletId)}/sessions/${encodeURIComponent(params.transportSessionId ?? params.externalSessionId)}/context-attachments`,
+      'POST',
+      {
+        threadId: params.threadId,
+        externalSessionId: params.externalSessionId,
+        messageId: params.messageId,
+        correlationId: params.correlationId,
+        orderedReferences: params.orderedReferences,
+        contextResolution: params.contextResolution,
+      },
+    )
+  }
+
+  async sendPrompt(params: { readonly agentletId: string; readonly threadId: string; readonly runtimeScope?: string; readonly externalSessionId: string; readonly transportSessionId?: string; readonly text: string; readonly contextAttachment?: ProviderContextAttachmentV1; readonly runCorrelation?: { readonly lcosRunId: string; readonly externalTaskId: string } }): Promise<HostTransportPrompt> {
     return this.request<HostTransportPrompt>(
       `/api/acp/continuation/agentlets/${encodeURIComponent(params.agentletId)}/sessions/${encodeURIComponent(params.transportSessionId ?? params.externalSessionId)}/prompt`,
       'POST',
@@ -187,6 +209,7 @@ export class HuabuAgentletHostTransportV1 implements HuabuAgentletTransportV1, P
         externalSessionId: params.externalSessionId,
         text: params.text,
         ...(params.runCorrelation === undefined ? {} : { runCorrelation: params.runCorrelation }),
+        ...(params.contextAttachment === undefined ? {} : { contextAttachment: params.contextAttachment }),
       },
     )
   }

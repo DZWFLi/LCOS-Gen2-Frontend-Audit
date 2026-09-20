@@ -48,10 +48,21 @@ export interface HuabuAgentletTransportV1 {
   list(agentletId: string): Promise<{ readonly agents: readonly HuabuAgentletSessionInfoV1[] }>
   getSession(agentletId: string, sessionId: string): Promise<HuabuAgentletSessionInfoV1 | undefined>
   sendResource(params: { readonly agentletId: string; readonly sessionId: string; readonly text?: string; readonly resourceRef?: string }): Promise<void>
+  /** Message-scoped context preflight. This must not send a prompt or materialize files. */
+  attachContext?(params: {
+    readonly agentletId: string
+    readonly threadId: string
+    readonly externalSessionId: string
+    readonly transportSessionId?: string
+    readonly messageId: string
+    readonly correlationId: string
+    readonly orderedReferences: NonNullable<AttachContextInputV1['orderedReferences']>
+    readonly contextResolution: NonNullable<AttachContextInputV1['contextResolution']>
+  }): Promise<{ readonly attachmentId: string; readonly messageId: string; readonly correlationId: string }>
   /** Shared ACP client/handle prompt seam. Raw gateway send is forbidden. */
-  sendPrompt?(params: { readonly agentletId: string; readonly threadId: string; readonly runtimeScope?: string; readonly externalSessionId: string; readonly transportSessionId?: string; readonly text: string; readonly runCorrelation?: { readonly lcosRunId: string; readonly externalTaskId: string } }): Promise<{ readonly externalSessionId: string; readonly transportSessionId: string; readonly threadId: string; readonly text?: string; readonly stopReason?: string }>
+  sendPrompt?(params: { readonly agentletId: string; readonly threadId: string; readonly runtimeScope?: string; readonly externalSessionId: string; readonly transportSessionId?: string; readonly text: string; readonly contextAttachment?: NonNullable<SendInputV1['payload']['contextAttachment']>; readonly runCorrelation?: { readonly lcosRunId: string; readonly externalTaskId: string } }): Promise<{ readonly externalSessionId: string; readonly transportSessionId: string; readonly threadId: string; readonly text?: string; readonly stopReason?: string }>
   /** 真实 donor probe；未知字段不得猜 true。 */
-  probe(): Promise<{ readonly session: Readonly<Partial<Record<'createSession' | 'continueExisting' | 'send' | 'status' | 'cancel' | 'recoverExisting', CapabilityClaimV1>>>; readonly limitations?: readonly string[] }>
+  probe(): Promise<{ readonly session: Readonly<Partial<Record<'createSession' | 'continueExisting' | 'attachContext' | 'send' | 'status' | 'cancel' | 'recoverExisting', CapabilityClaimV1>>>; readonly limitations?: readonly string[] }>
 }
 
 const PROBE_SOURCE: CapabilityEvidenceSourceV1 = 'gateway_probe'
@@ -112,8 +123,7 @@ export class HuabuAgentletContinuationAdapterV1 implements ContinuationProviderA
         continueExisting: declared.session.continueExisting ?? unknownCapabilityClaimV1(PROBE_SOURCE, now, 'transport 未提供 continue probe 结果'),
         // 权威 native fork probe 不存在：固定 unknown（Agenetes fork 不是 native full-history fork）。
         nativeFullHistoryFork: unknownCapabilityClaimV1(HARD_GAP_SOURCE, now, '无 authoritative native fork probe；Agenetes.fork 不算'),
-        // provider attach RPC 不存在：固定 unknown。
-        attachContext: unknownCapabilityClaimV1(HARD_GAP_SOURCE, now, '无 provider context-attach RPC'),
+        attachContext: declared.session.attachContext ?? unknownCapabilityClaimV1(HARD_GAP_SOURCE, now, '无 provider context-attach RPC'),
         send: declared.session.send ?? unknownCapabilityClaimV1(PROBE_SOURCE, now, 'transport 未提供 send probe 结果'),
         status: declared.session.status ?? unknownCapabilityClaimV1(PROBE_SOURCE, now, 'transport 未提供 status probe 结果'),
         cancel: declared.session.cancel ?? unknownCapabilityClaimV1(PROBE_SOURCE, now, 'transport 未提供 cancel probe 结果'),
@@ -212,22 +222,83 @@ export class HuabuAgentletContinuationAdapterV1 implements ContinuationProviderA
   }
 
   async attachContext(input: AttachContextInputV1): Promise<ProviderContinuationOperationResultV1> {
-    // provider attach RPC 不存在 → unsupported；是否 first-send degrade 由 T6 request 明示。
-    return {
-      schemaVersion: 1,
-      operationId: input.operationId,
-      correlationId: input.correlationId,
-      provider: input.provider,
-      adapterId: this.adapterId,
-      action: 'attach_context',
-      outcome: 'unsupported',
-      externalSessionId: input.externalSessionId,
-      contextAttached: false,
-      nativeFork: false,
-      degradedFromNativeFork: false,
-      retryAction: 'reconcile',
-      error: { code: 'attach_context_unsupported', message: 'Provider has no context-attach RPC.', retryable: false, outcomeUnknown: false },
-      observedAt: new Date().toISOString(),
+    if (input.threadId === undefined || input.messageId === undefined || input.orderedReferences === undefined || input.orderedReferences.length === 0 || input.contextResolution === undefined || input.contextResolution.length !== input.orderedReferences.length || this.transport.attachContext === undefined) {
+      return {
+        schemaVersion: 1,
+        operationId: input.operationId,
+        correlationId: input.correlationId,
+        provider: input.provider,
+        adapterId: this.adapterId,
+        action: 'attach_context',
+        outcome: 'unsupported',
+        externalSessionId: input.externalSessionId,
+        ...(input.transportSessionId === undefined ? {} : { transportSessionId: input.transportSessionId }),
+        ...(input.threadId === undefined ? {} : { threadId: input.threadId }),
+        ...(input.messageId === undefined ? {} : { messageId: input.messageId }),
+        contextAttached: false,
+        nativeFork: false,
+        degradedFromNativeFork: false,
+        retryAction: 'reconcile',
+        error: { code: 'attach_context_unsupported', message: 'Provider has no message-scoped context-attach RPC.', retryable: false, outcomeUnknown: false },
+        observedAt: new Date().toISOString(),
+      }
+    }
+    try {
+      const attached = await this.transport.attachContext({
+        agentletId: this.agentletId,
+        threadId: input.threadId,
+        externalSessionId: input.externalSessionId,
+        ...(input.transportSessionId === undefined ? {} : { transportSessionId: input.transportSessionId }),
+        messageId: input.messageId,
+        correlationId: input.correlationId,
+        orderedReferences: input.orderedReferences,
+        contextResolution: input.contextResolution,
+      })
+      return {
+        schemaVersion: 1,
+        operationId: input.operationId,
+        correlationId: attached.correlationId,
+        provider: input.provider,
+        adapterId: this.adapterId,
+        action: 'attach_context',
+        outcome: 'attached',
+        externalSessionId: input.externalSessionId,
+        ...(input.transportSessionId === undefined ? {} : { transportSessionId: input.transportSessionId }),
+        threadId: input.threadId,
+        messageId: attached.messageId,
+        contextAttachmentId: attached.attachmentId,
+        agentletId: this.agentletId,
+        contextAttached: true,
+        nativeFork: false,
+        degradedFromNativeFork: false,
+        retryAction: 'none',
+        observedAt: new Date().toISOString(),
+      }
+    } catch (error: unknown) {
+      if (typeof error === 'object' && error !== null && 'code' in error && (error as { code?: unknown }).code === 'embedded_context_unsupported') {
+        return {
+          schemaVersion: 1,
+          operationId: input.operationId,
+          correlationId: input.correlationId,
+          provider: input.provider,
+          adapterId: this.adapterId,
+          action: 'attach_context',
+          outcome: 'unsupported',
+          externalSessionId: input.externalSessionId,
+          ...(input.transportSessionId === undefined ? {} : { transportSessionId: input.transportSessionId }),
+          threadId: input.threadId,
+          messageId: input.messageId,
+          contextAttached: false,
+          nativeFork: false,
+          degradedFromNativeFork: false,
+          retryAction: 'none',
+          error: { code: 'embedded_context_unsupported', message: error instanceof Error ? error.message : 'Provider does not support ACP embedded context.', retryable: false, outcomeUnknown: false },
+          observedAt: new Date().toISOString(),
+        }
+      }
+      const classified = classifyHuabuTransportErrorV1(error)
+      const failed = this.#failure('attach_context', input.operationId, input.correlationId, input.provider, classified, input.externalSessionId, classified.outcomeUnknown ? 'reconcile' : 'none')
+      return { ...failed, messageId: input.messageId, ...(input.transportSessionId === undefined ? {} : { transportSessionId: input.transportSessionId }), threadId: input.threadId }
     }
   }
 
@@ -261,6 +332,7 @@ export class HuabuAgentletContinuationAdapterV1 implements ContinuationProviderA
         externalSessionId: input.externalSessionId,
         ...(input.transportSessionId === undefined ? {} : { transportSessionId: input.transportSessionId }),
         text: input.payload.text,
+        ...(input.payload.contextAttachment === undefined ? {} : { contextAttachment: input.payload.contextAttachment }),
       })
       return {
         schemaVersion: 1,

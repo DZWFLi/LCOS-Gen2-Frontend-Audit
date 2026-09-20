@@ -12,6 +12,8 @@ import type {
   ContinuationStepStateV1,
   ContinuationSubmitRequestV1,
   ProviderSendPayloadV1,
+  ProviderContextResolutionEvidenceV1,
+  ProviderResolvedContextReferenceV1,
   ContinuityAttachBundleV1,
   OrderedRunReferenceV2,
   ProjectEventOrigin,
@@ -20,6 +22,8 @@ import type {
 import { continuationExternalEvidenceFromReceiptV1, projectContinuationRecoveryV1 } from '@local-creative-os/contracts'
 import { ContinuationCoreBindStaleRevisionError, type SqliteMetadataRepository } from './metadata-repository.js'
 import type { ProjectEventHub } from './project-events/project-event-hub.js'
+import { readArtifactIndexBody } from './search-artifact-body.js'
+import { hashFileSha256 } from './file-registry-service.js'
 
 export interface ContinuationSubmitResultV1 {
   readonly projection: ContinuationRecoveryProjectionV1
@@ -45,6 +49,8 @@ export class ContinuationStaleRevisionError extends Error {
 }
 
 const CONTINUATION_CAPABILITIES: { readonly externalCreate: boolean } = { externalCreate: true }
+/** Matches the existing LCOS single-prompt body ceiling; aggregate context fails closed above it. */
+const CONTINUATION_CONTEXT_TOTAL_CHAR_LIMIT = 200_000
 
 /**
  * Sprint 1A（T6）：Continuation Operation Journal + Read Projection。
@@ -327,7 +333,7 @@ export class ConversationContinuationService {
       case 'recover_bind':
         return this.#recoverBind(projectId, operationId, this.#claimSideEffect(projectId, operationId, row, 'core_bind'), adapter)
       case 'retry_attach':
-        return this.#retryAttach(projectId, operationId, this.#claimSideEffect(projectId, operationId, row, 'attach'), adapter)
+        throw new RecoveryActionUnsupportedError(action, 'message-scoped attach recovery requires a stable messageId and frozen context resolution; retry through sendPrompt with the same messageId.')
       case 'retry_projection':
         throw new RecoveryActionUnsupportedError(action, 'projection retry 需要 T1 projection service（未接线）。')
       case 'reconcile':
@@ -354,14 +360,26 @@ export class ConversationContinuationService {
     const row = this.metadata.getContinuationOperationJournal(projectId, operationId)
     if (row === undefined) throw new Error('Continuation operation not found.')
     const orderedReferences = options.orderedReferences ?? []
-    const existingReceipt = options.messageId === undefined
+    const messageId = options.messageId
+    if (orderedReferences.length > 0 && messageId === undefined) {
+      return this.promptReceipt(
+        row,
+        adapter.adapterId,
+        undefined,
+        orderedReferences,
+        'failed',
+        'context_message_id_required',
+        'Message-scoped context requires a stable messageId.',
+      )
+    }
+    const existingReceipt = messageId === undefined
       ? undefined
-      : row.promptReceipts?.find((entry) => entry.messageId === options.messageId)
+      : row.promptReceipts?.find((entry) => entry.messageId === messageId)
     if (existingReceipt !== undefined && JSON.stringify(existingReceipt.orderedReferences) !== JSON.stringify(orderedReferences)) {
       return this.promptReceipt(
         row,
         adapter.adapterId,
-        options.messageId,
+        messageId,
         orderedReferences,
         'failed',
         'prompt_reference_conflict',
@@ -386,26 +404,78 @@ export class ConversationContinuationService {
         error: { code: 'no_external_identity', message: 'No external session identity to send to.', retryable: false, outcomeUnknown: true },
         observedAt: new Date().toISOString(),
       }
-      this.recordPromptReceipt(projectId, operationId, options.messageId, orderedReferences, unresolved, 'send', row.revision)
+      this.recordPromptReceipt(projectId, operationId, messageId, orderedReferences, unresolved, 'send', row.revision)
       return unresolved
     }
 
-    const attachAlreadyConfirmed = existingReceipt?.attachReceipt?.outcome === 'attached'
+    if (orderedReferences.length > 0 && existingReceipt?.attachReceipt?.outcome === 'attached' && existingReceipt.contextResolution === undefined) {
+      return this.promptReceipt(
+        row,
+        adapter.adapterId,
+        messageId,
+        orderedReferences,
+        'failed',
+        'context_resolution_evidence_missing',
+        'A confirmed attach receipt has no frozen Core revision evidence; refusing to change its content on retry.',
+      )
+    }
+    const resolvedContext = orderedReferences.length === 0
+      ? {
+          ok: true as const,
+          value: [] as readonly ProviderResolvedContextReferenceV1[],
+          evidence: [] as readonly ProviderContextResolutionEvidenceV1[],
+        }
+      : await this.resolveProviderContextReferences(projectId, orderedReferences, existingReceipt?.contextResolution)
+    if (!resolvedContext.ok) {
+      return this.promptReceipt(
+        row,
+        adapter.adapterId,
+        messageId,
+        orderedReferences,
+        'unsupported',
+        resolvedContext.code,
+        resolvedContext.message,
+      )
+    }
+
+    let confirmedAttachReceipt = existingReceipt?.attachReceipt?.outcome === 'attached'
       && existingReceipt.attachReceipt.contextAttached === true
-    if (orderedReferences.length > 0 && !attachAlreadyConfirmed) {
+      ? existingReceipt.attachReceipt
+      : undefined
+    if (orderedReferences.length > 0 && confirmedAttachReceipt === undefined) {
+      if (messageId === undefined) throw new Error('Message-scoped context is missing its stable messageId.')
       const attachReceipt = await adapter.attachContext({
         operationId,
         correlationId,
         provider: row.provider,
+        ...(row.runtimeThreadId === undefined ? {} : { threadId: row.runtimeThreadId }),
         externalSessionId,
+        ...(row.externalEvidence?.transportSessionId === undefined ? {} : { transportSessionId: row.externalEvidence.transportSessionId }),
+        messageId,
+        orderedReferences,
+        contextResolution: resolvedContext.evidence,
         bundle: continuationBundleForRowV1(row, orderedReferences),
       })
-      this.recordPromptReceipt(projectId, operationId, options.messageId, orderedReferences, attachReceipt, 'attach', row.revision)
+      this.recordPromptReceipt(projectId, operationId, messageId, orderedReferences, attachReceipt, 'attach', row.revision, resolvedContext.evidence)
       // An unsupported/failed/unknown attach must stop before prompt send. The
       // caller keeps the same messageId and the journal receipt exposes the
       // only safe recovery action; no provider prompt is silently sent.
       if (!(attachReceipt.outcome === 'attached' && attachReceipt.contextAttached)) return attachReceipt
+      confirmedAttachReceipt = attachReceipt
     }
+    const payloadWithContext = confirmedAttachReceipt?.contextAttachmentId === undefined || messageId === undefined
+      ? payload
+      : {
+          ...payload,
+          contextAttachment: {
+            attachmentId: confirmedAttachReceipt.contextAttachmentId,
+            messageId,
+            correlationId: confirmedAttachReceipt.correlationId,
+            orderedReferences,
+            contextResolution: resolvedContext.evidence,
+            resolvedReferences: resolvedContext.value,
+          },
+        }
     const sent = await adapter.send({
       operationId,
       correlationId,
@@ -414,9 +484,9 @@ export class ConversationContinuationService {
       ...(row.runtimeThreadId === undefined ? {} : { threadId: row.runtimeThreadId }),
       externalSessionId,
       ...(row.externalEvidence?.transportSessionId === undefined ? {} : { transportSessionId: row.externalEvidence.transportSessionId }),
-      payload,
+      payload: payloadWithContext,
     })
-    this.recordPromptReceipt(projectId, operationId, options.messageId, orderedReferences, sent, 'send')
+    this.recordPromptReceipt(projectId, operationId, messageId, orderedReferences, sent, 'send', undefined, resolvedContext.evidence)
     return sent
   }
 
@@ -429,6 +499,7 @@ export class ConversationContinuationService {
     receipt: ProviderContinuationOperationResultV1,
     phase: 'attach' | 'send',
     expectedRevision?: number,
+    contextResolution?: readonly ProviderContextResolutionEvidenceV1[],
   ): void {
     if (messageId === undefined) return
     const row = this.metadata.getContinuationOperationJournal(projectId, operationId)
@@ -440,9 +511,13 @@ export class ConversationContinuationService {
     if (existing !== undefined && JSON.stringify(existing.orderedReferences) !== JSON.stringify(orderedReferences)) {
       throw new Error('The same messageId was already used with a different context reference set.')
     }
+    const retainedContextResolution = contextResolution ?? existing?.contextResolution
     const nextReceipt = {
       messageId,
       orderedReferences: [...orderedReferences],
+      ...(retainedContextResolution === undefined
+        ? {}
+        : { contextResolution: [...retainedContextResolution] }),
       receipt,
       ...(phase === 'attach'
         ? { attachReceipt: receipt }
@@ -475,7 +550,7 @@ export class ConversationContinuationService {
     adapterId: string,
     messageId: string | undefined,
     orderedReferences: readonly OrderedRunReferenceV2[],
-    outcome: 'failed',
+    outcome: 'failed' | 'unsupported',
     code: string,
     message: string,
   ): ProviderContinuationOperationResultV1 {
@@ -497,6 +572,119 @@ export class ConversationContinuationService {
     }
     if (messageId !== undefined) this.recordPromptReceipt(row.projectId, row.operationId, messageId, orderedReferences, receipt, 'attach', row.revision)
     return receipt
+  }
+
+  /** Resolve only artifact-backed references into ACP embedded text. Other kinds stay honest unsupported. */
+  private async resolveProviderContextReferences(
+    projectId: string,
+    orderedReferences: readonly OrderedRunReferenceV2[],
+    frozenResolution?: readonly ProviderContextResolutionEvidenceV1[],
+  ): Promise<
+    | {
+        readonly ok: true
+        readonly value: readonly ProviderResolvedContextReferenceV1[]
+        readonly evidence: readonly ProviderContextResolutionEvidenceV1[]
+      }
+    | { readonly ok: false; readonly code: string; readonly message: string }
+  > {
+    const resolved: ProviderResolvedContextReferenceV1[] = []
+    const evidence: ProviderContextResolutionEvidenceV1[] = []
+    let totalChars = 0
+    const references = [...orderedReferences].sort((left, right) => left.order - right.order)
+    if (frozenResolution !== undefined && frozenResolution.length !== references.length) {
+      return { ok: false, code: 'context_resolution_conflict', message: 'Frozen context resolution does not match the message reference count.' }
+    }
+    for (const [index, reference] of references.entries()) {
+      const ref = reference.ref
+      const frozen = frozenResolution?.[index]
+      const mode = reference.mode ?? 'full'
+      if (frozen !== undefined && (frozen.order !== reference.order || frozen.mode !== mode || JSON.stringify(frozen.ref) !== JSON.stringify(ref))) {
+        return { ok: false, code: 'context_resolution_conflict', message: 'Frozen context resolution does not match the message reference identity/order.' }
+      }
+      let artifactId: string
+      let requestedRevisionId: string | undefined
+      if (frozen !== undefined) {
+        artifactId = frozen.artifactId
+        requestedRevisionId = frozen.revisionId
+      } else if (ref.type === 'artifact') {
+        artifactId = ref.artifactId
+        requestedRevisionId = ref.revisionId
+      } else if (ref.type === 'view') {
+        const view = this.metadata.getArtifactView(ref.viewId)
+        if (view === undefined) return { ok: false, code: 'context_reference_not_found', message: `Artifact view ${ref.viewId} was not found.` }
+        artifactId = String(view.artifactId)
+        requestedRevisionId = view.revisionId === undefined ? undefined : String(view.revisionId)
+      } else {
+        return { ok: false, code: 'context_reference_resolution_unsupported', message: `Provider context resolution is not implemented for ${ref.type} references.` }
+      }
+      const artifact = this.metadata.getArtifact(artifactId)
+      if (artifact === undefined || String(artifact.projectId) !== projectId) {
+        return { ok: false, code: 'context_reference_not_found', message: `Artifact ${artifactId} is outside this project or missing.` }
+      }
+      const revisionId = requestedRevisionId ?? (artifact.currentRevisionId === undefined ? undefined : String(artifact.currentRevisionId))
+      const revision = revisionId === undefined ? undefined : this.metadata.getArtifactRevision(revisionId)
+      if (revision === undefined || String(revision.artifactId) !== artifactId) {
+        return { ok: false, code: 'context_revision_not_found', message: `Revision for artifact ${artifactId} was not found.` }
+      }
+      const fileRecord = this.metadata.getFileRecord(String(revision.fileRecordId))
+      const contentHash = String(revision.contentHash)
+      if (frozen !== undefined && (
+        frozen.revisionId !== revisionId
+        || frozen.fileRecordId !== String(revision.fileRecordId)
+        || frozen.contentHash !== contentHash
+      )) {
+        return { ok: false, code: 'context_resolution_conflict', message: `Frozen revision evidence for artifact ${artifactId} no longer matches Core metadata.` }
+      }
+      if (fileRecord === undefined || String(fileRecord.observedHash) !== contentHash) {
+        return { ok: false, code: 'context_content_stale', message: `Artifact ${artifactId} does not match its frozen revision hash.` }
+      }
+      let actualHash: string
+      try {
+        actualHash = await hashFileSha256(fileRecord.observedPath)
+      } catch {
+        return { ok: false, code: 'context_content_unavailable', message: `Artifact ${artifactId} cannot be read for provider context.` }
+      }
+      if (actualHash !== contentHash) {
+        return { ok: false, code: 'context_content_stale', message: `Artifact ${artifactId} changed on disk after its frozen revision was recorded.` }
+      }
+      const maxChars = mode === 'summary' ? 12_000 : mode === 'structure' ? 40_000 : 200_000
+      const text = (await readArtifactIndexBody({
+        fileRecord,
+        maxChars,
+        projectId,
+        artifactId,
+      })).trim()
+      if (text === '') {
+        return { ok: false, code: 'context_content_unavailable', message: `Artifact ${artifactId} has no readable text evidence for provider context.` }
+      }
+      totalChars += text.length
+      if (totalChars > CONTINUATION_CONTEXT_TOTAL_CHAR_LIMIT) {
+        return {
+          ok: false,
+          code: 'context_budget_exceeded',
+          message: `Resolved provider context exceeds the ${CONTINUATION_CONTEXT_TOTAL_CHAR_LIMIT}-character message budget.`,
+        }
+      }
+      resolved.push({
+        order: reference.order,
+        mode,
+        ref,
+        title: frozen?.title ?? artifact.title,
+        mimeType: 'text/plain',
+        text,
+      })
+      evidence.push({
+        order: reference.order,
+        mode,
+        ref,
+        artifactId,
+        revisionId: String(revision.id),
+        fileRecordId: String(revision.fileRecordId),
+        contentHash,
+        title: frozen?.title ?? artifact.title,
+      })
+    }
+    return { ok: true, value: resolved, evidence }
   }
 
   /** Notify existing collaboration subscribers after a prompt turn is committed. */
@@ -663,31 +851,6 @@ export class ConversationContinuationService {
       return this.advanceStep(projectId, operationId, { step: 'core_bind', outcome: 'outcome_unknown', expectedRevision: row.revision, ...(receipt.error === undefined ? {} : { errorEvidence: receipt.error.message }) })
     }
     return this.advanceStep(projectId, operationId, { step: 'core_bind', outcome: 'failed', expectedRevision: row.revision, ...(receipt.error === undefined ? {} : { errorEvidence: receipt.error.message }) })
-  }
-
-  async #retryAttach(
-    projectId: string,
-    operationId: string,
-    row: ContinuationOperationJournalRowV1,
-    adapter: ContinuationProviderAdapterV1,
-  ): Promise<ContinuationRecoveryProjectionV1> {
-    const externalSessionId = row.externalEvidence?.externalSessionId
-    if (externalSessionId === undefined) throw new Error('No external session identity to attach.')
-    const receipt = await adapter.attachContext({
-      operationId,
-      correlationId: operationId,
-      provider: row.provider,
-      externalSessionId,
-      bundle: continuationBundleForRowV1(row),
-    })
-    // provider 无 attach RPC → unsupported → attach 标记 not_applicable（first-send degrade 由 request 明示）。
-    if (receipt.outcome === 'unsupported') {
-      return this.advanceStep(projectId, operationId, { step: 'attach', outcome: 'not_applicable', expectedRevision: row.revision, ...(receipt.error === undefined ? {} : { errorEvidence: receipt.error.message }) })
-    }
-    if (receipt.outcome === 'outcome_unknown') {
-      return this.advanceStep(projectId, operationId, { step: 'attach', outcome: 'outcome_unknown', expectedRevision: row.revision, ...(receipt.error === undefined ? {} : { errorEvidence: receipt.error.message }) })
-    }
-    return this.advanceStep(projectId, operationId, { step: 'attach', outcome: 'failed', expectedRevision: row.revision, ...(receipt.error === undefined ? {} : { errorEvidence: receipt.error.message }) })
   }
 
   async #reconcileWithAdapter(

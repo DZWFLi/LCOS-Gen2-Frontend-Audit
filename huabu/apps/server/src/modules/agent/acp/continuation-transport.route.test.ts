@@ -246,12 +246,17 @@ describe('ACP continuation Host transport facade', () => {
     const prompt = vi.fn(
       async (
         _sessionId: string,
-        _blocks: unknown[],
+        blocks: Array<{ type?: string; resource?: { text?: string } }>,
         onUpdate: (update: unknown) => void,
       ) => {
+        const attachedText =
+          blocks.find((block) => block.type === 'resource')?.resource?.text ??
+          '';
+        const uniqueToken =
+          /UNIQUE-[A-Z0-9-]+/.exec(attachedText)?.[0] ?? 'missing-context';
         onUpdate({
           sessionUpdate: 'agent_message_chunk',
-          content: { type: 'text', text: '继续完成' },
+          content: { type: 'text', text: `context:${uniqueToken}` },
         });
         return { stopReason: 'end_turn' };
       },
@@ -265,6 +270,12 @@ describe('ACP continuation Host transport facade', () => {
       persistedToDisk: false,
       client: {
         isClosed: false,
+        initializeResult: {
+          protocolVersion: 1,
+          agentCapabilities: {
+            promptCapabilities: { embeddedContext: true },
+          },
+        },
         prompt,
         resolvePermission: vi.fn(),
         shutdown,
@@ -274,6 +285,108 @@ describe('ACP continuation Host transport facade', () => {
     app = Fastify({ logger: false });
     await app.register(continuationTransportRoutes, { prefix: '/api/acp' });
 
+    const contextAttachment = {
+      attachmentId: 'lcos-context:run-1:message-1:corr-1',
+      messageId: 'message-1',
+      correlationId: 'corr-1',
+      orderedReferences: [
+        {
+          order: 0,
+          mode: 'summary',
+          ref: {
+            type: 'artifact',
+            artifactId: 'artifact-1',
+            revisionId: 'revision-1',
+          },
+        },
+        { order: 1, ref: { type: 'view', viewId: 'view-1' } },
+      ],
+      contextResolution: [
+        {
+          order: 0,
+          mode: 'summary',
+          ref: {
+            type: 'artifact',
+            artifactId: 'artifact-1',
+            revisionId: 'revision-1',
+          },
+          artifactId: 'artifact-1',
+          revisionId: 'revision-1',
+          fileRecordId: 'file-1',
+          contentHash: 'hash-1',
+          title: 'Brief',
+        },
+        {
+          order: 1,
+          ref: { type: 'view', viewId: 'view-1' },
+          artifactId: 'artifact-2',
+          revisionId: 'revision-2',
+          fileRecordId: 'file-2',
+          contentHash: 'hash-2',
+          title: 'View body',
+        },
+      ],
+      resolvedReferences: [
+        {
+          order: 0,
+          mode: 'summary',
+          ref: {
+            type: 'artifact',
+            artifactId: 'artifact-1',
+            revisionId: 'revision-1',
+          },
+          title: 'Brief',
+          mimeType: 'text/plain',
+          text: 'Brief body UNIQUE-ATTACH-7429',
+        },
+        {
+          order: 1,
+          ref: { type: 'view', viewId: 'view-1' },
+          title: 'View body',
+          mimeType: 'text/plain',
+          text: 'Secondary context',
+        },
+      ],
+    };
+    const attached = await app.inject({
+      method: 'POST',
+      url: '/api/acp/continuation/agentlets/machine-a/sessions/transport-1/context-attachments',
+      payload: {
+        threadId: 'run-1',
+        externalSessionId: 'native-1',
+        messageId: contextAttachment.messageId,
+        correlationId: contextAttachment.correlationId,
+        orderedReferences: contextAttachment.orderedReferences,
+        contextResolution: contextAttachment.contextResolution,
+      },
+    });
+    expect(attached.statusCode, attached.body).toBe(200);
+    expect(attached.json()).toEqual({
+      attachmentId: contextAttachment.attachmentId,
+      messageId: 'message-1',
+      correlationId: 'corr-1',
+    });
+    const duplicateAttach = await app.inject({
+      method: 'POST',
+      url: '/api/acp/continuation/agentlets/machine-a/sessions/transport-1/context-attachments',
+      payload: {
+        threadId: 'run-1',
+        externalSessionId: 'native-1',
+        messageId: contextAttachment.messageId,
+        correlationId: contextAttachment.correlationId,
+        orderedReferences: contextAttachment.orderedReferences,
+        contextResolution: contextAttachment.contextResolution,
+      },
+    });
+    expect(duplicateAttach.statusCode, duplicateAttach.body).toBe(200);
+    expect(duplicateAttach.json()).toEqual(attached.json());
+
+    // The receipt is deterministic and carries no Host-local attachment state.
+    // A recovered live ACP owner can therefore validate and consume it after a
+    // Host/provider registry restart without a second materialization step.
+    acpSessionRegistry.remove('machine-a', 'run-1');
+    acpSessionRegistry.set('machine-a', 'run-1', owner);
+
     const response = await app.inject({
       method: 'POST',
       url: '/api/acp/continuation/agentlets/machine-a/sessions/transport-1/prompt',
@@ -281,6 +394,7 @@ describe('ACP continuation Host transport facade', () => {
         threadId: 'run-1',
         externalSessionId: 'native-1',
         text: '继续',
+        contextAttachment,
       },
     });
 
@@ -289,10 +403,34 @@ describe('ACP continuation Host transport facade', () => {
       threadId: 'run-1',
       externalSessionId: 'native-1',
       transportSessionId: 'transport-1',
-      text: '继续完成',
+      text: 'context:UNIQUE-ATTACH-7429',
       stopReason: 'end_turn',
     });
     expect(prompt).toHaveBeenCalledTimes(1);
+    expect(prompt.mock.calls[0]?.[1]).toEqual([
+      expect.objectContaining({
+        type: 'resource',
+        resource: expect.objectContaining({
+          uri: 'lcos://reference/artifact/artifact-1',
+          text: 'Brief body UNIQUE-ATTACH-7429',
+        }),
+        _meta: expect.objectContaining({
+          lcos: expect.objectContaining({
+            order: 0,
+            mode: 'summary',
+            messageId: 'message-1',
+          }),
+        }),
+      }),
+      expect.objectContaining({
+        type: 'resource',
+        resource: expect.objectContaining({
+          uri: 'lcos://reference/view/view-1',
+          text: 'Secondary context',
+        }),
+      }),
+      { type: 'text', text: '继续' },
+    ]);
     expect(owner.persistedToDisk).toBe(true);
 
     const malformedCorrelation = await app.inject({
@@ -435,5 +573,94 @@ describe('ACP continuation Host transport facade', () => {
       },
     });
     expect(conflictingReplay.statusCode).toBe(409);
+  });
+
+  it('keeps attach unsupported without a live embeddedContext claim and rejects a mutated receipt', async () => {
+    const gateway = connectedGateway();
+    gateway.getSession.mockReturnValue({
+      sessionId: 'transport-1',
+      agentletId: 'machine-a',
+      role: 'agent-session',
+      metadata: {},
+      status: 'connected',
+      connectedAt: new Date(0),
+      sessionProfile: {
+        appId: 'run-1',
+        agentletId: 'machine-a',
+        agent: { pid: 42, cwd: 'E:/work', command: 'codex --acp' },
+      },
+      agentletProfile: undefined,
+      send: () => undefined,
+      onMessage: () => undefined,
+      onLifecycle: () => undefined,
+      disconnect: () => undefined,
+    });
+    acpSessionRegistry.set('machine-a', 'run-1', {
+      agentletId: 'machine-a',
+      threadId: 'run-1',
+      sessionId: 'native-1',
+      client: {
+        isClosed: false,
+        prompt: vi.fn(),
+        resolvePermission: vi.fn(),
+        shutdown: vi.fn(),
+      },
+    } as unknown as AcpSessionEntry);
+    app = Fastify({ logger: false });
+    await app.register(continuationTransportRoutes, { prefix: '/api/acp' });
+
+    const unsupported = await app.inject({
+      method: 'POST',
+      url: '/api/acp/continuation/agentlets/machine-a/sessions/transport-1/context-attachments',
+      payload: {
+        threadId: 'run-1',
+        externalSessionId: 'native-1',
+        messageId: 'message-1',
+        correlationId: 'corr-1',
+        orderedReferences: [
+          { order: 0, ref: { type: 'artifact', artifactId: 'artifact-1' } },
+        ],
+        contextResolution: [
+          {
+            order: 0,
+            ref: { type: 'artifact', artifactId: 'artifact-1' },
+            artifactId: 'artifact-1',
+            revisionId: 'revision-1',
+            fileRecordId: 'file-1',
+            contentHash: 'hash-1',
+            title: 'Brief',
+          },
+        ],
+      },
+    });
+    expect(unsupported.statusCode).toBe(501);
+    expect(unsupported.json()).toMatchObject({
+      error: { code: 'embedded_context_unsupported' },
+    });
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/api/acp/continuation/agentlets/machine-a/sessions/transport-1/prompt',
+      payload: {
+        threadId: 'run-1',
+        externalSessionId: 'native-1',
+        text: '继续',
+        contextAttachment: {
+          attachmentId: 'wrong',
+          messageId: 'message-1',
+          correlationId: 'corr-1',
+          orderedReferences: [
+            {
+              order: 0,
+              ref: { type: 'artifact', artifactId: 'artifact-1' },
+            },
+          ],
+        },
+      },
+    });
+    expect(response.statusCode).toBe(400);
+    expect(response.json()).toMatchObject({
+      error: { code: 'invalid_prompt_request' },
+    });
   });
 });

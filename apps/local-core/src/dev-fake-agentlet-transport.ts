@@ -80,7 +80,7 @@ export class DevFakeAgentletTransportV1 implements HuabuAgentletTransportV1 {
     }
   }
 
-  async probe(): Promise<{ readonly session: Readonly<Partial<Record<'createSession' | 'continueExisting' | 'send' | 'status' | 'cancel' | 'recoverExisting', CapabilityClaimV1>>>; readonly limitations?: readonly string[] }> {
+  async probe(): Promise<{ readonly session: Readonly<Partial<Record<'createSession' | 'continueExisting' | 'attachContext' | 'send' | 'status' | 'cancel' | 'recoverExisting', CapabilityClaimV1>>>; readonly limitations?: readonly string[] }> {
     return { session: {}, limitations: ['dev-fake transport（MOCK，非生产能力）'] }
   }
 }

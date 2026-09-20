@@ -27,7 +27,15 @@ import {
   removeProviderRunInput,
 } from './provider-run-input-registry.js';
 
-import type { PermissionNotifier } from '@agenetes/acp-driver';
+import type {
+  AcpContinuationContextAttachment,
+  AcpContinuationContextManifest,
+  AcpContinuationReference,
+  AcpContinuationResolutionEvidence,
+  AcpResolvedContinuationReference,
+  AcpSessionEntry,
+  PermissionNotifier,
+} from '@agenetes/acp-driver';
 import type { AgentletConnection } from '@agenetes/agentlet-host';
 import type { SpawnParams } from '@agentlet/protocol';
 import type { FastifyPluginAsync } from 'fastify';
@@ -55,12 +63,22 @@ interface PromptBody {
   readonly text?: unknown;
   readonly runtimeScope?: unknown;
   readonly runCorrelation?: unknown;
+  readonly contextAttachment?: unknown;
 }
 
 interface AnswerProviderInputBody {
   readonly correlation?: unknown;
   readonly requestId?: unknown;
   readonly selectedOptions?: unknown;
+}
+
+interface ContextAttachmentBody {
+  readonly threadId?: unknown;
+  readonly externalSessionId?: unknown;
+  readonly messageId?: unknown;
+  readonly correlationId?: unknown;
+  readonly orderedReferences?: unknown;
+  readonly contextResolution?: unknown;
 }
 
 interface ContinuationErrorBody {
@@ -134,6 +152,243 @@ function asThreadId(value: unknown): string | undefined {
     : undefined;
 }
 
+function asReference(value: unknown): AcpContinuationReference | undefined {
+  if (
+    !isRecord(value) ||
+    !Number.isInteger(value.order) ||
+    (value.order as number) < 0 ||
+    !isRecord(value.ref)
+  )
+    return undefined;
+  const type = value.ref.type;
+  if (
+    ![
+      'artifact',
+      'view',
+      'scope',
+      'workspace',
+      'conversation',
+      'component',
+    ].includes(String(type))
+  )
+    return undefined;
+  const identityKey =
+    type === 'artifact'
+      ? 'artifactId'
+      : type === 'view'
+        ? 'viewId'
+        : type === 'scope'
+          ? 'scopeId'
+          : type === 'workspace'
+            ? 'workspaceId'
+            : type === 'conversation'
+              ? 'conversationSessionId'
+              : 'componentId';
+  if (
+    typeof value.ref[identityKey] !== 'string' ||
+    String(value.ref[identityKey]).trim() === ''
+  )
+    return undefined;
+  const mode = value.mode;
+  if (
+    mode !== undefined &&
+    !['full', 'summary', 'structure'].includes(String(mode))
+  )
+    return undefined;
+  const ref: Record<string, string | undefined> & { type: string } = {
+    type: String(type),
+    [identityKey]: String(value.ref[identityKey]),
+  };
+  if (type === 'artifact' && typeof value.ref.revisionId === 'string')
+    ref.revisionId = value.ref.revisionId;
+  if (type === 'component' && typeof value.ref.presentationId === 'string')
+    ref.presentationId = value.ref.presentationId;
+  return {
+    order: value.order as number,
+    ...(mode === undefined
+      ? {}
+      : { mode: mode as 'full' | 'summary' | 'structure' }),
+    ref,
+  };
+}
+
+function asOrderedReferences(
+  value: unknown,
+): readonly AcpContinuationReference[] | undefined {
+  if (!Array.isArray(value) || value.length === 0) return undefined;
+  const references = value.map(asReference);
+  if (references.some((reference) => reference === undefined)) return undefined;
+  const concrete = references as AcpContinuationReference[];
+  if (
+    new Set(concrete.map((reference) => reference.order)).size !==
+    concrete.length
+  )
+    return undefined;
+  return concrete;
+}
+
+function asResolvedReferences(
+  value: unknown,
+): readonly AcpResolvedContinuationReference[] | undefined {
+  if (!Array.isArray(value) || value.length === 0) return undefined;
+  const references = value.map(
+    (item): AcpResolvedContinuationReference | undefined => {
+      const base = asReference(item);
+      if (
+        base === undefined ||
+        !isRecord(item) ||
+        typeof item.title !== 'string' ||
+        item.title.trim() === '' ||
+        item.mimeType !== 'text/plain' ||
+        typeof item.text !== 'string' ||
+        item.text.trim() === ''
+      )
+        return undefined;
+      return {
+        ...base,
+        title: item.title,
+        mimeType: 'text/plain',
+        text: item.text,
+      };
+    },
+  );
+  if (references.some((reference) => reference === undefined)) return undefined;
+  return references as AcpResolvedContinuationReference[];
+}
+
+function asContextResolution(
+  value: unknown,
+): readonly AcpContinuationResolutionEvidence[] | undefined {
+  if (!Array.isArray(value) || value.length === 0) return undefined;
+  const evidence = value.map(
+    (item): AcpContinuationResolutionEvidence | undefined => {
+      const base = asReference(item);
+      if (
+        base === undefined ||
+        !isRecord(item) ||
+        typeof item.artifactId !== 'string' ||
+        item.artifactId.trim() === '' ||
+        typeof item.revisionId !== 'string' ||
+        item.revisionId.trim() === '' ||
+        typeof item.fileRecordId !== 'string' ||
+        item.fileRecordId.trim() === '' ||
+        typeof item.contentHash !== 'string' ||
+        item.contentHash.trim() === '' ||
+        typeof item.title !== 'string' ||
+        item.title.trim() === ''
+      )
+        return undefined;
+      return {
+        ...base,
+        artifactId: item.artifactId,
+        revisionId: item.revisionId,
+        fileRecordId: item.fileRecordId,
+        contentHash: item.contentHash,
+        title: item.title,
+      };
+    },
+  );
+  if (evidence.some((item) => item === undefined)) return undefined;
+  return evidence as AcpContinuationResolutionEvidence[];
+}
+
+function contextAttachmentId(
+  threadId: string,
+  messageId: string,
+  correlationId: string,
+): string {
+  return `lcos-context:${encodeURIComponent(threadId)}:${encodeURIComponent(messageId)}:${encodeURIComponent(correlationId)}`;
+}
+
+function asContextManifestBody(body: ContextAttachmentBody):
+  | (AcpContinuationContextManifest & {
+      readonly threadId: string;
+      readonly externalSessionId: string;
+    })
+  | undefined {
+  const threadId = asThreadId(body.threadId);
+  const externalSessionId = asThreadId(body.externalSessionId);
+  const messageId = asThreadId(body.messageId);
+  const correlationId = asThreadId(body.correlationId);
+  const orderedReferences = asOrderedReferences(body.orderedReferences);
+  const contextResolution = asContextResolution(body.contextResolution);
+  if (
+    threadId === undefined ||
+    externalSessionId === undefined ||
+    messageId === undefined ||
+    correlationId === undefined ||
+    orderedReferences === undefined ||
+    contextResolution === undefined ||
+    contextResolution.length !== orderedReferences.length
+  )
+    return undefined;
+  for (let index = 0; index < orderedReferences.length; index += 1) {
+    const ordered = orderedReferences[index];
+    const resolved = contextResolution[index];
+    if (
+      ordered === undefined ||
+      resolved === undefined ||
+      ordered.order !== resolved.order ||
+      JSON.stringify(ordered.ref) !== JSON.stringify(resolved.ref) ||
+      ordered.mode !== resolved.mode
+    )
+      return undefined;
+  }
+  return {
+    threadId,
+    externalSessionId,
+    messageId,
+    correlationId,
+    attachmentId: contextAttachmentId(threadId, messageId, correlationId),
+    orderedReferences,
+    contextResolution,
+  };
+}
+
+function supportsEmbeddedContext(owner: AcpSessionEntry): boolean {
+  const capabilities = owner.client.initializeResult?.agentCapabilities;
+  if (!isRecord(capabilities)) return false;
+  const promptCapabilities = capabilities.promptCapabilities;
+  return (
+    isRecord(promptCapabilities) && promptCapabilities.embeddedContext === true
+  );
+}
+
+function asContextAttachment(
+  value: unknown,
+  threadId: string,
+  externalSessionId: string,
+): AcpContinuationContextAttachment | undefined {
+  if (!isRecord(value)) return undefined;
+  const manifest = asContextManifestBody({
+    ...value,
+    threadId,
+    externalSessionId,
+  });
+  const resolvedReferences = asResolvedReferences(value.resolvedReferences);
+  if (
+    manifest === undefined ||
+    value.attachmentId !== manifest.attachmentId ||
+    resolvedReferences === undefined ||
+    resolvedReferences.length !== manifest.orderedReferences.length
+  )
+    return undefined;
+  for (let index = 0; index < manifest.orderedReferences.length; index += 1) {
+    const resolution = manifest.contextResolution[index];
+    const resolved = resolvedReferences[index];
+    if (
+      resolution === undefined ||
+      resolved === undefined ||
+      resolution.order !== resolved.order ||
+      resolution.mode !== resolved.mode ||
+      JSON.stringify(resolution.ref) !== JSON.stringify(resolved.ref) ||
+      resolution.title !== resolved.title
+    )
+      return undefined;
+  }
+  return { ...manifest, resolvedReferences };
+}
+
 function asPromptBody(body: PromptBody):
   | {
       readonly threadId: string;
@@ -141,6 +396,7 @@ function asPromptBody(body: PromptBody):
       readonly text: string;
       readonly runtimeScope?: string;
       readonly runCorrelation?: LcosRunCorrelation;
+      readonly contextAttachment?: AcpContinuationContextAttachment;
     }
   | undefined {
   const threadId = asThreadId(body.threadId);
@@ -165,6 +421,16 @@ function asPromptBody(body: PromptBody):
   ) {
     return undefined;
   }
+  const contextAttachment =
+    body.contextAttachment === undefined
+      ? undefined
+      : asContextAttachment(
+          body.contextAttachment,
+          threadId,
+          externalSessionId,
+        );
+  if (body.contextAttachment !== undefined && contextAttachment === undefined)
+    return undefined;
   return {
     threadId,
     externalSessionId,
@@ -184,6 +450,7 @@ function asPromptBody(body: PromptBody):
           },
         }
       : {}),
+    ...(contextAttachment === undefined ? {} : { contextAttachment }),
   };
 }
 
@@ -467,6 +734,84 @@ const continuationTransportRoutes: FastifyPluginAsync = async (app) => {
     },
   );
 
+  app.post<{ Params: SessionParams; Body: ContextAttachmentBody }>(
+    '/continuation/agentlets/:agentletId/sessions/:sessionId/context-attachments',
+    async (request, reply) => {
+      const target = connectedGateway(request.params.agentletId);
+      if (!target.ok) return reply.status(target.status).send(target.body);
+      const input = asContextManifestBody(request.body ?? {});
+      if (input === undefined)
+        return reply
+          .status(400)
+          .send(
+            errorBody(
+              'invalid_context_attachment',
+              'threadId, externalSessionId, messageId, correlationId and non-empty orderedReferences are required.',
+            ),
+          );
+      const connection = target.gateway.getSession(
+        request.params.agentletId,
+        request.params.sessionId,
+      );
+      if (connection === undefined)
+        return reply
+          .status(404)
+          .send(
+            errorBody('session_not_found', 'Agentlet session was not found.'),
+          );
+      const profileThreadId = asThreadId(connection.sessionProfile?.appId);
+      if (profileThreadId !== undefined && profileThreadId !== input.threadId)
+        return reply
+          .status(409)
+          .send(
+            errorBody(
+              'thread_session_mismatch',
+              'Transport session is bound to another Core thread.',
+            ),
+          );
+      const owner = acpSessionRegistry.get(
+        request.params.agentletId,
+        input.threadId,
+      );
+      if (owner === undefined || owner.client.isClosed)
+        return reply
+          .status(409)
+          .send(
+            errorBody(
+              'acp_owner_not_found',
+              'No live Huabu ACP owner exists for this Core thread.',
+            ),
+          );
+      if (owner.sessionId !== input.externalSessionId)
+        return reply
+          .status(409)
+          .send(
+            errorBody(
+              'acp_session_mismatch',
+              'ACP native session does not match the canonical owner.',
+            ),
+          );
+      if (!supportsEmbeddedContext(owner))
+        return reply
+          .status(501)
+          .send(
+            errorBody(
+              'embedded_context_unsupported',
+              'The live ACP provider did not advertise promptCapabilities.embeddedContext.',
+            ),
+          );
+
+      // The live ACP owner explicitly advertised embeddedContext. The Host
+      // confirms this message-scoped manifest without sending a model turn or
+      // materializing daemon files. The deterministic receipt is restart-safe.
+      return {
+        attachmentId: input.attachmentId,
+        messageId: input.messageId,
+        correlationId: input.correlationId,
+      };
+    },
+  );
+
   app.post<{ Params: SessionParams; Body: PromptBody }>(
     '/continuation/agentlets/:agentletId/sessions/:sessionId/prompt',
     async (request, reply) => {
@@ -529,10 +874,24 @@ const continuationTransportRoutes: FastifyPluginAsync = async (app) => {
       }
       const runCorrelation = input.runCorrelation;
       const registeredRequestIds = new Set<string>();
+      if (
+        input.contextAttachment !== undefined &&
+        !supportsEmbeddedContext(owner)
+      ) {
+        return reply
+          .status(501)
+          .send(
+            errorBody(
+              'embedded_context_unsupported',
+              'The live ACP provider no longer advertises promptCapabilities.embeddedContext.',
+            ),
+          );
+      }
       try {
         const result = await promptExistingAcpSession(
           owner,
           input.text,
+          input.contextAttachment,
           undefined,
           runCorrelation === undefined
             ? undefined
