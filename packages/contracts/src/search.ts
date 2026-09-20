@@ -91,12 +91,16 @@ export interface SearchHitVNext extends SearchHitV0 {
   readonly locationCount?: number
   /** 是否被当前 Target 使用（请求带 usedHereTarget 时填充）。 */
   readonly usedHere?: boolean
+  /** Explicit lifecycle signal. Archived hits only appear when includeArchived was requested. */
+  readonly archivedAt?: string
+  readonly readOnly?: boolean
 }
 
 /** 搜索请求 vNext：V0 参数 + usedHere 投影开关。 */
 export interface SearchQueryVNext extends SearchQueryV0 {
   /** 给定时对每个 hit 计算 usedHere（read projection，不改 Truth）。 */
   readonly usedHereTarget?: { readonly kind: 'workspace' | 'scope' | 'conversation'; readonly id: string }
+  readonly includeArchived?: boolean
 }
 
 export interface SearchResultVNext extends SearchResultV0 {

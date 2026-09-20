@@ -329,7 +329,8 @@ export class SqliteMetadataRepository {
     if (current === 52) { this.#migrate_053_from_v52(); current = 53 }
     if (current === 53) { this.#migrate_054_from_v53(); current = 54 }
     if (current === 54) { this.#migrate_055_from_v54(); current = 55 }
-    if (current !== 55) throw new Error(`Unsupported metadata schema version ${current}.`)
+    if (current === 55) { this.#migrate_056_from_v55(); current = 56 }
+    if (current !== 56) throw new Error(`Unsupported metadata schema version ${current}.`)
   }
 
   #migrate_037_from_v36(): void {
@@ -442,6 +443,19 @@ export class SqliteMetadataRepository {
         ADD COLUMN response_target TEXT NOT NULL DEFAULT 'bridge'
         CHECK(response_target IN ('bridge','huabu-acp'));
       PRAGMA user_version = 55;
+      COMMIT;
+    `)
+  }
+
+  #migrate_056_from_v55(): void {
+    // Artifact Archive is a canonical lifecycle independent from availability.
+    // Nullable timestamp keeps legacy rows active and preserves the same identity.
+    this.#database.exec(`
+      BEGIN;
+      ALTER TABLE artifacts ADD COLUMN archived_at TEXT;
+      CREATE INDEX IF NOT EXISTS idx_artifacts_project_archived
+        ON artifacts(project_id, archived_at, updated_at DESC);
+      PRAGMA user_version = 56;
       COMMIT;
     `)
   }
@@ -2781,6 +2795,11 @@ export class SqliteMetadataRepository {
     readonly colorPinMembershipDeletes?: readonly string[]
     readonly artifactViewDeletes?: readonly ArtifactViewId[]
     readonly noteDeletes?: readonly NoteId[]
+    readonly artifactArchiveStates?: readonly {
+      readonly artifactId: string
+      readonly archivedAt?: string
+      readonly updatedAt: string
+    }[]
     readonly changeSet?: MutationChangeSetV1
     readonly receipt?: CurationPatchReceiptV0
   }): { readonly presentationUpdated: boolean } {
@@ -2849,6 +2868,13 @@ export class SqliteMetadataRepository {
       for (const colorPinId of plan.colorPinDefinitionDeletes ?? []) this.#database.prepare('DELETE FROM color_pin_definitions WHERE id = ?').run(colorPinId as SQLInputValue)
       for (const viewId of plan.artifactViewDeletes ?? []) this.#database.prepare('DELETE FROM artifact_views WHERE id = ?').run(viewId as SQLInputValue)
       for (const noteId of plan.noteDeletes ?? []) this.#database.prepare('DELETE FROM notes WHERE id = ?').run(noteId as SQLInputValue)
+      for (const state of plan.artifactArchiveStates ?? []) {
+        const result = this.#database.prepare(`
+          UPDATE artifacts SET archived_at = ?, updated_at = ?
+          WHERE id = ? AND project_id = ?
+        `).run(state.archivedAt ?? null, state.updatedAt, state.artifactId, plan.projectId)
+        if (Number(result.changes) !== 1) throw new Error('Artifact not found in route project.')
+      }
       if (plan.changeSet !== undefined) this.createMutationChangeSet(plan.changeSet)
       if (plan.receipt !== undefined) this.saveCurationReceipt(plan.receipt, plan.projectId)
       this.#database.exec('COMMIT;')
@@ -5629,10 +5655,10 @@ export class SqliteMetadataRepository {
       referencedTable: 'projects',
       referencedId: String(value.projectId),
     }, `
-      INSERT INTO artifacts (id, project_id, title, kind, local_path, availability, current_revision_id, created_at, updated_at, managed)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO artifacts (id, project_id, title, kind, local_path, availability, current_revision_id, created_at, updated_at, managed, archived_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       ON CONFLICT(id) DO UPDATE SET title=excluded.title, kind=excluded.kind, local_path=excluded.local_path, availability=excluded.availability, current_revision_id=excluded.current_revision_id, managed=excluded.managed, updated_at=excluded.updated_at
-    `, [value.id as SQLInputValue, value.projectId as SQLInputValue, value.title, value.kind, '', value.availability, value.currentRevisionId as SQLInputValue ?? null, value.createdAt, value.updatedAt, managed])
+    `, [value.id as SQLInputValue, value.projectId as SQLInputValue, value.title, value.kind, '', value.availability, value.currentRevisionId as SQLInputValue ?? null, value.createdAt, value.updatedAt, managed, value.archivedAt ?? null])
   }
 
   #presentationView(row: Row): PresentationViewV0 {
@@ -5946,7 +5972,7 @@ export class SqliteMetadataRepository {
   }
 
   #artifact(row: Row): Artifact {
-    return { id: row.id as ArtifactId, projectId: row.project_id as ProjectId, title: String(row.title), kind: String(row.kind) as Artifact['kind'], managed: row.managed === 0 ? false : true, availability: String(row.availability) as Artifact['availability'], ...(row.current_revision_id === null || row.current_revision_id === undefined ? {} : { currentRevisionId: row.current_revision_id as ArtifactRevisionId }), createdAt: String(row.created_at), updatedAt: String(row.updated_at) }
+    return { id: row.id as ArtifactId, projectId: row.project_id as ProjectId, title: String(row.title), kind: String(row.kind) as Artifact['kind'], managed: row.managed === 0 ? false : true, availability: String(row.availability) as Artifact['availability'], ...(row.archived_at === null || row.archived_at === undefined ? {} : { archivedAt: String(row.archived_at) }), ...(row.current_revision_id === null || row.current_revision_id === undefined ? {} : { currentRevisionId: row.current_revision_id as ArtifactRevisionId }), createdAt: String(row.created_at), updatedAt: String(row.updated_at) }
   }
 
   #artifactView(row: Row): ArtifactView {

@@ -219,6 +219,8 @@ export interface Artifact {
   /** 受管 Artifact 可作 revise Target；外部 Reference/Link 为 false。 */
   readonly managed?: boolean
   readonly availability: ArtifactAvailability
+  /** User lifecycle. Independent from source availability; archived content remains readable. */
+  readonly archivedAt?: IsoDateTime
   readonly currentRevisionId?: ArtifactRevisionId
   readonly createdAt: IsoDateTime
   readonly updatedAt: IsoDateTime

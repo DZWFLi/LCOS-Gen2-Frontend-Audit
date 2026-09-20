@@ -135,6 +135,7 @@ export async function handleCurationRoute(ctx: CurationRouteContext): Promise<bo
       ...(limitRaw === null ? {} : { limit: Number(limitRaw) || 10 }),
       ...(types === undefined || types.length === 0 ? {} : { types }),
       ...(usedHereTarget === undefined ? {} : { usedHereTarget }),
+      ...(url.searchParams.get('includeArchived') === 'true' ? { includeArchived: true } : {}),
     })
     sendJson(response, 200, { ok: true, value })
     return true

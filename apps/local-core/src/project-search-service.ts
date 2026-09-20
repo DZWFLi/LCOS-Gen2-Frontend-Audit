@@ -81,6 +81,7 @@ export interface ProjectSearchOptions {
   readonly related?: boolean
   /** F6 P0-A4：给定时对每个 hit 计算 usedHere（read projection）。 */
   readonly usedHereTarget?: { readonly kind: 'workspace' | 'scope' | 'conversation'; readonly id: string }
+  readonly includeArchived?: boolean
 }
 
 /**
@@ -234,7 +235,12 @@ export class ProjectSearchService {
       }
     }
 
-    const ranked = hits.sort((left, right) => right.score - left.score).slice(0, limit * 3)
+    const lifecycleFiltered = hits.filter((hit) => {
+      if (hit.entityType !== 'artifact') return true
+      const artifact = this.repository.getArtifact(String(hit.entityId))
+      return artifact !== undefined && (options.includeArchived === true || artifact.archivedAt === undefined)
+    })
+    const ranked = lifecycleFiltered.sort((left, right) => right.score - left.score).slice(0, limit * 3)
     const deduped: SearchHitVNext[] = []
     const finalSeen = new Set<string>()
     for (const hit of ranked) {
@@ -251,7 +257,7 @@ export class ProjectSearchService {
       schemaVersion: 0,
       query,
       hits: enriched,
-      truncated: hits.length > limit,
+      truncated: lifecycleFiltered.length > limit,
       generatedAt: new Date().toISOString(),
     }
   }
@@ -259,6 +265,24 @@ export class ProjectSearchService {
   /** vNext 字段投影：matchReason/matchModality/entityRef/sourceAnchor/location/usedHere。 */
   #enrichHit(projectId: string, hit: SearchHitVNext, usedHereTarget?: { readonly kind: 'workspace' | 'scope' | 'conversation'; readonly id: string }): SearchHitVNext {
     const matchReason = SOURCE_TO_MATCH_REASON[hit.source] ?? 'metadata'
+    if (hit.entityType === 'artifact') {
+      const artifact = this.repository.getArtifact(String(hit.entityId))
+      if (artifact?.archivedAt !== undefined) {
+        const { viewId: _activeViewId, ...coldHit } = hit
+        return {
+          ...coldHit,
+          entityRef: { type: 'artifact', id: String(hit.entityId) },
+          matchReason,
+          matchModality: REASON_TO_MODALITY[matchReason],
+          ...(hit.chunkAnchor === undefined ? {} : { sourceAnchor: hit.chunkAnchor }),
+          archivedAt: artifact.archivedAt,
+          readOnly: true,
+          locationRefs: [],
+          locationCount: 0,
+          ...(usedHereTarget === undefined ? {} : { usedHere: false }),
+        }
+      }
+    }
     const entityRef: SearchEntityRefVNext = {
       type: hit.entityType,
       id: String(hit.entityId),

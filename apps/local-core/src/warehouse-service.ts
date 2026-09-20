@@ -92,6 +92,7 @@ export class WarehouseService {
 
     if (kinds.has('artifact')) {
       for (const artifact of this.repository.getArtifacts(projectId)) {
+        if (artifact.archivedAt !== undefined) continue
         const title = artifact.title
         const updatedAt = (artifact as { readonly updatedAt?: string }).updatedAt
         if (needle !== '' && !title.toLocaleLowerCase('en-US').includes(needle)) continue

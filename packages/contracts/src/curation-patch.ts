@@ -100,6 +100,16 @@ export interface MutationRelationSnapshotV1 {
 
 export type MutationChangeItemV1 =
   | {
+      /** Canonical Artifact archive/restore lifecycle; membership/views/revisions are preserved. */
+      readonly type: 'artifact_archive_state'
+      readonly artifactId: string
+      readonly beforeArchivedAt?: string
+      readonly afterArchivedAt?: string
+      readonly inverse: { readonly type: 'restore_artifact_archive_state'; readonly artifactId: string; readonly archivedAt?: string }
+      readonly forward: { readonly type: 'restore_artifact_archive_state'; readonly artifactId: string; readonly archivedAt?: string }
+      readonly appliedFingerprint: string
+    }
+  | {
       readonly type: 'presentation_state'
       readonly presentationId: string
       readonly beforeVersion: number

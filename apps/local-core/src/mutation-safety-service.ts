@@ -510,6 +510,60 @@ export class MutationSafetyService {
     this.#publishChangeSet(changeSet, input.origin)
     return changeSet
   }
+
+  /** Canonical Artifact lifecycle. Repeated archive/restore is an idempotent no-op. */
+  archiveArtifact(input: {
+    readonly projectId: string
+    readonly artifactId: string
+    readonly operationId?: string
+    readonly origin?: ProjectEventOrigin
+  }): { readonly artifact: NonNullable<ReturnType<SqliteMetadataRepository['getArtifact']>>; readonly changeSet?: MutationChangeSetV1 } {
+    return this.#setArtifactArchiveState(input, true)
+  }
+
+  restoreArtifact(input: {
+    readonly projectId: string
+    readonly artifactId: string
+    readonly operationId?: string
+    readonly origin?: ProjectEventOrigin
+  }): { readonly artifact: NonNullable<ReturnType<SqliteMetadataRepository['getArtifact']>>; readonly changeSet?: MutationChangeSetV1 } {
+    return this.#setArtifactArchiveState(input, false)
+  }
+
+  #setArtifactArchiveState(input: {
+    readonly projectId: string
+    readonly artifactId: string
+    readonly operationId?: string
+    readonly origin?: ProjectEventOrigin
+  }, archived: boolean): { readonly artifact: NonNullable<ReturnType<SqliteMetadataRepository['getArtifact']>>; readonly changeSet?: MutationChangeSetV1 } {
+    const artifact = this.#metadata.getArtifact(input.artifactId)
+    if (artifact === undefined || String(artifact.projectId) !== input.projectId) throw new Error('Artifact not found in route project.')
+    if ((artifact.archivedAt !== undefined) === archived) return { artifact }
+    const now = new Date().toISOString()
+    const afterArchivedAt = archived ? now : undefined
+    const change: MutationChangeItemV1 = {
+      type: 'artifact_archive_state', artifactId: input.artifactId,
+      ...(artifact.archivedAt === undefined ? {} : { beforeArchivedAt: artifact.archivedAt }),
+      ...(afterArchivedAt === undefined ? {} : { afterArchivedAt }),
+      inverse: { type: 'restore_artifact_archive_state', artifactId: input.artifactId, ...(artifact.archivedAt === undefined ? {} : { archivedAt: artifact.archivedAt }) },
+      forward: { type: 'restore_artifact_archive_state', artifactId: input.artifactId, ...(afterArchivedAt === undefined ? {} : { archivedAt: afterArchivedAt }) },
+      appliedFingerprint: `artifact:${input.artifactId}:archived:${afterArchivedAt ?? 'active'}`,
+    }
+    const changeSet = this.#buildChangeSet({
+      projectId: input.projectId,
+      operationId: input.operationId ?? input.origin?.operationId ?? `artifact-${archived ? 'archive' : 'restore'}-${randomUUID()}`,
+      actorKind: 'web', changes: [change],
+    })
+    this.#metadata.runCurationMutation({
+      projectId: input.projectId,
+      artifactArchiveStates: [{ artifactId: input.artifactId, ...(afterArchivedAt === undefined ? {} : { archivedAt: afterArchivedAt }), updatedAt: now }],
+      changeSet,
+    })
+    this.#publishArtifact(input.projectId, input.artifactId, archived ? 'archived' : 'restored', input.origin)
+    this.#publishChangeSet(changeSet, input.origin)
+    return { artifact: this.#metadata.getArtifact(input.artifactId)!, changeSet }
+  }
+
   revert(changeSetId: string, origin?: ProjectEventOrigin): RevertResultV1 {
     const changeSet = this.#metadata.getMutationChangeSet(changeSetId)
     if (changeSet === undefined) throw new Error('Change set not found.')
@@ -522,6 +576,9 @@ export class MutationSafetyService {
         if (current === undefined || current.version !== change.afterVersion) {
           return { revertable: false, reason: 'TOUCHED_STATE_CHANGED_AFTER_APPLY', changeSetId }
         }
+      } else if (change.type === 'artifact_archive_state') {
+        const current = this.#metadata.getArtifact(change.artifactId)
+        if (current === undefined || current.archivedAt !== change.afterArchivedAt) return { revertable: false, reason: 'TOUCHED_STATE_CHANGED_AFTER_APPLY', changeSetId }
       } else if (change.type === 'relation_upsert' || change.type === 'relation_update') {
         const current = this.#metadata.getRelation(change.relationId)
         if (current === undefined) return { revertable: false, reason: 'TOUCHED_STATE_CHANGED_AFTER_APPLY', changeSetId }
@@ -611,6 +668,9 @@ export class MutationSafetyService {
             updatedBy: changeSet.actorKind === 'web' ? 'web' : 'agent',
           })
         }
+      } else if (change.type === 'artifact_archive_state') {
+        this.#metadata.runCurationMutation({ projectId: changeSet.projectId, artifactArchiveStates: [{ artifactId: change.artifactId, ...(change.beforeArchivedAt === undefined ? {} : { archivedAt: change.beforeArchivedAt }), updatedAt: new Date().toISOString() }] })
+        this.#publishArtifact(changeSet.projectId, change.artifactId, change.beforeArchivedAt === undefined ? 'restored' : 'archived', origin)
       } else if (change.type === 'relation_upsert') {
         this.#metadata.deleteRelation(change.relationId)
         this.#publishRelation(changeSet.projectId, change.relationId, 'deleted', origin)
@@ -686,6 +746,9 @@ export class MutationSafetyService {
         if (current === undefined || stateFingerprint(current.state) !== stateFingerprint(change.inverse.stateSnapshot)) {
           return { revertable: false, reason: 'TOUCHED_STATE_CHANGED_AFTER_APPLY', changeSetId }
         }
+      } else if (change.type === 'artifact_archive_state') {
+        const current = this.#metadata.getArtifact(change.artifactId)
+        if (current === undefined || current.archivedAt !== change.beforeArchivedAt) return { revertable: false, reason: 'TOUCHED_STATE_CHANGED_AFTER_APPLY', changeSetId }
       } else if (change.type === 'relation_upsert') {
         if (change.forward === undefined) return { revertable: false, reason: 'FORWARD_STATE_UNAVAILABLE', changeSetId }
         if (this.#metadata.getRelation(change.relationId) !== undefined) return { revertable: false, reason: 'TOUCHED_STATE_CHANGED_AFTER_APPLY', changeSetId }
@@ -767,6 +830,9 @@ export class MutationSafetyService {
           expectedVersion: current.version,
           updatedBy: changeSet.actorKind === 'web' ? 'web' : 'agent',
         })
+      } else if (change.type === 'artifact_archive_state') {
+        this.#metadata.runCurationMutation({ projectId: changeSet.projectId, artifactArchiveStates: [{ artifactId: change.artifactId, ...(change.afterArchivedAt === undefined ? {} : { archivedAt: change.afterArchivedAt }), updatedAt: new Date().toISOString() }] })
+        this.#publishArtifact(changeSet.projectId, change.artifactId, change.afterArchivedAt === undefined ? 'restored' : 'archived', origin)
       } else if (change.type === 'relation_upsert') {
         this.#restoreRelation(changeSet.projectId, change.relationId, change.forward!.relation)
         this.#publishRelation(changeSet.projectId, change.relationId, 'upserted', origin)
@@ -983,7 +1049,7 @@ export class MutationSafetyService {
       payload: { relationId, action },
     })
   }
-  #publishArtifact(projectId: string, artifactId: string, action: 'restored' | 'deleted', origin?: ProjectEventOrigin): void {
+  #publishArtifact(projectId: string, artifactId: string, action: 'archived' | 'restored' | 'deleted', origin?: ProjectEventOrigin): void {
     this.#events?.publish(projectId, {
       channel: 'artifact',
       type: 'artifact.changed',

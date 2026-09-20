@@ -86,9 +86,30 @@ export async function handleEntityRoute(ctx: EntityRouteContext): Promise<RouteR
   // --- Artifacts ---
   const artListMatch = /^\/projects\/([^/]+)\/artifacts$/.exec(pathname)
   const artOneMatch = /^\/projects\/([^/]+)\/artifacts\/([^/]+)$/.exec(pathname)
+  const artLifecycleMatch = /^\/projects\/([^/]+)\/artifacts\/([^/]+)\/(archive|restore)$/.exec(pathname)
   if (artListMatch !== null && method === 'GET') {
     const projectId = decodeURIComponent(artListMatch[1] ?? '')
-    return { status: 200, body: { ok: true, value: metadata.getArtifacts(projectId) } }
+    const lifecycle = new URL(request.url ?? '', 'http://127.0.0.1').searchParams.get('lifecycle') ?? 'active'
+    const artifacts = metadata.getArtifacts(projectId).filter((artifact) =>
+      lifecycle === 'all' || (lifecycle === 'archived' ? artifact.archivedAt !== undefined : artifact.archivedAt === undefined))
+    return { status: 200, body: { ok: true, value: artifacts } }
+  }
+  if (artLifecycleMatch !== null && method === 'POST') {
+    if (mutationSafety === undefined) return { status: 503, body: failure('UNAVAILABLE', 'Mutation safety service is not configured.') }
+    const projectId = decodeURIComponent(artLifecycleMatch[1] ?? '')
+    const artifactId = decodeURIComponent(artLifecycleMatch[2] ?? '')
+    const action = artLifecycleMatch[3]
+    const body = await readJsonBody(request, signal)
+    const operationId = isRecord(body) && typeof body.operationId === 'string' && body.operationId.trim() !== '' ? body.operationId.trim() : undefined
+    try {
+      const result = action === 'archive'
+        ? mutationSafety.archiveArtifact({ projectId, artifactId, ...(operationId === undefined ? {} : { operationId }) })
+        : mutationSafety.restoreArtifact({ projectId, artifactId, ...(operationId === undefined ? {} : { operationId }) })
+      return { status: 200, body: { ok: true, value: result.artifact, meta: { ...(result.changeSet === undefined ? {} : { changeSetId: result.changeSet.id }), idempotent: result.changeSet === undefined } } }
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Artifact lifecycle mutation failed.'
+      return { status: message === 'Artifact not found in route project.' ? 404 : 409, body: failure(message === 'Artifact not found in route project.' ? 'NOT_FOUND' : 'CONFLICT', message) }
+    }
   }
   if (artOneMatch !== null) {
     const projectId = decodeURIComponent(artOneMatch[1] ?? '')

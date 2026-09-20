@@ -117,7 +117,7 @@ describe('migration v53 continuation_operation_journal', () => {
     expect(metadata.getContinuationOperationJournal('project-unknown', 'op-migrate')).toBeUndefined()
   })
 
-  it('upgrades a legacy v52 database to v54 preserving existing project data', async () => {
+  it('upgrades a legacy v52 database to v56 preserving existing project data', async () => {
     const { root } = await setup()
     const dbPath = join(root, 'legacy-v52.sqlite')
     const legacy = new DatabaseSync(dbPath)
@@ -141,13 +141,25 @@ describe('migration v53 continuation_operation_journal', () => {
         preferred_surface TEXT,
         version INTEGER NOT NULL DEFAULT 0
       );
+      CREATE TABLE artifacts (
+        id TEXT PRIMARY KEY,
+        project_id TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+        kind TEXT NOT NULL,
+        title TEXT NOT NULL,
+        source_kind TEXT NOT NULL,
+        availability TEXT NOT NULL,
+        is_managed INTEGER NOT NULL,
+        current_revision_id TEXT,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      );
       PRAGMA user_version = 52;
     `)
     legacy.close()
 
     const upgraded = new SqliteMetadataRepository(dbPath)
     repositories.push(upgraded)
-    expect(upgraded.schemaVersion).toBe(55)
+    expect(upgraded.schemaVersion).toBe(56)
     // 旧数据保留
     expect(upgraded.getProject('p-legacy')?.name).toBe('Legacy Project')
     // 新表可用，外键指向旧项目

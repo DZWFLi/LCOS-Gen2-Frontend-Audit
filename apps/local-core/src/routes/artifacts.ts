@@ -94,6 +94,7 @@ export async function handleArtifactsRoute(ctx: ArtifactsRouteContext): Promise<
     const projectId = decodeURIComponent(artifactSearchMatch[1] ?? '') as ProjectId
     const query = (url.searchParams.get('q') ?? '').trim().toLocaleLowerCase('en-US')
     const matches = db.getArtifacts(String(projectId))
+      .filter((artifact) => artifact.archivedAt === undefined)
       .filter((artifact) => query.length === 0 || artifact.title.toLocaleLowerCase('en-US').includes(query))
       .slice(0, 50)
     sendJson(response, 200, { ok: true, value: matches })
