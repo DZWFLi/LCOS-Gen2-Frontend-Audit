@@ -6,6 +6,7 @@ import { describe, expect, it, vi } from 'vitest';
 import {
   anchorViewportCentre,
   fitNodesOnCanvas,
+  focusNodeGroupOnCanvas,
   focusNodesOnCanvas,
   getReliableNodeBounds,
   revealBoundsInViewport,
@@ -82,6 +83,27 @@ describe('reliable canvas node bounds', () => {
     await expect(focusNodesOnCanvas(instance, ['first'], 800)).resolves.toBe(true);
     expect(setCenter).toHaveBeenCalledWith(1100, 560, { duration: 800, zoom: 0.8 });
     await expect(focusNodesOnCanvas(instance, ['missing'])).resolves.toBe(false);
+  });
+
+  it('fits one multi-target group once without zooming past the current view', async () => {
+    const { instance } = createInstance();
+    const setViewport = vi.fn().mockResolvedValue(true);
+    Object.assign(instance, { getZoom: () => 0.72, setViewport });
+
+    await expect(
+      focusNodeGroupOnCanvas(
+        instance,
+        ['first', 'second'],
+        { width: 1200, height: 800 },
+        640,
+        0.18,
+      ),
+    ).resolves.toBe(true);
+
+    expect(setViewport).toHaveBeenCalledOnce();
+    const [viewport, options] = setViewport.mock.calls[0] ?? [];
+    expect(viewport.zoom).toBeLessThanOrEqual(0.72);
+    expect(options).toEqual({ duration: 640 });
   });
 });
 

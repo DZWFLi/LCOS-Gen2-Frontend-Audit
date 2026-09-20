@@ -103,7 +103,11 @@ export function ContextWorksite({
         </button>
       </div>
 
-      <TemporalRail projectId={projectId} workspaceId={activeWorkspaceId ?? undefined} />
+      <TemporalRail
+        projectId={projectId}
+        workspaceId={activeWorkspaceId ?? undefined}
+        canvasId={canvasId}
+      />
 
       {atlasOpen && (
         <ContextAtlasStage

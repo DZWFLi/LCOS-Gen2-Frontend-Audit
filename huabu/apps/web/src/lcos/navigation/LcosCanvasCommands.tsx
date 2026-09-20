@@ -25,7 +25,10 @@ import { useReactFlow, useViewport } from '@xyflow/react';
 import { useEffect, useReducer, useRef, useState } from 'react';
 
 
-import { focusNodesOnCanvas } from '@/components/Panels/CanvasLayerPanel/focusNodesOnCanvas';
+import {
+  focusNodeGroupOnCanvas,
+  focusNodesOnCanvas,
+} from '@/components/Panels/CanvasLayerPanel/focusNodesOnCanvas';
 import useCanvasStore from '@/store/canvasStore';
 
 import { useLcosReferenceStore } from '../lcosReferenceState';
@@ -245,7 +248,14 @@ export function LcosCanvasCommands(): React.JSX.Element {
     if (locateRequest.canvasId && locateRequest.canvasId !== canvasId) return;
 
     const request = locateRequest;
-    const nodeId = request.nodeId;
+    const requestedNodeIds = request.nodeIds ?? (request.nodeId === undefined ? [] : [request.nodeId]);
+    const presentNodeIds = requestedNodeIds.filter((requestedNodeId) => {
+      const node = useCanvasStore.getState().nodes.find((candidate) => candidate.id === requestedNodeId);
+      return node !== undefined && node.hidden !== true;
+    });
+    const nodeId = request.nodeId !== undefined && presentNodeIds.includes(request.nodeId)
+      ? request.nodeId
+      : presentNodeIds[0];
     const generation = locateGeneration.current + 1;
     locateGeneration.current = generation;
     cancelArrivalTimer();
@@ -257,9 +267,7 @@ export function LcosCanvasCommands(): React.JSX.Element {
         : null,
     );
 
-    const nodePresent = nodeId !== undefined
-      && useCanvasStore.getState().nodes.some((node) => node.id === nodeId);
-    if (!nodePresent || nodeId === undefined) {
+    if (nodeId === undefined || presentNodeIds.length === 0) {
       dispatchLocator({ type: request.status === 'unavailable' ? 'target-unavailable' : 'target-gone' });
       dispatchArrival({ type: 'cancel' });
       setArrivalTarget(null);
@@ -286,7 +294,20 @@ export function LcosCanvasCommands(): React.JSX.Element {
     flowRoot?.addEventListener('pointerdown', cancelForUserGesture);
     flowRoot?.addEventListener('wheel', cancelForUserGesture, { passive: true });
     flowRoot?.addEventListener('touchstart', cancelForUserGesture, { passive: true });
-    void focusNodesOnCanvas(rf, [nodeId]).then((settled) => {
+    // Selection and camera share the same Huabu canvas-local owner. Temporal
+    // grouping never creates a second selection/store/camera path.
+    useCanvasStore.getState().selectNodes(presentNodeIds);
+    const flowSize = flowRoot?.getBoundingClientRect();
+    const focus = presentNodeIds.length > 1
+      && flowSize !== undefined
+      && flowSize.width > 0
+      && flowSize.height > 0
+      ? focusNodeGroupOnCanvas(rf, presentNodeIds, {
+          width: flowSize.width,
+          height: flowSize.height,
+        })
+      : focusNodesOnCanvas(rf, presentNodeIds);
+    void focus.then((settled) => {
       if (!active || locateGeneration.current !== generation) return;
       if (!settled) {
         dispatchLocator({ type: 'target-gone' });

@@ -34,6 +34,11 @@ export interface LcosLocateRequest {
   readonly canvasId?: string;
   /** 当前现场已存在该 nodeId → 直接 focus（无需换现场）。 */
   readonly nodeId?: string;
+  /**
+   * 同一次空间定位需要一起选择/取景的节点。`nodeId` 仍是到达提示的主目标；
+   * 相机与 selection 只由当前 Huabu canvas consumer 执行，不在 Shell 保存第二份状态。
+   */
+  readonly nodeIds?: readonly string[];
   /** 未投影 → unavailable 展示原因（不假定位）。 */
   readonly status?: 'projected' | 'unprojected' | 'unavailable';
 }

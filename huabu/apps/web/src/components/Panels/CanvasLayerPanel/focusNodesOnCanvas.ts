@@ -1,6 +1,8 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT license.
 
+import { getViewportForBounds } from '@xyflow/react';
+
 import type { ReactFlowInstance, Viewport } from '@xyflow/react';
 
 type NodeBounds = {
@@ -149,6 +151,35 @@ export const focusNodesOnCanvas = (
   const cy = bounds.y + bounds.height / 2;
   const zoom = Math.min(rfInstance.getZoom(), 1);
   return rfInstance.setCenter(cx, cy, { duration, zoom }).then(
+    () => true,
+    () => false,
+  );
+};
+
+/**
+ * Fit a multi-target focus without zooming in beyond the user's current view.
+ * This stays beside Huabu's existing bounds helpers so LCOS callers do not
+ * grow a second camera policy.
+ */
+export const focusNodeGroupOnCanvas = (
+  rfInstance: ReactFlowInstance,
+  nodeIds: string[],
+  viewportSize: ViewportSize,
+  duration = 800,
+  padding = 0.15,
+): Promise<boolean> => {
+  const bounds = getReliableNodeBounds(rfInstance, nodeIds);
+  if (!bounds) return Promise.resolve(false);
+  const maxZoom = Math.min(rfInstance.getZoom(), 1);
+  const viewport = getViewportForBounds(
+    bounds,
+    viewportSize.width,
+    viewportSize.height,
+    0.1,
+    maxZoom,
+    padding,
+  );
+  return rfInstance.setViewport(viewport, { duration }).then(
     () => true,
     () => false,
   );

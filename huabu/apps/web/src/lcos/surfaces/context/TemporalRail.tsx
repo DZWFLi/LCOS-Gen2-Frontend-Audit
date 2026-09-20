@@ -1,34 +1,32 @@
 import { useEffect, useMemo, useState } from 'react';
 
+import {
+  createTemporalLocateRequest,
+  projectTemporalGroupTargets,
+  temporalPartialReason,
+} from './temporalTargetProjection';
 import { createLcosCoreSession } from '../../app/lcosCoreClient';
-import { useLcosReferenceStore, type LcosNodeEntityRef } from '../../lcosReferenceState';
+import { useLcosReferenceStore } from '../../lcosReferenceState';
 import { useLcosShellStore } from '../../shell/lcosShellStore';
 import { TemporalRailView, type TemporalRailItemView } from '../../ui/context/TemporalRailView';
 
-import type { TemporalGroupV1, TemporalIndexV1 } from '@local-creative-os/contracts';
+import type { TemporalIndexV1 } from '@local-creative-os/contracts';
 
 export interface TemporalRailProps {
   readonly projectId: string;
   readonly workspaceId?: string;
+  readonly canvasId?: string;
 }
 
 function ratioFor(index: number, count: number): number {
   return count <= 1 ? 0.5 : index / (count - 1);
 }
 
-function projectedNodeId(
-  group: TemporalGroupV1,
-  refs: ReadonlyMap<string, LcosNodeEntityRef>,
-): string | undefined {
-  return [...refs.entries()].find(([, ref]) => group.targets.some(
-    (target) => target.type === ref.entityType && target.id === ref.entityId,
-  ))?.[0];
-}
-
-export function TemporalRail({ projectId, workspaceId }: TemporalRailProps): React.JSX.Element {
+export function TemporalRail({ projectId, workspaceId, canvasId }: TemporalRailProps): React.JSX.Element {
   const [index, setIndex] = useState<TemporalIndexV1 | null>(null);
   const [state, setState] = useState<'loading' | 'empty' | 'ready' | 'error'>('loading');
   const [reason, setReason] = useState<string>();
+  const [activationReason, setActivationReason] = useState<string>();
   const nodeEntityRefs = useLcosReferenceStore((referenceState) => referenceState.nodeEntityRefs);
 
   useEffect(() => {
@@ -41,6 +39,7 @@ export function TemporalRail({ projectId, workspaceId }: TemporalRailProps): Rea
     const controller = new AbortController();
     setState('loading');
     setReason(undefined);
+    setActivationReason(undefined);
     const session = createLcosCoreSession();
     void session.temporal.getIndex(projectId, workspaceId, controller.signal).then((response) => {
       setIndex(response.value);
@@ -56,25 +55,40 @@ export function TemporalRail({ projectId, workspaceId }: TemporalRailProps): Rea
   }, [projectId, workspaceId]);
 
   const groups = useMemo(() => index?.mid ?? [], [index]);
-  const items = useMemo<readonly TemporalRailItemView[]>(() => groups.map((group, itemIndex) => ({
-    id: group.id,
-    label: `${new Date(group.start).toLocaleString()} · ${group.eventCount} 条记录`,
-    ratio: ratioFor(itemIndex, groups.length),
-    disabled: projectedNodeId(group, nodeEntityRefs) === undefined,
-  })), [groups, nodeEntityRefs]);
+  const projections = useMemo(
+    () => new Map(groups.map((group) => [group.id, projectTemporalGroupTargets(group, nodeEntityRefs)])),
+    [groups, nodeEntityRefs],
+  );
+  const items = useMemo<readonly TemporalRailItemView[]>(() => groups.map((group, itemIndex) => {
+    const projection = projections.get(group.id);
+    const located = projection?.projectedTargetCount ?? 0;
+    const targetSummary = `可定位 ${located}/${group.targets.length} 个目标`;
+    return {
+      id: group.id,
+      label: `${new Date(group.start).toLocaleString()} · ${group.eventCount} 条记录 · ${targetSummary}`,
+      ratio: ratioFor(itemIndex, groups.length),
+      disabled: projection === undefined || projection.nodeIds.length === 0,
+    };
+  }), [groups, projections]);
 
   const activate = (item: TemporalRailItemView): void => {
     const group = groups.find((candidate) => candidate.id === item.id);
     if (group === undefined) return;
-    const nodeId = projectedNodeId(group, nodeEntityRefs);
-    if (nodeId === undefined) return;
-    useLcosShellStore.getState().requestLocate({ reqId: `temporal-${Date.now()}`, surface: 'context', nodeId, status: 'projected' });
+    const projection = projections.get(group.id);
+    if (projection === undefined || projection.nodeIds.length === 0) return;
+    setActivationReason(temporalPartialReason(projection, group.targets.length));
+    const request = createTemporalLocateRequest({
+      reqId: `temporal-${Date.now()}`,
+      ...(canvasId === undefined ? {} : { canvasId }),
+      projection,
+    });
+    if (request !== undefined) useLcosShellStore.getState().requestLocate(request);
   };
 
   return <TemporalRailView
     items={items}
-    reason={reason}
-    state={state}
+    reason={activationReason ?? reason}
+    state={activationReason === undefined ? state : 'recovery'}
     scopeKey={workspaceId}
     onActivate={activate}
   />;
