@@ -367,9 +367,9 @@ export function ArtifactReaderBody({ projectId, artifactId, revisionId, onReturn
       ? artifacts.restoreArtifact(projectId, String(detail.artifact.id))
       : artifacts.archiveArtifact(projectId, String(detail.artifact.id));
     void mutation
-      .then(async (artifact) => {
+      .then((artifact) => {
         setDetail((current) => current === null ? current : { ...current, artifact });
-        await useLcosHostStore.getState().host?.reconcile('mutation');
+        useLcosHostStore.getState().host?.notifyMutationSuccess();
         setNote(archived ? '已恢复；对象会按当前现场重新落位。' : '已归档；对象已退出活跃现场，内容仍可只读查看。');
       })
       .catch((error: unknown) => setNote(error instanceof Error ? error.message : '归档状态更新失败'))

@@ -52,8 +52,8 @@ export function ArchiveBody({
     setMessage(undefined);
     void session.artifacts
       .restoreArtifact(projectId, String(artifact.id))
-      .then(async () => {
-        await useLcosHostStore.getState().host?.reconcile('mutation');
+      .then(() => {
+        useLcosHostStore.getState().host?.notifyMutationSuccess();
         setMessage(`已恢复「${artifact.title}」；将按当前现场重新落位。`);
         reload();
       })

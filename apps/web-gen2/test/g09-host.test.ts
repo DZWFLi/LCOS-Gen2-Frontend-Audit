@@ -103,6 +103,42 @@ test('HostLifecycleReconciler: mutation debounces and coalesces a burst', async 
   rec.dispose();
 });
 
+test('HostLifecycleReconciler: mutation arriving during project-open is retained', async (t) => {
+  mock.timers.enable({ apis: ['setTimeout', 'setInterval', 'Date'], now: 0 });
+  t.after(() => mock.timers.reset());
+
+  let releaseOpen: (() => void) | undefined;
+  const openGate = new Promise<void>((resolve) => { releaseOpen = resolve; });
+  let runs = 0;
+  const rec = new HostLifecycleReconciler(
+    {
+      runOnce: async () => {
+        runs += 1;
+        if (runs === 1) await openGate;
+        return { degraded: false };
+      },
+    },
+    'p1',
+    { cooldownMs: 0, debounceMs: 10 },
+  );
+
+  rec.onProjectOpen();
+  rec.onMutationSuccess();
+  await mock.timers.tick(10);
+  assert.equal(runs, 1, 'in-flight project-open blocks the first mutation attempt');
+  rec.onMutationSuccess();
+  rec.onMutationSuccess();
+  releaseOpen?.();
+  await new Promise<void>((resolve) => setImmediate(resolve));
+  await mock.timers.tick(10);
+  await new Promise<void>((resolve) => setImmediate(resolve));
+  assert.equal(runs, 2, 'pending mutation is retried after project-open settles');
+  await mock.timers.tick(100);
+  await new Promise<void>((resolve) => setImmediate(resolve));
+  assert.equal(runs, 2, 'burst during in-flight reconcile leaves no duplicate timer');
+  rec.dispose();
+});
+
 test('HostLifecycleReconciler: reconnect runs immediately; periodic is fallback', async (t) => {
   mock.timers.enable({ apis: ['setTimeout', 'setInterval', 'Date'], now: 0 });
   t.after(() => mock.timers.reset());

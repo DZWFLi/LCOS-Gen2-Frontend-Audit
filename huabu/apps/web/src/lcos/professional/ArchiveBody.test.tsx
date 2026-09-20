@@ -12,7 +12,7 @@ const mocks = vi.hoisted(() => ({
   listArtifacts: vi.fn(),
   restoreArtifact: vi.fn(),
   openReader: vi.fn(),
-  reconcile: vi.fn(),
+  notifyMutationSuccess: vi.fn(),
 }));
 
 vi.mock('../app/lcosCoreClient', () => ({
@@ -25,7 +25,7 @@ vi.mock('../app/lcosCoreClient', () => ({
 }));
 vi.mock('../host/lcosHostState', () => ({
   useLcosHostStore: Object.assign(() => undefined, {
-    getState: () => ({ host: { reconcile: mocks.reconcile } }),
+    getState: () => ({ host: { notifyMutationSuccess: mocks.notifyMutationSuccess } }),
   }),
 }));
 vi.mock('../shell/lcosShellStore', () => {
@@ -82,7 +82,6 @@ it('lists archived objects as read-only, opens Reader, and restores the same ide
     ...archived,
     archivedAt: undefined,
   });
-  mocks.reconcile.mockResolvedValue(undefined);
 
   await act(async () => root.render(<ArchiveBody projectId="project-1" />));
   await act(async () => mocks.listArtifacts.mock.results[0]?.value);
@@ -106,6 +105,6 @@ it('lists archived objects as read-only, opens Reader, and restores the same ide
   );
   await act(async () => mocks.restoreArtifact.mock.results[0]?.value);
   expect(mocks.restoreArtifact).toHaveBeenCalledWith('project-1', 'artifact-1');
-  expect(mocks.reconcile).toHaveBeenCalledWith('mutation');
+  expect(mocks.notifyMutationSuccess).toHaveBeenCalledOnce();
   expect(host.textContent).toContain('按当前现场重新落位');
 });

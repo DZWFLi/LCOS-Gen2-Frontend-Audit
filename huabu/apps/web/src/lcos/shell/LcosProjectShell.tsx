@@ -83,7 +83,7 @@ export function LcosProjectShell({
   const watchArtifactChanges = useCollaborationSessionStore((s) => s.watchArtifactChanges);
 
   useEffect(() => watchArtifactChanges(projectId, () => {
-    void useLcosHostStore.getState().host?.reconcile('mutation');
+    useLcosHostStore.getState().host?.notifyMutationSuccess();
   }), [projectId, watchArtifactChanges]);
 
   const resolvePortalTarget = (canvasId: string): PortalTargetResolution | undefined => {

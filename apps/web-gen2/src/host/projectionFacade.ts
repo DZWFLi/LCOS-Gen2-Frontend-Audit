@@ -383,6 +383,11 @@ export class Gen2Host {
     return this.reconciler.runNow(trigger);
   }
 
+  /** Coalesced mutation invalidation; retained until a sweep can actually run. */
+  notifyMutationSuccess(): void {
+    this.reconciler.onMutationSuccess();
+  }
+
   /**
    * Canonical producer for a portable Workflow definition. Core creates the
    * scope/worksite truth; then the existing Main projector is notified through

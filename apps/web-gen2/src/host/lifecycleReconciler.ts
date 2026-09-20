@@ -27,6 +27,8 @@ export class HostLifecycleReconciler {
   private lastRunAt = Number.NEGATIVE_INFINITY;
   private inFlight = false;
   private debounceTimer: ReturnType<typeof setTimeout> | null = null;
+  private mutationVersion = 0;
+  private reconciledMutationVersion = 0;
   private periodicTimer: ReturnType<typeof setInterval> | null = null;
   private retryTimer: ReturnType<typeof setTimeout> | null = null;
   private readonly observer: ReconcileObserver | undefined;
@@ -76,11 +78,26 @@ export class HostLifecycleReconciler {
 
   /** A relevant mutation succeeded: debounced reconcile (coalesces bursts). */
   onMutationSuccess(): void {
+    this.mutationVersion += 1;
     if (this.debounceTimer !== null) clearTimeout(this.debounceTimer);
     this.debounceTimer = setTimeout(() => {
       this.debounceTimer = null;
-      void this.runNow('mutation');
+      void this.flushPendingMutation();
     }, this.debounceMs);
+  }
+
+  private async flushPendingMutation(): Promise<void> {
+    const targetVersion = this.mutationVersion;
+    const ran = await this.runNow('mutation');
+    if (ran) this.reconciledMutationVersion = targetVersion;
+    if (this.reconciledMutationVersion >= this.mutationVersion) return;
+    if (this.debounceTimer !== null) return;
+
+    const cooldownRemaining = this.cooldownMs - (Date.now() - this.lastRunAt);
+    this.debounceTimer = setTimeout(() => {
+      this.debounceTimer = null;
+      void this.flushPendingMutation();
+    }, Math.max(50, cooldownRemaining));
   }
 
   /** Connection restored: rescue reconcile (immediate, respects cooldown). */

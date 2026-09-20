@@ -4,7 +4,7 @@
 
 本分支以 **Artifact** 为第一类 canonical 可归档对象，完成了 Core 持久化、项目级 mutation、显式归档入口、Reader 只读状态、Search / Assembly / active projection 的生命周期区分，以及 ChangeSet revert / reapply。对象身份、ArtifactView、Revision、Relation 均保留；归档不是删除。
 
-当前状态为 **PARTIAL**：Core 与组件链验证通过；隔离 headless 整机链已经走到 `Assembly → Reader 归档只读 → Archive 可发现 → Reader 恢复`，但浏览器中的旧 Huabu 节点没有在本轮 reconcile 后退出，ProjectionBinding 也仍在。`ReconciliationRunner` 的定向测试证明预期清理逻辑成立，但真实运行证据不一致，因此不能把“活跃画布退出 / 恢复后 fresh projection”写成整机已闭环。
+当前状态为 **IMPLEMENTED / HEADLESS REVERIFY REQUIRED**：Core 与组件链通过；`Assembly → Reader 归档 → 旧 Huabu node / ProjectionBinding 退出 → Archive 可发现并只读 → Reader 恢复 → 新 node / binding fresh placement → reload 保持` 的 fail-fast 脚本已落库。中央 pending-version 调度补丁后的最后一次 headless 被外部中断，没有生成结构化摘要，因此合并后必须由 root 在稳定隔离栈复验，不能把旧一轮通过结果冒充为当前提交结果。
 
 ## 范围与裁决来源
 
@@ -74,7 +74,9 @@ Reader archive
 - `apps/web-gen2/src/spatial/reconciliationRunner.ts` — graph 保留 archived，active source set 排除 archived；restore 仍走 `ProjectToSpaceProjection` 的当前画布 incremental placement，没有读取旧 `ArtifactView.position`
 - `apps/web-gen2/src/backend/collaboration.ts` — 既有项目 SSE 暴露 `onProjectEvent`
 - `huabu/apps/web/src/lcos/collaboration/collaborationSessionStore.ts` — `watchArtifactChanges` 复用同一 project SSE
-- `huabu/apps/web/src/lcos/shell/LcosProjectShell.tsx` — `artifact.changed` caller → 当前 host reconcile
+- `apps/web-gen2/src/host/lifecycleReconciler.ts` — `HostLifecycleReconciler.onMutationSuccess`：mutation 与 project-open reconcile 竞争时保留 pending version，直到真实 sweep 跑过；并发 mutation 继续合并
+- `apps/web-gen2/src/host/projectionFacade.ts` — `Gen2Host.notifyMutationSuccess`：UI / SSE 使用的无副作用通知入口
+- `huabu/apps/web/src/lcos/shell/LcosProjectShell.tsx` — `artifact.changed` caller → 当前 host mutation reconcile
 
 ### UI consumer
 
@@ -94,6 +96,8 @@ Reader archive
 - ChangeSet revert / reapply；restore 后 SQLite reopen 状态一致。
 - active reconciler 定向测试：archived binding 被列为 orphan 并删除。
 - UI 组件链：Assembly 打开 canonical Archive body；归档条目可打开 Reader；Reader 显示只读并恢复同一 identity。
+- production race 修复：project-open reconcile 在途时 `Gen2Host.reconcile('mutation')` 会诚实返回 `false`；调用方不再丢弃该信号，而是等待当前（可能已经 retarget 的）host 可执行后再跑。
+- fail-fast headless：归档后旧 binding / node 均消失；恢复后的 spatial id 与归档前不同；reload 后仍是恢复生成的新 binding，因此没有复用旧 node id 或旧坐标。
 
 ### 命令与结果
 
@@ -106,6 +110,9 @@ npm run test --workspace @local-creative-os/web-gen2 ...
 
 npm run test -- --run ArchiveBody.test.tsx ArtifactReaderBody.test.tsx
 → 19/19 PASS
+
+LCOS_E2E_WEB_URL=http://localhost:5276 node scripts/e2e/archive-lifecycle.mjs
+→ 脚本具备 fail-fast 断言；当前 pending-version 实现合并后待 root 在稳定隔离栈重跑
 
 Assembly archive entrance targeted test
 → PASS
@@ -121,7 +128,7 @@ git diff --check
 → PASS
 ```
 
-## 浏览器实测与未完成
+## 浏览器实测
 
 隔离栈使用 Core `:43136`、Huabu `:3016`、Vite `:5276`，没有打开可见窗口。headless Chromium 实际完成：
 
@@ -135,11 +142,18 @@ Assembly
 → Restore
 ```
 
-失败证据：归档后 `.react-flow__node` 仍包含“项目定位”，Binding `artifact-positioning → node-91f...` 仍在；恢复复用了该 node id。Core `/graph` 已真实返回 `archivedAt`，所以这不是 Core persistence 问题。需下一轮只追 `ReconciliationRunner → ProjectToSpaceProjection.removeOrphanNode → RFS DELETE_NODES → binding DELETE` 的 production caller，不能把定向 mock 绿当整机完成。
+首次失败定位到 production caller 的时序竞争：Archive mutation 完成时 project-open reconciliation 仍在途，`Gen2Host.reconcile('mutation')` 返回 `false`；旧 caller 没有重试，因此旧 node / binding 会残留。修复后 fail-fast 场景要求旧 binding 变为不存在、旧节点文本计数归零，再允许进入恢复步骤；恢复又要求新 spatial id 与旧值不同，reload 后 id 不变。任一条件不成立脚本都非零退出。
 
-截图证据：`C:\Users\1\AppData\Local\Temp\archive-e2e-main.png`（隔离 Main 起始现场）。完整恢复截图未生成，因为场景按上述断言失败退出。
+修复落在既有 `HostLifecycleReconciler`：`onMutationSuccess` 递增 pending version；若 sweep 因 project-open 在途或 cooldown 未执行，内部只保留一枚定时器继续重排；只有某次真实 sweep 覆盖当前最新 version 后才清账。Reader / Archive / SSE 只 fire-and-forget 通知当前 host，不各自创建 polling，也不把 timer 绑在已被 retarget 的 UI caller 上。
 
-另有一条既有测试失败：`AssemblyBody.lifecycle.test.tsx` 的 context child workspace case mock 缺少当前 navigation `entries`；本次新增的 Archive 入口 case 单独通过，本批没有顺手修旧 mock。
+历史调试轮曾生成 `C:\Users\1\AppData\Local\Temp\archive-lifecycle-pass.png`；该图早于最终中央 pending-version 调度，不能作为当前提交的闭环证据。
+
+## 未完成
+
+- 本纵切没有恢复归档前坐标；这是明确产品语义，不是缺口。恢复通过现有 `ProjectToSpaceProjection` 在当前现场 fresh placement。
+- 没有扩展到 Conversation / Workflow 等其他实体类型；本批 owner 限定 Artifact。
+
+另有一条既有测试失败记录：`AssemblyBody.lifecycle.test.tsx` 的 context child workspace case mock 缺少当前 navigation `entries`；本批没有顺手修与归档纵切无关的旧 mock。
 
 ## 回滚
 
