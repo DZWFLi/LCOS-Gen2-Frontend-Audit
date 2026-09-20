@@ -202,6 +202,37 @@ describe('受控 waiting Run → Work View 回答 → 同一 Run 继续执行（
     expect(db.listRunInputRequests(runId)).toHaveLength(1)
     expect(db.getRunEvents(created.review.run.id).filter((event) => event.type === 'run.waiting_input')).toHaveLength(1)
 
+    const trimmedReplay = await fetch(`${baseUrl}/runtime/provider-events`, {
+      method: 'POST', headers, body: JSON.stringify({
+        contractVersion: 'provider-run-event-v1',
+        type: 'waiting_input',
+        correlation: { lcosRunId: ` ${runId} `, externalTaskId: ` task-${runId} ` },
+        request: {
+          requestId: ' input-wv-1 ',
+          prompt: ' 按方案 A 还是 B 继续？ ',
+          options: [' A ', ' B '],
+          allowFreeText: false,
+        },
+      }),
+    })
+    expect(trimmedReplay.status).toBe(200)
+    expect(db.listRunInputRequests(runId)).toHaveLength(1)
+
+    const emptyCorrelation = await fetch(`${baseUrl}/runtime/provider-events`, {
+      method: 'POST', headers, body: JSON.stringify({
+        contractVersion: 'provider-run-event-v1',
+        type: 'waiting_input',
+        correlation: { lcosRunId: runId, externalTaskId: '   ' },
+        request: {
+          requestId: 'input-empty-correlation',
+          prompt: '继续？',
+          options: ['A'],
+          allowFreeText: false,
+        },
+      }),
+    })
+    expect(emptyCorrelation.status).toBe(400)
+
     // run/task 任一 correlation 不匹配都 fail-close。
     await expect(forwardAcpPermissionRequestToCore(
       baseUrl,

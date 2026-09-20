@@ -22,6 +22,7 @@ $WEB_PORT = 5173
 # Web 端默认读 HUABU_CONNECTION_TOKEN ?? 'dev-token'（useLcosCanvasProps）。
 # Huabu server 未设该变量时每次启动随机铸币 → 必须两侧对齐。
 # Core 同理：LOCAL_CORE_API_TOKEN 未设时随机铸币，前端默认 dev-token 会 401。
+# waiting_input 双向链还要求 Core 知道 Huabu Host，Huabu server 知道 Core。
 $env:HUABU_CONNECTION_TOKEN = 'dev-token'
 $env:LOCAL_CORE_API_TOKEN = 'dev-token'
 
@@ -62,14 +63,14 @@ Write-Host "`n== 启动 LCOS Local Core (build + run, :$CORE_PORT) ==" -Foregrou
 Start-Process powershell -WorkingDirectory $RepoRoot `
   -WindowStyle Normal `
   -ArgumentList '-NoExit', '-ExecutionPolicy', 'Bypass', '-Command', `
-    "`$Host.UI.RawUI.WindowTitle = 'LCOS Core :$CORE_PORT'; Write-Host '== LCOS Local Core ==' -ForegroundColor Cyan; npm run dev:local-core"
+    "`$Host.UI.RawUI.WindowTitle = 'LCOS Core :$CORE_PORT'; `$env:LOCAL_CORE_API_TOKEN='dev-token'; `$env:HUABU_HOST_URL='http://127.0.0.1:$HUABU_API_PORT'; `$env:HUABU_HOST_TOKEN='dev-token'; Write-Host '== LCOS Local Core (Huabu Host connected) ==' -ForegroundColor Cyan; npm run dev:local-core"
 
 # ── 2. 启动窗口：Huabu（shared watch + server + web，pnpm dev 编排器）─────
 Write-Host "== 启动 Huabu (server :$HUABU_API_PORT + web :$WEB_PORT) ==" -ForegroundColor Cyan
 Start-Process powershell -WorkingDirectory (Join-Path $RepoRoot 'huabu') `
   -WindowStyle Normal `
   -ArgumentList '-NoExit', '-ExecutionPolicy', 'Bypass', '-Command', `
-    "`$Host.UI.RawUI.WindowTitle = 'Huabu dev (:3001 / :5173)'; `$env:HUABU_CONNECTION_TOKEN='dev-token'; Write-Host '== Huabu (HUABU_CONNECTION_TOKEN=dev-token) ==' -ForegroundColor Cyan; pnpm dev"
+    "`$Host.UI.RawUI.WindowTitle = 'Huabu dev (:3001 / :5173)'; `$env:HUABU_CONNECTION_TOKEN='dev-token'; `$env:LCOS_CORE_URL='http://127.0.0.1:$CORE_PORT'; `$env:LOCAL_CORE_API_TOKEN='dev-token'; Write-Host '== Huabu (Core event sink connected) ==' -ForegroundColor Cyan; pnpm dev"
 
 # ── 3. 健康探测 ────────────────────────────────────────────────────────────
 Write-Host "`n开始健康探测（Core 首次 build 可能要 1-2 分钟）..."

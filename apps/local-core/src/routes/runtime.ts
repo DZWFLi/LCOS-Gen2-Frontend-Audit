@@ -33,20 +33,29 @@ export async function handleRuntimeRoute(ctx: RuntimeRouteContext): Promise<bool
     const input = await readJsonBody(request, controller.signal)
     const correlation = isRecord(input) && isRecord(input.correlation) ? input.correlation : undefined
     const providerRequest = isRecord(input) && isRecord(input.request) ? input.request : undefined
+    const providerOptions = providerRequest !== undefined && Array.isArray(providerRequest.options)
+      ? providerRequest.options
+      : undefined
     if (!isRecord(input)
       || input.contractVersion !== 'provider-run-event-v1'
       || input.type !== 'waiting_input'
       || correlation === undefined
       || typeof correlation.lcosRunId !== 'string'
+      || correlation.lcosRunId.trim() === ''
       || typeof correlation.externalTaskId !== 'string'
+      || correlation.externalTaskId.trim() === ''
+      || Object.keys(correlation).some((key) => !['lcosRunId', 'externalTaskId'].includes(key))
       || providerRequest === undefined
       || typeof providerRequest.requestId !== 'string'
+      || providerRequest.requestId.trim() === ''
       || typeof providerRequest.prompt !== 'string'
-      || !Array.isArray(providerRequest.options)
-      || providerRequest.options.some((item) => typeof item !== 'string')
+      || providerRequest.prompt.trim() === ''
+      || providerOptions === undefined
+      || providerOptions.some((item) => typeof item !== 'string' || item.trim() === '')
       || typeof providerRequest.allowFreeText !== 'boolean'
       || (providerRequest.contextVersion !== undefined && !Number.isInteger(providerRequest.contextVersion))
-      || (input.occurredAt !== undefined && typeof input.occurredAt !== 'string')
+      || Object.keys(providerRequest).some((key) => !['requestId', 'prompt', 'options', 'allowFreeText', 'contextVersion'].includes(key))
+      || (input.occurredAt !== undefined && (typeof input.occurredAt !== 'string' || input.occurredAt.trim() === ''))
       || Object.keys(input).some((key) => !['contractVersion', 'type', 'correlation', 'request', 'occurredAt'].includes(key))) {
       sendJson(response, 400, failure('INVALID_ARGUMENT', 'Provider waiting_input event requires exact Run correlation, request id, prompt and options.'))
       return true
@@ -58,17 +67,17 @@ export async function handleRuntimeRoute(ctx: RuntimeRouteContext): Promise<bool
           contractVersion: 'provider-run-event-v1',
           type: 'waiting_input',
           correlation: {
-            lcosRunId: correlation.lcosRunId,
-            externalTaskId: correlation.externalTaskId,
+            lcosRunId: correlation.lcosRunId.trim(),
+            externalTaskId: correlation.externalTaskId.trim(),
           },
           request: {
-            requestId: providerRequest.requestId,
-            prompt: providerRequest.prompt,
-            options: providerRequest.options as string[],
+            requestId: providerRequest.requestId.trim(),
+            prompt: providerRequest.prompt.trim(),
+            options: (providerOptions as string[]).map((option) => option.trim()),
             allowFreeText: providerRequest.allowFreeText,
             ...(providerRequest.contextVersion === undefined ? {} : { contextVersion: providerRequest.contextVersion as number }),
           },
-          ...(input.occurredAt === undefined ? {} : { occurredAt: input.occurredAt }),
+          ...(input.occurredAt === undefined ? {} : { occurredAt: input.occurredAt.trim() }),
         }),
       })
     } catch (error: unknown) {

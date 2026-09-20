@@ -2,7 +2,7 @@ import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import type { RunInputRequestV1 } from '@local-creative-os/contracts'
 import type { Artifact } from '@local-creative-os/domain'
@@ -64,16 +64,17 @@ function setup() {
   const bridge = new FakeBridge()
   const review = new RuntimeReviewService(repository, () => now, () => 'retry-one')
   let idSequence = 0
+  const adapter = new RuntimeAdapterService(repository, bridge, 'mvp-fast-build', () => now)
   const service = new RuntimeApplicationService(
     repository,
     new ContextManifestService(repository),
-    new RuntimeAdapterService(repository, bridge, 'mvp-fast-build', () => now),
+    adapter,
     new RuntimeResultIngestionService(repository, bridge, () => now),
     review,
     () => now,
     () => idSequence++ === 0 ? 'one' : `one-${idSequence}`,
   )
-  return { bridge, projectRoot, repository, service, snapshot }
+  return { adapter, bridge, projectRoot, repository, service, snapshot }
 }
 
 describe('RuntimeApplicationService', () => {
@@ -274,6 +275,78 @@ describe('RuntimeApplicationService', () => {
     expect(late.providerError).toBeUndefined()
     expect(repository.getRunInputRequest(request.requestId)?.status).toBe('answered')
     expect(bridge.answeredInputs).toHaveLength(1) // 迟到重复回包不重复副作用
+  })
+
+  it('closes a queued+pending Huabu answer retry after provider success and rejects a conflicting retry', async () => {
+    const { adapter, repository, service, snapshot } = setup()
+    const result = await service.create(snapshot.project.id, {
+      instruction: '分析当前资料。',
+      outputIntent: 'analyze',
+      requestedProvider: 'codex',
+    })
+    const runId = result.review.run.id
+    await service.dispatch(runId)
+    const request: RunInputRequestV1 = {
+      schemaVersion: 1,
+      requestId: 'input-huabu-half-success',
+      runId: String(runId),
+      question: '允许继续吗？',
+      options: ['allow-once', 'deny'],
+      allowFreeText: false,
+      responseTarget: 'huabu-acp',
+      status: 'pending',
+      selectedOptions: [],
+      createdAt: now,
+    }
+    repository.saveRunInputRequest(request)
+    repository.updateRunStatus(runId, 'waiting_input', now)
+    const providerAnswers: string[] = []
+    adapter.attachProviderInputResponsePort({
+      answerProviderInput: async (_runId, _taskId, response) => {
+        providerAnswers.push(response.selectedOptions?.[0] ?? '')
+        return true
+      },
+    })
+
+    const localFinalize = vi.spyOn(repository, 'answerRunInputRequest')
+    localFinalize.mockImplementationOnce(() => {
+      throw new Error('simulated crash before local input finalization')
+    })
+    await expect(service.answerInput(runId, {
+      requestId: request.requestId,
+      selectedOptions: ['allow-once'],
+    })).rejects.toThrow('simulated crash')
+    localFinalize.mockRestore()
+    expect(providerAnswers).toEqual(['allow-once'])
+    expect(repository.getRun(runId)?.status).toBe('queued')
+    expect(repository.getRunInputRequest(request.requestId)).toMatchObject({
+      status: 'pending',
+      selectedOptions: ['allow-once'],
+    })
+
+    await expect(service.answerInput(runId, {
+      requestId: request.requestId,
+      selectedOptions: ['deny'],
+    })).rejects.toThrow('INPUT_RESPONSE_IDEMPOTENCY_CONFLICT')
+    expect(providerAnswers).toEqual(['allow-once'])
+    expect(repository.getRunInputRequest(request.requestId)?.status).toBe('pending')
+
+    const closed = await service.answerInput(runId, {
+      requestId: request.requestId,
+      selectedOptions: ['allow-once'],
+    })
+    expect(closed.providerError).toBeUndefined()
+    expect(providerAnswers).toEqual(['allow-once'])
+    expect(repository.getRun(runId)?.status).toBe('queued')
+    expect(repository.getRunInputRequest(request.requestId)).toMatchObject({
+      status: 'answered',
+      selectedOptions: ['allow-once'],
+    })
+
+    await expect(service.answerInput(runId, {
+      requestId: 'missing-pending-request',
+      selectedOptions: ['allow-once'],
+    })).rejects.toThrow('INPUT_REQUEST_NOT_FOUND')
   })
 
   it('cancels a bound Run through the Bridge and records run.cancelled', async () => {

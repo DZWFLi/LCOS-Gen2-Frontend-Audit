@@ -66,4 +66,23 @@ describe('forwardAcpPermissionRequestToCore', () => {
       ),
     ).rejects.toThrow('Local Core rejected ACP permission_request (409)');
   });
+
+  it('rejects empty ACP request identifiers before any Core call', async () => {
+    const fetcher = vi.fn(async () => new Response('{}', { status: 200 })) as typeof fetch;
+
+    await expect(
+      forwardAcpPermissionRequestToCore(
+        'http://127.0.0.1:43121',
+        'core-token',
+        { lcosRunId: 'run-1', externalTaskId: 'task-1' },
+        {
+          requestId: '   ',
+          toolCall: { title: 'Write' },
+          options: [{ optionId: 'allow-once', name: 'Allow', kind: 'allow_once' }],
+        },
+        fetcher,
+      ),
+    ).rejects.toThrow('requires non-empty')
+    expect(fetcher).not.toHaveBeenCalled()
+  });
 });

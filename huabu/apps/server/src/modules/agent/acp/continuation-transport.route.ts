@@ -537,6 +537,21 @@ const continuationTransportRoutes: FastifyPluginAsync = async (app) => {
           runCorrelation === undefined
             ? undefined
             : (permissionRequest: Parameters<PermissionNotifier>[0]) => {
+                if (
+                  permissionRequest.requestId.trim() === '' ||
+                  permissionRequest.requestId !== permissionRequest.requestId.trim() ||
+                  permissionRequest.options.some(
+                    (option) => option.optionId.trim() === '' || option.optionId !== option.optionId.trim(),
+                  )
+                ) {
+                  app.log.error(
+                    'ACP permission request ids must be non-empty canonical strings.',
+                  );
+                  owner.client.resolvePermission(permissionRequest.requestId, {
+                    cancelled: true,
+                  });
+                  return;
+                }
                 const coreBaseUrl = process.env.LCOS_CORE_URL;
                 const coreApiToken = process.env.LOCAL_CORE_API_TOKEN;
                 if (

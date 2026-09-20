@@ -136,3 +136,31 @@ flowchart LR
 
 - 在连接真实 Codex ACP agent 的手工验收环境跑一次需要权限的文件操作，留存 provider 日志与 Work View 截图。
 - 若要支持 Huabu 进程重启后继续原 turn，需要 ACP SDK/agent 提供可恢复的 pending permission 协议；当前没有伪造该能力。
+
+## 最终审查补丁
+
+### Provider 已恢复、Core 本地收口中断
+
+Core 现在会在调用 Huabu 前，把选定答案写进仍为 `pending` 的原请求。若 Huabu 已成功恢复并把 Run 更新为 `queued`，但 Core 在将请求标成 `answered` 前中断，重启后的同答案提交会依据 `queued + pending + staged answer` 只完成本地收口，不重复调用 Provider。不同答案返回 `INPUT_RESPONSE_IDEMPOTENCY_CONFLICT`；没有 pending request 仍返回 `INPUT_REQUEST_NOT_FOUND`。
+
+精确测试在 `apps/local-core/tests/runtime-application-service.test.ts`：测试让真实 provider response port 成功，再在 `answerRunInputRequest` 注入一次中断，验证 Run 为 queued、请求仍 pending、同答收口且 provider 只调用一次、异答拒绝。
+
+### 标准 dev 栈双向环境
+
+`scripts/dev-all.ps1` 启动 Core 子进程时显式设置：
+
+- `LOCAL_CORE_API_TOKEN=dev-token`
+- `HUABU_HOST_URL=http://127.0.0.1:3001`
+- `HUABU_HOST_TOKEN=dev-token`
+
+启动 Huabu 子进程时显式设置：
+
+- `HUABU_CONNECTION_TOKEN=dev-token`
+- `LCOS_CORE_URL=http://127.0.0.1:43121`
+- `LOCAL_CORE_API_TOKEN=dev-token`
+
+`apps/local-core/tests/dev-all-script.test.ts` 静态验证两个 child process 的完整环境；PowerShell parser 也已验证脚本语法。
+
+### Provider event 输入收紧
+
+Core ingress 现在 trim Run、Task、request、prompt、option 和 occurredAt 字符串，并拒绝空白关键值及 correlation/request 的未知字段。Huabu sink 在发请求前拒绝空 request/option ID；ACP owner 对非 canonical ID fail-close cancel，避免 trim 后无法反向命中原 permission request。

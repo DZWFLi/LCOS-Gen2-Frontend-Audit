@@ -274,6 +274,31 @@ export class RuntimeApplicationService {
     if (selectedOptions.some((option) => !current.options.includes(option))) throw new Error('INPUT_OPTION_INVALID')
     if (answerText && !current.allowFreeText) throw new Error('FREE_TEXT_NOT_ALLOWED')
     if (!answerText && selectedOptions.length === 0) throw new Error('INPUT_RESPONSE_EMPTY')
+    const hasStagedAnswer = current.answerText !== undefined || current.selectedOptions.length > 0
+    if (hasStagedAnswer) {
+      const sameStagedAnswer = (current.answerText ?? undefined) === (answerText || undefined)
+        && JSON.stringify(current.selectedOptions) === JSON.stringify(selectedOptions)
+      if (!sameStagedAnswer) throw new Error('INPUT_RESPONSE_IDEMPOTENCY_CONFLICT')
+    } else if (current.responseTarget === 'huabu-acp') {
+      // Persist the outbound answer before resolving the external permission.
+      // If Core crashes after Huabu resumes but before local finalization, the
+      // same answer can safely close queued+pending on restart and a different
+      // answer remains an idempotency conflict.
+      this.repository.saveRunInputRequest({
+        ...current,
+        ...(answerText ? { answerText } : {}),
+        selectedOptions,
+      })
+    }
+    if (current.responseTarget === 'huabu-acp'
+      && hasStagedAnswer
+      && this.repository.getRun(runId)?.status === 'queued') {
+      // `queued` is written only after the Huabu response port succeeds. A
+      // remaining pending row therefore means Core crashed between external
+      // resume and local finalization; close locally without a second provider
+      // side effect.
+      return this.#completeInputAnswer(runId, input.requestId, answerText, selectedOptions)
+    }
 
     const result = await this.providerAction(runId, () => this.adapter.answerInput(runId, {
       requestId: input.requestId,
@@ -281,17 +306,26 @@ export class RuntimeApplicationService {
       selectedOptions,
     }, current.responseTarget ?? 'bridge'))
     if (result.providerError === undefined) {
-      const answeredAt = this.now()
-      this.repository.answerRunInputRequest(runId, {
-        requestId: input.requestId,
-        ...(answerText ? { text: answerText } : {}),
-        selectedOptions,
-      }, answeredAt)
-      this.emit(runId, 'run.input_resolved', { requestId: input.requestId, projectId: String(result.review.run.projectId) })
-      this.emit(runId, 'run.queued', { resumedFromInput: true, projectId: String(result.review.run.projectId) })
-      return { review: this.review.getRunReview(runId) }
+      return this.#completeInputAnswer(runId, input.requestId, answerText, selectedOptions)
     }
     return result
+  }
+
+  #completeInputAnswer(
+    runId: RunId,
+    requestId: string,
+    answerText: string | undefined,
+    selectedOptions: readonly string[],
+  ): RuntimeRunActionResult {
+    this.repository.answerRunInputRequest(runId, {
+      requestId,
+      ...(answerText ? { text: answerText } : {}),
+      selectedOptions,
+    }, this.now())
+    const review = this.review.getRunReview(runId)
+    this.emit(runId, 'run.input_resolved', { requestId, projectId: String(review.run.projectId) })
+    this.emit(runId, 'run.queued', { resumedFromInput: true, projectId: String(review.run.projectId) })
+    return { review }
   }
 
 
