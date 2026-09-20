@@ -81,7 +81,7 @@ export function ContextWorksite({
   };
 
   return (
-    <div data-lcos-context-worksite className="relative h-full w-full">
+    <div data-lcos-context-worksite data-atlas-open={atlasOpen ? 'true' : undefined} className="relative h-full w-full">
       <LcosWorksiteStage
         projectId={projectId}
         surface={surface}

@@ -5,7 +5,6 @@
 
 
 import { CoreAssemblyClient, HttpError } from '@local-creative-os/web-gen2';
-import { ArrowRight, X } from 'lucide-react';
 import { useIsPresent } from 'motion/react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
@@ -16,7 +15,9 @@ import { buildAtlasGroups, canAtlasLocate, isAtlasItem } from './contextAtlasSem
 import { createLcosCoreSession } from '../../app/lcosCoreClient';
 import { useLcosReferenceStore } from '../../lcosReferenceState';
 import { workspaceTargetsForItem } from '../../navigation/workspaceTargets';
+import atlasCloseIcon from '../../ui/context/assets/atlas-close.svg';
 import { ContextAtlasView } from '../../ui/context/ContextAtlasView';
+import { ContextCollectionActionGlyph } from '../../ui/context/ContextCollectionFace';
 import { ContextCollectionView } from '../../ui/context/ContextCollectionView';
 import { LcosSurfaceFeedback } from '../../ui/LcosSurfaceFeedback';
 import { lcosTokens } from '../../ui/lcosTokens';
@@ -81,7 +82,7 @@ export function ContextAtlasStage({ projectId, workspaces, onClose, onEnterSurfa
     <ContextAtlasView onClose={onClose} header={<>
           <span>{items.length} 个集合</span>
           <button type="button" aria-label="收回集合总览" onClick={onClose} className="lcos-atlas-close">
-            <X className="h-[22px] w-[22px]" aria-hidden />
+            <img src={atlasCloseIcon} width={22} height={22} alt="" draggable={false} />
           </button>
         </>}
     >
@@ -113,17 +114,17 @@ export function ContextAtlasStage({ projectId, workspaces, onClose, onEnterSurfa
                           <span style={{ color: projected(item) || childTargets.length > 0 ? lcosTokens.color.info : lcosTokens.color.muted }}>
                             {childTargets.length === 1 ? (
                               <button type="button" aria-label={`进入 ${item.title ?? '集合'} 现场`} disabled={!childTargets[0]?.canvasId} onClick={() => { onEnterSurface(item, childTargets[0]); }}>
-                                <ArrowRight className="h-4 w-4" aria-hidden />
+                              <ContextCollectionActionGlyph />
                               </button>
                             ) : childTargets.length > 1 ? (
-                              <DropdownMenu trigger={<button type="button" aria-label={`选择 ${item.title ?? '集合'} 的现场`}><ArrowRight className="h-4 w-4" aria-hidden /></button>}>
+                            <DropdownMenu trigger={<button type="button" aria-label={`选择 ${item.title ?? '集合'} 的现场`}><ContextCollectionActionGlyph /></button>}>
                                 {childTargets.map((workspace) => (
                                   <DropdownMenuItem key={String(workspace.id)} disabled={!workspace.canvasId} onClick={() => { onEnterSurface(item, workspace); }}>
                                     {workspace.name}{workspace.canvasId ? '' : ' · 画布尚未就绪'}
                                   </DropdownMenuItem>
                                 ))}
                               </DropdownMenu>
-                            ) : projected(item) ? <button type="button" aria-label={`定位 ${item.title ?? kindLabel(item)}`} onClick={() => { focusOnCanvas(item); }}><ArrowRight className="h-4 w-4" aria-hidden /></button> : <span aria-hidden>↗</span>}
+                          ) : projected(item) ? <button type="button" aria-label={`定位 ${item.title ?? kindLabel(item)}`} onClick={() => { focusOnCanvas(item); }}><ContextCollectionActionGlyph /></button> : <span aria-hidden>↗</span>}
                           </span>
                         }
                       />

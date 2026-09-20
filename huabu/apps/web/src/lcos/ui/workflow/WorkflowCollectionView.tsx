@@ -1,23 +1,16 @@
 import { motion, useReducedMotion } from 'motion/react';
 
-import { PreviewMedia } from '../spatial/PreviewMedia';
+import { WorkflowCollectionFace } from './WorkflowCollectionFace';
 import { useDescendantFocus } from '../spatial/useDescendantFocus';
-import flowIcon from './assets/workflow-flow-22.svg';
 
-import type { ReactNode } from 'react';
+import type { WorkflowCollectionFaceProps } from './WorkflowCollectionFace';
 
 import './workflow-hand.css';
 
-export type WorkflowCollectionRendition = '工作流现场' | '主画布' | '装配';
+export type { WorkflowCollectionRendition } from './WorkflowCollectionFace';
 
-export interface WorkflowCollectionViewProps {
-  readonly title: string;
-  readonly rendition: WorkflowCollectionRendition;
-  readonly previewUrl?: string;
-  readonly disabled?: boolean;
-  readonly disabledReason?: string;
+export interface WorkflowCollectionViewProps extends WorkflowCollectionFaceProps {
   readonly active?: boolean;
-  readonly action?: ReactNode;
 }
 
 export function WorkflowCollectionView({
@@ -50,16 +43,10 @@ export function WorkflowCollectionView({
         whileHover={reducedMotion || disabled ? undefined : { y: -7, scale: 1.022 }}
         transition={reducedMotion ? { duration: 0 } : { type: 'spring', stiffness: 400, damping: 25 }}
       >
-        <div className="lcos-workflow-collection-back" aria-hidden />
-        <div className="lcos-workflow-collection-cover">
-          <PreviewMedia src={previewUrl} label={`${title} 封面`} />
-        </div>
-        <div className="lcos-workflow-collection-front" aria-hidden />
-        <div className="lcos-workflow-collection-spine" aria-hidden />
-        <div className="lcos-workflow-collection-tab" aria-hidden />
-        <img className="lcos-workflow-collection-icon" src={flowIcon} alt="" draggable={false} />
-        <div className="lcos-workflow-collection-copy"><strong title={title}>{title}</strong><span title={disabledReason}>{disabled ? disabledReason ?? '目标当前不可用' : '工作流'}</span></div>
-        <div className="lcos-workflow-collection-action">{!disabled ? action : null}</div>
+        <WorkflowCollectionFace title={title} rendition={rendition} disabled={disabled}
+          {...(previewUrl === undefined ? {} : {previewUrl})}
+          {...(disabledReason === undefined ? {} : {disabledReason})}
+          {...(action === undefined ? {} : {action})} />
       </motion.div>
     </div>
   );

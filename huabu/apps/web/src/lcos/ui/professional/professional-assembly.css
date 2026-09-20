@@ -1,3 +1,5 @@
+@import '../primitives/oreo-controls.css';
+
 /* Figma C01 5346:1416. Current Source Bay + CSS columns retained; Lovart is behavior-only evidence. */
 .lcos-assembly-body {
   container-type: inline-size;

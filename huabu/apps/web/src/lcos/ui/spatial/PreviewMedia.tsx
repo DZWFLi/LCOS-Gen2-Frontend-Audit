@@ -4,17 +4,21 @@ import { nextImageLoadPhase } from './imageLoadPhase';
 import './preview-media.css';
 
 import type { ImageLoadPhase } from './imageLoadPhase';
+import type { CSSProperties } from 'react';
 
 export interface PreviewMediaProps {
   readonly src?: string;
   readonly label: string;
+  /** Supplied presentation metadata. Never infer FIT from title or image dimensions. */
+  readonly fit?: 'cover' | 'contain';
+  readonly position?: CSSProperties['objectPosition'];
 }
 
 /**
  * THIN_ADAPT GEN1 CanvasNodeVisual.ImageObject: load/error/retry + keyed attempt.
  * Native img replaces the donor OCR host; no artifact fetch, store or canvas owner.
  */
-function LoadedPreview({ src, label }: { readonly src: string; readonly label: string }): React.JSX.Element {
+function LoadedPreview({ src, label, fit = 'cover', position = '50% 50%' }: PreviewMediaProps & { readonly src: string }): React.JSX.Element {
   const [phase, setPhase] = useState<ImageLoadPhase>('loading');
   const [attempt, setAttempt] = useState(0);
   return <div className="lcos-preview-media" data-image-phase={phase} aria-busy={phase === 'loading' || undefined}>
@@ -29,6 +33,7 @@ function LoadedPreview({ src, label }: { readonly src: string; readonly label: s
         }}>重试</button>
     </div> : <>
       <img key={`${src}#${attempt}`} src={src} alt={label} draggable={false}
+        style={{ objectFit: fit, objectPosition: position }}
         onLoad={() => setPhase((current) => nextImageLoadPhase(current, 'load'))}
         onError={() => setPhase((current) => nextImageLoadPhase(current, 'error'))}
         onDragStart={(event) => event.preventDefault()} />
@@ -37,8 +42,10 @@ function LoadedPreview({ src, label }: { readonly src: string; readonly label: s
   </div>;
 }
 
-export function PreviewMedia({ src, label }: PreviewMediaProps): React.JSX.Element {
+export function PreviewMedia({ src, label, fit, position }: PreviewMediaProps): React.JSX.Element {
   // Identity of media is its supplied source, not title, fabricated revision or timer.
-  return src ? <LoadedPreview key={src} src={src} label={label} />
+  return src ? <LoadedPreview key={src} src={src} label={label}
+      {...(fit === undefined ? {} : { fit })}
+      {...(position === undefined ? {} : { position })} />
     : <div className="lcos-preview-media" data-image-phase="unavailable"><span className="lcos-preview-media-message">暂无预览</span></div>;
 }

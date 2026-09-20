@@ -94,33 +94,35 @@ export function LcosComposerView(props: LcosComposerViewProps): JSX.Element {
         <div className="lcos-composer-tools">
           <div className="lcos-composer-tools-start">
             {props.attachAction && (
-              <LcosIconButton type="button" className="lcos-composer-tool-hit"
+              <LcosIconButton type="button" appearance="oreo" variant="secondary" className="lcos-composer-tool-hit"
                 disabled={props.attachAction.disabled}
                 title={props.attachAction.disabledReason ?? props.attachAction.label}
                 aria-label={props.attachAction.label}
                 onClick={props.attachAction.onClick}>
-                <span className="lcos-composer-tool-face"><LcosNearfieldGlyph name="attach" /></span>
+                <LcosNearfieldGlyph name="attach" />
               </LcosIconButton>
             )}
             {props.referencePickAction && (
-              <LcosIconButton type="button" className="lcos-composer-tool-hit"
+              <LcosIconButton type="button" appearance="oreo" variant="secondary" className="lcos-composer-tool-hit"
                 disabled={props.referencePickAction.disabled}
                 title={props.referencePickAction.disabledReason ?? props.referencePickAction.label}
                 aria-label={props.referencePickAction.label}
                 onClick={props.referencePickAction.onClick}>
-                <span className="lcos-composer-tool-face"><LcosNearfieldGlyph name="at" /></span>
+                <LcosNearfieldGlyph name="at" />
               </LcosIconButton>
             )}
           </div>
           <LcosIconButton
             type="button"
+            appearance="oreo"
+            variant="primary"
             className="lcos-composer-tool-hit lcos-composer-submit"
             disabled={!props.canSubmit}
             aria-label="提交"
             title={props.submitTitle}
             onClick={props.onSubmit}
           >
-            <span className="lcos-composer-tool-face"><LcosNearfieldGlyph name="send" /></span>
+            <LcosNearfieldGlyph name="send" />
           </LcosIconButton>
         </div>
       </div>
@@ -129,7 +131,7 @@ export function LcosComposerView(props: LcosComposerViewProps): JSX.Element {
         <div className="lcos-composer-feedback" aria-live="polite">
           {props.feedback}
           {props.feedbackAction && (
-            <LcosIconButton type="button" className="lcos-composer-recovery-action"
+            <LcosIconButton type="button" appearance="oreo" variant="secondary" className="lcos-composer-recovery-action"
               aria-label={props.feedbackAction.label}
               disabled={props.feedbackAction.disabled}
               title={props.feedbackAction.disabledReason ?? props.feedbackAction.label}

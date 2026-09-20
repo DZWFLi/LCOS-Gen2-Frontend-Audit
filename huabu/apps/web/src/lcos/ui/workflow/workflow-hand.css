@@ -1,3 +1,5 @@
+/* Paint/alpha/stroke from Figma 5335:16/18, 5334:5/7, and shared LCOS effects.
+   CSS blur is the existing fallback, NOT a reproduction of Figma GLASS refraction. */
 /* Workflow Hand / Task Card deep fidelity: Figma 5140:3012 + 5334:46 + 5335:110. */
 .lcos-workflow-hand-stage { position:fixed; inset:0; z-index:34; pointer-events:none; background:transparent; }
 .lcos-workflow-hand-shell { pointer-events:auto; position:absolute; left:50%; bottom:0; width:min(1080px,calc(100vw - 80px)); height:min(610px,calc(100vh - 150px)); transform:translateX(-50%); }
@@ -17,42 +19,41 @@
 .lcos-workflow-hand-cards:has(.lcos-workflow-task-slot:hover) .lcos-workflow-task-slot:not(:hover),.lcos-workflow-hand-cards:has(.lcos-workflow-task-slot:focus-within) .lcos-workflow-task-slot:not(:focus-within) { opacity:.68; filter:saturate(.74); }
 
 /* Task Card 5335:110 — all seven Figma states. */
-.lcos-workflow-task-card { position:relative; box-sizing:border-box; width:224px; height:324px; color:var(--gen2-text); background:transparent; border:0; outline:none; transform-origin:50% 100%; }
-.lcos-workflow-task-plate { position:absolute; box-sizing:border-box; left:4px; top:4px; width:216px; height:312px; border-radius:18px; background:var(--gen2-surface); border:1px solid var(--gen2-surface); box-shadow:0 0 1px rgba(40,48,58,.10),0 4px 12px rgba(40,48,58,.08); pointer-events:none; }
-.lcos-workflow-task-card:hover > .lcos-workflow-task-plate,.lcos-workflow-task-card[data-state='悬停'] > .lcos-workflow-task-plate { box-shadow:0 10px 24px rgba(31,46,61,.12),0 0 1px rgba(40,48,58,.10),0 4px 12px rgba(40,48,58,.08); }
-.lcos-workflow-task-card:focus-visible > .lcos-workflow-task-plate,.lcos-workflow-task-card:focus-within > .lcos-workflow-task-plate,.lcos-workflow-task-card[data-state='键盘焦点'] > .lcos-workflow-task-plate { border:2px solid #107d98; }
+.lcos-workflow-task-card { position:relative; box-sizing:border-box; width:224px; height:324px; color:var(--lcos-text-primary); background:transparent; border:0; outline:none; transform-origin:50% 100%; }
+.lcos-workflow-task-plate { position:absolute; box-sizing:border-box; left:4px; top:4px; width:216px; height:312px; border-radius:18px; background:color-mix(in srgb,var(--lcos-surface-base) 10%,transparent); border:1px solid var(--lcos-surface-base); box-shadow:var(--lcos-glass-shadow); backdrop-filter:blur(var(--lcos-glass-blur)); pointer-events:none; }
+.lcos-workflow-task-card:hover > .lcos-workflow-task-plate,.lcos-workflow-task-card[data-state='悬停'] > .lcos-workflow-task-plate { box-shadow:0 10px 24px rgba(31,46,61,.12),var(--lcos-glass-shadow); }
+.lcos-workflow-task-card:focus-visible > .lcos-workflow-task-plate,.lcos-workflow-task-card:focus-within > .lcos-workflow-task-plate,.lcos-workflow-task-card[data-state='键盘焦点'] > .lcos-workflow-task-plate { border:2px solid var(--lcos-color-palette-blue-text); }
 .lcos-workflow-hand-cards > .lcos-workflow-task-slot:is(:hover,:focus-within) { z-index:2; }
 .lcos-workflow-task-cover { position:absolute; left:12px; top:12px; width:200px; height:214px; border-radius:12px; overflow:hidden; background:var(--gen2-raised); }
 .lcos-workflow-task-cover > img,.lcos-workflow-task-cover-fallback { width:100%; height:100%; display:block; object-fit:cover; }
 .lcos-workflow-task-card[data-state='不可用'] .lcos-workflow-task-cover > .lcos-preview-media { opacity:.4; }
 .lcos-workflow-task-cover-fallback { background:linear-gradient(145deg,color-mix(in srgb,var(--lcos-pin-teal) 34%,var(--gen2-raised)),var(--gen2-raised)); }
-.lcos-workflow-task-badge { position:absolute; left:11px; top:11px; width:33px; height:33px; display:grid; place-items:center; border-radius:10px; background:rgba(255,255,255,.94); box-shadow:0 0 1px rgba(40,48,58,.10),0 4px 12px rgba(40,48,58,.08); }
+.lcos-workflow-task-badge { position:absolute; box-sizing:border-box; left:11px; top:11px; width:33px; height:33px; display:grid; place-items:center; border-radius:10px; border:1px solid var(--lcos-surface-base); background:color-mix(in srgb,var(--lcos-surface-base) 10%,transparent); box-shadow:var(--lcos-glass-shadow); backdrop-filter:blur(var(--lcos-glass-blur)); }
 .lcos-workflow-task-badge img { display:block; width:23px; height:23px; }
-.lcos-workflow-task-use { position:absolute; left:8px; bottom:15px; width:184px; height:40px; display:flex; align-items:center; justify-content:center; gap:4px; box-sizing:border-box; padding:6px 8px; border:.5px solid var(--lcos-color-border-default); border-radius:8px; background:rgba(255,255,255,.96); color:var(--gen2-text); font:500 14px/20px Inter,sans-serif; opacity:0; visibility:hidden; transform:translateY(8px); transition:opacity 150ms ease,transform 180ms cubic-bezier(.22,1,.36,1),visibility 0s linear 180ms; }
+.lcos-workflow-task-use { position:absolute; left:8px; bottom:15px; width:184px; height:40px; display:flex; align-items:center; justify-content:center; gap:4px; box-sizing:border-box; padding:6px 12px; border:.5px solid var(--lcos-color-border-default); border-radius:8px; background:var(--lcos-surface-base); color:var(--lcos-text-primary); font:500 14px/20px Inter,sans-serif; opacity:0; visibility:hidden; transform:translateY(8px); transition:opacity 150ms ease,transform 180ms cubic-bezier(.22,1,.36,1),visibility 0s linear 180ms; }
 .lcos-workflow-task-use img { width:16px; height:16px; display:block; }
 .lcos-workflow-task-card:hover .lcos-workflow-task-use,.lcos-workflow-task-card:focus-within .lcos-workflow-task-use,.lcos-workflow-task-card[data-state='悬停'] .lcos-workflow-task-use,.lcos-workflow-task-card[data-state='预览'] .lcos-workflow-task-use,.lcos-workflow-task-card[data-state='键盘焦点'] .lcos-workflow-task-use { opacity:1; visibility:visible; transform:none; transition-delay:0s; }
 .lcos-workflow-task-copy { position:absolute; left:22px; top:240px; width:180px; display:flex; flex-direction:column; gap:8px; }
-.lcos-workflow-task-copy strong { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font:500 17px/25px 'Noto Sans SC',sans-serif; }
-.lcos-workflow-task-copy span { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--gen2-muted); font:400 12px/17px 'Noto Sans SC',sans-serif; }
+.lcos-workflow-task-copy strong { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font:500 17px/1.45 'Noto Sans SC',sans-serif; }
+.lcos-workflow-task-copy span { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--lcos-color-text-secondary); font:400 12px/1.45 'Noto Sans SC',sans-serif; }
 
 /* Workflow Collection 5334:46 — collection node, explicitly not the vertical retrieval card. */
 .lcos-workflow-collection-slot { position:relative; width:248px; height:244px; }
 .lcos-workflow-collection-slot[data-disabled='true'] { opacity:.65; }
-.lcos-workflow-collection { position:relative; width:248px; height:244px; color:var(--gen2-text); }
-.lcos-workflow-collection-back { box-sizing:border-box; position:absolute; left:30px; top:30px; width:188px; height:160px; transform:rotate(4deg); transform-origin:center; border:1px solid var(--gen2-surface); border-radius:18px; background:var(--gen2-surface); box-shadow:0 0 1px rgba(40,48,58,.10),0 4px 12px rgba(40,48,58,.08); }
+.lcos-workflow-collection { position:relative; width:248px; height:244px; color:var(--lcos-text-primary); }
+.lcos-workflow-collection-back { box-sizing:border-box; position:absolute; left:30px; top:30px; width:188px; height:160px; transform:rotate(4deg); transform-origin:center; border:1px solid var(--lcos-surface-base); border-radius:18px; background:color-mix(in srgb,var(--lcos-surface-base) 10%,transparent); box-shadow:var(--lcos-glass-shadow); backdrop-filter:blur(var(--lcos-glass-blur)); }
 .lcos-workflow-collection-cover { position:absolute; left:40px; top:28px; width:176px; height:100px; transform:rotate(-3deg); transform-origin:center; border-radius:12px; overflow:hidden; background:var(--gen2-raised); }
 .lcos-workflow-collection-cover img { width:100%; height:100%; object-fit:cover; display:block; }
-.lcos-workflow-collection-front { box-sizing:border-box; position:absolute; left:20px; top:91px; width:210px; height:125px; border:1px solid var(--gen2-surface); border-radius:18px; background:var(--gen2-surface); box-shadow:0 0 1px rgba(40,48,58,.10),0 4px 12px rgba(40,48,58,.08); }
-.lcos-workflow-collection-spine { position:absolute; left:20px; top:91px; width:9px; height:125px; border-radius:4px; background:#107d98; }
-.lcos-workflow-collection-tab { position:absolute; left:180px; top:91px; width:34px; height:7px; border-radius:3px; background:#107d98; }
+.lcos-workflow-collection-front { box-sizing:border-box; position:absolute; left:20px; top:91px; width:210px; height:125px; border:1px solid var(--lcos-surface-base); border-radius:18px; background:color-mix(in srgb,var(--lcos-surface-base) 10%,transparent); box-shadow:var(--lcos-glass-shadow); backdrop-filter:blur(var(--lcos-glass-blur)); }
+.lcos-workflow-collection-spine { position:absolute; left:20px; top:91px; width:9px; height:125px; border-radius:4px; background:var(--lcos-color-palette-blue-text); }
+.lcos-workflow-collection-tab { position:absolute; left:180px; top:91px; width:34px; height:7px; border-radius:3px; background:var(--lcos-color-palette-blue-text); }
 .lcos-workflow-collection-icon { position:absolute; left:32px; top:130px; width:22px; height:22px; display:block; }
-.lcos-workflow-collection-copy { position:absolute; left:64px; top:151px; width:150px; display:flex; flex-direction:column; gap:4px; }
-.lcos-workflow-collection-copy strong { font:500 17px/25px 'Noto Sans SC',sans-serif; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-.lcos-workflow-collection-copy span { color:var(--gen2-muted); font:400 12px/17px 'Noto Sans SC',sans-serif; }
+.lcos-workflow-collection-copy { position:absolute; left:64px; top:151px; width:150px; display:flex; flex-direction:column; gap:8px; }
+.lcos-workflow-collection-copy strong { font:500 17px/1.45 'Noto Sans SC',sans-serif; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.lcos-workflow-collection-copy span { color:var(--lcos-color-text-secondary); font:400 12px/1.45 'Noto Sans SC',sans-serif; }
 .lcos-workflow-collection-action { position:absolute; left:204px; top:186px; width:20px; height:23px; display:grid; place-items:center; font:500 16px/23px 'Noto Sans SC',sans-serif; }
-.lcos-workflow-collection-action button { width:32px; height:32px; border:0; border-radius:10px; background:transparent; font-size:0; }
-.lcos-workflow-collection-action button svg { display:none; }
-.lcos-workflow-collection-action button::before { content:'↗'; font:500 16px/23px 'Noto Sans SC',sans-serif; }
+.lcos-workflow-collection-action button { min-width:44px; min-height:44px; border:0; border-radius:10px; background:transparent; color:inherit; }
+
 .lcos-workflow-collection-slot[data-active='true'] .lcos-workflow-collection-front,.lcos-workflow-collection-slot:focus-within .lcos-workflow-collection-front { outline:2px solid var(--gen2-accent); outline-offset:2px; }
 
 @media (max-width:760px) {
