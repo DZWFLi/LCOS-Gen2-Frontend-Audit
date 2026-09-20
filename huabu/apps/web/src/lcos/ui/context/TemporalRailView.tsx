@@ -1,5 +1,5 @@
 import { motion, useReducedMotion } from 'motion/react';
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 
 import { temporalEpisodeFocusFace, temporalFocusTick } from './temporalFocusProfile';
 import {
@@ -90,7 +90,7 @@ export function TemporalRailView({
     ? TEMPORAL_TOP_PADDING
     : TEMPORAL_TOP_PADDING + Math.max(0, usableRailHeight - bandHeight) * window.positionRatio;
 
-  const setPreview = (item: TemporalRailItemView | null): void => {
+  const setPreview = useCallback((item: TemporalRailItemView | null): void => {
     const id = item?.id ?? null;
     if (previewRef.current === id) return;
     previewRef.current = id;
@@ -98,7 +98,19 @@ export function TemporalRailView({
     const notify = item === null ? previewNotifier.current : callbacks.current.onPreviewChange;
     previewNotifier.current = item === null ? undefined : notify;
     notify?.(item);
-  };
+  }, []);
+
+  useEffect(() => {
+    const clearOnEscape = (event: KeyboardEvent): void => {
+      if (event.key !== 'Escape' || previewRef.current === null) return;
+      event.preventDefault();
+      event.stopPropagation();
+      setFocusY(null);
+      setPreview(null);
+    };
+    document.addEventListener('keydown', clearOnEscape, true);
+    return () => document.removeEventListener('keydown', clearOnEscape, true);
+  }, [setPreview]);
 
   useLayoutEffect(() => {
     const rail = railRef.current;
@@ -188,7 +200,7 @@ export function TemporalRailView({
       }}
       onPointerLeave={() => {
         setFocusY(null);
-        if (!railRef.current?.contains(document.activeElement)) setPreview(null);
+        setPreview(null);
       }}
       onBlurCapture={(event) => {
         if (event.currentTarget.contains(event.relatedTarget)) return;
@@ -268,7 +280,11 @@ export function TemporalRailView({
             setPreview(item);
             if (!reducedMotion) setFocusY(baseY);
           }}
-          onClick={() => { if (item.disabled !== true) onActivate?.(item); }}
+          onClick={() => {
+            if (item.disabled === true) return;
+            setPreview(null);
+            onActivate?.(item);
+          }}
           aria-label={item.label}
           aria-current={activeId === item.id ? 'true' : undefined}
         ><motion.i

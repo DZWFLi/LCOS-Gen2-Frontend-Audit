@@ -29,6 +29,7 @@ import { useLcosDropStore } from './lcosDropState';
 import { advanceDropAtScreenPoint } from './lcosRecognizers';
 import { useLcosReferenceStore } from './lcosReferenceState';
 import { useLcosShellStore } from './shell/lcosShellStore';
+import { TemporalPreviewOutlines } from './surfaces/context/TemporalPreviewOutlines';
 import {
   importWorkflowArchiveDrop,
   resolveWorkflowArchiveDrop,
@@ -310,6 +311,7 @@ export const LcosHostOverlay: React.FC = () => {
 
   return (
     <>
+      <TemporalPreviewOutlines />
       {showDrop && <LcosDropPreview />}
       {projectId && composerTarget && (
         <LcosComposerHost

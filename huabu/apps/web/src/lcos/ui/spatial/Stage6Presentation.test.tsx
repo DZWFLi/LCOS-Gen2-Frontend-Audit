@@ -125,6 +125,45 @@ describe('Stage6 real React presentation', () => {
     expect(preview).toHaveBeenLastCalledWith(null);
   });
 
+  it('keeps hover preview ephemeral across leave, Escape, click and unmount', async () => {
+    const preview = vi.fn();
+    const activate = vi.fn();
+    const item = { id: 'episode-a', label: '一组真实对象', ratio: .5, lengthTier: 'L3' as const, staticWidth: 23 };
+    await render(<TemporalRailView
+      items={[item]}
+      onPreviewChange={preview}
+      onActivate={activate}
+      scopeKey="context-a"
+    />);
+    const rail = host.querySelector('[data-lcos-temporal-rail]');
+    if (!(rail instanceof HTMLElement)) throw new Error('Expected temporal rail');
+    const episode = button('[data-temporal-item="episode-a"]');
+
+    await act(async () => episode.dispatchEvent(new PointerEvent('pointerover', { bubbles: true })));
+    expect(episode.dataset.preview).toBe('true');
+    expect(preview).toHaveBeenLastCalledWith(item);
+
+    await act(async () => rail.dispatchEvent(new PointerEvent('pointerout', { bubbles: true })));
+    expect(episode.dataset.preview).toBeUndefined();
+    expect(preview).toHaveBeenLastCalledWith(null);
+
+    await act(async () => episode.focus());
+    expect(episode.dataset.preview).toBe('true');
+    await act(async () => episode.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true })));
+    expect(episode.dataset.preview).toBeUndefined();
+    expect(preview).toHaveBeenLastCalledWith(null);
+
+    await act(async () => episode.dispatchEvent(new PointerEvent('pointerover', { bubbles: true })));
+    await act(async () => episode.click());
+    expect(activate).toHaveBeenCalledExactlyOnceWith(item);
+    expect(episode.dataset.preview).toBeUndefined();
+    expect(preview).toHaveBeenLastCalledWith(null);
+
+    await act(async () => episode.dispatchEvent(new PointerEvent('pointerover', { bubbles: true })));
+    await render(null);
+    expect(preview).toHaveBeenLastCalledWith(null);
+  });
+
   it('isolates wheel with React StrictMode and leaves empty data truly empty', async () => {
     const shift = vi.fn();
     const outer = vi.fn();

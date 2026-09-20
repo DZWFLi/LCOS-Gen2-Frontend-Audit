@@ -1,5 +1,6 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
+import { useTemporalPreviewStore } from './temporalPreviewState';
 import {
   createTemporalLocateRequest,
   projectTemporalGroupTargets,
@@ -31,6 +32,11 @@ export function TemporalRail({ projectId, workspaceId, canvasId }: TemporalRailP
   const [activationReason, setActivationReason] = useState<string>();
   const [windowStart, setWindowStart] = useState(0);
   const nodeEntityRefs = useLcosReferenceStore((referenceState) => referenceState.nodeEntityRefs);
+  const previewOwnerKey = `${projectId}:${workspaceId ?? 'none'}:${canvasId ?? 'none'}`;
+
+  useEffect(() => () => {
+    useTemporalPreviewStore.getState().clear(previewOwnerKey);
+  }, [previewOwnerKey]);
 
   useEffect(() => {
     if (workspaceId === undefined) {
@@ -111,6 +117,20 @@ export function TemporalRail({ projectId, workspaceId, canvasId }: TemporalRailP
     if (request !== undefined) useLcosShellStore.getState().requestLocate(request);
   };
 
+  const preview = useCallback((item: TemporalRailItemView | null): void => {
+    const store = useTemporalPreviewStore.getState();
+    if (item === null || canvasId === undefined) {
+      store.clear(previewOwnerKey);
+      return;
+    }
+    const projection = projections.get(item.id);
+    if (projection === undefined || projection.nodeIds.length === 0) {
+      store.clear(previewOwnerKey);
+      return;
+    }
+    store.preview({ ownerKey: previewOwnerKey, canvasId, nodeIds: projection.nodeIds });
+  }, [canvasId, previewOwnerKey, projections]);
+
   return <TemporalRailView
     items={items}
     window={windowView}
@@ -118,6 +138,7 @@ export function TemporalRail({ projectId, workspaceId, canvasId }: TemporalRailP
     state={activationReason === undefined ? state : 'recovery'}
     scopeKey={`${workspaceId ?? 'none'}:${window.startIndex}`}
     onActivate={activate}
+    onPreviewChange={preview}
     onWindowShift={(direction) => {
       setActivationReason(undefined);
       setWindowStart((current) => shiftTemporalWindowStart({
