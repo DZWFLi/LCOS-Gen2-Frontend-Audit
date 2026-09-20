@@ -406,7 +406,13 @@ function LcosSpeciesBody({
         species === 'source' && ref?.entityType === 'artifact'
           ? (event) => {
               event.stopPropagation();
-              useLcosShellStore.getState().openWindow('reader', `阅读 · ${title}`, ref.entityId);
+              const shell = useLcosShellStore.getState();
+              shell.openReader(`阅读 · ${title}`, ref.entityId, {
+                ...(descriptor?.currentRevisionId === undefined
+                  ? {}
+                  : { revisionId: descriptor.currentRevisionId }),
+                source: { surface: shell.activeSurface, nodeId: input.nodeId },
+              });
             }
           : undefined
       }

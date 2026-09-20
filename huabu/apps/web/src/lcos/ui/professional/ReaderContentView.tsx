@@ -21,6 +21,7 @@ export interface ReaderContentViewProps {
   readonly zoom?: number;
   readonly loading?: boolean;
   readonly error?: string;
+  readonly onRetry?: () => void;
   /** Reuse the host's renderer when one is available; never parse or fetch a second copy. */
   readonly renderedText?: ReactNode;
   readonly unavailableGlyph?: ReactNode;
@@ -38,6 +39,7 @@ export function ReaderContentView({
   zoom = 100,
   loading = false,
   error,
+  onRetry,
   renderedText,
   unavailableGlyph,
   feedback,
@@ -53,7 +55,10 @@ export function ReaderContentView({
   if (error !== undefined) {
     return (
       <div data-lcos-reader-content="error" className="lcos-reader-unavailable" role="alert">
-        正文读取失败 · {error}
+        <span>正文读取失败 · {error}</span>
+        {onRetry === undefined ? null : (
+          <button type="button" data-lcos-reader-retry onClick={onRetry}>重读同一版本</button>
+        )}
       </div>
     );
   }

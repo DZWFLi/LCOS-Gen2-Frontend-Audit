@@ -2,7 +2,12 @@ import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { ArtifactReaderBody, readerCitationBlockV1, readerSourceTraceLabelV1 } from './ArtifactReaderBody';
+import {
+  ArtifactReaderBody,
+  clearReaderSessionContinuity,
+  readerCitationBlockV1,
+  readerSourceTraceLabelV1,
+} from './ArtifactReaderBody';
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -19,6 +24,8 @@ const orderedNodeReferences = vi.hoisted(() => vi.fn(() => [] as unknown[]));
 const requestLocate = vi.hoisted(() => vi.fn());
 const setComposerPrompt = vi.hoisted(() => vi.fn());
 const nodeEntityRefs = vi.hoisted(() => new Map<string, { entityType: string; entityId: string }>());
+const readerPositions = vi.hoisted(() => ({} as Record<string, { scrollTop: number; zoom: number }>));
+const readerLastRevisions = vi.hoisted(() => ({} as Record<string, string>));
 
 vi.mock('@local-creative-os/web-gen2', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@local-creative-os/web-gen2')>();
@@ -44,7 +51,20 @@ vi.mock('../lcosReferenceState', () => {
   return { useLcosReferenceStore };
 });
 vi.mock('../shell/lcosShellStore', () => {
-  const state = () => ({ activeSurface: 'main', composerPrompt: '', setComposerPrompt, requestLocate });
+  const state = () => ({
+    activeSurface: 'main',
+    composerPrompt: '',
+    setComposerPrompt,
+    requestLocate,
+    readerPositions,
+    readerLastRevisions,
+    rememberReaderPosition: (key: string, value: { scrollTop: number; zoom: number }) => { readerPositions[key] = value; },
+    rememberReaderRevision: (key: string, revisionId: string) => { readerLastRevisions[key] = revisionId; },
+    clearReaderContinuity: () => {
+      for (const key of Object.keys(readerPositions)) delete readerPositions[key];
+      for (const key of Object.keys(readerLastRevisions)) delete readerLastRevisions[key];
+    },
+  });
   const useLcosShellStore = (selector: (s: ReturnType<typeof state>) => unknown) => selector(state());
   useLcosShellStore.getState = state;
   return { useLcosShellStore };
@@ -53,9 +73,14 @@ vi.mock('../shell/lcosShellStore', () => {
 const roots: Root[] = [];
 const containers: HTMLElement[] = [];
 
-function detail(artifactId: string, currentRevisionId: string, kind: 'markdown' | 'image' = 'markdown') {
+function detail(
+  artifactId: string,
+  currentRevisionId: string,
+  kind: 'markdown' | 'image' = 'markdown',
+  availability: 'available' | 'missing' | 'stale' = 'available',
+) {
   return {
-    artifact: { id: artifactId, projectId: 'project-1', title: `${artifactId}.md`, kind, managed: true },
+    artifact: { id: artifactId, projectId: 'project-1', title: `${artifactId}.md`, kind, managed: true, availability },
     currentRevisionId,
     revisions: [
       { id: 'revision-old', status: 'superseded', source: 'import', createdAt: '2026-01-01T00:00:00Z' },
@@ -68,13 +93,23 @@ function revision(artifactId: string, id: string, fileRecordId: string) {
   return { id, artifactId, fileRecordId, contentHash: `hash-${id}`, source: 'import', status: id === 'revision-old' ? 'superseded' : 'current', createdAt: '2026-01-02T00:00:00Z' };
 }
 
-async function render(artifactId: string): Promise<{ root: Root; container: HTMLElement }> {
+async function render(
+  artifactId: string,
+  options: { revisionId?: string; onReturnToSource?: () => void } = {},
+): Promise<{ root: Root; container: HTMLElement }> {
   const container = document.createElement('div');
   document.body.append(container);
   const root = createRoot(container);
   roots.push(root);
   containers.push(container);
-  await act(async () => root.render(<ArtifactReaderBody projectId="project-1" artifactId={artifactId} />));
+  await act(async () => root.render(
+    <ArtifactReaderBody
+      projectId="project-1"
+      artifactId={artifactId}
+      {...(options.revisionId === undefined ? {} : { revisionId: options.revisionId })}
+      {...(options.onReturnToSource === undefined ? {} : { onReturnToSource: options.onReturnToSource })}
+    />,
+  ));
   return { root, container };
 }
 
@@ -100,6 +135,7 @@ afterEach(() => {
   setComposerPrompt.mockReset();
   nodeEntityRefs.clear();
   window.sessionStorage.clear();
+  clearReaderSessionContinuity();
   vi.restoreAllMocks();
 });
 
@@ -114,8 +150,44 @@ describe('ArtifactReaderBody real content', () => {
 
     const { container } = await render('artifact-1');
     expect(textFor).toHaveBeenCalledWith('project-1', 'file-current', expect.any(AbortSignal));
-    expect(container.querySelector('[data-lcos-reader-content="text"]')?.textContent).toContain('# Current body');
+    expect(container.querySelector('[data-lcos-reader-content="text"]')?.textContent).toContain('Current body');
     expect(container.textContent).toContain('revision · current');
+  });
+
+  it('reads the exact revision carried by the Reader target instead of substituting current', async () => {
+    detailFor.mockResolvedValue(detail('artifact-targeted', 'revision-current'));
+    revisionsFor.mockResolvedValue([
+      revision('artifact-targeted', 'revision-old', 'file-old'),
+      revision('artifact-targeted', 'revision-current', 'file-current'),
+    ]);
+    textFor.mockImplementation((_projectId: string, fileRecordId: string) => Promise.resolve(`body:${fileRecordId}`));
+
+    const { container } = await render('artifact-targeted', { revisionId: 'revision-old' });
+    expect(textFor).toHaveBeenCalledWith('project-1', 'file-old', expect.any(AbortSignal));
+    expect(textFor).not.toHaveBeenCalledWith('project-1', 'file-current', expect.any(AbortSignal));
+    expect(container.textContent).toContain('body:file-old');
+  });
+
+  it('keeps a missing explicit revision as the target and never falls through to current', async () => {
+    detailFor.mockResolvedValue(detail('artifact-missing-revision', 'revision-current'));
+    revisionsFor.mockResolvedValue([
+      revision('artifact-missing-revision', 'revision-current', 'file-current'),
+    ]);
+    textFor.mockResolvedValue('current body must not be read');
+
+    const { container } = await render('artifact-missing-revision', { revisionId: 'revision-gone' });
+    expect(textFor).not.toHaveBeenCalled();
+    expect(container.querySelector('[data-lcos-reader-content="error"]')?.textContent).toContain('未切换到当前版本');
+    expect(container.textContent).toContain('revision');
+  });
+
+  it('exposes stale source state while keeping the requested revision readable', async () => {
+    detailFor.mockResolvedValue(detail('artifact-stale', 'revision-current', 'markdown', 'stale'));
+    revisionsFor.mockResolvedValue([revision('artifact-stale', 'revision-current', 'file-current')]);
+    textFor.mockResolvedValue('recorded body');
+    const { container } = await render('artifact-stale', { revisionId: 'revision-current' });
+    expect(container.querySelector('[data-lcos-reader-availability="stale"]')?.textContent).toContain('不会自动换');
+    expect(container.textContent).toContain('recorded body');
   });
 
   it('does not let a late A response replace the newer B reader', async () => {
@@ -254,7 +326,7 @@ describe('ArtifactReaderBody R4 residual', () => {
     expect(second.container.querySelector('[data-lcos-reader-readonly]')).not.toBeNull();
   });
 
-  it('阅读缩放与 Canvas zoom 分离，并把版本/位置/缩放写入 reload continuity', async () => {
+  it('阅读缩放与 Canvas zoom 分离，并在同一窗口会话重开后恢复版本/位置/缩放', async () => {
     const { container } = await renderMarkdown('artifact-zoom');
     const content = container.querySelector<HTMLElement>('[data-lcos-reader-content="text"]');
     expect(content).not.toBeNull();
@@ -263,10 +335,35 @@ describe('ArtifactReaderBody R4 residual', () => {
     act(() => content.dispatchEvent(new Event('scroll', { bubbles: true })));
     click(container, '[data-lcos-reader-zoom-in]');
     expect(container.querySelector('[data-lcos-reader-zoom-value]')?.textContent).toBe('110%');
-    const stored = JSON.parse(window.sessionStorage.getItem('lcos-reader-continuity-v1:project-1:artifact-zoom') ?? '{}') as Record<string, unknown>;
-    expect(stored.revisionId).toBe('revision-current');
-    expect(stored.scrollTop).toBe(180);
-    expect(stored.zoom).toBe(110);
+    act(() => roots.at(-1)?.unmount());
+    const reopened = await renderMarkdown('artifact-zoom');
+    expect(reopened.container.querySelector('[data-lcos-reader-zoom-value]')?.textContent).toBe('110%');
+    expect(reopened.container.querySelector<HTMLElement>('[data-lcos-reader-content="text"]')?.scrollTop).toBe(180);
+  });
+
+  it('isolates same-session scroll and zoom by artifact revision target', async () => {
+    detailFor.mockResolvedValue(detail('artifact-two-revisions', 'revision-current'));
+    revisionsFor.mockResolvedValue([
+      revision('artifact-two-revisions', 'revision-old', 'file-old'),
+      revision('artifact-two-revisions', 'revision-current', 'file-current'),
+    ]);
+    textFor.mockImplementation((_projectId: string, fileRecordId: string) => Promise.resolve(`body:${fileRecordId}`));
+
+    const oldTarget = await render('artifact-two-revisions', { revisionId: 'revision-old' });
+    const oldContent = oldTarget.container.querySelector<HTMLElement>('[data-lcos-reader-content="text"]')!;
+    oldContent.scrollTop = 90;
+    act(() => oldContent.dispatchEvent(new Event('scroll', { bubbles: true })));
+    click(oldTarget.container, '[data-lcos-reader-zoom-in]');
+    act(() => oldTarget.root.unmount());
+
+    const currentTarget = await render('artifact-two-revisions', { revisionId: 'revision-current' });
+    expect(currentTarget.container.querySelector('[data-lcos-reader-zoom-value]')?.textContent).toBe('100%');
+    expect(currentTarget.container.querySelector<HTMLElement>('[data-lcos-reader-content="text"]')?.scrollTop).toBe(0);
+    act(() => currentTarget.root.unmount());
+
+    const reopenedOld = await render('artifact-two-revisions', { revisionId: 'revision-old' });
+    expect(reopenedOld.container.querySelector('[data-lcos-reader-zoom-value]')?.textContent).toBe('110%');
+    expect(reopenedOld.container.querySelector<HTMLElement>('[data-lcos-reader-content="text"]')?.scrollTop).toBe(90);
   });
 
   it('shows a truthful reader content failure when the canonical file record is unavailable', async () => {
@@ -275,5 +372,23 @@ describe('ArtifactReaderBody R4 residual', () => {
     textFor.mockRejectedValue(new Error('file record unavailable'));
     const { container } = await render('artifact-failure');
     expect(container.querySelector('[data-lcos-reader-content="error"]')?.textContent).toContain('file record unavailable');
+    click(container, '[data-lcos-reader-retry]');
+    await act(async () => { await Promise.resolve(); });
+    expect(textFor).toHaveBeenCalledTimes(2);
+  });
+
+  it('delegates return-to-source to the Professional Stage owner when provided', async () => {
+    const onReturnToSource = vi.fn();
+    const { container } = await renderMarkdown('artifact-return');
+    await act(async () => roots.at(-1)?.render(
+      <ArtifactReaderBody
+        projectId="project-1"
+        artifactId="artifact-return"
+        onReturnToSource={onReturnToSource}
+      />,
+    ));
+    click(container, '[data-lcos-reader-source-return]');
+    expect(onReturnToSource).toHaveBeenCalledTimes(1);
+    expect(requestLocate).not.toHaveBeenCalled();
   });
 });

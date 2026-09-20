@@ -150,6 +150,36 @@ describe('Assembly target intent', () => {
 });
 
 describe('Professional window topology', () => {
+  it('treats artifact + revision as the Reader target and preserves its source identity', () => {
+    const store = useLcosShellStore.getState();
+    store.clear();
+    store.openReader('材料 A · 旧版', 'artifact-a', {
+      revisionId: 'revision-old',
+      source: { surface: 'context', nodeId: 'node-a' },
+    });
+    store.openReader('材料 A · 当前版', 'artifact-a', {
+      revisionId: 'revision-current',
+      source: { surface: 'main', nodeId: 'node-a-main' },
+    });
+    expect(useLcosShellStore.getState().windows).toHaveLength(2);
+    expect(useLcosShellStore.getState().windows.find((window) => window.active)).toMatchObject({
+      target: 'artifact-a',
+      readerRevisionId: 'revision-current',
+      readerSource: { surface: 'main', nodeId: 'node-a-main' },
+    });
+
+    store.openReader('材料 A · 旧版（重开）', 'artifact-a', {
+      revisionId: 'revision-old',
+      source: { surface: 'workflow', nodeId: 'node-a-workflow' },
+    });
+    expect(useLcosShellStore.getState().windows).toHaveLength(2);
+    expect(useLcosShellStore.getState().windows.find((window) => window.active)).toMatchObject({
+      title: '材料 A · 旧版（重开）',
+      readerRevisionId: 'revision-old',
+      readerSource: { surface: 'workflow', nodeId: 'node-a-workflow' },
+    });
+  });
+
   it('creates one floating region per opened instance instead of an implicit global tab group', () => {
     const store = useLcosShellStore.getState();
     store.clear();

@@ -249,7 +249,12 @@ export function LcosActionArc(): React.JSX.Element | null {
         else if (ref?.entityType === 'conversation')
           shell.openWindow('conversation', `会话窗口 · ${title}`, ref.entityId);
         else if (ref?.entityType === 'artifact')
-          shell.openWindow('reader', `阅读 · ${title}`, ref.entityId);
+          shell.openReader(`阅读 · ${title}`, ref.entityId, {
+            ...(ref.descriptor?.currentRevisionId === undefined
+              ? {}
+              : { revisionId: ref.descriptor.currentRevisionId }),
+            source: { surface: shell.activeSurface, nodeId },
+          });
         break;
       case 'compose':
         shell.openComposer({

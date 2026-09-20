@@ -113,7 +113,26 @@ export interface LcosWindow {
   readonly targetKind?: 'canvas';
   /** Assembly caller 注入的 canonical target；Assembly 本身不保存 target truth。 */
   readonly assemblyTargetRef?: AssemblyTargetRefV1;
+  /** Reader 的 canonical revision target；缺失表示由 Reader 恢复最后一次 UI 阅读目标。 */
+  readonly readerRevisionId?: string;
+  /** 打开 Reader 的真实节点来源；只用于关闭/返回时定位，不复制 Canvas geometry。 */
+  readonly readerSource?: LcosReaderSourceV1;
   readonly active: boolean;
+}
+
+export interface LcosReaderSourceV1 {
+  readonly surface: LcosSurfaceKey;
+  readonly nodeId: string;
+}
+
+export interface LcosReaderOpenOptionsV1 {
+  readonly revisionId?: string;
+  readonly source?: LcosReaderSourceV1;
+}
+
+export interface LcosReaderPositionV1 {
+  readonly scrollTop: number;
+  readonly zoom: number;
 }
 
 /**
@@ -155,6 +174,10 @@ export interface LcosShellUiState {
   windows: readonly LcosWindow[];
   /** Window instances → regions 的拓扑关系；不会把所有 instance 自动变成一个 tab 组。 */
   windowRegions: readonly LcosWindowRegion[];
+  /** Reader UI-only 会话状态；key = JSON([project, artifact, revision])。 */
+  readerPositions: Readonly<Record<string, LcosReaderPositionV1>>;
+  /** Reader 最近目标 revision；key = JSON([project, artifact])。 */
+  readerLastRevisions: Readonly<Record<string, string>>;
   /** 由 ProfessionalWindowStage 唯一发布的临时占位环境。 */
   windowEnvironment: ProfessionalWindowEnvironmentV1 | null;
   /** Child worksite 的来源现场；刷新后允许丢失，返回按钮仍有安全 fallback。 */
@@ -182,6 +205,10 @@ export interface LcosShellUiState {
     target?: string,
     targetKind?: 'canvas',
   ): void;
+  openReader(title: string, artifactId: string, options?: LcosReaderOpenOptionsV1): void;
+  rememberReaderPosition(key: string, value: LcosReaderPositionV1): void;
+  rememberReaderRevision(key: string, revisionId: string): void;
+  clearReaderContinuity(): void;
   openAssembly(targetRef: AssemblyTargetRefV1, title?: string): void;
   closeWindow(id: string): void;
   activateWindow(id: string): void;
@@ -228,6 +255,8 @@ export const useLcosShellStore = create<LcosShellUiState>((set) => ({
   composerPrompt: '',
   windows: [],
   windowRegions: [],
+  readerPositions: {},
+  readerLastRevisions: {},
   windowEnvironment: null,
   childReturn: null,
   setProject: (projectId) => set((state) => {
@@ -326,6 +355,55 @@ export const useLcosShellStore = create<LcosShellUiState>((set) => ({
         ],
       };
     }),
+  openReader: (title, artifactId, options) =>
+    set((state) => {
+      const revisionId = options?.revisionId;
+      const existing = state.windows.find((window) =>
+        window.bodyKey === 'reader'
+        && window.target === artifactId
+        && window.readerRevisionId === revisionId);
+      if (existing !== undefined) {
+        return {
+          windows: state.windows.map((window) => window.id === existing.id
+            ? {
+                ...window,
+                title,
+                ...(options?.source === undefined ? {} : { readerSource: options.source }),
+                active: true,
+              }
+            : { ...window, active: false }),
+          windowRegions: state.windowRegions.map((region) => region.windowIds.includes(existing.id)
+            ? { ...region, activeWindowId: existing.id }
+            : region),
+        };
+      }
+      const id = `reader-${crypto.randomUUID()}`;
+      return {
+        windows: [
+          ...state.windows.map((window) => ({ ...window, active: false })),
+          {
+            id,
+            bodyKey: 'reader',
+            title,
+            target: artifactId,
+            ...(revisionId === undefined ? {} : { readerRevisionId: revisionId }),
+            ...(options?.source === undefined ? {} : { readerSource: options.source }),
+            active: true,
+          },
+        ],
+        windowRegions: [
+          ...state.windowRegions,
+          { id: `region-${id}`, layout: 'floating', windowIds: [id], activeWindowId: id },
+        ],
+      };
+    }),
+  rememberReaderPosition: (key, value) => set((state) => ({
+    readerPositions: { ...state.readerPositions, [key]: value },
+  })),
+  rememberReaderRevision: (key, revisionId) => set((state) => ({
+    readerLastRevisions: { ...state.readerLastRevisions, [key]: revisionId },
+  })),
+  clearReaderContinuity: () => set({ readerPositions: {}, readerLastRevisions: {} }),
   openAssembly: (assemblyTargetRef, title = 'Assembly') =>
     set((s) => {
       // R4 / C1-3：一个 Project 只有一个共享 Assembly region。
@@ -480,6 +558,8 @@ export const useLcosShellStore = create<LcosShellUiState>((set) => ({
       composerPrompt: '',
       windows: [],
       windowRegions: [],
+      readerPositions: {},
+      readerLastRevisions: {},
       windowEnvironment: null,
       childReturn: null,
     });

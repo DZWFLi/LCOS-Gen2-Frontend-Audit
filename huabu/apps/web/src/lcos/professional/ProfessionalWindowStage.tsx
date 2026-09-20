@@ -23,6 +23,7 @@ import {
   PROFESSIONAL_STAGE_MIN_HEIGHT,
   PROFESSIONAL_STAGE_MIN_WIDTH,
 } from './professionalWindowStageLayout';
+import { useLcosReferenceStore } from '../lcosReferenceState';
 import { useLcosShellStore, type LcosWindow, type LcosWindowRegion } from '../shell/lcosShellStore';
 import { LcosWindowChrome } from '../ui/families';
 import { lcosGlassStyle, lcosTokens } from '../ui/lcosTokens';
@@ -73,45 +74,6 @@ function currentViewport(): ProfessionalRectV1 {
   };
 }
 
-interface PersistedReaderWindowV1 {
-  readonly artifactId: string;
-  readonly title: string;
-}
-
-const readerWindowStorageKey = (projectId: string): string => `lcos-reader-window-v1:${projectId}`;
-
-function readPersistedReaderWindows(projectId: string): readonly PersistedReaderWindowV1[] {
-  if (typeof window === 'undefined') return [];
-  try {
-    const raw = window.sessionStorage.getItem(readerWindowStorageKey(projectId));
-    if (raw === null) return [];
-    const parsed: unknown = JSON.parse(raw);
-    if (!Array.isArray(parsed)) return [];
-    return parsed.flatMap((value): PersistedReaderWindowV1[] => {
-      if (typeof value !== 'object' || value === null) return [];
-      const item = value as Record<string, unknown>;
-      return typeof item.artifactId === 'string' && item.artifactId !== '' && typeof item.title === 'string'
-        ? [{ artifactId: item.artifactId, title: item.title }]
-        : [];
-    });
-  } catch {
-    return [];
-  }
-}
-
-function persistReaderWindows(projectId: string, windows: readonly LcosWindow[]): void {
-  if (typeof window === 'undefined') return;
-  const readers = windows
-    .filter((entry) => entry.bodyKey === 'reader' && entry.target !== undefined && entry.target !== '')
-    .flatMap((entry) => entry.target === undefined ? [] : [{ artifactId: entry.target, title: entry.title }]);
-  try {
-    if (readers.length === 0) window.sessionStorage.removeItem(readerWindowStorageKey(projectId));
-    else window.sessionStorage.setItem(readerWindowStorageKey(projectId), JSON.stringify(readers));
-  } catch {
-    // Reload continuity is best-effort UI state; the in-memory shell store remains authoritative.
-  }
-}
-
 function materializeRegionEntries(
   windows: readonly LcosWindow[],
   windowRegions: readonly LcosWindowRegion[],
@@ -151,14 +113,13 @@ export function ProfessionalWindowStage({ projectId, resolvePortalTarget, onOpen
   const windowRegions = useLcosShellStore((s) => s.windowRegions);
   const activateWindow = useLcosShellStore((s) => s.activateWindow);
   const closeWindow = useLcosShellStore((s) => s.closeWindow);
-  const openWindow = useLcosShellStore((s) => s.openWindow);
+  const requestLocate = useLcosShellStore((s) => s.requestLocate);
   const publishWindowEnvironment = useLcosShellStore((s) => s.publishWindowEnvironment);
   const clearWindowEnvironment = useLcosShellStore((s) => s.clearWindowEnvironment);
   const composerOpen = useLcosShellStore((s) => s.composerOpen);
   const composerReceiver = useLcosShellStore((s) => s.composerTarget?.receiverConversationId);
   const [viewport, setViewport] = useState<ProfessionalRectV1>(currentViewport);
   const regionElements = useRef(new Map<string, HTMLDivElement>());
-  const restoredReaderProject = useRef<string | null>(null);
   const active = windows.find((window) => window.active) ?? windows[windows.length - 1];
   const regionEntries = useMemo(
     () => materializeRegionEntries(windows, windowRegions),
@@ -170,22 +131,33 @@ export function ProfessionalWindowStage({ projectId, resolvePortalTarget, onOpen
   const inlineComposerOpen = composerOpen && active?.bodyKey === 'conversation'
     && active.target !== undefined && composerReceiver === active.target;
 
-  // Reader target continuity is a shell UI concern; Stage remains the sole
-  // topology/geometry owner and recreates the usual floating region on reload.
-  useLayoutEffect(() => {
-    if (restoredReaderProject.current === projectId) {
-      persistReaderWindows(projectId, windows);
+  const returnReaderToSource = useCallback((reader: LcosWindow): void => {
+    if (reader.bodyKey !== 'reader' || reader.target === undefined) {
+      closeWindow(reader.id);
       return;
     }
-    restoredReaderProject.current = projectId;
-    if (windows.length > 0) {
-      persistReaderWindows(projectId, windows);
-      return;
+    const references = useLcosReferenceStore.getState().nodeEntityRefs;
+    const exactSource = reader.readerSource;
+    const exactRef = exactSource === undefined ? undefined : references.get(exactSource.nodeId);
+    let nodeId = exactRef?.entityType === 'artifact' && exactRef.entityId === reader.target
+      ? exactSource?.nodeId
+      : undefined;
+    if (nodeId === undefined) {
+      for (const [candidateNodeId, ref] of references) {
+        if (ref.entityType === 'artifact' && ref.entityId === reader.target) {
+          nodeId = candidateNodeId;
+          break;
+        }
+      }
     }
-    for (const saved of readPersistedReaderWindows(projectId)) {
-      openWindow('reader', saved.title, saved.artifactId);
-    }
-  }, [openWindow, projectId, windows]);
+    const surface = nodeId === exactSource?.nodeId && exactSource !== undefined
+      ? exactSource.surface
+      : useLcosShellStore.getState().activeSurface;
+    closeWindow(reader.id);
+    requestLocate(nodeId === undefined
+      ? { reqId: `reader-return-${crypto.randomUUID()}`, surface, status: 'unprojected' }
+      : { reqId: `reader-return-${crypto.randomUUID()}`, surface, nodeId, status: 'projected' });
+  }, [closeWindow, requestLocate]);
   const placements = useMemo(() => {
     // 单区域且无用户几何/dock 时沿用既有 CSS 默认摆放（与 R2-A 行为逐字一致）。
     const hasExplicitGeometry = regionEntries.some((entry) =>
@@ -364,7 +336,9 @@ export function ProfessionalWindowStage({ projectId, resolvePortalTarget, onOpen
 
   // Esc 栈：Professional Stage 只关闭全局前景窗口；inline Composer 仍先消费一次 Esc。
   useCloseOnEscape(windows.length > 0 && !inlineComposerOpen, () => {
-    if (active) closeWindow(active.id);
+    if (active === undefined) return;
+    if (active.bodyKey === 'reader') returnReaderToSource(active);
+    else closeWindow(active.id);
   });
 
   if (windows.length === 0) return <div data-lcos-professional-stage data-empty="true" className="hidden" aria-hidden />;
@@ -481,7 +455,10 @@ export function ProfessionalWindowStage({ projectId, resolvePortalTarget, onOpen
                       type="button"
                       data-lcos-window-icon-button
                       aria-label="关闭窗口"
-                      onClick={() => closeWindow(activeWindow.id)}
+                      onClick={() => {
+                        if (activeWindow.bodyKey === 'reader') returnReaderToSource(activeWindow);
+                        else closeWindow(activeWindow.id);
+                      }}
                     >
                       <X className="h-4 w-4" />
                     </button>
@@ -519,6 +496,12 @@ export function ProfessionalWindowStage({ projectId, resolvePortalTarget, onOpen
                   : { assemblyTargetRef: activeWindow.assemblyTargetRef })}
                 {...(portalTargetResolution === undefined ? {} : { portalTargetResolution })}
                 {...(onOpenPortalTarget === undefined ? {} : { onOpenPortalTarget })}
+                {...(activeWindow.readerRevisionId === undefined
+                  ? {}
+                  : { readerRevisionId: activeWindow.readerRevisionId })}
+                {...(activeWindow.bodyKey !== 'reader'
+                  ? {}
+                  : { onReturnReaderSource: () => returnReaderToSource(activeWindow) })}
               />
             </div>
           </div>
@@ -536,6 +519,8 @@ function ProfessionalBody({
   assemblyTargetRef,
   portalTargetResolution,
   onOpenPortalTarget,
+  readerRevisionId,
+  onReturnReaderSource,
 }: {
   projectId: string;
   bodyKey: string;
@@ -544,6 +529,8 @@ function ProfessionalBody({
   assemblyTargetRef?: AssemblyTargetRefV1;
   portalTargetResolution?: PortalTargetResolution | null;
   onOpenPortalTarget?: (target: PortalTargetResolution) => void;
+  readerRevisionId?: string;
+  onReturnReaderSource?: () => void;
 }): React.JSX.Element {
   switch (bodyKey) {
     case 'assembly':
@@ -554,7 +541,14 @@ function ProfessionalBody({
         />
       );
     case 'reader':
-      return <ArtifactReaderBody projectId={projectId} artifactId={target} />;
+      return (
+        <ArtifactReaderBody
+          projectId={projectId}
+          artifactId={target}
+          {...(readerRevisionId === undefined ? {} : { revisionId: readerRevisionId })}
+          {...(onReturnReaderSource === undefined ? {} : { onReturnToSource: onReturnReaderSource })}
+        />
+      );
     case 'conversation':
       return <ConversationWorkViewBody projectId={projectId} connectedConversationId={target} />;
     case 'portal-preview':

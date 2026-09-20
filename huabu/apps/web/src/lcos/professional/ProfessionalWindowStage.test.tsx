@@ -5,10 +5,26 @@ import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { useCloseOnEscape } from '@/hooks/useCloseOnEscape';
 
 import { ProfessionalWindowStage } from './ProfessionalWindowStage';
+import { useLcosReferenceStore } from '../lcosReferenceState';
 import { useLcosShellStore } from '../shell/lcosShellStore';
 
 vi.mock('./ArtifactReaderBody', () => ({
-  ArtifactReaderBody: ({ artifactId }: { artifactId?: string }) => <div data-reader-artifact={artifactId} />,
+  ArtifactReaderBody: ({
+    artifactId,
+    revisionId,
+    onReturnToSource,
+  }: {
+    artifactId?: string;
+    revisionId?: string;
+    onReturnToSource?: () => void;
+  }) => (
+    <button
+      type="button"
+      data-reader-artifact={artifactId}
+      data-reader-revision={revisionId}
+      onClick={onReturnToSource}
+    />
+  ),
 }));
 vi.mock('./AssemblyBody', () => ({ AssemblyBody: () => null }));
 vi.mock('./PortalPreviewBody', () => ({
@@ -40,10 +56,15 @@ let host: HTMLDivElement;
 let root: Root;
 beforeEach(() => {
   useLcosShellStore.getState().clear();
+  useLcosReferenceStore.getState().reset();
   window.sessionStorage.clear();
   host = document.createElement('div'); document.body.append(host); root = createRoot(host);
 });
-afterEach(async () => { await act(async () => root.unmount()); host.remove(); });
+afterEach(async () => {
+  await act(async () => root.unmount());
+  useLcosReferenceStore.getState().reset();
+  host.remove();
+});
 async function escape() {
   await act(async () => { document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })); });
 }
@@ -66,14 +87,48 @@ it('renders every independent region and publishes every region as occupied', as
     useLcosShellStore.getState().windowRegions[1]?.id,
   );
 });
-it('restores Reader artifact targets after a reload without changing Stage geometry ownership', async () => {
-  window.sessionStorage.setItem('lcos-reader-window-v1:p', JSON.stringify([
-    { artifactId: 'artifact-reload', title: '阅读 · Reload 材料' },
-  ]));
+it('passes the shell-owned Reader revision target into the body without changing Stage geometry ownership', async () => {
+  useLcosShellStore.getState().openReader('阅读 · 指定版本', 'artifact-target', {
+    revisionId: 'revision-target',
+    source: { surface: 'context', nodeId: 'node-target' },
+  });
   await act(async () => root.render(<ProfessionalWindowStage projectId="p" />));
-  expect(host.querySelector('[data-reader-artifact="artifact-reload"]')).not.toBeNull();
+  expect(host.querySelector('[data-reader-artifact="artifact-target"][data-reader-revision="revision-target"]')).not.toBeNull();
+  expect(useLcosShellStore.getState().windows[0]).toMatchObject({
+    readerRevisionId: 'revision-target',
+    readerSource: { surface: 'context', nodeId: 'node-target' },
+  });
   expect(useLcosShellStore.getState().windowRegions).toHaveLength(1);
   expect(useLcosShellStore.getState().windowRegions[0]?.layout).toBe('floating');
+});
+
+it('closes a Reader and returns to its exact live source for both body action and Escape', async () => {
+  const store = useLcosShellStore.getState();
+  store.openReader('材料 A', 'artifact-a', {
+    revisionId: 'revision-a',
+    source: { surface: 'context', nodeId: 'node-a' },
+  });
+  useLcosReferenceStore.getState().registerNodeEntity('node-a', { entityType: 'artifact', entityId: 'artifact-a' });
+  await act(async () => root.render(<ProfessionalWindowStage projectId="p" />));
+  const reader = host.querySelector<HTMLButtonElement>('[data-reader-artifact="artifact-a"]');
+  if (reader === null) throw new Error('Reader body missing');
+  await act(async () => reader.click());
+  expect(useLcosShellStore.getState().windows).toHaveLength(0);
+  expect(useLcosShellStore.getState().locateRequest).toMatchObject({
+    surface: 'context', nodeId: 'node-a', status: 'projected',
+  });
+
+  store.consumeLocate();
+  store.openReader('材料 A', 'artifact-a', {
+    revisionId: 'revision-a',
+    source: { surface: 'context', nodeId: 'node-a' },
+  });
+  await act(async () => {});
+  await escape();
+  expect(useLcosShellStore.getState().windows).toHaveLength(0);
+  expect(useLcosShellStore.getState().locateRequest).toMatchObject({
+    surface: 'context', nodeId: 'node-a', status: 'projected',
+  });
 });
 it('closes the inline Composer first and keeps its Work View until the next Escape', async () => {
   const store = useLcosShellStore.getState();
