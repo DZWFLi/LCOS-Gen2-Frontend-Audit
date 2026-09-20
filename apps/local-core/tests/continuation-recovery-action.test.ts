@@ -5,6 +5,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import type { ContinuationProviderAdapterV1, ContinuationSubmitRequestV1 } from '@local-creative-os/contracts'
 import { ContinuationStaleRevisionError, ConversationContinuationService, RecoveryActionUnsupportedError } from '../src/conversation-continuation-service.js'
+import { ConversationImportService } from '../src/conversation-import-service.js'
 import { HuabuAgentletContinuationAdapterV1 } from '../src/huabu-agentlet-continuation-adapter.js'
 import { DevFakeAgentletTransportV1 } from '../src/dev-fake-agentlet-transport.js'
 import { SqliteMetadataRepository } from '../src/metadata-repository.js'
@@ -243,6 +244,41 @@ describe('executeRecoveryAction（intent → T6 service → T7 adapter → recei
     expect(fresh.status).toBe('attaching')
     expect(metadata.getConnectedConversation(projectId, conversationId)?.conversationRef)
       .toBe(external.externalEvidence?.externalSessionId)
+  })
+
+  it('recover_bind creates one canonical Core session and reuses it for the same provider identity', async () => {
+    const { service, projectId, conversationId, adapter, metadata } = await setup()
+    service.submit(submitInput(projectId, conversationId, 'op-session-link'))
+    const external = await service.executeRecoveryAction(projectId, 'op-session-link', 'recover_external', adapter)
+    const first = await service.executeRecoveryAction(projectId, 'op-session-link', 'recover_bind', adapter)
+    const firstSessionId = metadata.getConnectedConversation(projectId, conversationId)?.conversationSessionId
+    expect(first.steps.core_bind).toBe('confirmed')
+    expect(firstSessionId).toBeTruthy()
+    expect(firstSessionId).not.toBe(external.externalEvidence?.externalSessionId)
+
+    // A second continuation operation resolving to the same explicit provider
+    // identity must reuse the canonical session instead of creating a second
+    // Conversation truth.  Claim core_bind here to exercise the repository
+    // idempotency seam directly, without bypassing the T6 action state machine.
+    service.submit(submitInput(projectId, conversationId, 'op-session-link-retry'))
+    const retry = metadata.getContinuationOperationJournal(projectId, 'op-session-link-retry')!
+    const claimed = metadata.claimContinuationOperationStep(projectId, 'op-session-link-retry', 'core_bind', retry.revision)
+    expect(claimed?.steps.core_bind).toBe('pending')
+    const rebound = metadata.confirmContinuationCoreBind({
+      projectId,
+      operationId: 'op-session-link-retry',
+      expectedRevision: claimed!.revision,
+      externalSessionId: external.externalEvidence!.externalSessionId,
+      fallbackConnectedConversationId: conversationId,
+    })
+    expect(rebound.connectedConversation.conversationSessionId).toBe(firstSessionId)
+    const importer = new ConversationImportService(metadata)
+    try {
+      expect(importer.list(projectId).filter((session) => session.id === firstSessionId)).toHaveLength(1)
+      expect(importer.list(projectId)).toHaveLength(1)
+    } finally {
+      importer.close()
+    }
   })
 
   it('blank/new bind writes the canonical id back to the journal in the same transaction', async () => {

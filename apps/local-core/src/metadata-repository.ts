@@ -6211,11 +6211,41 @@ export class SqliteMetadataRepository {
         throw new Error('Connected conversation id is already owned by another project.')
       }
 
-      const byRefRow = this.#database.prepare(
-        'SELECT * FROM connected_conversations WHERE project_id = ? AND conversation_ref = ?',
-      ).get(input.projectId, input.externalSessionId) as Row | undefined
+      // Provider session identity is a cross-project boundary.  The legacy
+      // UNIQUE(project_id, conversation_ref) constraint is intentionally
+      // narrower than this recovery seam, so reject a provider identity that
+      // is already owned by another project before touching either table.
+      const refRows = this.#database.prepare(
+        'SELECT * FROM connected_conversations WHERE conversation_ref = ?',
+      ).all(input.externalSessionId) as Row[]
+      const crossProjectRef = refRows.find((row) => String(row.project_id) !== input.projectId && String(row.provider) === current.provider)
+      if (crossProjectRef !== undefined) {
+        throw new Error('Provider session identity is already owned by another project.')
+      }
+      const byRefRow = refRows.find((row) => String(row.project_id) === input.projectId)
       if (byRefRow !== undefined && String(byRefRow.provider) !== current.provider) {
         throw new Error('Connected conversation provider does not match bound provider.')
+      }
+      if (byRefRow !== undefined && requestedIdRow !== undefined && String(byRefRow.id) !== String(requestedIdRow.id)) {
+        throw new Error('Provider session identity is already bound to another connected conversation.')
+      }
+
+      // A continuation-created session records the provider identity in the
+      // canonical conversation_sessions origin metadata.  Reuse that explicit
+      // mapping if it exists; multiple mappings are ambiguous and fail-close.
+      // We never derive a Core session id from the provider id.
+      const sessionIdentityRows = this.#database.prepare(
+        `SELECT * FROM conversation_sessions
+         WHERE json_extract(origin_meta_json, '$.continuationExternalSessionId') = ?
+           AND json_extract(origin_meta_json, '$.continuationProvider') = ?`,
+      ).all(input.externalSessionId, current.provider) as Row[]
+      const crossProjectSession = sessionIdentityRows.find((row) => String(row.project_id) !== input.projectId)
+      if (crossProjectSession !== undefined) {
+        throw new Error('Canonical conversation session identity is already owned by another project.')
+      }
+      const projectSessionIdentityRows = sessionIdentityRows.filter((row) => String(row.project_id) === input.projectId)
+      if (projectSessionIdentityRows.length > 1) {
+        throw new Error('Multiple canonical conversation sessions match the provider session identity.')
       }
 
       let connected: ConnectedConversationV1
@@ -6265,6 +6295,95 @@ export class SqliteMetadataRepository {
         if (created === undefined) throw new Error('Connected conversation create failed.')
         connected = connectedConversationFromRow(created)
       }
+
+      const linkedSessionId = connected.conversationSessionId
+      let conversationSessionId: string
+      if (linkedSessionId !== undefined) {
+        const linkedSession = this.#database.prepare(
+          'SELECT * FROM conversation_sessions WHERE id = ?',
+        ).get(linkedSessionId) as Row | undefined
+        if (linkedSession === undefined) throw new Error('Connected conversation canonical session is missing.')
+        if (String(linkedSession.project_id) !== input.projectId) {
+          throw new Error('Connected conversation canonical session is owned by another project.')
+        }
+        const linkedElsewhere = this.#database.prepare(
+          'SELECT project_id, id FROM connected_conversations WHERE conversation_session_id = ? AND id <> ?',
+        ).get(linkedSessionId, connected.id) as Row | undefined
+        if (linkedElsewhere !== undefined) {
+          throw new Error('Canonical conversation session is already linked to another connected conversation.')
+        }
+        const originExternalSessionId = this.#database.prepare(
+          `SELECT json_extract(origin_meta_json, '$.continuationExternalSessionId') AS external_session_id,
+                  json_extract(origin_meta_json, '$.continuationProvider') AS provider
+           FROM conversation_sessions WHERE id = ?`,
+        ).get(linkedSessionId) as Row | undefined
+        if (originExternalSessionId?.external_session_id !== null
+          && originExternalSessionId?.external_session_id !== undefined
+          && String(originExternalSessionId.external_session_id) !== input.externalSessionId) {
+          throw new Error('Canonical conversation session is bound to another provider session identity.')
+        }
+        if (originExternalSessionId?.provider !== null
+          && originExternalSessionId?.provider !== undefined
+          && String(originExternalSessionId.provider) !== current.provider) {
+          throw new Error('Canonical conversation session provider does not match bound provider.')
+        }
+        conversationSessionId = linkedSessionId
+      } else if (projectSessionIdentityRows.length === 1) {
+        const existingSession = projectSessionIdentityRows[0]!
+        const existingSessionProvider = this.#database.prepare(
+          `SELECT json_extract(origin_meta_json, '$.continuationProvider') AS provider
+           FROM conversation_sessions WHERE id = ?`,
+        ).get(String(existingSession.id)) as Row | undefined
+        if (existingSessionProvider?.provider !== current.provider) {
+          throw new Error('Canonical conversation session provider does not match bound provider.')
+        }
+        const linkedElsewhere = this.#database.prepare(
+          'SELECT project_id, id FROM connected_conversations WHERE conversation_session_id = ? AND id <> ?',
+        ).get(String(existingSession.id), connected.id) as Row | undefined
+        if (linkedElsewhere !== undefined) {
+          throw new Error('Canonical conversation session is already linked to another connected conversation.')
+        }
+        conversationSessionId = String(existingSession.id)
+      } else {
+        // This is the sole creation path for a recovery session.  The id is a
+        // Core-owned opaque id; provider identity stays evidence in origin
+        // metadata and is never treated as the Core conversation id.
+        conversationSessionId = `conversation-${randomUUID()}`
+        const sourceKind = current.provider === 'codex' ? 'codex' : 'manual'
+        const originMeta = {
+          continuationExternalSessionId: input.externalSessionId,
+          continuationProvider: current.provider,
+          ...(input.externalEvidence?.transportSessionId === undefined ? {} : { continuationTransportSessionId: input.externalEvidence.transportSessionId }),
+          ...(input.externalEvidence?.threadId === undefined ? {} : { continuationThreadId: input.externalEvidence.threadId }),
+        }
+        this.#database.prepare(`
+          INSERT INTO conversation_sessions(
+            id, project_id, provider, source_kind, title, message_count, section_count,
+            status, source_content_hash, source_file_name, source_path, origin_meta_json,
+            imported_at, created_at, updated_at
+          ) VALUES(?, ?, ?, ?, ?, 0, 0, 'ready', NULL, NULL, NULL, ?, ?, ?, ?)
+        `).run(
+          conversationSessionId,
+          input.projectId,
+          current.provider,
+          sourceKind,
+          `续工恢复 · ${current.provider}`,
+          JSON.stringify(originMeta),
+          now,
+          now,
+          now,
+        )
+      }
+
+      const linkedConversation = this.#database.prepare(
+        'UPDATE connected_conversations SET conversation_ref = ?, conversation_session_id = ?, updated_at = ? WHERE project_id = ? AND id = ?',
+      ).run(input.externalSessionId, conversationSessionId, now, input.projectId, connected.id)
+      if (Number(linkedConversation.changes) !== 1) throw new Error('Connected conversation canonical link failed.')
+      const linkedRow = this.#database.prepare(
+        'SELECT * FROM connected_conversations WHERE project_id = ? AND id = ?',
+      ).get(input.projectId, connected.id) as Row | undefined
+      if (linkedRow === undefined) throw new Error('Connected conversation canonical link disappeared.')
+      connected = connectedConversationFromRow(linkedRow)
 
       const next: ContinuationOperationJournalRowV1 = {
         ...current,
