@@ -10,6 +10,7 @@ import {
 import { Columns2, Group, Pin, Ungroup, X } from 'lucide-react';
 import { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
 
+import { DropdownMenu, DropdownMenuItem } from '@/components/Common/DropdownMenu';
 import { useCloseOnEscape } from '@/hooks/useCloseOnEscape';
 
 
@@ -28,6 +29,7 @@ import { useLcosReferenceStore } from '../lcosReferenceState';
 import { useLcosShellStore, type LcosWindow, type LcosWindowRegion } from '../shell/lcosShellStore';
 import { LcosWindowChrome } from '../ui/families';
 import { lcosGlassStyle, lcosTokens } from '../ui/lcosTokens';
+import moreIcon from '../ui/nearfield/assets/more.svg';
 
 import type { AssemblyTargetRefV1 } from '@local-creative-os/contracts';
 import type { ProfessionalRectV1, ProfessionalResizeHandleV1 } from '@local-creative-os/web-gen2';
@@ -354,6 +356,7 @@ export function ProfessionalWindowStage({ projectId, resolvePortalTarget, onOpen
         // 显式分组的目标：前一个区域（2 个区域时即“另一个”）；不存在则按钮 disabled。
         const groupTarget = regionIndex > 0 ? regionEntries[regionIndex - 1] : undefined;
         const docked = region.layout === 'docked-right';
+        const isAssembly = activeWindow.bodyKey === 'assembly';
         const portalTargetResolution = resolvePortalTarget === undefined || activeWindow.bodyKey !== 'portal-preview'
           ? undefined
           : activeWindow.targetKind === 'canvas' && activeWindow.target !== undefined
@@ -368,16 +371,19 @@ export function ProfessionalWindowStage({ projectId, resolvePortalTarget, onOpen
             }}
             data-lcos-window-region-id={region.id}
             data-lcos-window-layout={region.layout}
+            data-lcos-window-active-body={activeWindow.bodyKey}
             className="pointer-events-auto absolute flex flex-col rounded-2xl"
             onPointerDownCapture={() => {
               if (!isGlobalActive) activateWindow(activeWindow.id);
             }}
             style={{
+              boxSizing: 'border-box',
               ...(placement === undefined
                 ? {
-                    right: region.layout === 'docked-right' ? 0 : 24,
-                    top: region.layout === 'docked-right' ? 0 : 88,
-                    width: `min(${preferredWidth}px, calc(100vw - 48px))`,
+                    right: region.layout === 'docked-right' ? 0 : isAssembly ? (viewport.width >= 1280 ? 96 : viewport.width < 600 ? 12 : 24) : 24,
+                    top: region.layout === 'docked-right' ? 0 : isAssembly ? (viewport.width >= 1280 ? 120 : viewport.width < 600 ? 76 : 88) : 88,
+                    ...(isAssembly ? { height: 648 } : {}),
+                    width: `min(${preferredWidth}px, calc(100vw - ${isAssembly && viewport.width < 600 ? 24 : 48}px))`,
                   }
                 : {
                     left: placement.x,
@@ -385,12 +391,12 @@ export function ProfessionalWindowStage({ projectId, resolvePortalTarget, onOpen
                     width: placement.width,
                     height: placement.height,
                   }),
-              maxWidth: 'calc(100vw - 48px)',
-              maxHeight: region.layout === 'docked-right' ? '100vh' : 'calc(100vh - 140px)',
+              maxWidth: isAssembly && viewport.width < 600 ? 'calc(100vw - 24px)' : 'calc(100vw - 48px)',
+              maxHeight: region.layout === 'docked-right' ? '100vh' : isAssembly && viewport.width < 600 ? 'calc(100vh - 100px)' : 'calc(100vh - 140px)',
               border: '1px solid var(--lcos-window-border)',
               boxShadow: 'var(--lcos-window-shadow)',
               background: lcosTokens.color.surface,
-              borderRadius: region.layout === 'docked-right' ? 0 : 16,
+              borderRadius: region.layout === 'docked-right' ? 0 : isAssembly ? 18 : 16,
               overflow: 'hidden',
               zIndex: isGlobalActive ? 2 : 1,
             }}
@@ -415,7 +421,15 @@ export function ProfessionalWindowStage({ projectId, resolvePortalTarget, onOpen
                     }))
                   : undefined}
                 onSelectTab={(id) => activateWindow(id)}
-                actions={
+                primaryActions={isAssembly ? <button type="button" data-lcos-window-icon-button aria-label="关闭窗口"
+                  onClick={() => closeWindow(activeWindow.id)}><X className="h-4 w-4" /></button> : undefined}
+                overflowTrigger={isAssembly ? <AssemblyWindowActions
+                  docked={docked} canGroup={groupTarget !== undefined} canUngroup={regionWindows.length > 1}
+                  onDock={() => toggleRegionDock(region)}
+                  onGroup={() => { if (groupTarget) { useLcosShellStore.getState().groupWindowRegions(region.id, groupTarget.region.id); } }}
+                  onUngroup={() => useLcosShellStore.getState().ungroupWindowRegion(region.id)}
+                /> : undefined}
+                actions={isAssembly ? undefined :
                   <>
                     <button
                       type="button"
@@ -510,6 +524,36 @@ export function ProfessionalWindowStage({ projectId, resolvePortalTarget, onOpen
       })}
     </div>
   );
+}
+
+/** Assembly keeps its high-frequency content controls out of the title bar. */
+function AssemblyWindowActions({ docked, canGroup, canUngroup, onDock, onGroup, onUngroup }: {
+  readonly docked: boolean;
+  readonly canGroup: boolean;
+  readonly canUngroup: boolean;
+  readonly onDock: () => void;
+  readonly onGroup: () => void;
+  readonly onUngroup: () => void;
+}): React.JSX.Element {
+  const [open, setOpen] = useState(false);
+  const trigger = useRef<HTMLButtonElement>(null);
+  const close = (): void => {
+    setOpen(false);
+    requestAnimationFrame(() => trigger.current?.focus({ preventScroll: true }));
+  };
+  const invoke = (action: () => void): void => { close(); action(); };
+  return <div onKeyDownCapture={(event) => {
+    if (open && event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); close(); }
+  }}>
+    <DropdownMenu open={open} onOpenChange={setOpen} align="bottom-right"
+      trigger={<button ref={trigger} type="button" data-lcos-window-icon-button aria-label="更多窗口操作" aria-haspopup="menu">
+        <img src={moreIcon} width={18} height={18} alt="" />
+      </button>}>
+      <DropdownMenuItem data-lcos-window-dock-toggle onClick={() => invoke(onDock)}>{docked ? '取消停靠' : '停靠到右侧'}</DropdownMenuItem>
+      <DropdownMenuItem data-lcos-window-group disabled={!canGroup} onClick={() => invoke(onGroup)}>并入上一个区域</DropdownMenuItem>
+      <DropdownMenuItem data-lcos-window-ungroup disabled={!canUngroup} onClick={() => invoke(onUngroup)}>取消分组</DropdownMenuItem>
+    </DropdownMenu>
+  </div>;
 }
 
 function ProfessionalBody({

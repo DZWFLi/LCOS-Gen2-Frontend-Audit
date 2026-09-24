@@ -77,6 +77,7 @@ describe('R1 共享族接线', () => {
     const familiesSource = [
       read(join(LCOS_ROOT, 'ui', 'families', 'lcos-families.css')),
       read(join(LCOS_ROOT, 'ui', 'families', 'lcos-hud-presentation.css')),
+      read(join(LCOS_ROOT, 'ui', 'surface-feedback.css')),
     ].join('\n');
     for (const family of [
       'navigator-island',

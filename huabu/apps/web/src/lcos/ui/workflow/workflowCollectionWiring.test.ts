@@ -16,12 +16,15 @@ describe('Workflow Collection 真实 caller 接线', () => {
     expect(source).toContain("targetSurface: 'workflow'");
   });
 
-  it('Assembly workflow item 使用装配 rendition，并复用 workspaceTargetsForItem/child navigation', () => {
+  it('Assembly workflow item 使用专用任务卡面，并复用精确 workspaceTargets/child navigation', () => {
     const source = read('huabu/apps/web/src/lcos/professional/AssemblyBody.tsx');
-    expect(source).toContain("import { WorkflowCollectionView } from '../ui/workflow/WorkflowCollectionView';");
-    expect(source).toContain('rendition="装配"');
+    const material = read('huabu/apps/web/src/lcos/ui/professional/AssemblyMaterialView.tsx');
+    expect(source).toContain('assemblyMaterialShape(item)');
+    expect(material).toContain("shape === 'workflow'");
+    expect(material).toContain('<WorkflowTaskCardFace');
+    expect(material).toContain('rendition="装配"');
     expect(source).toContain('workspaceTargetsForItem(item, workspaces)');
-    expect(source).toContain('enterChildWorkspace(item, workflowTarget)');
+    expect(source).toContain('enterChildWorkspace(item, workspace)');
   });
 
   it('Workflow Worksite 继续由唯一 WorkflowCardPool 提供卡池', () => {

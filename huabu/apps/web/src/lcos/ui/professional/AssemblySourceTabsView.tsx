@@ -1,5 +1,4 @@
 import { LcosButton } from '../primitives/LcosButton';
-
 import './professional-assembly.css';
 
 import type { ReactNode } from 'react';
@@ -24,10 +23,12 @@ export function AssemblySourceTabsView<Key extends string>({
   context,
 }: AssemblySourceTabsViewProps<Key>): React.JSX.Element {
   return (
-    <div data-lcos-assembly-source-tabs className="lcos-assembly-source-tabs" aria-label="Assembly 来源">
+    <div data-lcos-assembly-source-tabs className="lcos-assembly-source-tabs" aria-label="装配来源">
       <div className="lcos-assembly-source-buttons" role="group" aria-label="材料来源">
         {items.map((item) => (
           <LcosButton
+            appearance="oreo"
+            variant="ghost"
             key={item.key}
             type="button"
             data-lcos-assembly-source-tab={item.key}
