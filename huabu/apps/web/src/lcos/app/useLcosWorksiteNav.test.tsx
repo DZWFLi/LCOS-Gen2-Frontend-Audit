@@ -8,6 +8,7 @@ import type { WorksiteNavHandle } from './useLcosWorksiteNav';
 
 const mocks = vi.hoisted(() => ({
   navigate: vi.fn(), switchCanvas: vi.fn(), setActiveSurface: vi.fn(),
+  pendingChild: null as { id: string } | null, consume: vi.fn(),
   canvasLoadFailure: null as { canvasId: string; kind: 'error' | 'not-found'; message: string } | null,
 }));
 vi.mock('react-router-dom', () => ({ useNavigate: () => mocks.navigate }));
@@ -15,7 +16,7 @@ vi.mock('@/store/canvasStore', () => ({ default: { getState: () => mocks } }));
 vi.mock('../shell/lcosShellStore', () => ({
   useLcosShellStore: Object.assign(
     (select: (s: { setActiveSurface: typeof mocks.setActiveSurface }) => unknown) => select(mocks),
-    { getState: () => ({ activeSurface: 'main' }) },
+    { getState: () => ({ activeSurface: 'main', worksiteCameraTransition: mocks.pendingChild, consumeWorksiteCameraTransition: mocks.consume }) },
   ),
 }));
 
@@ -23,7 +24,7 @@ const roots: ReturnType<typeof createRoot>[] = [];
 afterEach(() => {
   for (const root of roots.splice(0)) act(() => root.unmount());
   vi.clearAllMocks();
-  mocks.canvasLoadFailure = null;
+  mocks.canvasLoadFailure = null; mocks.pendingChild = null;
 });
 
 it('serializes same-turn navigation and releases the lock after failure', async () => {
@@ -85,4 +86,28 @@ it('keeps the current route when the loader resolves false and exposes its real 
   expect(mocks.navigate).not.toHaveBeenCalled();
   expect(handle?.transitionError).toBe('连接已断开');
   expect(mocks.setActiveSurface).not.toHaveBeenCalledWith('context');
+});
+
+it('uses the explicitly resolved child canvas and keeps workspaceId in the route', async () => {
+  mocks.switchCanvas.mockResolvedValue(true);
+  let handle: WorksiteNavHandle | undefined;
+  const ensure = vi.fn();
+  function Probe() { handle = useLcosWorksiteNav({ projectId: 'p', canvasBySurface: { context: 'root-canvas' }, ensureCanvas: ensure }); return null; }
+  const root = createRoot(document.createElement('div')); roots.push(root);
+  await act(async () => root.render(<Probe />));
+  await act(async () => expect(await handle?.switchWorksite('context', { canvasId: 'child-canvas', workspaceId: 'child/1' })).toBe(true));
+  expect(mocks.switchCanvas).toHaveBeenCalledExactlyOnceWith('child-canvas');
+  expect(mocks.navigate).toHaveBeenCalledWith('/projects/p/context?workspaceId=child%2F1', { replace: true });
+  expect(ensure).not.toHaveBeenCalled();
+});
+
+it('cancels the preceding child intent before loading a root and does not consume a later intent', async () => {
+  mocks.pendingChild = { id: 'old-child' };
+  mocks.switchCanvas.mockImplementation(async () => { expect(mocks.consume).toHaveBeenCalledExactlyOnceWith('old-child'); mocks.pendingChild = { id: 'later' }; return true; });
+  let handle: WorksiteNavHandle | undefined;
+  function Probe() { handle = useLcosWorksiteNav({ projectId: 'p', canvasBySurface: { main: 'm' }, ensureCanvas: async () => undefined }); return null; }
+  const root = createRoot(document.createElement('div')); roots.push(root);
+  await act(async () => root.render(<Probe />));
+  await act(async () => expect(await handle?.switchWorksite('main')).toBe(true));
+  expect(mocks.consume).toHaveBeenCalledExactlyOnceWith('old-child');
 });

@@ -717,7 +717,7 @@ describe('SqliteMetadataRepository', () => {
     cleanup.push(directory)
     const path = join(directory, 'metadata.sqlite')
     const first = new SqliteMetadataRepository(path)
-    expect(first.schemaVersion).toBe(SCHEMA_VERSION)
+    expect(first.schemaVersion).toBe(57)
     first.save(disposableSnapshot())
     first.close()
     await delay(100)
@@ -1077,6 +1077,3 @@ describe('SqliteMetadataRepository', () => {
     repository.close()
   })
 })
-
-
-

@@ -50,6 +50,12 @@ vi.mock('@local-creative-os/web-gen2', async (importOriginal) => {
     },
   };
 });
+vi.mock('@/components/Nodes/pdf/PDFPreview', () => ({
+  PDFPreview: ({ id, data, readOnly }: { id?: string; data: Record<string, unknown>; readOnly?: boolean }) => <div data-reader-pdf-src={String(data.src)} data-reader-pdf-node-id={id} data-reader-pdf-readonly={readOnly} />,
+}));
+vi.mock('@/components/Nodes/video/VideoPreview', () => ({
+  VideoPreview: ({ data }: { data: Record<string, unknown> }) => <video data-reader-video-src={String(data.src)} />,
+}));
 vi.mock('../app/lcosCoreClient', () => ({ createLcosCoreSession: () => ({ http: {} }) }));
 vi.mock('../lcosReferenceState', () => {
   const state = () => ({ nodeEntityRefs, addEntityToDraft, orderedNodeReferences, draft: {} });
@@ -83,7 +89,7 @@ const containers: HTMLElement[] = [];
 function detail(
   artifactId: string,
   currentRevisionId: string,
-  kind: 'markdown' | 'image' = 'markdown',
+  kind: 'markdown' | 'image' | 'pdf' | 'other' = 'markdown',
   availability: 'available' | 'missing' | 'stale' = 'available',
   archivedAt?: string,
 ) {
@@ -237,7 +243,10 @@ describe('ArtifactReaderBody real content', () => {
     const { container } = await render('artifact-1');
     expect(textFor).toHaveBeenCalledWith('project-1', 'file-current', expect.any(AbortSignal));
     expect(container.querySelector('[data-lcos-reader-content="text"]')?.textContent).toContain('Current body');
-    expect(container.textContent).toContain('revision · current');
+    expect(container.textContent).toContain('文本文档 · 项目材料');
+    expect(container.textContent).toContain('版本 revision · 当前版本');
+    expect(container.textContent).not.toContain('受管 Artifact');
+    expect(container.querySelector('[title*="revision-current"]')?.getAttribute('title')).toContain('Core 状态：current');
   });
 
   it('reads the exact revision carried by the Reader target instead of substituting current', async () => {
@@ -296,7 +305,8 @@ describe('ArtifactReaderBody real content', () => {
   });
 
   it('releases an image Blob URL when the reader unmounts', async () => {
-    detailFor.mockResolvedValue(detail('artifact-image', 'revision-current', 'image'));
+    const imageDetail = detail('artifact-image', 'revision-current', 'image');
+    detailFor.mockResolvedValue({ ...imageDetail, revisions: [imageDetail.revisions[1]] });
     revisionsFor.mockResolvedValue([revision('artifact-image', 'revision-current', 'file-image')]);
     blobFor.mockResolvedValue(new Blob(['image-bytes'], { type: 'image/png' }));
     const createUrl = vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:reader-image');
@@ -304,6 +314,10 @@ describe('ArtifactReaderBody real content', () => {
 
     const { root, container } = await render('artifact-image');
     expect(container.querySelector('img')).not.toBeNull();
+    expect(container.querySelector('[data-lcos-reader-zoom]')).toBeNull();
+    expect(container.querySelector('[data-lcos-reader-revisions]')).toBeNull();
+    expect(container.querySelector('[data-lcos-reader-cite]')).toBeNull();
+    expect(container.querySelector('[data-lcos-reader-compare-toggle]')).toBeNull();
     expect(createUrl).toHaveBeenCalled();
     act(() => root.unmount());
     expect(revokeUrl).toHaveBeenCalledWith('blob:reader-image');
@@ -371,13 +385,31 @@ describe('ArtifactReaderBody R4 residual', () => {
     click(container, '[data-lcos-reader-to-draft]');
     expect(addEntityToDraft).toHaveBeenCalledWith(expect.objectContaining({ entityType: 'artifact', entityId: 'artifact-1' }));
 
-    vi.spyOn(window, 'getSelection').mockReturnValue({ toString: () => '  摘录正文  ' } as unknown as Selection);
+    const range = document.createRange();
+    const selectedBody = container.querySelector('[data-lcos-reader-content="text"]');
+    if (selectedBody === null) throw new Error('Reader body missing');
+    range.selectNodeContents(selectedBody);
+    vi.spyOn(window, 'getSelection').mockReturnValue({ rangeCount: 1, getRangeAt: () => range, toString: () => '  摘录正文  ' } as unknown as Selection);
     click(container, '[data-lcos-reader-cite]');
     expect(setComposerPrompt).toHaveBeenCalledTimes(1);
     const block = String(setComposerPrompt.mock.calls[0]?.[0]);
     expect(block).toContain('artifact:artifact-1@revision-current');
     expect(block).toContain('摘录正文');
     expect(container.querySelector('[data-lcos-reader-cite-trace]')?.textContent).toContain('artifact:artifact-1@revision-current');
+  });
+
+  it('拒绝把其他窗口或跨越正文边界的选区归到当前材料', async () => {
+    const { container } = await renderMarkdown();
+    const external = document.createElement('p');
+    external.textContent = '另一个窗口的正文';
+    document.body.append(external);
+    const range = document.createRange();
+    range.selectNodeContents(external);
+    vi.spyOn(window, 'getSelection').mockReturnValue({ rangeCount: 1, getRangeAt: () => range, toString: () => external.textContent } as unknown as Selection);
+    click(container, '[data-lcos-reader-cite]');
+    expect(setComposerPrompt).not.toHaveBeenCalled();
+    expect(addEntityToDraft).not.toHaveBeenCalled();
+    external.remove();
   });
 
   it('未选中正文时不给「无来源引用」，如实提示', async () => {
@@ -421,6 +453,7 @@ describe('ArtifactReaderBody R4 residual', () => {
     act(() => content.dispatchEvent(new Event('scroll', { bubbles: true })));
     click(container, '[data-lcos-reader-zoom-in]');
     expect(container.querySelector('[data-lcos-reader-zoom-value]')?.textContent).toBe('110%');
+    expect(container.querySelector<HTMLElement>('[data-lcos-reader-text-scale]')?.style.zoom).toBe('1.1');
     act(() => roots.at(-1)?.unmount());
     const reopened = await renderMarkdown('artifact-zoom');
     expect(reopened.container.querySelector('[data-lcos-reader-zoom-value]')?.textContent).toBe('110%');
@@ -477,4 +510,50 @@ describe('ArtifactReaderBody R4 residual', () => {
     expect(onReturnToSource).toHaveBeenCalledTimes(1);
     expect(requestLocate).not.toHaveBeenCalled();
   });
+});
+
+it('reads PDF bytes from the requested historical revision and gives the donor no synthetic canvas node', async () => {
+  detailFor.mockResolvedValue(detail('artifact-pdf', 'revision-current', 'pdf'));
+  revisionsFor.mockResolvedValue([revision('artifact-pdf', 'revision-old', 'file-old-pdf')]);
+  blobFor.mockResolvedValue(new Blob(['%PDF'], { type: 'application/pdf' }));
+  vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:historic-pdf');
+  const revoke = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => undefined);
+  const { root, container } = await render('artifact-pdf', { revisionId: 'revision-old' });
+  await act(async () => { await import('@/components/Nodes/pdf/PDFPreview'); });
+  expect(blobFor).toHaveBeenCalledWith('project-1', 'file-old-pdf', expect.any(AbortSignal));
+  const pdf = container.querySelector('[data-reader-pdf-src="blob:historic-pdf"]');
+  expect(pdf).not.toBeNull();
+  expect(pdf?.hasAttribute('data-reader-pdf-node-id')).toBe(false);
+  expect(pdf?.getAttribute('data-reader-pdf-readonly')).toBe('true');
+  act(() => root.unmount());
+  expect(revoke).toHaveBeenCalledWith('blob:historic-pdf');
+});
+
+it('uses actual video MIME bytes for the mature donor preview', async () => {
+  detailFor.mockResolvedValue(detail('artifact-video', 'revision-current', 'other'));
+  revisionsFor.mockResolvedValue([revision('artifact-video', 'revision-current', 'file-video')]);
+  blobFor.mockResolvedValue(new Blob(['video'], { type: 'video/mp4' }));
+  vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:reader-video');
+  const { container } = await render('artifact-video');
+  await act(async () => { await import('@/components/Nodes/video/VideoPreview'); });
+  expect(container.querySelector('[data-reader-video-src="blob:reader-video"]')).not.toBeNull();
+});
+
+it('reuses the shared audio player with the actual revision source instead of a second playback implementation', async () => {
+  detailFor.mockResolvedValue(detail('artifact-audio', 'revision-current', 'other'));
+  revisionsFor.mockResolvedValue([revision('artifact-audio', 'revision-current', 'file-audio')]);
+  blobFor.mockResolvedValue(new Blob(['audio'], { type: 'audio/wav' }));
+  vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:reader-audio');
+  const { container } = await render('artifact-audio');
+  await act(async () => { await import('../nodes/source/AudioSourceMorphology'); });
+  expect(container.querySelector('[data-lcos-audio-player]')?.getAttribute('src')).toBe('blob:reader-audio');
+});
+
+it('reads a plain-text artifact from the actual revision MIME instead of declaring no content', async () => {
+  detailFor.mockResolvedValue(detail('artifact-text', 'revision-current', 'other'));
+  revisionsFor.mockResolvedValue([revision('artifact-text', 'revision-current', 'file-text')]);
+  blobFor.mockResolvedValue(new Blob(['真实纯文本'], { type: 'text/plain' }));
+  const { container } = await render('artifact-text');
+  expect(container.querySelector('[data-lcos-reader-content="text"]')?.textContent).toContain('真实纯文本');
+  expect(blobFor).toHaveBeenCalledWith('project-1', 'file-text', expect.any(AbortSignal));
 });

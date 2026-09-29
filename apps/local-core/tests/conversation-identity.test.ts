@@ -272,3 +272,25 @@ describe('Artifact Birth Provenance（P0 · 出生谱系全链）', () => {
     expect(missing.status).toBe(404)
   })
 })
+
+
+it('reads the exact durable Assembly conversation binding back through Reach', async () => {
+  const { baseUrl, projectId, repository, importer, scopeId } = await startServer()
+  const cc = await connectConversation(baseUrl, projectId, 'durable-context-session')
+  const imported = await importer.importManual(projectId, { title: '持久上下文验收', scopeId, entries: [{ role: 'user', contentText: '继续' }] })
+  await call(baseUrl, `/projects/${projectId}/connected-conversations/${cc.id}/link-session`, { conversationSessionId: imported.session.id })
+  const artifact = repository.getArtifacts(projectId).find((value) => value.id === 'artifact-brief')!
+  const viewId = String(repository.getArtifactViews(String(artifact.id))[0]!.id)
+  const request = { schemaVersion: 1, projectId, sourceRefs: [{ kind: 'artifactView', id: viewId }], targetRef: { kind: 'conversation', id: cc.id } }
+  const applied = await call(baseUrl, `/projects/${projectId}/assembly/apply`, request)
+  expect(applied.status).toBe(200)
+  expect(applied.json.value.results[0]).toMatchObject({ status: 'applied', channel: 'relation' })
+  const reach = await call(baseUrl, `/projects/${projectId}/connected-conversations/${cc.id}/reach`, undefined, 'GET')
+  expect(reach.status).toBe(200)
+  expect(reach.json.value.items).toContainEqual(expect.objectContaining({ entityRef: { type: 'artifact', id: String(artifact.id), viewId }, tier: 'bound' }))
+  const visible = await call(baseUrl, `/projects/${projectId}/connected-conversations/${cc.id}/collaboration-session`, undefined, 'GET')
+  expect(visible.status).toBe(200)
+  expect(visible.json.value.relation.boundContext).toContainEqual({ entityRef: { type: 'artifact', id: String(artifact.id), viewId }, title: artifact.title })
+  const repeated = await call(baseUrl, `/projects/${projectId}/assembly/apply`, request)
+  expect(repeated.json.value.results[0]).toMatchObject({ status: 'skipped', channel: 'already-member' })
+})

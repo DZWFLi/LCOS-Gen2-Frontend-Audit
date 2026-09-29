@@ -1,7 +1,7 @@
 // ArtifactReaderBody — 阅读器（R4 Reader direct manipulation residual）。
 //
 // 真实 Artifact read：getArtifactDetail + revisions；正文按 kind 诚实降级
-// （markdown 走 file-record 文本通道；image 走字节通道；其它 kind 只给元数据 + 外部打开提示）。
+// （markdown 走文本；image/pdf/video 读精确修订字节；不支持的 MIME 诚实降级）。
 //
 // R4 补齐（全部复用既有 owner，本组件不拥有 Artifact/Revision 真值）：
 // - revision 浏览 / 切换：revision 行变成真实入口，切换即读该版本正文。
@@ -23,9 +23,10 @@ import { useLcosReferenceStore } from '../lcosReferenceState';
 import { useLcosShellStore } from '../shell/lcosShellStore';
 import { LcosSurfaceFeedback } from '../ui/LcosSurfaceFeedback';
 import { lcosTokens } from '../ui/lcosTokens';
-import { ReaderContentView } from '../ui/professional/ReaderContentView';
+import { ReaderContentView, readerArtifactKindLabel } from '../ui/professional/ReaderContentView';
 
 import type { LcosReaderPositionV1 } from '../shell/lcosShellStore';
+import type { ReaderVisibleContent } from '../ui/professional/ReaderContentView';
 import type { RevisionCompareResultV1 } from '@local-creative-os/web-gen2';
 
 export interface ArtifactReaderBodyProps {
@@ -51,6 +52,15 @@ export function readerSourceTraceLabelV1(trace: ReaderSourceTraceV1): string {
 /** 引用块：身份 + 摘录同时存在；调用方把身份写进草稿引用，文本只是呈现。 */
 export function readerCitationBlockV1(trace: ReaderSourceTraceV1, excerpt: string): string {
   return `〔来源 ${readerSourceTraceLabelV1(trace)} · ${trace.title}〕\n> ${excerpt.trim()}`;
+}
+
+function revisionStatusLabel(status: string): string {
+  switch (status) {
+    case 'draft': return '草稿';
+    case 'current': return '当前版本';
+    case 'superseded': return '已被替代';
+    default: return '状态未知';
+  }
 }
 
 /**
@@ -100,7 +110,7 @@ export function ArtifactReaderBody({ projectId, artifactId, revisionId, onReturn
   const [detail, setDetail] = useState<Awaited<ReturnType<CoreArtifactClient['getArtifactDetail']>> | null>(null);
   const [selectedRevisionId, setSelectedRevisionId] = useState<string | undefined>(undefined);
   const [loadedRevisionId, setLoadedRevisionId] = useState<string | undefined>(undefined);
-  const [content, setContent] = useState<{ kind: 'text'; value: string } | { kind: 'image'; url: string; mimeType: string } | null>(null);
+  const [content, setContent] = useState<ReaderVisibleContent>(null);
   const [errorDetail, setErrorDetail] = useState<string | undefined>(undefined);
   const [contentError, setContentError] = useState<string | undefined>(undefined);
   const [contentLoading, setContentLoading] = useState(false);
@@ -190,15 +200,25 @@ export function ArtifactReaderBody({ projectId, artifactId, revisionId, onReturn
           const text = await artifacts.getFileRecordText(projectRef, String(revision.fileRecordId), controller.signal);
           if (cancelled || controller.signal.aborted) return;
           setContent({ kind: 'text', value: text });
-        } else if (detail.artifact.kind === 'image') {
+        } else if (detail.artifact.kind === 'image' || detail.artifact.kind === 'pdf' || detail.artifact.kind === 'other') {
           const blob = await artifacts.getFileRecordContent(projectRef, String(revision.fileRecordId), controller.signal);
           if (cancelled || controller.signal.aborted) return;
+          if (blob.type.startsWith('text/')) {
+            const text = await blob.text();
+            if (!cancelled && !controller.signal.aborted) setContent({ kind: 'text', value: text });
+            return;
+          }
+          const mediaKind = blob.type.startsWith('audio/') ? 'audio'
+            : blob.type.startsWith('video/') ? 'video'
+            : blob.type === 'application/pdf' || detail.artifact.kind === 'pdf' ? 'pdf'
+              : blob.type.startsWith('image/') || detail.artifact.kind === 'image' ? 'image' : undefined;
+          if (mediaKind === undefined) return;
           const url = URL.createObjectURL(blob);
           if (cancelled || controller.signal.aborted) {
             URL.revokeObjectURL(url);
             return;
           }
-          setContent({ kind: 'image', url, mimeType: blob.type || 'image/*' });
+          setContent({ kind: mediaKind, url, mimeType: blob.type, viewKey: revisionPositionKey(projectId, artifactId, String(revision.id)) });
         }
       } catch (error: unknown) {
         if (controller.signal.aborted) return;
@@ -211,10 +231,10 @@ export function ArtifactReaderBody({ projectId, artifactId, revisionId, onReturn
       cancelled = true;
       controller.abort();
     };
-  }, [artifactId, artifacts, contentAttempt, detail, revisionIdToLoad]);
+  }, [artifactId, artifacts, contentAttempt, detail, projectId, revisionIdToLoad]);
 
   useEffect(() => () => {
-    if (content?.kind === 'image') URL.revokeObjectURL(content.url);
+    if (content !== null && 'url' in content) URL.revokeObjectURL(content.url);
   }, [content]);
 
   // 阅读位恢复：每个 artifact+revision 各记一份，不让版本切换互相覆盖位置/缩放。
@@ -292,7 +312,12 @@ export function ArtifactReaderBody({ projectId, artifactId, revisionId, onReturn
   /** 摘录为引用：身份 + 摘录一起进草稿；绝不产生无来源引用。 */
   const citeSelection = useCallback((): void => {
     if (detail === null || loadedRevisionId === undefined) return;
-    const excerpt = (typeof window === 'undefined' ? '' : (window.getSelection()?.toString() ?? '')).trim();
+    const selection = typeof window === 'undefined' ? null : window.getSelection();
+    const container = contentRef.current;
+    const belongsToReader = selection !== null && selection.rangeCount > 0 && container !== null
+      && Array.from({ length: selection.rangeCount }, (_, index) => selection.getRangeAt(index))
+        .every((range) => container.contains(range.startContainer) && container.contains(range.endContainer));
+    const excerpt = belongsToReader ? (selection?.toString().trim() ?? '') : '';
     if (excerpt === '') {
       setNote('先选中正文再摘录（未选中时不生成无来源引用）');
       return;
@@ -403,12 +428,12 @@ export function ArtifactReaderBody({ projectId, artifactId, revisionId, onReturn
           <h3 className="lcos-reader-title" style={{ color: lcosTokens.color.text }}>
             {detail.artifact.title ?? '未命名'}
           </h3>
-          <p className="mt-0.5 break-all text-xs" style={{ color: lcosTokens.color.muted }}>
-            {String(kind)} · {detail.artifact.managed === true ? '受管 Artifact' : '外部引用'}
+          <p className="mt-0.5 break-all text-xs" title={`Core 类型：${String(kind)}；来源身份：${detail.artifact.managed === true ? 'managed' : 'external reference'}`} style={{ color: lcosTokens.color.muted }}>
+            {readerArtifactKindLabel(String(kind))} · {detail.artifact.managed === true ? '项目材料' : '外部引用'}
           </p>
         </div>
-        <span className="shrink-0 rounded-full px-2 py-0.5 text-[10px]" style={{ background: lcosTokens.color.raised, color: lcosTokens.color.muted }}>
-          {revision ? `${revision.id.slice(0, 8)} · ${revision.status}` : '无 revision'}
+        <span className="shrink-0 rounded-full px-2 py-0.5 text-[10px]" title={revision ? `版本标识：${revision.id}；Core 状态：${revision.status}` : '当前材料没有可读取的版本'} style={{ background: lcosTokens.color.raised, color: lcosTokens.color.muted }}>
+          {revision ? `版本 ${revision.id.slice(0, 8)} · ${revisionStatusLabel(revision.status)}` : '暂无版本'}
         </span>
       </div>
 
@@ -450,26 +475,14 @@ export function ArtifactReaderBody({ projectId, artifactId, revisionId, onReturn
         </div>
       )}
 
-      {/* 正文预览：由真实 Revision 读取通道承载 */}
-      <ReaderContent
-        content={content}
-        kind={kind}
-        fileName={fileName}
-        contentRef={contentRef}
-        onScroll={rememberScroll}
-        zoom={readerZoom}
-        loading={contentLoading}
-        error={contentError}
-        onRetry={() => setContentAttempt((attempt) => attempt + 1)}
-      />
-
-      <div data-lcos-reader-zoom className="flex items-center gap-2 text-[11px]" style={{ color: lcosTokens.color.muted }}>
+      {(content?.kind === 'text' || detail.revisions.length > 1) && <div data-lcos-reader-tools>
+      {content?.kind === 'text' && <div data-lcos-reader-zoom className="flex items-center gap-2 text-[11px]" style={{ color: lcosTokens.color.muted }}>
         <span>阅读缩放</span>
         <button type="button" data-lcos-reader-zoom-out aria-label="缩小正文" onClick={() => updateReaderZoom(readerZoom - 10)} disabled={readerZoom <= 75}>−</button>
         <span data-lcos-reader-zoom-value>{readerZoom}%</span>
         <button type="button" data-lcos-reader-zoom-in aria-label="放大正文" onClick={() => updateReaderZoom(readerZoom + 10)} disabled={readerZoom >= 175}>＋</button>
         <button type="button" data-lcos-reader-zoom-reset onClick={() => updateReaderZoom(100)}>重置</button>
-      </div>
+      </div>}
 
       {/* R4：revision 浏览 / 切换 */}
       {detail.revisions.length > 1 && (
@@ -501,49 +514,28 @@ export function ArtifactReaderBody({ projectId, artifactId, revisionId, onReturn
         </div>
       )}
 
-      {/* R4：动作行（引用 / 摘录 / 对比 / 回到来源） */}
+      </div>}
+
+      {/* 正文预览：由真实 Revision 读取通道承载 */}
+      <ReaderContent
+        content={content}
+        kind={kind}
+        fileName={fileName}
+        contentRef={contentRef}
+        onScroll={rememberScroll}
+        zoom={readerZoom}
+        loading={contentLoading}
+        error={contentError}
+        onRetry={() => setContentAttempt((attempt) => attempt + 1)}
+      />
+
+      {/* 正文动作与窗口分组操作各自保持原有语义，不把引用当成分组命令。 */}
       <div data-lcos-reader-actions className="flex flex-wrap items-center gap-2">
-        <button
-          type="button"
-          data-lcos-reader-to-draft
-          onClick={addToDraft}
-          className="rounded-full px-2.5 py-1 text-[11px]"
-          style={{ background: lcosTokens.color.raised, color: lcosTokens.color.text }}
-        >
-          加入引用
-        </button>
-        <button
-          type="button"
-          data-lcos-reader-cite
-          onClick={citeSelection}
-          className="rounded-full px-2.5 py-1 text-[11px]"
-          style={{ background: lcosTokens.color.raised, color: lcosTokens.color.text }}
-        >
-          摘录为引用
-        </button>
-        <button
-          type="button"
-          data-lcos-reader-compare-toggle
-          onClick={runCompare}
-          disabled={compareBusy || detail.revisions.length < 2 || currentRevisionId === undefined}
-          title={detail.revisions.length < 2 ? '只有一个版本，无可对比对象' : '走 canonical revisions/compare'}
-          className="rounded-full px-2.5 py-1 text-[11px] disabled:opacity-40"
-          style={{ background: lcosTokens.color.raised, color: lcosTokens.color.text }}
-        >
-          {compareBusy ? '对比中…' : isHistorical ? '对比：当前 → 历史' : '对比：上一版 → 当前'}
-        </button>
-        <button
-          type="button"
-          data-lcos-reader-source-return
-          onClick={sourceReturn}
-          className="rounded-full px-2.5 py-1 text-[11px]"
-          style={{ background: lcosTokens.color.raised, color: lcosTokens.color.text }}
-        >
-          回到来源
-        </button>
-        <span data-lcos-reader-draft-count={draftCount} className="text-[11px]" style={{ color: lcosTokens.color.muted }}>
-          草稿引用 {draftCount}
-        </span>
+        <button type="button" data-lcos-reader-to-draft onClick={addToDraft} className="rounded-full px-2.5 py-1 text-[11px]" style={{ background: lcosTokens.color.raised, color: lcosTokens.color.text }}>加入引用</button>
+        {(content?.kind === 'text' || content?.kind === 'pdf') && <button type="button" data-lcos-reader-cite onClick={citeSelection} className="rounded-full px-2.5 py-1 text-[11px]" style={{ background: lcosTokens.color.raised, color: lcosTokens.color.text }}>摘录为引用</button>}
+        {detail.revisions.length > 1 && currentRevisionId !== undefined && <button type="button" data-lcos-reader-compare-toggle onClick={runCompare} disabled={compareBusy} title={isHistorical ? '对比当前版本与所选历史版本' : '对比当前版本与上一版本'} className="rounded-full px-2.5 py-1 text-[11px] disabled:opacity-40" style={{ background: lcosTokens.color.raised, color: lcosTokens.color.text }}>{compareBusy ? '正在对比…' : isHistorical ? '对比当前与所选版本' : '对比上一版与当前'}</button>}
+        <button type="button" data-lcos-reader-source-return onClick={sourceReturn} className="rounded-full px-2.5 py-1 text-[11px]" style={{ background: lcosTokens.color.raised, color: lcosTokens.color.text }}>回到来源</button>
+        <span data-lcos-reader-draft-count={draftCount} className="text-[11px]" style={{ color: lcosTokens.color.muted }}>草稿引用 {draftCount}</span>
       </div>
 
       {lastTrace !== undefined && (
@@ -595,7 +587,7 @@ function ReaderContent({
   error,
   onRetry,
 }: {
-  content: { kind: 'text'; value: string } | { kind: 'image'; url: string; mimeType: string } | null;
+  content: ReaderVisibleContent;
   kind: string;
   fileName: string;
   contentRef: React.RefObject<HTMLDivElement | null>;

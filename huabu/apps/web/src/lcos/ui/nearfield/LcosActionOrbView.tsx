@@ -46,6 +46,7 @@ export function LcosActionOrbView({ point, label, actionId, more, disabledReason
           data-ui-selected={selected || undefined}
           className="lcos-action-orb-hit"
           aria-label={label}
+          aria-description={disabledReason}
           aria-expanded={expanded}
           aria-pressed={selected}
           disabled={disabledReason !== undefined || !present}

@@ -70,7 +70,7 @@ describe('Artifact archive lifecycle vertical', () => {
     })
   }
 
-  it('migrates a populated v55 database to v56 without losing the project graph', () => {
+  it('migrates a populated v55 database to v57 without losing the project graph', () => {
     const s = setup()
     const viewCount = s.repository.getArtifactViews(s.artifactId).length
     const revisionCount = s.repository.getArtifactRevisions(s.artifactId).length
@@ -87,7 +87,7 @@ describe('Artifact archive lifecycle vertical', () => {
 
     const reopened = new SqliteMetadataRepository(s.dbPath)
     repositories.push(reopened)
-    expect(reopened.schemaVersion).toBe(56)
+    expect(reopened.schemaVersion).toBe(57)
     expect(reopened.getArtifact(s.artifactId)?.archivedAt).toBeUndefined()
     expect(reopened.getArtifactViews(s.artifactId)).toHaveLength(viewCount)
     expect(reopened.getArtifactRevisions(s.artifactId)).toHaveLength(revisionCount)

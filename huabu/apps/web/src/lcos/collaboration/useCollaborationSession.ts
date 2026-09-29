@@ -1,5 +1,5 @@
 // useCollaborationSession —— 组件侧 watch 一个会话的 Collaboration projection。
-// 挂载即 watch（幂等），卸载即 unwatch；投影缺失/失败如实反映 status。
+// 挂载持有一个 watch，卸载配对 unwatch；多个消费者共享同会话订阅；投影缺失/失败如实反映 status。
 
 import { useEffect } from 'react';
 

@@ -2,19 +2,22 @@
 // （Atlas 强表征 / Temporal Rail 局部时间轨 / 来源与关系 Wave 8）。Atlas=Context 现场表征，
 // 不是全局 overlay；child canvas 复用同一 Huabu kernel（Portal/Surface 机制 Wave 8 精化）。
 
-import { Layers } from 'lucide-react';
 import { AnimatePresence } from 'motion/react';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { ContextAtlasStage } from './ContextAtlasStage';
+import { FigmaShellGlyph } from '../../ui/FigmaShellGlyph';
 import { TemporalRail } from './TemporalRail';
 import { useLcosWorksiteNav } from '../../app/useLcosWorksiteNav';
 import { useLcosReferenceStore } from '../../lcosReferenceState';
 import { beginChildWorksiteNavigation } from '../../navigation/childWorksiteNavigation';
+import { useAvoidingHudPosition } from '../../navigation/useAvoidingHudPosition';
+import { useHudViewport } from '../../navigation/useHudViewport';
 import { childSurfaceForItem, workspaceTargetsForItem } from '../../navigation/workspaceTargets';
 import { useLcosShellStore } from '../../shell/lcosShellStore';
 import { LcosWorksiteStage } from '../../shell/LcosWorksiteStage';
+import { LcosSurfaceFeedback } from '../../ui/LcosSurfaceFeedback';
 import '../../ui/context/context-spatial.css';
 
 import type { LcosSurfaceKey } from '../../shell/lcosShellStore';
@@ -43,10 +46,14 @@ export function ContextWorksite({
 }: ContextWorksiteProps): React.JSX.Element {
   const navigate = useNavigate();
   const [atlasOpen, setAtlasOpen] = useState(false);
+  const viewport = useHudViewport();
+  const instrument = useAvoidingHudPosition({ x: 24, y: viewport.height - 140, width: 44, height: 44 }, {},
+    '[data-lcos-surface-dock],[data-lcos-spatial-navigator-host]');
   const activeWorkspaceId = useLcosShellStore((state) => state.activeWorkspaceId);
-  useLcosWorksiteNav({ projectId, canvasBySurface, ensureCanvas });
+  const currentContextId = workspaces.find((workspace) => String(workspace.id) === activeWorkspaceId)?.scopeId;
+  const nav = useLcosWorksiteNav({ projectId, canvasBySurface, ensureCanvas });
 
-  const enterItem = (item: WarehouseItemV1, selectedWorkspace?: Workspace): boolean => {
+  const enterItem = async (item: WarehouseItemV1, selectedWorkspace?: Workspace): Promise<boolean> => {
     const childTargets = workspaceTargetsForItem(item, workspaces);
     const childTarget = selectedWorkspace ?? (childTargets.length === 1 ? childTargets[0] : undefined);
     const childSurface = childSurfaceForItem(item, childTarget);
@@ -54,8 +61,17 @@ export function ContextWorksite({
       ([, ref]) => ref.entityId === item.entityRef.id && ref.entityType === item.entityRef.type,
     )?.[0];
     if (childTarget !== undefined && childSurface !== undefined) {
+      const rootSurface = (Object.entries(canvasBySurface) as [LcosSurfaceKey, string][]).find(
+        ([, rootCanvasId]) => rootCanvasId === childTarget.canvasId,
+      )?.[0];
+      if (rootSurface !== undefined) {
+        // A root Surface is not a child scene: no synthetic return or time rail.
+        const entered = await nav.switchWorksite(rootSurface);
+        if (entered) setAtlasOpen(false);
+        return entered;
+      }
       const shell = useLcosShellStore.getState();
-      const entered = beginChildWorksiteNavigation({
+      const entered = await beginChildWorksiteNavigation({
         projectId,
         sourceSurface: surface,
         ...(shell.activeWorkspaceId === null ? {} : { sourceWorkspaceId: shell.activeWorkspaceId }),
@@ -91,25 +107,31 @@ export function ContextWorksite({
         ensureCanvas={(recreate?: boolean) => ensureCanvas(surface, recreate)}
       />
 
-      {/* Context 现场仪器入口（真实动作；Temporal Rail 常驻右侧） */}
-      <div className="pointer-events-auto fixed left-6 bottom-24 z-30 flex flex-col gap-2">
+      {/* Context 现场仪器入口（真实动作；Temporal Rail 只属于子现场） */}
+      <div ref={instrument.ref} data-lcos-worksite-instrument-host className="pointer-events-auto fixed z-30" style={{ left: instrument.rect.x, top: instrument.rect.y }}>
         <button
           type="button"
           data-lcos-context-instrument="atlas"
-          onClick={() => setAtlasOpen(true)}
+          onClick={() => setAtlasOpen((open) => !open)}
           className="lcos-context-instrument-trigger"
-          aria-label="打开集合总览"
-          title="集合总览"
+          style={{ position: 'relative', left: 0, bottom: 'auto' }}
+          aria-expanded={atlasOpen}
+          aria-label={atlasOpen ? '收回上下文集合' : '打开上下文集合'}
+          title={atlasOpen ? '收回上下文集合' : '上下文集合'}
         >
-          <Layers className="h-4 w-4" aria-hidden />
+          <FigmaShellGlyph name="collection" size={21} />
         </button>
       </div>
 
-      <TemporalRail
+      {isChildWorksite && <TemporalRail
         projectId={projectId}
         workspaceId={activeWorkspaceId ?? undefined}
         canvasId={canvasId}
-      />
+      />}
+
+      {nav.transitionError && <div role="alert" className="pointer-events-auto fixed bottom-24 left-1/2 z-[70] -translate-x-1/2">
+        <LcosSurfaceFeedback presentation="error" message={nav.transitionError} />
+      </div>}
 
       <AnimatePresence key={projectId} initial={false} mode="sync">
         {atlasOpen && (
@@ -117,6 +139,7 @@ export function ContextWorksite({
             key="context-atlas"
             projectId={projectId}
             workspaces={workspaces}
+            currentContextId={currentContextId === undefined ? undefined : String(currentContextId)}
             onClose={() => setAtlasOpen(false)}
             onEnterSurface={enterItem}
           />

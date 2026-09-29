@@ -455,6 +455,28 @@ body,
   filter: drop-shadow(0 0 2px var(--color-info-light));
 }
 
+/* LCOS borrows TapNow's active-edge hierarchy: calm idle relations, then bring
+   selected/nearby/hovered connections forward. Width remains a presentation
+   default, so an explicit per-edge strokeWidth still wins. */
+.lcos-connection-view .react-flow__edge-path:not(.react-flow__edge-interaction) {
+  /* Edge records may carry a user-authored width (e.g. 4px); clamp only the
+     LCOS overview projection, leaving the stored style untouched. */
+  stroke-width: 2.5px !important;
+  opacity: 0.6;
+  transition: opacity 180ms ease, filter 180ms ease;
+}
+.lcos-connection-view .react-flow__edge.selected .react-flow__edge-path:not(.react-flow__edge-interaction),
+.lcos-connection-view .react-flow__edge.lcos-connection-active .react-flow__edge-path:not(.react-flow__edge-interaction),
+.lcos-connection-view .react-flow__edge:not(.selected):hover .react-flow__edge-path:not(.react-flow__edge-interaction) {
+  opacity: 1;
+  filter: drop-shadow(0 0 2px color-mix(in srgb, var(--color-info) 55%, transparent));
+}
+@media (prefers-reduced-motion: reduce) {
+  .lcos-connection-view .react-flow__edge:not(.selected) .react-flow__edge-path:not(.react-flow__edge-interaction) {
+    transition: none;
+  }
+}
+
 .huabu-edge-label:empty:not(:focus)::before {
   content: 'Add label';
   color: var(--color-fg-subtle);

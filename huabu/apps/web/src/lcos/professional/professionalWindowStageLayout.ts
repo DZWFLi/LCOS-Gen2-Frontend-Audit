@@ -145,3 +145,18 @@ export function deriveProfessionalStageRegionPlacementsV1(input: {
 
   return placements;
 }
+
+/** Presentation-only fallback. Window identities/groups and saved geometry remain untouched. */
+export function needsCompactProfessionalStageV1(viewport: ProfessionalRectV1, regions: readonly ProfessionalStageRegionInputV1[]): boolean {
+  if (regions.length < 2) return false;
+  if (viewport.width < 900) return true;
+  const docked = regions.filter((region) => region.layout === 'docked-right');
+  if (docked.length * PROFESSIONAL_STAGE_MIN_HEIGHT > viewport.height) return true;
+  const floatingCount = regions.length - docked.length;
+  const dockWidth = docked.length === 0 ? 0 : Math.max(PROFESSIONAL_STAGE_MIN_WIDTH, ...docked.map((region) => region.dockWidth ?? region.preferredWidth)) + REGION_GAP;
+  const width = viewport.width - CANVAS_PICK_RESERVE - FLOATING_RIGHT - dockWidth;
+  const height = viewport.height - FLOATING_TOP - FLOATING_BOTTOM;
+  const columns = Math.max(1, Math.floor((width + REGION_GAP) / (PROFESSIONAL_STAGE_MIN_WIDTH + REGION_GAP)));
+  const rows = Math.max(1, Math.floor((height + REGION_GAP) / (PROFESSIONAL_STAGE_MIN_HEIGHT + REGION_GAP)));
+  return floatingCount > columns * rows;
+}

@@ -18,6 +18,8 @@ import type {
   ContextSnapshot,
   ContextSnapshotId,
   ContextManifestId,
+  Collection,
+  CollectionMembership,
   GraphVersion,
   HandoffArtifactRef,
   HandoffRecord,
@@ -165,6 +167,10 @@ export interface ProjectGraphSnapshot {
   readonly graphVersion: GraphVersion
   readonly project: Project
   readonly scopes: readonly Scope[]
+  /** Canonical Gen2 Collections; legacy collection Scopes are not promoted here. */
+  readonly collections?: readonly Collection[]
+  /** Canonical containment membership; independent from spatial parentId and old presentation member refs. */
+  readonly collectionMemberships?: readonly CollectionMembership[]
   readonly workspaces: readonly Workspace[]
   readonly artifacts: readonly Artifact[]
   readonly artifactViews: readonly ArtifactView[]
@@ -173,6 +179,19 @@ export interface ProjectGraphSnapshot {
   readonly artifactRevisions: readonly ArtifactRevision[]
   readonly fileRecords: readonly FileRecord[]
   readonly checkpoints: readonly Checkpoint[]
+}
+
+export interface CollectionMembersSnapshot {
+  readonly collection: Collection
+  readonly members: readonly CollectionMembership[]
+}
+
+export interface CollectionMembershipReceipt {
+  readonly status: 'applied' | 'already-member' | 'removed' | 'not-member'
+  readonly collectionId: string
+  readonly memberRef: CollectionMembership['memberRef']
+  readonly relationId?: string
+  readonly changeSetId?: string
 }
 
 // ==================== Context Manifest V0 ====================

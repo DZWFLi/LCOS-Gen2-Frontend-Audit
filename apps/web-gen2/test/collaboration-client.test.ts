@@ -372,10 +372,17 @@ test('subscribe：复用既有 /events SSE，run.changed → session.changed + t
     onProjectEvent: (event) => projectEvents.push(event.type),
   });
   assert.notEqual(unsubscribe, undefined);
-  listeners.get('project-event')?.({ data: JSON.stringify({ ok: true, value: { type: 'run.changed' } }) });
-  listeners.get('project-event')?.({ data: JSON.stringify({ ok: true, value: { type: 'continuity.changed' } }) });
+  const event = (type: string, projectSeq: number): string => JSON.stringify({ ok: true, value: {
+    runtimeId: 'runtime-1', projectId: 'p-1', projectSeq, channel: type.startsWith('run') ? 'run' : 'continuity',
+    type, timestamp: `2026-09-29T00:00:0${projectSeq}.000Z`, payload: {},
+  } });
+  listeners.get('snapshot')?.({ data: JSON.stringify({ ok: true, value: {
+    runtimeId: 'runtime-1', projectId: 'p-1', currentSeq: 0, presentations: [], workStates: [],
+  } }) });
+  listeners.get('project-event')?.({ data: event('run.changed', 1) });
+  listeners.get('project-event')?.({ data: event('continuity.changed', 2) });
   listeners.get('project-event')?.({ data: 'not-json' });
-  assert.deepEqual(received, ['session.changed', 'timeline.appended', 'session.changed', 'capability.changed']);
+  assert.deepEqual(received, ['session.changed', 'session.changed', 'timeline.appended', 'session.changed', 'capability.changed']);
   assert.deepEqual(projectEvents, ['run.changed', 'continuity.changed']);
   unsubscribe?.();
   assert.equal(closedAt, `${BASE}/projects/p-1/events`);

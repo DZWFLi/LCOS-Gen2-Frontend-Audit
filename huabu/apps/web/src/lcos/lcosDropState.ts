@@ -21,6 +21,7 @@ import {
   confirmDrop,
   failDrop,
   idleDrop,
+  nominalAnchorAt,
   type DropBounds,
   type DropDestination,
   type DropPayload,
@@ -29,18 +30,33 @@ import {
 } from '@local-creative-os/web-gen2';
 import { create } from 'zustand';
 
+import { assemblyDropReceipt } from './drop/dropAssemblyReceipt';
+import type { AssemblyApplyResultV1 } from '@local-creative-os/contracts';
 import { DropTargetRegistry } from './drop/dropTargetRegistry';
 
-import type { DropResolution, DropTargetRegistration } from './drop/dropTypes';
+import type { DropAssemblyApplyIntent, DropCommitReceipt, DropResolution, DropTargetRegistration } from './drop/dropTypes';
 
+
+export interface LcosDropFeedback {
+  readonly attempt: Extract<SemanticDropState, { status: 'committing' }>;
+  readonly originalIntent: DropResolution & { status: 'ready' };
+  readonly receipt: DropCommitReceipt;
+}
 
 export interface LcosDropState {
   /** Pure Semantic Drop machine state (fabric lives in web-gen2). */
   state: SemanticDropState;
+  /** Actual carry source only; never changes its geometry or canonical identity. */
+  carrySourceNodeId: string | null;
   /** Screen-space canvas bounds the dwell anchors are judged against. */
   bounds: DropBounds | null;
   /** The resolver result rendered by the current preview; retained for commit. */
   resolution: DropResolution | null;
+  /** One gesture's feedback only; never membership/session truth. */
+  feedback: LcosDropFeedback | null;
+  settle(receipt: DropCommitReceipt): void;
+  retryFailed(transactionId: string): void;
+  dismissFeedback(): void;
 
   /** Register/unregister ephemeral screen-space targets for the active host. */
   registerTarget(target: DropTargetRegistration): () => void;
@@ -49,7 +65,7 @@ export interface LcosDropState {
   targets(): readonly DropTargetRegistration[];
 
   /** Acquire a payload and begin a spatial drop. Data sources call this. */
-  begin(payload: DropPayload): void;
+  begin(payload: DropPayload, carrySourceNodeId?: string): void;
   /** Cache the live canvas surface bounds (from the wrapper bounding rect). */
   setBounds(bounds: DropBounds): void;
   /** Drive the machine from a screen-space pointer position. */
@@ -83,15 +99,17 @@ export function getLcosDropTargetRegistry(): DropTargetRegistry {
 
 export const useLcosDropStore = create<LcosDropState>((set, get) => ({
   state: idleDrop(),
+  carrySourceNodeId: null,
   bounds: null,
   resolution: null,
+  feedback: null,
 
   registerTarget: (target) => liveTargetRegistry.register(target),
   unregisterTarget: (targetId) => liveTargetRegistry.unregister(targetId),
   targetAt: (point) => liveTargetRegistry.hitTest(point),
   targets: () => liveTargetRegistry.snapshot(),
 
-  begin: (payload) => set({ state: beginDrop(payload), resolution: null }),
+  begin: (payload, carrySourceNodeId) => set({ state: beginDrop(payload), resolution: null, feedback: null, carrySourceNodeId: carrySourceNodeId ?? null }),
 
   setBounds: (bounds) => set({ bounds }),
 
@@ -106,7 +124,12 @@ export const useLcosDropStore = create<LcosDropState>((set, get) => ({
     // A live host target disappearing is different from a pure machine caller
     // omitting destination metadata: the real gesture must lose its old
     // preview immediately so release cannot commit an unmounted target.
-    let next = state.status === 'preview' && destination === undefined
+    // A registered natural target resolves immediately. The old edge dwell is
+    // retained only for callers without a target; it is not a gate on Give/Carry.
+    let next = destination !== undefined && resolution !== undefined
+      ? { status: 'preview' as const, payload: state.payload, destination,
+          carryAnchor: nominalAnchorAt(pointPx, bounds) }
+      : state.status === 'preview' && destination === undefined
       ? { status: 'tracking' as const, payload: state.payload }
       : advanceDropIntent(
           state,
@@ -125,7 +148,7 @@ export const useLcosDropStore = create<LcosDropState>((set, get) => ({
     const resolved = next.status === 'preview' && resolution?.status === 'ready'
       ? {
           ...resolution,
-          intent: resolution.intent.kind === 'assembly-apply' && placementPoint !== undefined
+          intent: resolution.intent.kind === 'assembly-apply' && resolution.intent.targetRef.kind !== 'conversation' && placementPoint !== undefined
             ? { ...resolution.intent, placementPoint }
             : resolution.intent,
         }
@@ -141,7 +164,36 @@ export const useLcosDropStore = create<LcosDropState>((set, get) => ({
       kind: resolution.intent.kind,
       targetId: resolution.intent.targetId,
     });
-    if (next.status === 'committing') set({ state: next });
+    if (next.status === 'committing') set({ state: next, feedback: null });
+  },
+
+  settle: (incoming) => {
+    const { state, resolution, feedback } = get();
+    // A late response must never overwrite a new gesture/project's presentation.
+    if (state.status !== 'committing' || state.transactionId !== incoming.transactionId || resolution?.status !== 'ready') return;
+    const originalIntent = feedback?.originalIntent ?? resolution;
+    const receipt = originalIntent.intent.kind === 'assembly-apply' && incoming.assemblyItems !== undefined
+      ? assemblyDropReceipt(originalIntent.intent, incoming.transactionId,
+          incoming.canonicalReceipt as AssemblyApplyResultV1, feedback?.receipt.assemblyItems)
+      : feedback?.receipt.assemblyItems ? { ...incoming, assemblyItems: feedback.receipt.assemblyItems,
+          retrySourceRefs: [], message: `${incoming.message ?? '请求失败'} · 本次结果未确认，请先查看目标现场` } : incoming;
+    set({
+      state: receipt.status === 'success' ? idleDrop() : failDrop(state, receipt.message ?? '投放未完成', Boolean(receipt.retrySourceRefs?.length)),
+      feedback: { attempt: state, originalIntent, receipt },
+      carrySourceNodeId: null,
+    });
+  },
+
+  retryFailed: (transactionId) => {
+    const { state, feedback } = get();
+    if (state.status !== 'failed' || !feedback?.receipt.retrySourceRefs?.length || feedback.originalIntent.intent.kind !== 'assembly-apply') return;
+    const intent: DropAssemblyApplyIntent = { ...feedback.originalIntent.intent, sourceRefs: feedback.receipt.retrySourceRefs };
+    set({ state: { ...feedback.attempt, transactionId }, resolution: { status: 'ready', intent } });
+  },
+
+  dismissFeedback: () => {
+    if (get().state.status === 'committing') return;
+    set({ state: idleDrop(), resolution: null, feedback: null, carrySourceNodeId: null });
   },
 
   fail: (reason, recoverable) => {
@@ -149,10 +201,10 @@ export const useLcosDropStore = create<LcosDropState>((set, get) => ({
     set({ state: failDrop(state, reason, recoverable) });
   },
 
-  cancel: () => set({ state: idleDrop(), resolution: null }),
+  cancel: () => set({ state: idleDrop(), resolution: null, feedback: null, carrySourceNodeId: null }),
 
   reset: () => {
     liveTargetRegistry.clear();
-    set({ state: idleDrop(), bounds: null, resolution: null });
+    set({ state: idleDrop(), bounds: null, resolution: null, feedback: null, carrySourceNodeId: null });
   },
 }));

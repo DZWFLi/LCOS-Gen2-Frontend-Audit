@@ -104,6 +104,7 @@ import {
   LabelledEdge,
   type EditEdgeLabelDetail,
 } from './edges/LabelledEdge.tsx';
+import { resolveConnectionViewEdges } from './edges/connectionViewEdges';
 import { EdgeStyleToolbar } from './FloatingToolbars/EdgeStyleToolbar.tsx';
 import { MultiSelectToolbar } from './FloatingToolbars/MultiSelectToolbar.tsx';
 import { StrokeSelectionToolbar } from './FloatingToolbars/StrokeSelectionToolbar.tsx';
@@ -415,18 +416,22 @@ const CanvasSpatialNavigatorMount: React.FC<{
   renderer: CanvasSpatialNavigatorRenderer;
   minimapEnabled: boolean;
   gridEnabled: boolean;
+  edgesVisible: boolean;
   interactivityLocked: boolean;
   onToggleInteractivity: () => void;
   onToggleMinimap: () => void;
   onToggleGrid: () => void;
+  onToggleEdges: () => void;
 }> = React.memo(({
   renderer,
   minimapEnabled,
   gridEnabled,
+  edgesVisible,
   interactivityLocked,
   onToggleInteractivity,
   onToggleMinimap,
   onToggleGrid,
+  onToggleEdges,
 }) => {
   const zoom = useStore((state) => state.transform[2]);
   const miniMap = useMemo(
@@ -444,20 +449,24 @@ const CanvasSpatialNavigatorMount: React.FC<{
     zoom,
     minimapEnabled,
     gridEnabled,
+    edgesVisible,
     interactivityLocked,
     miniMap,
     toggleInteractivity: onToggleInteractivity,
     toggleMinimap: onToggleMinimap,
     toggleGrid: onToggleGrid,
+    toggleEdges: onToggleEdges,
   }), [
     zoom,
     minimapEnabled,
     gridEnabled,
+    edgesVisible,
     interactivityLocked,
     miniMap,
     onToggleInteractivity,
     onToggleMinimap,
     onToggleGrid,
+    onToggleEdges,
   ]);
 
   return <>{renderer(controls)}</>;
@@ -499,13 +508,16 @@ export const Canvas: React.FC<CanvasProps> = ({
   // canvas component used to install ~16 of them just for stable
   // action refs, which dominated initial commit work on canvas open.
   const nodes = useCanvasStore((state) => state.nodes);
+  const collapsedFrameIds = useCanvasStore((state) => state.collapsedFrameIds);
   const edges = useCanvasStore((state) => state.edges);
   const expandedNodeId = usePreviewWorkspaceStore(selectActiveNodeId);
   const canvasId = useCanvasStore((state) => state.canvasId);
   const minimapEnabled = useCanvasStore((state) => state.minimapEnabled);
   const gridEnabled = useCanvasStore((state) => state.gridEnabled);
+  const edgesVisible = useCanvasStore((state) => state.edgesVisible);
   const toggleMinimap = useCanvasStore((state) => state.toggleMinimap);
   const toggleGrid = useCanvasStore((state) => state.toggleGrid);
+  const toggleEdges = useCanvasStore((state) => state.toggleEdges);
   const pendingNodeType = useToolStore((state) => state.pendingNodeType);
   // Whether a stroke-level sketch selection is active — suppresses node
   // toolbars so a mixed lasso never shows them (boolean selector).
@@ -975,6 +987,28 @@ export const Canvas: React.FC<CanvasProps> = ({
       nodeGeometryPreviews,
     );
     const previewById = new Map(previewNodes.map((node) => [node.id, node]));
+    const nodeById = new Map(nodes.map((node) => [node.id, node]));
+    const collapsedCollectionFrameIds = new Set(nodes.flatMap((candidate) => {
+      const data = candidate.data as Record<string, unknown> | undefined;
+      return candidate.type === 'frame' && typeof data?.lcosCollectionId === 'string'
+        && collapsedFrameIds.has(candidate.id) ? [candidate.id] : [];
+    }));
+    const isCollectionPresentationHidden = (node: (typeof nodes)[number]): boolean => {
+      let parentId = node.parentId;
+      const visited = new Set<string>();
+      while (parentId && !visited.has(parentId)) {
+        visited.add(parentId);
+        if (collapsedCollectionFrameIds.has(parentId)) {
+          const frame = nodeById.get(parentId);
+          const frameData = frame?.data as Record<string, unknown> | undefined;
+          // The canonical Collection node remains as the collapsed face. The
+          // spatial frame and other hosted nodes are only display projections.
+          return node.id !== frameData?.lcosCollectionNodeId;
+        }
+        parentId = nodeById.get(parentId)?.parentId;
+      }
+      return false;
+    };
     const result = nodes.map((node) => {
       const z = zByNode.get(node.id) ?? 0;
       const wantsLassoClass = lassoPreviewNodeIdSet.has(node.id);
@@ -988,6 +1022,8 @@ export const Canvas: React.FC<CanvasProps> = ({
       const nextPosition = previewedNode.position;
       const nextStyle = previewedNode.style;
       const nextMeasured = previewedNode.measured;
+      const collectionDisplayHidden = isCollectionPresentationHidden(node)
+        || (node.type === 'frame' && collapsedCollectionFrameIds.has(node.id));
 
       const cached = prevCache.get(node);
       if (
@@ -997,6 +1033,7 @@ export const Canvas: React.FC<CanvasProps> = ({
         cached.position === nextPosition &&
         cached.style === nextStyle &&
         cached.measured === nextMeasured
+        && cached.hidden === (collectionDisplayHidden ? true : node.hidden)
       ) {
         nextCache.set(node, cached);
         return cached;
@@ -1014,7 +1051,8 @@ export const Canvas: React.FC<CanvasProps> = ({
         nextPosition !== node.position ||
         nextStyle !== node.style ||
         nextMeasured !== node.measured;
-      const wrapped = needsWrap
+      const shouldWrap = needsWrap || collectionDisplayHidden;
+      const wrapped = shouldWrap
         ? {
             ...node,
             className: nextClassName,
@@ -1023,6 +1061,7 @@ export const Canvas: React.FC<CanvasProps> = ({
             position: nextPosition,
             style: nextStyle,
             measured: nextMeasured,
+            ...(collectionDisplayHidden ? { hidden: true } : {}),
           }
         : node;
       nextCache.set(node, wrapped);
@@ -1031,7 +1070,7 @@ export const Canvas: React.FC<CanvasProps> = ({
 
     zWrapCacheRef.current = nextCache;
     return result;
-  }, [isNotMouse, lassoPreviewNodeIdSet, nodes, nodeGeometryPreviews, zByNode]);
+  }, [collapsedFrameIds, isNotMouse, lassoPreviewNodeIdSet, nodes, nodeGeometryPreviews, zByNode]);
 
   // Override marker colors on selected edges so arrows match the selection
   // highlight color (--color-info). CSS cannot style SVG <marker> referenced
@@ -1125,6 +1164,15 @@ export const Canvas: React.FC<CanvasProps> = ({
     zByNode,
     nodesById,
   ]);
+
+  // In LCOS overview mode, keep the canvas quiet without dropping nearby
+  // relationships from the React Flow projection. A selected/dragged node
+  // brings its own connections back into view, matching TapNow's active-edge
+  // behavior while leaving persisted edges untouched.
+  const connectionViewEdges = useMemo(
+    () => resolveConnectionViewEdges(displayEdges, displayNodes, edgesVisible),
+    [displayEdges, displayNodes, edgesVisible],
+  );
 
   // Cancel any other pending node placement (note / text / question) with Escape.
   useEffect(() => {
@@ -1406,6 +1454,8 @@ export const Canvas: React.FC<CanvasProps> = ({
     <div
       ref={wrapperRef}
       data-canvas-root=""
+      // The LCOS stage uses its Figma canvas token instead of the vendor surface.
+      style={chromeMode === 'lcos' ? { backgroundColor: 'var(--gen2-canvas)', isolation: 'isolate' } : undefined}
       data-search-scope="canvas"
       aria-busy={isInitialViewportPending}
       data-not-mouse={isNotMouse ? '' : undefined}
@@ -1608,14 +1658,16 @@ export const Canvas: React.FC<CanvasProps> = ({
       <NodeBodyResolverContext.Provider value={hostExtension?.resolveNodeBody}>
         <CanvasChromeModeProvider value={chromeMode}>
         <ReactFlow
+          proOptions={chromeMode === 'lcos' ? { hideAttribution: true } : undefined}
           className={cn(
             isInitialViewportPending && 'invisible',
             isStructuredReflowing && 'structured-reflow',
+            chromeMode === 'lcos' && 'lcos-connection-view',
           )}
         defaultViewport={defaultViewport}
         deleteKeyCode={null}
         nodes={displayNodes}
-        edges={displayEdges}
+        edges={chromeMode === 'lcos' ? connectionViewEdges : displayEdges}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         onConnect={handleNodeConnect}
@@ -1769,7 +1821,7 @@ export const Canvas: React.FC<CanvasProps> = ({
         )}
         {!isBoxSelecting && <MultiSelectResizer />}
         {!isBoxSelecting && <SelectionOutlines />}
-        {!isBoxSelecting && !hasStrokeSelection && <MultiSelectToolbar />}
+        {!isBoxSelecting && !hasStrokeSelection && (hostExtension?.multiSelectionToolbar ?? <MultiSelectToolbar />)}
         {!isBoxSelecting && <StrokeSelectionRegion />}
         {!isBoxSelecting && <StrokeSelectionToolbar />}
         <MoveSelectionModal />
@@ -1800,10 +1852,12 @@ export const Canvas: React.FC<CanvasProps> = ({
               renderer={hostExtension.spatialNavigator}
               minimapEnabled={minimapEnabled}
               gridEnabled={gridEnabled}
+              edgesVisible={edgesVisible}
               interactivityLocked={interactivityLocked}
               onToggleInteractivity={toggleInteractivity}
               onToggleMinimap={toggleMinimap}
               onToggleGrid={toggleGrid}
+              onToggleEdges={toggleEdges}
             />
           ) : null
         ) : (

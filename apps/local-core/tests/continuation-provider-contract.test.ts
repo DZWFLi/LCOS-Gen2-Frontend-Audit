@@ -16,6 +16,7 @@ import {
   type HuabuAgentletSessionInfoV1,
   type HuabuAgentletTransportV1,
 } from '../src/huabu-agentlet-continuation-adapter.js'
+import { ConversationImportService } from '../src/conversation-import-service.js'
 import { ConversationContinuationService } from '../src/conversation-continuation-service.js'
 import { SqliteMetadataRepository } from '../src/metadata-repository.js'
 import { ProjectEventHub } from '../src/project-events/project-event-hub.js'
@@ -596,4 +597,69 @@ describe('T7 receipt → T6 journal 集成（Provider 成功/Core 失败 + cance
     expect(converged.allowedActions).toHaveLength(0)
     expect(service.read(projectId, opId)?.revision).toBe(3)
   })
+
+  it('keeps durable body context across reload/retry and removes it only from later messages', async () => {
+    const { databasePath, metadata, service, projectId, conversationId } = await setupT6()
+    const importer = new ConversationImportService(metadata)
+    const scopeId = String(metadata.getScopes(projectId).find((scope) => scope.kind === 'root')!.id)
+    const imported = await importer.importManual(projectId, { title: '上下文会话', scopeId, entries: [{ role: 'user', contentText: '继续' }] })
+    metadata.linkConnectedConversationSession(projectId, conversationId, imported.session.id)
+    importer.close()
+    const viewId = String(metadata.getArtifactViews('artifact-brief')[0]!.id)
+    metadata.upsertRelation({ id: 'relation-persistent' as never, projectId: projectId as never, sourceEntityType: 'artifact', sourceEntityId: imported.session.conversationArtifactId!, targetEntityType: 'view', targetEntityId: viewId, kind: 'conversation_context', createdAt: '2026-09-27T00:00:00Z', updatedAt: '2026-09-27T00:00:00Z' })
+    const operationId = 'op-durable-body'
+    service.submit(submitInput(projectId, conversationId, operationId))
+    service.advanceStep(projectId, operationId, { step: 'external_create', outcome: 'confirmed', externalEvidence: { schemaVersion: 1, provider: 'codex', externalSessionId: 'native-1', transportSessionId: 'transport-1', threadId: 'core-thread-1', correlationId: operationId, createdAt: '2026-09-27T00:00:00Z' } })
+    const failedTransport = new FakeHuabuTransport({ sendPromptError: new Error('prompt timed out') })
+    await service.sendPrompt(projectId, operationId, { kind: 'prompt', text: '按材料继续' }, new HuabuAgentletContinuationAdapterV1(failedTransport, { adapterId: 'adapter-a' }), 'message-durable', { messageId: 'message-durable' })
+    expect(failedTransport.attachCalls).toEqual(['message-durable'])
+    expect(JSON.stringify(failedTransport.promptContexts[0])).toContain('PortaSplit MVP Brief')
+    const frozen = metadata.getContinuationOperationJournal(projectId, operationId)?.promptReceipts?.[0]
+    expect(frozen?.orderedReferences).toEqual([{ order: 0, ref: { type: 'view', viewId } }])
+    const explicitTransport = new FakeHuabuTransport()
+    const explicit = [{ order: 7, mode: 'summary' as const, ref: { type: 'artifact' as const, artifactId: 'artifact-brief' } }]
+    await service.sendPrompt(projectId, operationId, { kind: 'prompt', text: '只需摘要' }, new HuabuAgentletContinuationAdapterV1(explicitTransport, { adapterId: 'adapter-a' }), 'message-explicit', { messageId: 'message-explicit', orderedReferences: explicit })
+    const combined = metadata.getContinuationOperationJournal(projectId, operationId)?.promptReceipts?.find((receipt) => receipt.messageId === 'message-explicit')
+    expect(combined?.orderedReferences).toEqual(explicit)
+    expect(combined?.explicitReferences).toEqual(explicit)
+    const conflict = await service.sendPrompt(projectId, operationId, { kind: 'prompt', text: '只需摘要' }, new HuabuAgentletContinuationAdapterV1(explicitTransport, { adapterId: 'adapter-a' }), 'message-explicit', { messageId: 'message-explicit', orderedReferences: [] })
+    expect(conflict.error?.code).toBe('prompt_reference_conflict')
+    expect(explicitTransport.promptContexts).toHaveLength(1)
+    metadata.deleteRelation('relation-persistent')
+    metadata.close()
+    const reopened = new SqliteMetadataRepository(databasePath); repositories.push(reopened)
+    const resumed = new ConversationContinuationService(reopened, new ProjectEventHub())
+    const retryTransport = new FakeHuabuTransport()
+    const retryAdapter = new HuabuAgentletContinuationAdapterV1(retryTransport, { adapterId: 'adapter-a' })
+    const retry = await resumed.sendPrompt(projectId, operationId, { kind: 'prompt', text: '按材料继续' }, retryAdapter, 'message-durable', { messageId: 'message-durable' })
+    expect(retry.outcome).toBe('sent')
+    expect(retryTransport.attachCalls).toEqual([])
+    expect(JSON.stringify(retryTransport.promptContexts[0])).toContain('PortaSplit MVP Brief')
+    await resumed.sendPrompt(projectId, operationId, { kind: 'prompt', text: '按材料继续' }, retryAdapter, 'message-durable', { messageId: 'message-durable' })
+    expect(retryTransport.promptContexts).toHaveLength(1)
+    const nextTransport = new FakeHuabuTransport()
+    await resumed.sendPrompt(projectId, operationId, { kind: 'prompt', text: '下一条' }, new HuabuAgentletContinuationAdapterV1(nextTransport, { adapterId: 'adapter-a' }), 'message-next', { messageId: 'message-next' })
+    expect(nextTransport.attachCalls).toEqual([])
+    expect(nextTransport.promptContexts).toEqual([undefined])
+  })
+
+  it.each(['note', 'scope', 'missing'])('does not silently send without unsupported or missing durable %s context', async (kind) => {
+    const { metadata, service, projectId, conversationId } = await setupT6()
+    const scopeId = String(metadata.getScopes(projectId)[0]!.id)
+    if (kind === 'note') metadata.upsertNote({ id: 'bound-note' as never, projectId: projectId as never, anchor: { type: 'project' }, body: '不可静默漏发', createdAt: '2026-09-27T00:00:00Z', updatedAt: '2026-09-27T00:00:00Z' })
+    metadata.upsertRelation({ id: 'bound-unsupported' as never, projectId: projectId as never,
+      sourceEntityType: 'conversation', sourceEntityId: conversationId,
+      targetEntityType: kind === 'note' ? 'note' : kind === 'scope' ? 'scope' : 'view',
+      targetEntityId: kind === 'note' ? 'bound-note' : kind === 'scope' ? scopeId : 'deleted-view',
+      kind: 'conversation_context', createdAt: '2026-09-27T00:00:00Z', updatedAt: '2026-09-27T00:00:00Z' })
+    const operationId = `op-block-${kind}`
+    service.submit(submitInput(projectId, conversationId, operationId))
+    service.advanceStep(projectId, operationId, { step: 'external_create', outcome: 'confirmed', externalEvidence: { schemaVersion: 1, provider: 'codex', externalSessionId: 'native-1', correlationId: operationId, createdAt: '2026-09-27T00:00:00Z' } })
+    const transport = new FakeHuabuTransport()
+    const receipt = await service.sendPrompt(projectId, operationId, { kind: 'prompt', text: '带材料发送' }, new HuabuAgentletContinuationAdapterV1(transport, { adapterId: 'adapter-a' }), 'blocked', { messageId: 'blocked' })
+    expect(receipt.outcome).toBe('unsupported')
+    expect(transport.attachCalls).toEqual([])
+    expect(transport.promptContexts).toEqual([])
+  })
+
 })

@@ -7,13 +7,20 @@ import './workflow-hand.css';
 export type WorkflowTaskCardVisualState =
   | '静息' | '悬停' | '预览' | '已选目标' | '草稿中' | '不可用' | '键盘焦点';
 
+export interface WorkflowCardActionAnchor {
+  readonly x: number;
+  readonly y: number;
+  readonly width: number;
+  readonly height: number;
+}
+
 export interface WorkflowTaskCardFaceProps {
   readonly title: string;
   readonly summary?: string;
   readonly disabledReason?: string;
   readonly previewUrl?: string;
   readonly state: WorkflowTaskCardVisualState;
-  readonly onUse?: () => void;
+  readonly onUse?: (anchor: WorkflowCardActionAnchor) => void;
   readonly dataSource?: string;
   readonly dataEntity?: string;
 }
@@ -40,9 +47,12 @@ export function WorkflowTaskCardFace(props: WorkflowTaskCardFaceProps): React.JS
             <button type="button" data-lcos-card-take data-lcos-task-take
               {...(dataSource === undefined ? {} : { 'data-lcos-card-source': dataSource })}
               {...(dataEntity === undefined ? {} : { 'data-lcos-card-entity': dataEntity })}
-              className="lcos-workflow-task-use" onClick={onUse}>
+              className="lcos-workflow-task-use" onClick={(event) => {
+                const rect = event.currentTarget.getBoundingClientRect();
+                onUse?.({ x: rect.x, y: rect.y, width: rect.width, height: rect.height });
+              }}>
               <img src={paperclipIcon} alt="" draggable={false} aria-hidden />
-              <span>用于当前会话</span>
+              <span>加入当前草稿</span>
               <img src={chevronIcon} alt="" draggable={false} aria-hidden />
             </button>
           ) : null}

@@ -38,6 +38,7 @@ import { useLcosReferenceStore } from './lcosReferenceState';
 import { LcosActionArc } from './navigation/LcosActionArc';
 import { LcosCanvasCommands } from './navigation/LcosCanvasCommands';
 import { LcosEdgeArc } from './navigation/LcosEdgeArc';
+import { LcosMultiSelectToolbar } from './navigation/LcosMultiSelectToolbar';
 import { LcosSpatialNavigator } from './navigation/LcosSpatialNavigator';
 import { createLcosNodePresentationSeam } from './nodes/createLcosNodePresentationSeam';
 import { stageProjectedSources } from './nodes/stageProjectedSources';
@@ -60,6 +61,9 @@ export function useLcosCanvasProps(projectId: string): LcosCanvasProps {
   const runtimeRef = useRef<LcosHostRuntime | null>(null);
   const suppressorDisposeRef = useRef<(() => void) | null>(null);
   const [hostExtension, setHostExtension] = useState<CanvasHostExtension | undefined>(undefined);
+
+  const bindingRefreshVersion = useLcosReferenceStore((state) => state.bindingRefreshVersion);
+  const identityReadRef = useRef<{ projectId: string; canvasId: string; runtime: LcosHostRuntime; promise: Promise<void> } | null>(null);
 
   const canvasId = useCanvasStore((state) => state.canvasId);
   const isLoading = useCanvasStore((state) => state.isLoading);
@@ -117,7 +121,10 @@ export function useLcosCanvasProps(projectId: string): LcosCanvasProps {
     // hostExtensionFromSeam returns the mirrored (web-gen2) shape; the Huabu
     // consumer re-declares the same structural type, so an explicit cast is
     // the honest boundary — both are plain data, no runtime conversion.
-    setHostExtension(hostExtensionFromSeam(seam) as CanvasHostExtension);
+    setHostExtension({
+      ...hostExtensionFromSeam(seam) as CanvasHostExtension,
+      multiSelectionToolbar: <LcosMultiSelectToolbar />,
+    });
   }, [projectId]);
 
   // 2) 卸载时必须清 reconciler timer（审计 P0-1）。
@@ -130,6 +137,37 @@ export function useLcosCanvasProps(projectId: string): LcosCanvasProps {
       suppressorDisposeRef.current = null;
     };
   }, []);
+
+  // Read canonical identities while the canvas itself is still loading. Descriptors and media
+  // may be slower; known projected materials can show an honest skeleton instead of native cards.
+  useEffect(() => {
+    if (!canvasId) return;
+    const rt = runtimeRef.current;
+    if (!rt) return;
+    let active = true;
+    const current = (): boolean => active && runtimeRef.current === rt
+      && useLcosReferenceStore.getState().projectId === projectId
+      && useCanvasStore.getState().canvasId === canvasId;
+    rt.retarget({ canvasId });
+    useLcosHostStore.getState().setHost(rt.host);
+    useLcosReferenceStore.getState().beginNodeBindingRead(projectId, canvasId);
+    const host = rt.host;
+    const promise = (async () => {
+      try {
+        const identities = await host.bindings.list();
+        if (!current()) return;
+        useLcosReferenceStore.getState().applyNodeBindings(projectId, canvasId,
+          identities.filter((binding) => binding.projectId === projectId
+            && binding.canvasId === canvasId && binding.spatialKind === 'node'), 'loading');
+      } catch (error) {
+        if (!current()) return;
+        useLcosReferenceStore.getState().failNodeBindingRead(projectId, canvasId);
+        console.warn('[lcos] binding identity read failed; reconcile will retry canonical read', error);
+      }
+    })();
+    identityReadRef.current = { projectId, canvasId, runtime: rt, promise };
+    return () => { active = false; };
+  }, [canvasId, projectId, bindingRefreshVersion]);
 
   // 3) Gen2 project route does not mount CanvasPage, so it must own the same
   // canvas SSE subscription. Reconcile writes Huabu server state first; this
@@ -155,6 +193,11 @@ export function useLcosCanvasProps(projectId: string): LcosCanvasProps {
     useLcosHostStore.getState().setHost(rt.host);
     void (async () => {
       try {
+        const identityRead = identityReadRef.current;
+        if (identityRead?.projectId === projectId && identityRead.canvasId === canvasId && identityRead.runtime === rt) {
+          await identityRead.promise;
+        }
+        if (!isCurrent()) return;
         // dev-only：把"这一轮是给哪个 canvas 做投影、做完后 store 里有多少节点"打出来。
         // 用来诊断"同一轮 e2e 里出现孤儿节点"这类竞态，不在生产路径上做任何判断。
         if (import.meta.env.DEV) {
@@ -166,19 +209,7 @@ export function useLcosCanvasProps(projectId: string): LcosCanvasProps {
         // established/refreshed the bindings, so re-sync the reference index.
         const bindings = await rt.host.listNodeBindings();
         if (!isCurrent()) return;
-        useLcosReferenceStore.getState().resetNodeEntities();
-        for (const binding of bindings) {
-          useLcosReferenceStore.getState().registerNodeEntity(
-            binding.spatialId,
-            {
-              entityType: binding.entityType,
-              entityId: binding.entityId,
-              // R2：把从 Core 快照派生的呈现描述（真实 kind/可用性/revision）一起登记，
-              // 供单一 junction 决定物种与次级行；没有描述就如实不带。
-              ...(binding.descriptor ? { descriptor: binding.descriptor } : {}),
-            },
-          );
-        }
+        useLcosReferenceStore.getState().applyNodeBindings(projectId, canvasId, bindings, 'ready');
         // dev-only：绑定登记的完成信号（R2 e2e 用它作为"节点身份已就绪"的确定性等待点，
         // 避免在 store 尚未填充时对命令可用性做假失败判定）。
         if (import.meta.env.DEV) {
@@ -194,11 +225,12 @@ export function useLcosCanvasProps(projectId: string): LcosCanvasProps {
         }
       } catch (error) {
         if (!isCurrent()) return;
+        useLcosReferenceStore.getState().failNodeBindingRead(projectId, canvasId);
         console.warn('[lcos] project-open reconcile failed', error);
       }
     })();
     return () => { active = false; };
-  }, [canvasId, isLoading, projectId]);
+  }, [canvasId, isLoading, projectId, bindingRefreshVersion]);
 
   return { hostExtension };
 }

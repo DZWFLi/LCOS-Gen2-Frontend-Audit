@@ -23,6 +23,7 @@ export interface LcosWorksiteState {
   readonly status: WorksiteStatus;
   readonly statusDetail?: string;
   readonly projectName: string | null;
+  readonly rootScopeId?: string;
   readonly workspaces: readonly Workspace[];
   readonly surfaceCanvasId: Readonly<Partial<Record<LcosSurfaceKey, string>>>;
   /** workspaceId → surface（FocusWhere 跨现场行映射用）。 */
@@ -172,6 +173,7 @@ export function useLcosWorksite(projectId: string): LcosWorksiteState {
     status,
     statusDetail,
     projectName,
+    rootScopeId,
     workspaces,
     surfaceCanvasId,
     surfaceByWorkspace,

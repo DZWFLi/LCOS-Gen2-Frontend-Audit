@@ -107,6 +107,7 @@ export const FrameNode = memo(
     );
 
     const layoutMode: FrameLayoutMode = data.layoutMode ?? 'free';
+    const isLcosCollectionSpatialHost = typeof (data as Record<string, unknown>).lcosCollectionId === 'string';
     const isContentMissing = data.contentMissing === true;
     const isStructuredLayout = layoutMode !== 'free';
     // `grid` counts columns just like `column` does — only `row`
@@ -563,9 +564,10 @@ export const FrameNode = memo(
         id={id}
         data={data}
         type={'frame'}
+        className={isLcosCollectionSpatialHost ? 'lcos-collection-spatial-host' : undefined}
         selected={selected && !isEditingLabel}
-        actions={isContentMissing ? undefined : FrameActions}
-        overlayContent={isContentMissing ? undefined : labelOverlay}
+        actions={isContentMissing || isLcosCollectionSpatialHost ? undefined : FrameActions}
+        overlayContent={isContentMissing || isLcosCollectionSpatialHost ? undefined : labelOverlay}
         overlayOffsetY={-24}
         overlayVisible={labelSemanticallyVisible}
         overlayInteractionPriority={isEditingLabel ? 3 : selected ? 2 : 0}
@@ -587,7 +589,7 @@ export const FrameNode = memo(
         //  - `column` / `row` / `grid`: the grid solver re-packs the
         //    scaled children, so the frame snaps to the new content
         //    size while each child's size ratio is preserved.
-        resizable
+        resizable={!isLcosCollectionSpatialHost}
         onResizeStart={handleFrameResizeStart}
         onResize={handleFrameResize}
         onResizeEnd={handleFrameResizeEnd}

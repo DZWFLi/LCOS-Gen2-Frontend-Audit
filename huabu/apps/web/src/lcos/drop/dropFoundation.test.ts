@@ -59,6 +59,7 @@ describe('R1 single drop intent resolver', () => {
       kind: 'object',
       entityType: 'artifact',
       entityId: 'a-1',
+      artifactViewId: 'view-a-1',
     } as const;
     const canvas = resolveDropIntent(payload, canvasTarget);
     const railway = resolveDropIntent(payload, railwayTarget);
@@ -68,7 +69,7 @@ describe('R1 single drop intent resolver', () => {
         kind: 'assembly-apply',
         targetId: 'canvas:main',
         targetRef: { kind: 'main' },
-        sourceRefs: [{ kind: 'artifactView', id: 'a-1' }],
+        sourceRefs: [{ kind: 'artifactView', id: 'view-a-1' }],
       },
     });
     expect(railway).toMatchObject({
@@ -120,7 +121,7 @@ describe('R1 single drop intent resolver', () => {
     });
   });
 
-  it('CollaborationTarget（R1 合流）：Drop 到 Glyth = 作为 Reference 交给该会话（preview=execute）', () => {
+  it('CollaborationTarget（R1 合流）：Drop 到 Glyth = 持久加入该会话上下文（preview=execute）', () => {
     const glyth: DropTargetRegistration = {
       targetId: 'glyth:node-1',
       kind: 'collaboration-reference',
@@ -131,17 +132,17 @@ describe('R1 single drop intent resolver', () => {
       semantic: { kind: 'collaboration-reference', conversationId: 'c-1' },
     };
     const intent = resolveDropIntent(
-      { kind: 'object', entityType: 'artifact', entityId: 'a-1' },
+      { kind: 'object', entityType: 'artifact', entityId: 'a-1', artifactViewId: 'view-a-1' },
       glyth,
     );
     // preview = execute：一次解析出 intent，commit 使用同一对象，无二次选择窗。
     expect(intent).toEqual({
       status: 'ready',
       intent: {
-        kind: 'collaboration-reference',
+        kind: 'assembly-apply',
         targetId: 'glyth:node-1',
-        conversationId: 'c-1',
-        reference: { entityType: 'artifact', entityId: 'a-1' },
+        targetRef: { kind: 'conversation', id: 'c-1' },
+        sourceRefs: [{ kind: 'artifactView', id: 'view-a-1' }],
       },
     });
     // 文件/文本不是实体引用 → fail-close（不落座、不伪造成功）。
@@ -153,7 +154,8 @@ describe('R1 single drop intent resolver', () => {
 
 describe('R1 commit router', () => {
   it('routes through canonical owners and de-duplicates a transaction', async () => {
-    const applyAssembly = vi.fn(async () => ({ changeSetId: 'cs-1' }));
+    const canonicalReceipt = { schemaVersion: 1 as const, projectId: 'p1', allApplied: true, changeSetId: 'cs-1', results: [{ sourceRef: { kind: 'artifactView' as const, id: 'a-1' }, status: 'applied' as const, channel: 'presentation-membership' as const }] };
+    const applyAssembly = vi.fn(async () => canonicalReceipt);
     const router = new DropCommitRouter();
     const intent = {
       kind: 'assembly-apply' as const,
@@ -169,17 +171,17 @@ describe('R1 commit router', () => {
       applyAssembly,
       addComposerReference: vi.fn(),
     });
-    expect(first).toEqual({
+    expect(first).toMatchObject({
       status: 'success',
       transactionId: 'tx-1',
       targetId: 'canvas:main',
-      canonicalReceipt: { changeSetId: 'cs-1' },
+      canonicalReceipt,
     });
     expect(second).toBe(first);
     expect(applyAssembly).toHaveBeenCalledTimes(1);
   });
 
-  it('CollaborationTarget commit：owner 存在才成功，缺席 fail-close（禁止 fake drop success）', async () => {
+  it('retired draft-only body intents cannot claim durable success', async () => {
     const router = new DropCommitRouter();
     const addConversationReference = vi.fn();
     const intent = {
@@ -193,8 +195,8 @@ describe('R1 commit router', () => {
       addComposerReference: vi.fn(),
       addConversationReference,
     });
-    expect(ok).toMatchObject({ status: 'success', transactionId: 'tx-collab' });
-    expect(addConversationReference).toHaveBeenCalledWith(intent);
+    expect(ok).toMatchObject({ status: 'failed', transactionId: 'tx-collab' });
+    expect(addConversationReference).not.toHaveBeenCalled();
 
     const fail = await router.commit(intent, 'tx-collab-2', {
       applyAssembly: vi.fn(),
@@ -202,7 +204,7 @@ describe('R1 commit router', () => {
       // 无 owner → fail-close
     });
     expect(fail.status).toBe('failed');
-    expect(fail.message).toContain('不支持接收引用');
+    expect(fail.message).toContain('旧会话投放请求已停用');
   });
 
   it('fails closed when no external import owner exists', async () => {
@@ -222,4 +224,37 @@ describe('R1 commit router', () => {
       message: '当前没有可用的导入/捕获 owner',
     });
   });
+
+  it('accepts collection membership only when the canonical receipt confirms this exact member', async () => {
+    const router = new DropCommitRouter();
+    const intent = {
+      kind: 'collection-membership' as const,
+      targetId: 'collection:c-1',
+      collectionId: 'c-1',
+      memberRef: { type: 'artifact' as const, id: 'a-1' },
+    };
+    const commit = (receipt: unknown) => router.commit(intent, `tx-${Math.random()}`, {
+      applyAssembly: vi.fn(),
+      addComposerReference: vi.fn(),
+      addCollectionMember: vi.fn(async () => receipt as never),
+    });
+
+    await expect(commit({ status: 'applied', collectionId: 'c-1', memberRef: { type: 'artifact', id: 'a-1' } }))
+      .resolves.toMatchObject({ status: 'success', message: '已加入集合' });
+    await expect(commit({ status: 'already-member', collectionId: 'c-1', memberRef: { type: 'artifact', id: 'a-1' } }))
+      .resolves.toMatchObject({ status: 'success', message: '已是集合成员' });
+    await expect(commit({ status: 'not-member', collectionId: 'c-1', memberRef: { type: 'artifact', id: 'a-1' } }))
+      .resolves.toMatchObject({ status: 'failed' });
+    await expect(commit({ status: 'applied', collectionId: 'c-other', memberRef: { type: 'artifact', id: 'a-1' } }))
+      .resolves.toMatchObject({ status: 'failed', message: '集合成员回执与本次投放对象不一致' });
+    await expect(commit({ status: 'applied', collectionId: 'c-1', memberRef: { type: 'artifact', id: 'a-other' } }))
+      .resolves.toMatchObject({ status: 'failed', message: '集合成员回执与本次投放对象不一致' });
+  });
+});
+
+it('does not use an artifact ID as an ArtifactView ID for Assembly', () => {
+  expect(resolveDropIntent({ kind: 'object', entityType: 'artifact', entityId: 'artifact-one' }, canvasTarget))
+    .toMatchObject({ status: 'ineligible' });
+  expect(resolveDropIntent({ kind: 'object', entityType: 'artifact', entityId: 'artifact-one', artifactViewId: 'view-seven' }, canvasTarget))
+    .toMatchObject({ status: 'ready', intent: { sourceRefs: [{ kind: 'artifactView', id: 'view-seven' }] } });
 });

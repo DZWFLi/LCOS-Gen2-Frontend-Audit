@@ -13,6 +13,7 @@ const callbacks = () => ({
   toggleInteractivity: vi.fn(),
   toggleMinimap: vi.fn(),
   toggleGrid: vi.fn(),
+  toggleEdges: vi.fn(),
 });
 
 describe('LcosSpatialNavigator', () => {
@@ -35,6 +36,7 @@ describe('LcosSpatialNavigator', () => {
       zoom: 0.72,
       minimapEnabled: true,
       gridEnabled: true,
+      edgesVisible: false,
       interactivityLocked: false,
       miniMap: <div data-test-minimap>map</div>,
       ...controls,
@@ -85,7 +87,7 @@ describe('LcosSpatialNavigator', () => {
     });
     expect(useLcosShellStore.getState().cameraRequest?.kind).toBe('reset');
 
-    for (const label of ['解锁画布', '隐藏网格', '隐藏小地图']) {
+    for (const label of ['解锁画布', '隐藏网格', '隐藏小地图', '显示连线']) {
       await act(async () => {
         element.querySelector<HTMLButtonElement>(`[aria-label="${label}"]`)?.click();
       });
@@ -93,6 +95,7 @@ describe('LcosSpatialNavigator', () => {
     expect(controls.toggleInteractivity).toHaveBeenCalledTimes(1);
     expect(controls.toggleGrid).toHaveBeenCalledTimes(1);
     expect(controls.toggleMinimap).toHaveBeenCalledTimes(1);
+    expect(controls.toggleEdges).toHaveBeenCalledTimes(1);
   });
 
   it('offers the existing minimap preference when the map is hidden', async () => {
@@ -109,4 +112,14 @@ describe('LcosSpatialNavigator', () => {
     });
     expect(controls.toggleMinimap).toHaveBeenCalledTimes(1);
   });
+  it('Escape collapses this entry without cascading to the canvas or toggling the minimap owner', async () => {
+    const { element, controls } = await render();
+    await act(async () => element.querySelector<HTMLButtonElement>('[aria-label="打开空间导航"]')!.click());
+    const event = new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true });
+    await act(async () => element.querySelector('button')!.dispatchEvent(event));
+    expect(event.defaultPrevented).toBe(true);
+    expect(element.dataset.lcosExpanded).toBe('false');
+    expect(controls.toggleMinimap).not.toHaveBeenCalled();
+  });
+
 });

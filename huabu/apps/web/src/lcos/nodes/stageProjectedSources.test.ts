@@ -11,7 +11,7 @@ const deferred = <T>(): {
   return { promise, resolve };
 };
 
-const { getBlob, getNodeContent, uploadImage, uploadAudio, canvasStore } = vi.hoisted(() => {
+const { getBlob, getNodeContent, uploadImage, uploadAudio, uploadPdf, uploadVideo, canvasStore } = vi.hoisted(() => {
   const state = {
     canvasId: 'canvas-a',
     nodes: [{ id: 'node-a', type: 'image', data: { src: '' } }],
@@ -23,6 +23,8 @@ const { getBlob, getNodeContent, uploadImage, uploadAudio, canvasStore } = vi.ho
     getNodeContent: vi.fn(),
     uploadImage: vi.fn(),
     uploadAudio: vi.fn(),
+    uploadPdf: vi.fn(),
+    uploadVideo: vi.fn(),
     canvasStore: {
       getState: () => state,
       subscribe: vi.fn(() => () => undefined),
@@ -36,7 +38,7 @@ vi.mock('@local-creative-os/web-gen2', () => ({
     getBlob = getBlob;
   },
 }));
-vi.mock('@/api/artifact', () => ({ uploadImage, uploadAudio }));
+vi.mock('@/api/artifact', () => ({ uploadImage, uploadAudio, uploadPdf, uploadVideo }));
 vi.mock('@/api/canvas', () => ({ getNodeContent }));
 vi.mock('@/lcos/lcosHost', () => ({
   readLcosHostConfig: vi.fn(() => ({
@@ -81,6 +83,8 @@ describe('stageProjectedSources ownership guard', () => {
     getNodeContent.mockResolvedValue({ rev: 'rev-current' });
     uploadImage.mockReset();
     uploadAudio.mockReset();
+    uploadPdf.mockReset();
+    uploadVideo.mockReset();
     canvasStore.state.canvasId = 'canvas-a';
     canvasStore.state.nodes = [
       { id: 'node-a', type: 'image', data: { src: '' } },
@@ -140,4 +144,41 @@ describe('stageProjectedSources ownership guard', () => {
       src: 'artifact-key.png',
     });
   });
+});
+
+for (const kind of ['video', 'pdf'] as const) {
+  it(`stages real ${kind} bytes with its own uploader and keeps the content CAS`, async () => {
+    const mime = kind === 'pdf' ? 'application/pdf' : 'video/mp4';
+    canvasStore.state.nodes = [{ id: 'node-a', type: kind, data: { src: '' } }];
+    const upload = kind === 'pdf' ? uploadPdf : uploadVideo;
+    upload.mockResolvedValue(`${kind}-key`);
+    getBlob.mockResolvedValue(new Blob(['actual bytes'], { type: mime }));
+    const binding = { ...imageBinding, descriptor: { artifactKind: kind, mimeType: mime, fileRecordId: `${kind}-file` } };
+    await expect(stageProjectedSources(`project-${kind}`, [binding])).resolves.toBe(1);
+    const file = upload.mock.calls[0]![0] as File;
+    expect(file.type).toBe(mime);
+    expect(file.name).toBe(`${kind}-file.${kind === 'pdf' ? 'pdf' : 'mp4'}`);
+    expect(canvasStore.state.seedNodeContentRevisions).toHaveBeenCalled();
+    expect(canvasStore.state.updateNodeData).toHaveBeenCalledWith('node-a', { src: `${kind}-key` });
+  });
+}
+it('stages generated media in its neutral note host without changing the host type', async () => {
+  canvasStore.state.nodes = [{ id: 'node-a', type: 'note', data: { src: '' } }];
+  getBlob.mockResolvedValue(new Blob(['actual image'], { type: 'image/png' }));
+  uploadImage.mockResolvedValue('generated-image.png');
+  await expect(stageProjectedSources('project-generated', [imageBinding])).resolves.toBe(1);
+  expect(canvasStore.state.updateNodeData).toHaveBeenCalledWith('node-a', { src: 'generated-image.png' });
+});
+it('does not overwrite user-provided source while staging real media', async () => {
+  canvasStore.state.nodes = [{ id: 'node-a', type: 'image', data: { src: 'existing.png' } }];
+  await expect(stageProjectedSources('project-existing', [imageBinding])).resolves.toBe(0);
+  expect(getBlob).not.toHaveBeenCalled();
+});
+
+beforeEach(() => {
+  getBlob.mockReset(); getNodeContent.mockReset(); getNodeContent.mockResolvedValue({ rev: 'rev-current' });
+  uploadImage.mockReset(); uploadAudio.mockReset(); uploadPdf.mockReset(); uploadVideo.mockReset();
+  canvasStore.state.canvasId = 'canvas-a';
+  canvasStore.state.nodes = [{ id: 'node-a', type: 'image', data: { src: '' } }];
+  canvasStore.state.updateNodeData.mockReset(); canvasStore.state.seedNodeContentRevisions.mockReset();
 });

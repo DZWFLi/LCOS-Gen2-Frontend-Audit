@@ -113,3 +113,11 @@ describe('waitForProjectedEntity', () => {
     vi.useRealTimers();
   });
 });
+
+it('waits for the exact selected projection instead of another occurrence of the same entity', async () => {
+  stores.canvasStore.setState({ canvasId: 'canvas-a', nodes: [{ id: 'first' }, { id: 'second' }] });
+  stores.referenceStore.setState({ projectId: 'project-a', nodeEntityRefs: new Map([
+    ['first', { entityType: 'artifact', entityId: 'a' }], ['second', { entityType: 'artifact', entityId: 'a' }],
+  ]) });
+  await expect(waitForProjectedEntity({ projectId: 'project-a', canvasId: 'canvas-a', entityType: 'artifact', entityId: 'a', nodeId: 'second' })).resolves.toBe('second');
+});

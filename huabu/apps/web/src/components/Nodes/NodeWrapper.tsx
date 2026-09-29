@@ -711,6 +711,7 @@ export const NodeWrapper = memo(
               data={data}
               toolbar={toolbar}
               actions={actions}
+              chromeMode={chromeMode}
             />
           )}
 

@@ -4,7 +4,6 @@
 // 保留为 disabled，避免用静态 roots 或“+N”占位冒充恢复能力。
 
 import {
-  projectConnectedConversationStatusV1,
   type ConnectedConversationV1,
   type ProjectViewRailOrderV0,
 } from '@local-creative-os/contracts';
@@ -16,14 +15,18 @@ import {
   railwayRefKeyV1,
   reorderRailwayRefV1,
 } from '@local-creative-os/web-gen2';
-import { Eye, FolderOpen, Inbox, Layers, ListTree, MessageCircle, MoreHorizontal, PanelsTopLeft, Trash2 } from 'lucide-react';
+import { ArrowUp, ArrowDown, Eye, FolderOpen, Inbox, Layers, ListTree, MoreHorizontal, PanelsTopLeft, Trash2 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState, type DragEvent } from 'react';
 
 import { lcosHudEdgeOffsets, lcosHudSafeCenterY } from './lcosHudPlacement';
 import { useLcosShellStore, type LcosSurfaceKey } from './lcosShellStore';
 import { createLcosCoreSession } from '../app/lcosCoreClient';
+import { useCollaborationSessionStore } from '../collaboration/collaborationSessionStore';
+import { useCollaborationSession } from '../collaboration/useCollaborationSession';
+import { LcosReceiverIdentity } from '../composer/LcosReceiverIdentity';
 import { rectFromDomRect } from '../drop/dropTargetRegistry';
 import { useLcosDropStore } from '../lcosDropState';
+import { RailwayPeek } from '../navigation/RailwayPeek';
 import {
   projectRailwaySnapshot,
   type RailwayUiSnapshot,
@@ -33,6 +36,8 @@ import {
   railwayReceiveLabel,
   railwayReceivePresentation,
 } from '../navigation/railwayReceivePresentation';
+import { useAvoidingHudPosition } from '../navigation/useAvoidingHudPosition';
+import { useHudViewport } from '../navigation/useHudViewport';
 import { LcosRailwayView, type LcosRailwayViewItem } from '../ui/families';
 import { lcosGlassStyle, lcosTokens } from '../ui/lcosTokens';
 
@@ -45,10 +50,6 @@ function destinationTargetId(
   destinationKey: string,
 ): string {
   return `railway:${projectId}:${destinationKey}`;
-}
-
-function receiverTargetId(projectId: string, conversationId: string): string {
-  return `railway-receiver:${projectId}:${conversationId}`;
 }
 
 export interface LcosRailwayProps {
@@ -87,11 +88,17 @@ function destinationsForOrder(
   });
 }
 
-export function LcosRailway({
+/** Project identity is the lifecycle boundary for destination/receiver snapshots. */
+export function LcosRailway(props: LcosRailwayProps): React.JSX.Element {
+  return <ProjectRailway key={props.projectId} {...props} />;
+}
+
+function ProjectRailway({
   projectId,
   surfaceByWorkspace,
   activateDestination,
 }: LcosRailwayProps): React.JSX.Element {
+  const viewport = useHudViewport();
   const activeSurface = useLcosShellStore((s) => s.activeSurface);
   const activeWorkspaceId = useLcosShellStore((s) => s.activeWorkspaceId);
   const windowEnvironment = useLcosShellStore((s) => s.windowEnvironment);
@@ -110,10 +117,27 @@ export function LcosRailway({
   const [dragKey, setDragKey] = useState<string | undefined>(undefined);
   const [reorderTargetKey, setReorderTargetKey] = useState<string | undefined>(undefined);
   const [reordering, setReordering] = useState(false);
+  const keyboardMoveFocus = useRef<string | undefined>(undefined);
+  useEffect(() => {
+    if (reordering || keyboardMoveFocus.current === undefined) return;
+    const element = receiveTargetElements.current.get(keyboardMoveFocus.current);
+    keyboardMoveFocus.current = undefined;
+    element?.focus();
+  }, [reordering, snapshot]);
   const [peekKey, setPeekKey] = useState<string | undefined>(undefined);
   const [moreKey, setMoreKey] = useState<string | undefined>(undefined);
   const [overflowOpen, setOverflowOpen] = useState(false);
   const [notice, setNotice] = useState<string | undefined>(undefined);
+  const [refreshVersion, setRefreshVersion] = useState(0);
+  const watchProjectChanges = useCollaborationSessionStore((state) => state.watchProjectChanges);
+  const receiverEntry = useCollaborationSession(projectId, activeReceiver?.id);
+  const refresh = useCallback(() => setRefreshVersion((value) => value + 1), []);
+  useEffect(() => watchProjectChanges(projectId, refresh), [projectId, refresh, watchProjectChanges]);
+  useEffect(() => {
+    const onVisible = (): void => { if (document.visibilityState === 'visible') refresh(); };
+    window.addEventListener('focus', refresh); document.addEventListener('visibilitychange', onVisible);
+    return () => { window.removeEventListener('focus', refresh); document.removeEventListener('visibilitychange', onVisible); };
+  }, [refresh]);
   const session = useMemo(() => createLcosCoreSession(), []);
   const railway = useMemo(() => new CoreRailwayClient(session.http), [session]);
   const conversations = useMemo(() => new CoreConversationClient(session.http), [session]);
@@ -123,6 +147,8 @@ export function LcosRailway({
   );
 
   useEffect(() => {
+    // A project invalidation during CAS waits for the existing operation to settle.
+    if (reordering) return;
     const controller = new AbortController();
     let cancelled = false;
     void Promise.all([
@@ -141,6 +167,7 @@ export function LcosRailway({
             id: String(workspace.id),
             name: workspace.name,
             scopeId: String(workspace.scopeId),
+            canvasId: workspace.canvasId,
           })),
           scopes: graph.scopes.map((scope) => ({
             id: String(scope.id),
@@ -153,15 +180,14 @@ export function LcosRailway({
       })
       .catch((cause: unknown) => {
         if (!cancelled && (cause as { name?: string }).name !== 'AbortError') {
-          setSnapshot(undefined);
-          setError('Railway 目的地读取失败');
+          setError('导航读取失败，当前显示上次结果');
         }
       });
     return () => {
       cancelled = true;
       controller.abort();
     };
-  }, [projectId, projects, railway, surfaceByWorkspace]);
+  }, [projectId, projects, railway, surfaceByWorkspace, refreshVersion, reordering]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -191,7 +217,7 @@ export function LcosRailway({
       cancelled = true;
       controller.abort();
     };
-  }, [conversations, projectId]);
+  }, [conversations, projectId, refreshVersion]);
 
   const destinations = useMemo(
     () => snapshot?.destinations ?? [],
@@ -227,21 +253,18 @@ export function LcosRailway({
     registerTarget(target);
   }, [projectId, registerTarget, unregisterTarget]);
 
-  const publishReceiverTarget = useCallback((): void => {
+  const publishReceiverDropExclusion = useCallback((): void => {
     if (activeReceiver === undefined || receiverTargetElement.current === null) return;
-    const receiverStatus = projectConnectedConversationStatusV1(activeReceiver);
-    const enabled = receiverStatus !== 'offline';
     registerTarget({
-      targetId: receiverTargetId(projectId, activeReceiver.id),
-      kind: 'collaboration-reference',
+      targetId: `railway-receiver:${projectId}:${activeReceiver.id}`,
+      kind: 'drop-exclusion',
       label: activeReceiver.label,
       rect: rectFromDomRect(receiverTargetElement.current.getBoundingClientRect()),
-      priority: 21,
-      enabled,
-      ...(enabled ? {} : { ineligibleReason: '承接会话当前离线' }),
+      priority: 30,
+      enabled: true,
       semantic: {
-        kind: 'collaboration-reference',
-        conversationId: activeReceiver.id,
+        kind: 'drop-exclusion',
+        reason: '承接会话用于打开会话；请在接收者选择器中更改接收者。',
       },
     });
   }, [activeReceiver, projectId, registerTarget]);
@@ -278,22 +301,22 @@ export function LcosRailway({
 
   useEffect(() => {
     if (activeReceiver === undefined) return;
-    const targetId = receiverTargetId(projectId, activeReceiver.id);
-    publishReceiverTarget();
+    const targetId = `railway-receiver:${projectId}:${activeReceiver.id}`;
+    publishReceiverDropExclusion();
     const element = receiverTargetElement.current;
     const observer = element !== null && typeof ResizeObserver === 'function'
-      ? new ResizeObserver(publishReceiverTarget)
+      ? new ResizeObserver(publishReceiverDropExclusion)
       : undefined;
     if (element !== null) observer?.observe(element);
-    window.addEventListener('resize', publishReceiverTarget);
-    window.addEventListener('scroll', publishReceiverTarget, true);
+    window.addEventListener('resize', publishReceiverDropExclusion);
+    window.addEventListener('scroll', publishReceiverDropExclusion, true);
     return () => {
       observer?.disconnect();
-      window.removeEventListener('resize', publishReceiverTarget);
-      window.removeEventListener('scroll', publishReceiverTarget, true);
+      window.removeEventListener('resize', publishReceiverDropExclusion);
+      window.removeEventListener('scroll', publishReceiverDropExclusion, true);
       unregisterTarget(targetId);
     };
-  }, [activeReceiver, projectId, publishReceiverTarget, unregisterTarget]);
+  }, [activeReceiver, projectId, publishReceiverDropExclusion, unregisterTarget]);
 
   const refreshAfterConflict = useCallback(async (previous: RailwayUiSnapshot): Promise<void> => {
     try {
@@ -311,6 +334,7 @@ export function LcosRailway({
           id: String(workspace.id),
           name: workspace.name,
           scopeId: String(workspace.scopeId),
+            canvasId: workspace.canvasId,
         })),
         scopes: graph.scopes.map((scope) => ({
           id: String(scope.id),
@@ -347,7 +371,7 @@ export function LcosRailway({
         });
         setPeekKey(undefined);
         setMoreKey(undefined);
-        setNotice(`目的地已移出 Railway · v${serverOrder.version}`);
+        setNotice('目的地已移出导航');
       })
       .catch(async (cause: unknown) => {
         if ((cause as { status?: number }).status === 409) {
@@ -361,7 +385,7 @@ export function LcosRailway({
 
   const reorder = useCallback((movedKey: string, targetKey: string, placement: 'before' | 'after'): void => {
     const previous = snapshot;
-    if (previous === undefined) return;
+    if (previous === undefined || reordering) return;
     const orderedRefs = reorderRailwayRefV1(previous.order.orderedRefs, movedKey, targetKey, placement);
     if (orderedRefs === previous.order.orderedRefs) return;
     const optimisticOrder = { ...previous.order, orderedRefs };
@@ -376,7 +400,7 @@ export function LcosRailway({
           order: serverOrder,
           destinations: destinationsForOrder(serverOrder, previous.destinations),
         });
-        setNotice(`Railway 顺序已保存 · v${serverOrder.version}`);
+        setNotice('目的地顺序已保存');
         setError(undefined);
       })
       .catch(async (cause: unknown) => {
@@ -392,7 +416,20 @@ export function LcosRailway({
         setError(cause instanceof Error ? cause.message : 'Railway 顺序保存失败');
       })
       .finally(() => setReordering(false));
-  }, [projectId, refreshAfterConflict, railway, snapshot]);
+  }, [projectId, refreshAfterConflict, railway, snapshot, reordering]);
+
+  const moveActions = (destinationKey: string): React.JSX.Element => <>
+    {(['up', 'down'] as const).map((direction) => {
+      const index = destinations.findIndex((item) => item.key === destinationKey);
+      const target = index < 0 ? undefined : destinations[index + (direction === 'up' ? -1 : 1)];
+      const Icon = direction === 'up' ? ArrowUp : ArrowDown;
+      return <button key={direction} type="button" role="menuitem" data-lcos-railway-more-action={direction}
+        disabled={reordering || target === undefined}
+        onClick={() => { if (target) { keyboardMoveFocus.current = destinationKey; reorder(destinationKey, target.key, direction === 'up' ? 'before' : 'after'); } }}>
+        <Icon size={14} aria-hidden />{direction === 'up' ? '上移' : '下移'}
+      </button>;
+    })}
+  </>;
 
   const activate = useCallback((destination: RailwayDestinationProjection): void => {
     if (!destination.available || activatingKey !== undefined || reordering) return;
@@ -436,6 +473,7 @@ export function LcosRailway({
         key: destination.key,
         label: destination.label,
         icon: iconFor(destination.kind),
+        glyph: destination.kind === 'scene' ? 'project' : destination.kind,
       selected:
         destination.available &&
         (destination.workspaceId !== undefined
@@ -462,15 +500,11 @@ export function LcosRailway({
           style={{ ...lcosGlassStyle, color: lcosTokens.color.text }}
         >
           <strong data-lcos-railway-peek-label>{destination.label}</strong>
-          <span data-lcos-railway-destination-ref>
-            {destination.kind}:{destination.viewId}
-          </span>
-          <span data-lcos-railway-peek-geometry>
-            Core 顺序 {destination.sourceIndex + 1}/{snapshot?.order.orderedRefs.length ?? destinations.length}
-            {destination.surface === undefined ? '' : ` · ${destination.surface}`}
-          </span>
+          {destination.canvasId ? <RailwayPeek canvasId={destination.canvasId} /> : <span data-lcos-railway-peek-geometry>
+            {destination.reason ?? '这个目的地还没有可读取的现场预览'}
+          </span>}
           <span data-lcos-railway-receive-state>
-            Receive：{railwayReceiveLabel(receivePresentation, destination.reason)}
+            {railwayReceiveLabel(receivePresentation, destination.reason)}
           </span>
           <div data-lcos-railway-actions>
             <button
@@ -483,7 +517,7 @@ export function LcosRailway({
               }}
             >
               <Eye size={14} aria-hidden />
-              Peek
+              预览
             </button>
             <button
               type="button"
@@ -492,7 +526,7 @@ export function LcosRailway({
               title="Receive 需要从 Assembly 或 Canvas 拖入素材"
             >
               <Inbox size={14} aria-hidden />
-              Receive
+              拖入接收
             </button>
             <button
               type="button"
@@ -501,7 +535,7 @@ export function LcosRailway({
               onClick={() => setMoreKey((current) => current === destination.key ? undefined : destination.key)}
             >
               <MoreHorizontal size={14} aria-hidden />
-              More
+              更多
             </button>
           </div>
         </div>
@@ -519,6 +553,7 @@ export function LcosRailway({
             <Eye size={14} aria-hidden />
             进入目的地
           </button>
+          {moveActions(destination.key)}
           <button
             type="button"
             role="menuitem"
@@ -585,7 +620,7 @@ export function LcosRailway({
     >
       <strong>Railway 目的地</strong>
       <span data-lcos-railway-overflow-summary>
-        Core {snapshot?.order.orderedRefs.length ?? 0} · 岛内 {primaryDestinations.length}
+        共 {snapshot?.order.orderedRefs.length ?? 0} 个目的地
       </span>
       <div data-lcos-railway-overflow-list>
         {overflowRefs.map((ref) => {
@@ -618,22 +653,28 @@ export function LcosRailway({
                 }}
               >
                 <span>{destination?.label ?? key}</span>
-                <small>{key}</small>
+                <small>{destination === undefined ? '暂不可用' : ({ scene: '子现场', context: '上下文', workflow: '工作流', collection: '集合' }[destination.kind])}</small>
               </button>
               <span data-lcos-railway-overflow-state>
                 {destination === undefined
                   ? 'Surface 根入口由底部现场入口接管'
                   : railwayReceiveLabel(presentation, destination.reason)}
               </span>
-              <button
-                type="button"
-                data-lcos-railway-overflow-remove={key}
-                disabled={reordering}
-                aria-label={`移出 ${destination?.label ?? key}`}
-                onClick={() => removeDestination(key)}
-              >
-                <Trash2 size={14} aria-hidden />
+              <button type="button" data-lcos-railway-overflow-manage={key}
+                aria-label={`管理 ${destination?.label ?? key}`} aria-expanded={moreKey === key}
+                onClick={() => setMoreKey((current) => current === key ? undefined : key)}>
+                <MoreHorizontal size={16} aria-hidden />
               </button>
+              {moreKey === key && <div data-lcos-railway-overflow-menu role="menu" aria-label={`${destination?.label ?? key} 更多操作`}>
+                <button type="button" role="menuitem" data-lcos-railway-more-action="open"
+                  disabled={destination?.available !== true || activatingKey !== undefined || reordering}
+                  onClick={() => { if (destination) activate(destination); }}><Eye size={14} aria-hidden />进入目的地</button>
+                {moveActions(key)}
+                <button type="button" role="menuitem" data-lcos-railway-overflow-remove={key}
+                  disabled={reordering} aria-label={`移出 ${destination?.label ?? key}`} onClick={() => removeDestination(key)}>
+                  <Trash2 size={14} aria-hidden />移出导航
+                </button>
+              </div>}
             </div>
           );
         })}
@@ -641,40 +682,36 @@ export function LcosRailway({
     </div>
   ) : undefined;
 
-  const receiverPresentation = activeReceiver === undefined
-    ? undefined
-    : railwayReceivePresentation({
-        targetId: receiverTargetId(projectId, activeReceiver.id),
-        enabled: projectConnectedConversationStatusV1(activeReceiver) !== 'offline',
-        dropState,
-        resolution: dropResolution,
-      });
-  const receiver = activeReceiver === undefined || receiverPresentation === undefined
+  const receiverUserState = receiverEntry?.status === 'ready' ? receiverEntry.projection?.userState : undefined;
+  const receiverStatusText = receiverUserState === undefined ? (receiverEntry?.status === 'error' ? '状态读取失败' : '正在读取状态')
+    : ({ ready: '可以继续', thinking: '正在理解', working: '正在做事', needs_user: '等你回应', done: '本轮完成', unavailable: '暂时无法连接' }[receiverUserState]);
+  const receiver = activeReceiver === undefined
     ? undefined
     : (
         <div data-lcos-railway-receiver-shell>
           <button
-            ref={(element) => {
-              if (receiverTargetElement.current !== null && element === null) {
-                unregisterTarget(receiverTargetId(projectId, activeReceiver.id));
-              }
-              receiverTargetElement.current = element;
-              if (element !== null) publishReceiverTarget();
-            }}
+            ref={(element) => { receiverTargetElement.current = element; }}
             type="button"
             data-lcos-railway-receiver={activeReceiver.id}
-            data-lcos-receive-state={receiverPresentation}
-            title={`${activeReceiver.label} · ${railwayReceiveLabel(receiverPresentation)}`}
-            aria-label={`打开承接会话 ${activeReceiver.label}`}
+            data-lcos-drop-policy="open-only"
+            title={`${activeReceiver.label} · ${receiverStatusText}`}
+            aria-label={`打开承接会话 ${activeReceiver.label} · ${receiverStatusText}`}
             onClick={() => openWindow('conversation', `会话窗口 · ${activeReceiver.label}`, activeReceiver.id)}
           >
-            <MessageCircle size={19} aria-hidden />
-            <span data-lcos-railway-receiver-status>
-              {projectConnectedConversationStatusV1(activeReceiver)}
+            <span className="relative block h-7 w-7" aria-hidden>
+              <LcosReceiverIdentity projectId={projectId} conversationId={activeReceiver.id} size={28} />
+              {receiverUserState === undefined && <span className="absolute inset-1 rounded-full border border-current opacity-35" />}
+            </span>
+            <span data-lcos-railway-receiver-status data-user-state={receiverUserState ?? 'unknown'} title={receiverStatusText}>
+              {receiverStatusText}
             </span>
           </button>
         </div>
       );
+
+  const edgeOffsets = lcosHudEdgeOffsets(windowEnvironment, viewport);
+  const placement = useAvoidingHudPosition({ x: edgeOffsets.left, y: lcosHudSafeCenterY(windowEnvironment, viewport.height),
+    width: 52, height: Math.max(52, 16 + primaryDestinations.length * 42 - 6) }, { y: 'center' });
 
   // An empty project has no Railway yet. Active Receiver and canonical
   // compatibility rows are still real identities and keep the vertical chain visible.
@@ -685,18 +722,26 @@ export function LcosRailway({
     && receiverError === undefined
   ) return <></>;
 
-  const viewport = { width: window.innerWidth, height: window.innerHeight };
-  const edgeOffsets = lcosHudEdgeOffsets(windowEnvironment, viewport);
 
   return (
     <div
+      ref={placement.ref}
       data-lcos-railway
+      role="presentation"
+      onKeyDown={(event) => {
+        if (event.key !== 'Escape') return;
+        if (moreKey !== undefined) setMoreKey(undefined);
+        else if (overflowOpen) setOverflowOpen(false);
+        else if (peekKey !== undefined) setPeekKey(undefined);
+        else return;
+        event.preventDefault(); event.stopPropagation();
+      }}
       data-lcos-railway-version={snapshot?.order.version}
       data-lcos-railway-canonical-total={snapshot?.order.orderedRefs.length ?? 0}
-      className="pointer-events-auto fixed top-1/2 left-6 z-40 flex -translate-y-1/2 flex-col items-center gap-2"
+      className="pointer-events-auto fixed z-40 flex flex-col items-center gap-2"
       style={{
-        left: edgeOffsets.left,
-        top: lcosHudSafeCenterY(windowEnvironment, viewport.height),
+        left: placement.rect.x,
+        top: placement.rect.y,
       }}
     >
       <LcosRailwayView
@@ -711,7 +756,8 @@ export function LcosRailway({
           const destination = destinations.find((item) => item.key === key);
           if (destination !== undefined) activate(destination);
         }}
-        footer={error ?? receiverError ?? notice ?? (dropState.status === 'failed' ? dropState.reason : undefined)}
+        footer={error || receiverError ? <span role="status">{error ?? receiverError}<button type="button" className="ml-2 underline" onClick={refresh}>重试</button></span>
+          : notice ?? (dropState.status === 'failed' ? dropState.reason : undefined)}
       />
     </div>
   );

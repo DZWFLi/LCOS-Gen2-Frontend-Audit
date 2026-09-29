@@ -33,8 +33,8 @@ vi.mock('../navigation/LcosNavigatorIsland', () => ({
 vi.mock('../app/useLcosWorksiteNav', () => ({ useLcosWorksiteNav: () => ({ switchWorksite: vi.fn() }) }));
 vi.mock('../navigation/waitForProjectedEntity', () => ({ waitForProjectedEntity: vi.fn() }));
 vi.mock('react-router-dom', () => ({ useNavigate: () => vi.fn() }));
-vi.mock('@/store/canvasStore', () => ({ default: { getState: () => ({ nodes: mocks.nodes, canvasId: 'canvas-main', switchCanvas: vi.fn() }) } }));
-vi.mock('../lcosReferenceState', () => ({ useLcosReferenceStore: { getState: () => ({ nodeEntityRefs: mocks.refs }) } }));
+vi.mock('@/store/canvasStore', () => ({ default: Object.assign((selector: (state: unknown) => unknown) => selector({ nodes: mocks.nodes, canvasId: 'canvas-main' }), { getState: () => ({ nodes: mocks.nodes, canvasId: 'canvas-main', switchCanvas: vi.fn() }) }) }));
+vi.mock('../lcosReferenceState', () => ({ useLcosReferenceStore: Object.assign((selector: (state: unknown) => unknown) => selector({ nodeEntityRefs: mocks.refs }), { getState: () => ({ nodeEntityRefs: mocks.refs }) }) }));
 vi.mock('../shell/lcosShellStore', () => ({
   useLcosShellStore: (selector: (state: Record<string, unknown>) => unknown) => selector({
     activeSurface: 'main',

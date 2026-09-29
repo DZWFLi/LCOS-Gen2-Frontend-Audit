@@ -13,6 +13,18 @@
 const PICK_SUPPRESS_WINDOW_MS = 400;
 let lastReferencePickAt = 0;
 let suppressorInstalled = false;
+let carryMenuUntil = 0;
+
+export function markCarryCompleted(): void { carryMenuUntil = Date.now() + 500; }
+
+export function handleCarryContextMenu(event: Event): boolean {
+  if (carryMenuUntil === 0 || Date.now() > carryMenuUntil) return false;
+  carryMenuUntil = 0;
+  event.preventDefault();
+  event.stopPropagation();
+  event.stopImmediatePropagation();
+  return true;
+}
 
 /** Mark "a reference pick just completed" — the trailing click is ours. */
 export function markReferencePickCompleted(): void {
@@ -56,11 +68,15 @@ export function installReferenceClickSuppressor(): () => void {
     handleReferenceClickSuppression(event);
   };
   document.addEventListener('click', handler, { capture: true });
+  const contextHandler = (event: Event): void => { handleCarryContextMenu(event); };
+  document.addEventListener('contextmenu', contextHandler, { capture: true });
   let disposed = false;
   return function uninstall() {
     if (disposed) return;
     disposed = true;
     document.removeEventListener('click', handler, { capture: true });
+    document.removeEventListener('contextmenu', contextHandler, { capture: true });
+    carryMenuUntil = 0;
     suppressorInstalled = false;
   };
 }

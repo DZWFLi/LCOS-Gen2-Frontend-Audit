@@ -28,21 +28,24 @@ const keyOf = (projectId: string, conversationId: string): string =>
 
 interface CollaborationSessionState {
   readonly entries: ReadonlyMap<string, CollaborationSessionEntry>;
-  /** 开始 watch（幂等）：首个 watcher 建立 project 级 SSE；返回 void。 */
+  /** 每个消费者持有一个 watch；同会话共享读取和 SSE，需配对 unwatch。 */
   readonly watch: (projectId: string, conversationId: string) => void;
-  /** 停止 watch；project 无 watcher 时关闭共享 SSE。 */
+  /** 释放一个消费者；最后一个会话与资产消费者退出时才关闭 project SSE。 */
   readonly unwatch: (projectId: string, conversationId: string) => void;
   /** 立即重取（手动刷新 / 动作回执后）。 */
   readonly refresh: (projectId: string, conversationId: string) => Promise<void>;
   /** Subscribe to canonical Artifact invalidations through the same project SSE. */
   readonly watchArtifactChanges: (projectId: string, listener: () => void) => () => void;
+  /** Read-only project invalidation (Railway/bindings), sharing the same project SSE. */
+  readonly watchProjectChanges: (projectId: string, listener: () => void) => () => void;
 }
 
 // module 级运行态（不进 React 树）：project → watcher 集合 / SSE 关闭器 / facade。
-const watchersByProject = new Map<string, Set<string>>();
+const watchersByProject = new Map<string, Map<string, number>>();
 const subscriptionByProject = new Map<string, () => void>();
 const clientByProject = new Map<string, CoreCollaborationClient>();
 const artifactListenersByProject = new Map<string, Set<() => void>>();
+const projectListenersByProject = new Map<string, Set<() => void>>();
 
 function collaborationFor(projectId: string): CoreCollaborationClient {
   const existing = clientByProject.get(projectId);
@@ -86,13 +89,18 @@ export const useCollaborationSessionStore = create<CollaborationSessionState>((s
     // 会话维度仅占位（事件按 project 广播，重取按 watcher 列表）。
     const close = collaboration.subscribe(projectId, '*', () => {
       const watched = watchersByProject.get(projectId);
-      if (watched === undefined) return;
-      for (const conversationId of watched) {
+      for (const conversationId of watched?.keys() ?? []) {
         void get().refresh(projectId, conversationId);
       }
+      for (const listener of projectListenersByProject.get(projectId) ?? []) listener();
     }, {
       onProjectEvent: (event) => {
         if (event.type !== 'artifact.changed') return;
+        for (const listener of artifactListenersByProject.get(projectId) ?? []) listener();
+      },
+      onProjectRecovery: () => {
+        // Snapshot recovery also invalidates Artifact/host projections. The normal
+        // session.changed dispatch already refreshes watched sessions and project listeners.
         for (const listener of artifactListenersByProject.get(projectId) ?? []) listener();
       },
     });
@@ -102,6 +110,7 @@ export const useCollaborationSessionStore = create<CollaborationSessionState>((s
   const releaseProjectSubscriptionIfUnused = (projectId: string): void => {
     if ((watchersByProject.get(projectId)?.size ?? 0) > 0) return;
     if ((artifactListenersByProject.get(projectId)?.size ?? 0) > 0) return;
+    if ((projectListenersByProject.get(projectId)?.size ?? 0) > 0) return;
     subscriptionByProject.get(projectId)?.();
     subscriptionByProject.delete(projectId);
     clientByProject.delete(projectId);
@@ -114,11 +123,12 @@ export const useCollaborationSessionStore = create<CollaborationSessionState>((s
       const key = keyOf(projectId, conversationId);
       let watchers = watchersByProject.get(projectId);
       if (watchers === undefined) {
-        watchers = new Set();
+        watchers = new Map();
         watchersByProject.set(projectId, watchers);
       }
-      if (watchers.has(conversationId)) return;
-      watchers.add(conversationId);
+      const consumers = watchers.get(conversationId) ?? 0;
+      watchers.set(conversationId, consumers + 1);
+      if (consumers > 0) return;
       if (!get().entries.has(key)) setEntry(key, { status: 'loading' });
       ensureProjectSubscription(projectId);
       void get().refresh(projectId, conversationId);
@@ -127,6 +137,12 @@ export const useCollaborationSessionStore = create<CollaborationSessionState>((s
     unwatch: (projectId, conversationId) => {
       const watchers = watchersByProject.get(projectId);
       if (watchers === undefined) return;
+      const consumers = watchers.get(conversationId);
+      if (consumers === undefined) return;
+      if (consumers > 1) {
+        watchers.set(conversationId, consumers - 1);
+        return;
+      }
       watchers.delete(conversationId);
       if (watchers.size === 0) {
         watchersByProject.delete(projectId);
@@ -135,6 +151,19 @@ export const useCollaborationSessionStore = create<CollaborationSessionState>((s
     },
 
     refresh,
+
+    watchProjectChanges: (projectId, listener) => {
+      let listeners = projectListenersByProject.get(projectId);
+      if (listeners === undefined) { listeners = new Set(); projectListenersByProject.set(projectId, listeners); }
+      listeners.add(listener);
+      ensureProjectSubscription(projectId);
+      return () => {
+        const current = projectListenersByProject.get(projectId);
+        current?.delete(listener);
+        if (current?.size === 0) projectListenersByProject.delete(projectId);
+        releaseProjectSubscriptionIfUnused(projectId);
+      };
+    },
 
     watchArtifactChanges: (projectId, listener) => {
       let listeners = artifactListenersByProject.get(projectId);

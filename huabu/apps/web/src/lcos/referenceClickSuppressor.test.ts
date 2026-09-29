@@ -7,6 +7,7 @@ import {
   handleReferenceClickSuppression,
   installReferenceClickSuppressor,
   markReferencePickCompleted,
+  markCarryCompleted,
 } from './referenceClickSuppressor';
 
 type FakeClick = Parameters<typeof handleReferenceClickSuppression>[0];
@@ -55,19 +56,38 @@ describe('reference click suppressor', () => {
     expect(handleReferenceClickSuppression(click)).toBe(false);
   });
 
-  it('install returns a dispose that removes the document listener (runtime lifecycle, audit 4.4)', () => {
+  it('owns both trailing click and carry-context listeners for the runtime lifetime', () => {
     const addSpy = vi.spyOn(document, 'addEventListener');
     const removeSpy = vi.spyOn(document, 'removeEventListener');
     const uninstall = installReferenceClickSuppressor();
-    expect(addSpy).toHaveBeenCalledWith('click', expect.any(Function), { capture: true });
-    // idempotent: second install does not add again until the first is disposed
-    installReferenceClickSuppressor();
-    expect(addSpy).toHaveBeenCalledTimes(1);
+    for (const event of ['click', 'contextmenu']) {
+      expect(addSpy.mock.calls.filter(([name]) => name === event)).toHaveLength(1);
+    }
+    const redundantUninstall = installReferenceClickSuppressor();
+    redundantUninstall();
+    expect(removeSpy).not.toHaveBeenCalled();
+    for (const event of ['click', 'contextmenu']) {
+      expect(addSpy.mock.calls.filter(([name]) => name === event)).toHaveLength(1);
+    }
+    markCarryCompleted();
+    const trailing = new MouseEvent('contextmenu', { bubbles: true, cancelable: true });
+    document.body.dispatchEvent(trailing);
+    expect(trailing.defaultPrevented).toBe(true);
+    const next = new MouseEvent('contextmenu', { bubbles: true, cancelable: true });
+    document.body.dispatchEvent(next);
+    expect(next.defaultPrevented).toBe(false);
     uninstall();
-    expect(removeSpy).toHaveBeenCalledWith('click', expect.any(Function), { capture: true });
-    // after dispose the module re-arms on next install
-    installReferenceClickSuppressor();
-    expect(addSpy).toHaveBeenCalledTimes(2);
+    uninstall();
+    for (const event of ['click', 'contextmenu']) {
+      const handler = addSpy.mock.calls.find(([name]) => name === event)?.[1];
+      expect(removeSpy).toHaveBeenCalledWith(event, handler, { capture: true });
+      expect(removeSpy.mock.calls.filter(([name]) => name === event)).toHaveLength(1);
+    }
+    const reinstall = installReferenceClickSuppressor();
+    for (const event of ['click', 'contextmenu']) {
+      expect(addSpy.mock.calls.filter(([name]) => name === event)).toHaveLength(2);
+    }
+    reinstall();
     addSpy.mockRestore();
     removeSpy.mockRestore();
   });

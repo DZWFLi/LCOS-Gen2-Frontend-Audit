@@ -19,7 +19,6 @@ import {
   reduceArrivalState,
   reduceLocatorState,
   toScreenRect,
-  type SafeInsets,
   type ArrivalState,
   type LocatorState,
 } from '@local-creative-os/web-gen2';
@@ -29,23 +28,18 @@ import { useEffect, useReducer, useRef, useState } from 'react';
 
 import {
   locateNodesOnCanvas,
+  getReliableNodeBounds,
 } from '@/components/Panels/CanvasLayerPanel/focusNodesOnCanvas';
 import useCanvasStore from '@/store/canvasStore';
 
+import { cameraFitInsets } from './hudWindowGeometry';
+import { LcosPersistentLocatorOverlay } from './LcosPersistentLocatorOverlay';
 import { useLcosReferenceStore } from '../lcosReferenceState';
 import { useLcosShellStore } from '../shell/lcosShellStore';
 import { lcosTokens } from '../ui/lcosTokens';
 import { useReducedSpatialMotion } from '../ui/motion/useReducedSpatialMotion';
 
 import type { Node } from '@xyflow/react';
-
-/** HUD / Composer / Dock 在屏幕上的占用（对齐 R1 族的真实几何 + 24 边距）。 */
-const HUD_INSETS: SafeInsets = {
-  left: 24 + 52 + 16, // Railway 宽 52 + 左右呼吸
-  right: 24 + 24,
-  top: 24 + 48 + 16, // NavigatorIsland 高 48
-  bottom: 24 + 56 + 16, // Composer 高约 56
-};
 
 const ARRIVAL_LIFETIME_MS = 720;
 
@@ -54,11 +48,6 @@ interface ArrivalTarget {
   readonly canvasId: string;
   readonly nodeId: string;
   readonly reqId: string;
-}
-
-interface Box {
-  width: number;
-  height: number;
 }
 
 type LocatorScreenRect = ReturnType<typeof toScreenRect>;
@@ -76,38 +65,6 @@ function intersectScreenRect(a: LocatorScreenRect, b: LocatorScreenRect): Locato
     right: Math.max(left + 1, Math.min(a.right, b.right)),
     bottom: Math.max(top + 1, Math.min(a.bottom, b.bottom)),
   };
-}
-
-function boxOf(node: Node): Box {
-  const raw = node as unknown as {
-    measured?: { width?: number; height?: number };
-    width?: number;
-    height?: number;
-    style?: { width?: number | string; height?: number | string };
-  };
-  const num = (value: unknown): number | undefined =>
-    typeof value === 'number' && Number.isFinite(value) ? value : undefined;
-  return {
-    width: num(raw.measured?.width) ?? num(raw.width) ?? num(raw.style?.width) ?? 280,
-    height: num(raw.measured?.height) ?? num(raw.height) ?? num(raw.style?.height) ?? 200,
-  };
-}
-
-/** 全部节点的真实包围盒（无节点返回 null）。 */
-function contentBounds(nodes: readonly Node[]): { x: number; y: number; width: number; height: number } | null {
-  if (nodes.length === 0) return null;
-  let minX = Number.POSITIVE_INFINITY;
-  let minY = Number.POSITIVE_INFINITY;
-  let maxX = Number.NEGATIVE_INFINITY;
-  let maxY = Number.NEGATIVE_INFINITY;
-  for (const node of nodes) {
-    const box = boxOf(node);
-    minX = Math.min(minX, node.position.x);
-    minY = Math.min(minY, node.position.y);
-    maxX = Math.max(maxX, node.position.x + box.width);
-    maxY = Math.max(maxY, node.position.y + box.height);
-  }
-  return { x: minX, y: minY, width: maxX - minX, height: maxY - minY };
 }
 
 /**
@@ -170,18 +127,22 @@ export function LcosCanvasCommands(): React.JSX.Element {
   /** 安全取景：节点真实包围盒 + HUD 安全边距 + 可读性 zoom 上限。 */
   const fitWithHud = (duration = 0): void => {
     const nodes = useCanvasStore.getState().nodes;
-    const bounds = contentBounds(nodes);
+    const bounds = getReliableNodeBounds(rf, nodes.filter((node) => !node.hidden).map((node) => node.id));
     const size = document.querySelector('.react-flow')?.getBoundingClientRect();
     if (!size || size.width <= 0) return;
-    const result = fitBoundsWithInsets(bounds, { width: size.width, height: size.height }, HUD_INSETS);
+    const insets = cameraFitInsets({ x: size.left, y: size.top, width: size.width, height: size.height }, useLcosShellStore.getState().windowEnvironment);
+    if (!insets) return; // All available regions are covered; never fit content behind a window.
+    const result = fitBoundsWithInsets(bounds, { width: size.width, height: size.height }, insets);
     rf.setViewport(result, duration > 0 ? { duration } : undefined);
   };
 
   useEffect(() => {
     const transition = worksiteCameraTransition;
     if (transition === null || transition.canvasId !== canvasId) return;
+    // Canvas loading publishes its ID before the child helper can attach the
+    // loaded camera. This is a pending intent, not an empty one to consume.
     if (transition.targetViewport === undefined) {
-      consumeWorksiteCameraTransition(transition.id);
+      // Return navigation owns completion, including legacy returns with no pose.
       return;
     }
     const targetViewport = transition.targetViewport;
@@ -202,12 +163,12 @@ export function LcosCanvasCommands(): React.JSX.Element {
       if (useCanvasStore.getState().canvasId !== transition.canvasId) return;
       useCanvasStore.getState().setViewport(targetViewport);
       transitionSettledCanvas.current = transition.canvasId;
-      consumeWorksiteCameraTransition(transition.id);
+      if (transition.kind !== 'return-restore') consumeWorksiteCameraTransition(transition.id);
     }).catch(() => {
       // RF can reject when a newer camera request interrupts this promise.
       // Only the still-current request may be consumed here; a newer request
       // owns the next visible state and must remain intact.
-      if (useLcosShellStore.getState().worksiteCameraTransition?.id === transition.id) {
+      if (transition.kind !== 'return-restore' && useLcosShellStore.getState().worksiteCameraTransition?.id === transition.id) {
         consumeWorksiteCameraTransition(transition.id);
       }
     });
@@ -224,16 +185,16 @@ export function LcosCanvasCommands(): React.JSX.Element {
     if (!cameraRequest) return;
     switch (cameraRequest.kind) {
       case 'zoom-in':
-        rf.zoomIn({ duration: 220 });
+        rf.zoomIn({ duration: reducedMotion ? 0 : 220 });
         break;
       case 'zoom-out':
-        rf.zoomOut({ duration: 220 });
+        rf.zoomOut({ duration: reducedMotion ? 0 : 220 });
         break;
       case 'fit':
-        fitWithHud(380);
+        fitWithHud(reducedMotion ? 0 : 380);
         break;
       case 'reset':
-        rf.setViewport({ x: 0, y: 0, zoom: 1 }, { duration: 380 });
+        rf.zoomTo(1, { duration: reducedMotion ? 0 : 380 });
         break;
     }
     consumeCamera();
@@ -261,13 +222,13 @@ export function LcosCanvasCommands(): React.JSX.Element {
   const canvasLoading = useCanvasStore((s) => s.isLoading);
   useEffect(() => {
     if (canvasId === undefined || canvasLoading) return;
-    if (worksiteCameraTransition?.canvasId === canvasId) return;
+    if (worksiteCameraTransition) return;
     if (transitionSettledCanvas.current === canvasId) return;
     let cancelled = false;
     let tries = 0;
 
     const attempt = (): void => {
-      if (cancelled) return;
+      if (cancelled || useLcosShellStore.getState().worksiteCameraTransition) return;
       const nodes = useCanvasStore.getState().nodes;
       const surface = document.querySelector('.react-flow');
       if (nodes.length > 0 && surface !== null && !surface.classList.contains('invisible')) {
@@ -359,7 +320,7 @@ export function LcosCanvasCommands(): React.JSX.Element {
     flowRoot?.addEventListener('touchstart', cancelForUserGesture, { passive: true });
     // Selection and camera share the same Huabu canvas-local owner. Temporal
     // grouping never creates a second selection/store/camera path.
-    useCanvasStore.getState().selectNodes(presentNodeIds);
+    if (!request.preserveSelection) useCanvasStore.getState().selectNodes(presentNodeIds);
     const flowRect = flowRoot?.getBoundingClientRect();
     const rootSafeRect = flowRect === undefined
       ? undefined
@@ -437,6 +398,7 @@ export function LcosCanvasCommands(): React.JSX.Element {
       >
         {Math.round(viewport.zoom * 100)}%
       </span>
+      <LcosPersistentLocatorOverlay />
       <LcosLocatorCue
         request={locateRequest}
         activeSurface={activeSurface}
@@ -502,8 +464,10 @@ function LcosLocatorCue({
           left: rootRect.left + rootRect.width / 2,
           top: rootRect.top + 24,
           transform: 'translateX(-50%)',
-          background: lcosTokens.color.inverse,
-          color: lcosTokens.color.textOnInverse,
+          background: 'rgba(255,255,255,.88)',
+          color: lcosTokens.color.accent,
+          backdropFilter: 'blur(12px)',
+          border: '1px solid rgba(255,255,255,.8)',
           boxShadow: lcosTokens.glass.shadow,
         }}
       >
@@ -580,8 +544,10 @@ function LcosLocatorCue({
         left: anchor.x,
         top: anchor.y,
         transform: 'translate(-50%, -50%)',
-          background: lcosTokens.color.inverse,
-          color: lcosTokens.color.textOnInverse,
+          background: 'rgba(255,255,255,.88)',
+          color: lcosTokens.color.accent,
+          backdropFilter: 'blur(12px)',
+          border: '1px solid rgba(255,255,255,.8)',
           boxShadow: lcosTokens.glass.shadow,
       }}
     >
@@ -597,7 +563,7 @@ function LcosLocatorCue({
           transform: `rotate(${angle}deg)`,
         }}
       />
-      {geometry.state === 'edge' ? '正在定位' : '目标在边缘'}
+      <span className="sr-only">{geometry.state === 'edge' ? '正在定位' : '目标在边缘'}</span>
     </div>
   );
 }

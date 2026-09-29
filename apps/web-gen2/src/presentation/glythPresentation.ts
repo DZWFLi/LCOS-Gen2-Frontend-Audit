@@ -68,7 +68,7 @@ export function resolveGlythPresentation(
 /**
  * Collaboration Contract V1 → Glyth 呈现输入（Gate 4：Glyth 只消费 6 用户态）。
  * needs_user → waiting（attention）；working/thinking → active；其余 → 默认 idle。
- * undefined（投影未加载/不可用）→ 空输入，调用方回退到既有 descriptor 行为。
+ * undefined（投影未加载/不可用）→ 空输入；不以缓存 descriptor 推断会话仍在运行。
  */
 export function glythInputFromCollaborationState(
   state: import('@local-creative-os/contracts').CollaborationUserStateV1 | undefined,

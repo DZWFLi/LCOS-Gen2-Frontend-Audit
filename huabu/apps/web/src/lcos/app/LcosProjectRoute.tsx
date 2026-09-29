@@ -40,12 +40,33 @@ export function LcosProjectRoute({
 
   // 全部 hooks 先于条件返回（rules-of-hooks）。
   const worksite = useLcosWorksite(projectId ?? '');
-  const childWorkspaceId = workspaceIdOverride
+  const requestedWorkspaceId = workspaceIdOverride
     ?? new URLSearchParams(location.search).get('workspaceId')
     ?? undefined;
 
+  // Explicit workspace addressing does not imply a child: legacy canvas links
+  // and copied root URLs can address any canonical workspace.
+  const requestedWorkspace = worksite.workspaces.find((workspace) => String(workspace.id) === requestedWorkspaceId);
+  const requestedSurface = requestedWorkspace?.preferredSurface;
+  const rootSurface = worksite.status === 'ready'
+    && worksite.rootScopeId !== undefined
+    && requestedWorkspace !== undefined
+    && String(requestedWorkspace.scopeId) === worksite.rootScopeId
+    && requestedSurface !== undefined && VALID_SURFACES.has(requestedSurface)
+    && worksite.workspaces.filter((workspace) => String(workspace.scopeId) === worksite.rootScopeId
+      && workspace.preferredSurface === requestedSurface).length === 1
+    ? requestedSurface as LcosSurfaceKey : undefined;
+  const childWorkspaceId = rootSurface === undefined ? requestedWorkspaceId : undefined;
+
   if (!projectId) {
     return <Navigate to="/projects" replace />;
+  }
+
+  if (rootSurface !== undefined && projectIdOverride === undefined) {
+    const search = new URLSearchParams(location.search);
+    search.delete('workspaceId');
+    const suffix = search.toString();
+    return <Navigate to={`/projects/${encodeURIComponent(projectId)}/${rootSurface}${suffix ? `?${suffix}` : ''}${location.hash}`} replace />;
   }
 
   // 只在 URL 驱动入口上纠正 surface；override 入口（`/canvas/:id`）保持 URL 原样。
@@ -62,7 +83,7 @@ export function LcosProjectRoute({
     <LcosProjectShell
       projectId={projectId}
       projectName={worksite.projectName}
-      surface={normalized}
+      surface={rootSurface ?? normalized}
       workspaces={worksite.workspaces}
       {...(childWorkspaceId === undefined ? {} : { childWorkspaceId })}
       canvasBySurface={worksite.surfaceCanvasId}

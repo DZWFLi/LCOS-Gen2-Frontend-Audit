@@ -50,6 +50,8 @@ export function resolveNodeSpecies(source: NodeSpeciesSource): LcosNodeSpecies {
   const sourceKind = source.sourceKind;
 
   switch (source.entityType) {
+    case 'collection':
+      return 'collection';
     case 'conversation':
       return 'glyth';
     case 'run':
@@ -93,6 +95,8 @@ export function resolveNodeSpecies(source: NodeSpeciesSource): LcosNodeSpecies {
  */
 export function resolveNodeSpeciesFromEntityType(entityType: string | undefined): LcosNodeSpecies {
   switch (entityType) {
+    case 'collection':
+      return 'collection';
     case 'conversation':
       return 'glyth';
     case 'run':

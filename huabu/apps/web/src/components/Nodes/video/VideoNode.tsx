@@ -6,6 +6,7 @@ import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { resolveArtifactUrl } from '@/api/artifact';
+import { useResolvedNodeBody } from '@/lcos-seam/nodeBodySlot';
 import useCanvasStore from '@/store/canvasStore.ts';
 import { openPreviewNode } from '@/store/previewWorkspace/actions';
 
@@ -26,6 +27,7 @@ export const VideoNode = memo(
     const { t } = useTranslation();
     const canvasId = useCanvasStore((s) => s.canvasId);
     const missingFileKind = getMissingFileKind(data);
+    const BodyOverride = useResolvedNodeBody({ nodeId: id, nodeType: 'video', data: { ...data } });
 
     const VideoActions = (
       <FloatingToolbar.ActionButton
@@ -48,7 +50,7 @@ export const VideoNode = memo(
         actions={missingFileKind ? undefined : VideoActions}
         keepAspectRatio={true}
       >
-        {missingFileKind ? (
+        {BodyOverride ? <BodyOverride nodeId={id} nodeType="video" data={{ ...data }} /> : missingFileKind ? (
           <MissingFileBanner nodeId={id} />
         ) : (
           <div className="bg-fg-default/5 group flex h-full flex-col justify-center rounded-lg border-0">

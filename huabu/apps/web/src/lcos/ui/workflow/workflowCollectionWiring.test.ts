@@ -1,44 +1,66 @@
-import { readFileSync } from 'node:fs';
-import { join, resolve } from 'node:path';
+import { act, createElement } from 'react';
+import { createRoot, type Root } from 'react-dom/client';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { describe, expect, it } from 'vitest';
+import type { WorkflowCardPoolProps } from '../../surfaces/workflow/WorkflowCardPool';
+import type { Workspace } from '@local-creative-os/domain';
+import type { ReactNode } from 'react';
 
-const ROOT = resolve((import.meta as unknown as { dirname?: string }).dirname ?? process.cwd(), '..', '..', '..', '..', '..', '..', '..');
-const read = (relative: string): string => readFileSync(join(ROOT, relative), 'utf8');
+const m = vi.hoisted(() => ({ pool: vi.fn(), stage: vi.fn() }));
+vi.mock('../../surfaces/workflow/WorkflowCardPool', () => ({
+  WorkflowCardPool: (props: WorkflowCardPoolProps) => {
+    m.pool(props);
+    return createElement('button', { 'data-real-entry-completed': true, onClick: props.onEnterWorksite }, '完成现场进入');
+  },
+}));
+vi.mock('../../shell/LcosWorksiteStage', () => ({
+  LcosWorksiteStage: (props: { ensureCanvas: (force?: boolean) => Promise<string | undefined> }) => {
+    m.stage(props);
+    return createElement('button', { 'data-recreate-stage': true, onClick: () => void props.ensureCanvas(true) }, '恢复画布');
+  },
+}));
 
-describe('Workflow Collection 真实 caller 接线', () => {
-  it('Main 节点使用主画布 rendition，并按真实 scope workspace 进入 Workflow', () => {
-    const source = read('huabu/apps/web/src/lcos/nodes/LcosSpeciesBodies.tsx');
-    expect(source).toContain("import { WorkflowCollectionView } from '../ui/workflow/WorkflowCollectionView';");
-    expect(source).toContain('rendition="主画布"');
-    expect(source).toContain('String(workspace.scopeId) === ref.entityId');
-    expect(source).toContain('beginChildWorksiteNavigation({');
-    expect(source).toContain("targetSurface: 'workflow'");
+import { WorkflowHandOverlay, WorkflowWorksite } from '../../surfaces/workflow/WorkflowWorksite';
+import { AssemblyMaterialView } from '../professional/AssemblyMaterialView';
+
+const mounted: { root: Root; host: HTMLDivElement }[] = [];
+async function mount(node: ReactNode) {
+  const host = document.createElement('div'); document.body.append(host); const root = createRoot(host); mounted.push({ host, root });
+  await act(async () => root.render(node)); return host;
+}
+afterEach(async () => { for (const { root, host } of mounted.splice(0)) { await act(async () => root.unmount()); host.remove(); } vi.clearAllMocks(); });
+
+describe('Workflow production surface wiring', () => {
+  const workspaces: readonly Workspace[] = [];
+  it('keeps one real canvas stage and passes exact origin through the hand; successful entry retracts it', async () => {
+    const ensureCanvas = vi.fn().mockResolvedValue('canvas-existing');
+    const host = await mount(createElement(WorkflowWorksite, { projectId: 'project-real', surface: 'workflow', canvasId: 'canvas-real', workspaces, isChildWorksite: true, ensureCanvas }));
+    expect(host.querySelectorAll('[data-recreate-stage]')).toHaveLength(1);
+    expect(m.pool).not.toHaveBeenCalled();
+    await act(async () => host.querySelector<HTMLButtonElement>('[data-lcos-workflow-hand-toggle]')?.click());
+    expect(m.pool).toHaveBeenLastCalledWith(expect.objectContaining({ projectId: 'project-real', workspaces, sourceSurface: 'workflow', sourceWasChild: true, onEnterWorksite: expect.any(Function) }));
+    expect(host.querySelector('[data-lcos-workflow-worksite]')?.getAttribute('data-hand-open')).toBe('true');
+    await act(async () => host.querySelector<HTMLButtonElement>('[data-real-entry-completed]')?.click());
+    expect(host.querySelector('[data-lcos-workflow-worksite]')?.hasAttribute('data-hand-open')).toBe(false);
+    expect(host.querySelectorAll('[data-recreate-stage]')).toHaveLength(1);
+    await act(async () => host.querySelector<HTMLButtonElement>('[data-recreate-stage]')?.click());
+    expect(ensureCanvas).toHaveBeenCalledWith('workflow', true);
+    expect(m.stage).toHaveBeenLastCalledWith(expect.objectContaining({ projectId: 'project-real', canvasId: 'canvas-real', surface: 'workflow' }));
   });
-
-  it('Assembly workflow item 使用专用任务卡面，并复用精确 workspaceTargets/child navigation', () => {
-    const source = read('huabu/apps/web/src/lcos/professional/AssemblyBody.tsx');
-    const material = read('huabu/apps/web/src/lcos/ui/professional/AssemblyMaterialView.tsx');
-    expect(source).toContain('assemblyMaterialShape(item)');
-    expect(material).toContain("shape === 'workflow'");
-    expect(material).toContain('<WorkflowTaskCardFace');
-    expect(material).toContain('rendition="装配"');
-    expect(source).toContain('workspaceTargetsForItem(item, workspaces)');
-    expect(source).toContain('enterChildWorkspace(item, workspace)');
+  it('Main uses the same hand owner with its exact source and successful-entry callback', async () => {
+    const onClose = vi.fn();
+    const host = await mount(createElement(WorkflowHandOverlay, { projectId: 'project-main', workspaces, sourceSurface: 'main', sourceWasChild: false, open: true, onClose }));
+    expect(m.pool).toHaveBeenLastCalledWith(expect.objectContaining({ projectId: 'project-main', workspaces, sourceSurface: 'main', sourceWasChild: false, onEnterWorksite: onClose }));
+    await act(async () => host.querySelector<HTMLButtonElement>('[data-real-entry-completed]')?.click());
+    expect(onClose).toHaveBeenCalledTimes(1);
   });
-
-  it('Workflow Worksite 继续由唯一 WorkflowCardPool 提供卡池', () => {
-    const source = read('huabu/apps/web/src/lcos/surfaces/workflow/WorkflowWorksite.tsx');
-    expect(source).toContain("import { WorkflowCardPool } from './WorkflowCardPool';");
-    expect(source).toContain('<WorkflowCardPool projectId={projectId} workspaces={workspaces} sourceSurface={sourceSurface} sourceWasChild={sourceWasChild} />');
-  });
-
-  it('Main workflow 节点来自 Core scope 的单一投影绑定，不创建第二 store', () => {
-    const runner = read('apps/web-gen2/src/spatial/reconciliationRunner.ts');
-    const host = read('apps/web-gen2/src/host/projectionFacade.ts');
-    expect(runner).toContain("entityType: 'scope' as const");
-    expect(runner).toContain("sourceKind: 'workflow'");
-    expect(host).toContain('map.set(`scope:${entityId}`');
-    expect(host).toContain("artifactKind: 'workflow'");
+  it('Assembly presents the actual workflow face, dispatches the owner action, and reports only its supplied draft state', async () => {
+    const onUse = vi.fn();
+    const host = await mount(createElement(AssemblyMaterialView, { title: '真实工作流', familyLabel: '工作流', shape: 'workflow', fallbackGlyph: null, referenced: true, onUse }));
+    expect(host.querySelector('[data-shape="workflow"] .lcos-workflow-task-card')).not.toBeNull();
+    expect(host.textContent).toContain('真实工作流'); expect(host.textContent).toContain('已加入草稿 · 未发送');
+    await act(async () => host.querySelector<HTMLButtonElement>('[data-lcos-task-take]')?.click());
+    expect(onUse).toHaveBeenCalledTimes(1);
+    expect(host.textContent).not.toContain('执行完成');
   });
 });

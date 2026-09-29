@@ -9,14 +9,17 @@
 // 诚实回退：未绑定 / 物种不在注册表 → undefined（native body），不静默降级成别的物种。
 // reactive：store 变更时 notify，late binding 就位后原位换 body（同节点 geometry 不变）。
 
-import { resolveLcosNodeHostPresentation, resolveNodeSpeciesFromFacts } from '@local-creative-os/web-gen2';
+import { resolveLcosNodeHostPresentation, resolveNodeSpeciesFromFacts, resolveVisualFamily } from '@local-creative-os/web-gen2';
 
 import { useLcosReferenceStore } from '../lcosReferenceState';
+import { BoundNodeLoadingBody } from './BoundNodeLoadingBody';
 import { lcosNodeCardRegistry } from './lcosNodeCardRegistry';
 
 import type { CanvasNodeBodySeam, CanvasNodeBodySlotInput, CanvasNodeHostPresentation } from '@/lcos-seam/types';
 
 // Stable snapshot: useSyncExternalStore must not receive a fresh object on every read.
+const mediaBodyHost: CanvasNodeHostPresentation = { surface: 'media', showAiBadge: false, allowOverflow: true };
+const collectionBodyHost: CanvasNodeHostPresentation = { surface: 'transparent', showAiBadge: false, allowOverflow: true };
 const conversationHost = resolveLcosNodeHostPresentation({ entityType: 'conversation' });
 const conversationBodyHost: CanvasNodeHostPresentation | undefined = conversationHost === undefined
   ? undefined
@@ -27,10 +30,14 @@ export function createLcosNodePresentationSeam(): CanvasNodeBodySeam {
     resolve(input: CanvasNodeBodySlotInput) {
       const ref = useLcosReferenceStore.getState().nodeEntityRefs.get(input.nodeId);
       const descriptor = ref?.descriptor;
+      if (ref !== undefined && descriptor === undefined && (ref.entityType === 'artifact' || ref.entityType === 'scope')) {
+        return BoundNodeLoadingBody;
+      }
       const species = resolveNodeSpeciesFromFacts({
         ...(ref ? { entityType: ref.entityType } : {}),
         ...(descriptor?.artifactKind === undefined ? {} : { artifactKind: descriptor.artifactKind }),
         ...(descriptor?.managed === undefined ? {} : { managed: descriptor.managed }),
+        ...(descriptor?.sourceRunId === undefined ? {} : { sourceRunId: descriptor.sourceRunId }),
         ...(descriptor?.mimeType === undefined ? {} : { mimeType: descriptor.mimeType }),
         ...(descriptor?.sourceKind === undefined ? {} : { sourceKind: descriptor.sourceKind }),
         huabuNodeType: input.nodeType,
@@ -45,6 +52,14 @@ export function createLcosNodePresentationSeam(): CanvasNodeBodySeam {
       if (!ref) return undefined;
       if (ref.entityType === 'conversation') return conversationBodyHost;
       const descriptor = ref.descriptor;
+      if (descriptor === undefined && (ref.entityType === 'artifact' || ref.entityType === 'scope')) return collectionBodyHost;
+      // Collection faces own their silhouette; the native white note carrier must
+      // not reappear behind the folder/book. Geometry and selection stay native.
+      if (descriptor?.species === 'collection' || descriptor?.species === 'workflow-collection') {
+        return collectionBodyHost;
+      }
+      const family = resolveVisualFamily({ entityType: ref.entityType, artifactKind: descriptor?.artifactKind, mimeType: descriptor?.mimeType, sourceKind: descriptor?.sourceKind });
+      if (family === 'web' || family === 'video') return mediaBodyHost;
       return resolveLcosNodeHostPresentation({
         entityType: ref.entityType,
         ...(descriptor?.artifactKind === undefined ? {} : { artifactKind: descriptor.artifactKind }),

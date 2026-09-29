@@ -23,7 +23,7 @@ export function AssemblyItemView({ title, identity, subtitle, children, actions,
   const [expanded, setExpanded] = useState(false);
   const id = useId();
   return <div {...rest} className={`lcos-assembly-item ${className ?? ''}`} data-selected={selected}
-    data-referenced={referenced} data-visual-active={expanded} onKeyDownCapture={(event) => {
+    data-referenced={referenced} data-visual-active={expanded} data-object-only={hideCaption} onKeyDownCapture={(event) => {
       rest.onKeyDownCapture?.(event);
       if (!event.defaultPrevented && event.key === 'Escape' && expanded) {
         event.preventDefault(); event.stopPropagation(); setExpanded(false);

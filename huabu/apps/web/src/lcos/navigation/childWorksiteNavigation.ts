@@ -32,17 +32,20 @@ export interface BeginChildWorksiteNavigationInput {
 /**
  * Capture the exact source identity, then enter an existing workspace.
  *
+ * Resolves true only after the existing Canvas owner confirms loading. Return
+ * context commits at that point; failed or superseded attempts leave it intact.
  * Returning false means the target is not a usable child worksite yet. Callers
  * should leave the card/action visible and explain that the canvas is missing;
  * they must not guess a surface root or silently create a different target.
  */
-export function beginChildWorksiteNavigation(
+export async function beginChildWorksiteNavigation(
   input: BeginChildWorksiteNavigationInput,
-): boolean {
+): Promise<boolean> {
   if (input.targetWorkspace.canvasId === undefined) return false;
   const targetCanvasId = input.targetWorkspace.canvasId;
 
   const canvas = useCanvasStore.getState();
+  const sourceCanvasId = canvas.canvasId;
   const references = useLcosReferenceStore.getState().nodeEntityRefs;
   const selectedNodes = canvas.nodes.filter((node) => node.selected);
   const approachNodeIds = input.sourceNodeId === undefined
@@ -62,31 +65,38 @@ export function beginChildWorksiteNavigation(
     kind: 'enter-settle',
   });
 
-  void (async () => {
+  try {
     const sourceApproachViewport = await animateCurrentWorksiteCamera({
       direction: 'approach',
       nodeIds: approachNodeIds,
     });
     const currentShell = useLcosShellStore.getState();
-    if (currentShell.worksiteCameraTransition?.id !== transitionId) return;
+    if (currentShell.worksiteCameraTransition?.id !== transitionId) return false;
 
-    currentShell.beginChildNavigation({
+
+    const loaded = await useCanvasStore.getState().switchCanvas(targetCanvasId);
+    const latestShell = useLcosShellStore.getState();
+    if (latestShell.worksiteCameraTransition?.id !== transitionId) return false;
+    if (!loaded) {
+      latestShell.consumeWorksiteCameraTransition(transitionId);
+      if (sourceViewport && useCanvasStore.getState().canvasId === sourceCanvasId) {
+        void canvas.rfInstance?.setViewport(sourceViewport, { duration: 0 });
+      }
+      return false;
+    }
+    latestShell.beginChildNavigation({
       projectId: input.projectId,
       sourceSurface: input.sourceSurface,
       ...(input.sourceWorkspaceId === undefined ? {} : { sourceWorkspaceId: input.sourceWorkspaceId }),
       sourceWasChild: input.sourceWasChild,
-      ...(canvas.canvasId === null ? {} : { sourceCanvasId: canvas.canvasId }),
+      ...(sourceCanvasId === null ? {} : { sourceCanvasId }),
       ...(sourceViewport === undefined ? {} : { sourceViewport }),
       ...(sourceApproachViewport === undefined ? {} : { sourceApproachViewport }),
       selectedNodeIds: selectedNodes.map((node) => node.id),
       ...(sourceEntityRefs.length === 0 ? {} : { sourceEntityRefs }),
     });
-
-    const loaded = await useCanvasStore.getState().switchCanvas(targetCanvasId);
-    const latestShell = useLcosShellStore.getState();
-    if (latestShell.worksiteCameraTransition?.id !== transitionId) return;
-    if (loaded) {
-      const targetViewport = useCanvasStore.getState().viewport ?? undefined;
+    {
+      const targetViewport = useCanvasStore.getState().viewport ?? useCanvasStore.getState().rfInstance?.getViewport();
       latestShell.updateWorksiteCameraTransition(transitionId, {
         ...(targetViewport === undefined
           ? {}
@@ -99,6 +109,15 @@ export function beginChildWorksiteNavigation(
     input.navigate(
       `/projects/${encodeURIComponent(input.projectId)}/${input.targetSurface}?workspaceId=${encodeURIComponent(String(input.targetWorkspace.id))}`,
     );
-  })();
-  return true;
+    return true;
+  } catch {
+    const latestShell = useLcosShellStore.getState();
+    if (latestShell.worksiteCameraTransition?.id === transitionId) {
+      latestShell.consumeWorksiteCameraTransition(transitionId);
+      if (sourceViewport && useCanvasStore.getState().canvasId === sourceCanvasId) {
+        void canvas.rfInstance?.setViewport(sourceViewport, { duration: 0 });
+      }
+    }
+    return false;
+  }
 }

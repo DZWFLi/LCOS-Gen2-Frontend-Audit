@@ -62,7 +62,7 @@ describe('LcosHostOverlay (A07)', () => {
     const container = render(<LcosHostOverlay />);
     const el = container.querySelector('[data-lcos-drop-preview]');
     expect(el).not.toBeNull();
-    expect(el?.textContent).toContain('放置 artifact·a1');
+    expect(el?.textContent).toContain('材料');
   });
 
   it('drop in transit suppresses the drop preview (single canopy, no Christmas tree)', () => {

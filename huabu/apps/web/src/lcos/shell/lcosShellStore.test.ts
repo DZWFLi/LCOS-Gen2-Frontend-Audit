@@ -1,6 +1,10 @@
-import { describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 
 import { useLcosShellStore } from './lcosShellStore';
+import { activeWindowIdForRegion, createWindowRegion, windowIdsForRegion } from './windowRegionTopology';
+import { readProfessionalWindowLayout } from '../professional/professionalWindowPersistence';
+
+beforeEach(() => { localStorage.clear(); useLcosShellStore.getState().clear(); });
 
 it('isolates project windows and drafts, restores them on return, and never replays old camera commands', () => {
   const store = useLcosShellStore.getState();
@@ -27,7 +31,7 @@ it('isolates project windows and drafts, restores them on return, and never repl
   expect(useLcosShellStore.getState().windows.map((w) => w.target)).toEqual(['artifact-b']);
   store.clear();
   store.setProject('a');
-  expect(useLcosShellStore.getState().windows).toEqual([]);
+  expect(useLcosShellStore.getState().windows.map((window) => window.target)).toEqual(['artifact-a']);
 });
 
 describe('Composer UI intent', () => {
@@ -189,8 +193,8 @@ describe('Professional window topology', () => {
     const state = useLcosShellStore.getState();
     expect(state.windowRegions).toHaveLength(2);
     expect(state.windowRegions.every((region) => region.layout === 'floating')).toBe(true);
-    expect(state.windowRegions.every((region) => region.windowIds.length === 1)).toBe(true);
-    expect(new Set(state.windowRegions.map((region) => region.activeWindowId)).size).toBe(2);
+    expect(state.windowRegions.every((region) => windowIdsForRegion(region).length === 1)).toBe(true);
+    expect(new Set(state.windowRegions.map((region) => activeWindowIdForRegion(region))).size).toBe(2);
   });
 
   it('keeps region activeWindowId in sync and allows an explicit dock layout', () => {
@@ -207,7 +211,7 @@ describe('Professional window topology', () => {
     expect(useLcosShellStore.getState().windowRegions[0]).toMatchObject({
       id: region.id,
       layout: 'docked-right',
-      activeWindowId: first.id,
+      groups: [{ id: `group-${first.id}`, windowIds: [first.id], activeWindowId: first.id }],
     });
   });
 
@@ -240,7 +244,7 @@ describe('Professional window topology', () => {
     store.setWindowRegionDockWidth(region.id, 520.4);
     expect(useLcosShellStore.getState().windowRegions[0]?.dockWidth).toBe(520);
     // 几何字段不影响拓扑身份
-    expect(useLcosShellStore.getState().windowRegions[0]?.windowIds).toEqual([useLcosShellStore.getState().windows[0]!.id]);
+    expect(windowIdsForRegion(useLcosShellStore.getState().windowRegions[0])).toEqual([useLcosShellStore.getState().windows[0]!.id]);
   });
 
   it('geometry survives a project round-trip through the same session record', () => {
@@ -268,21 +272,76 @@ describe('Professional window topology', () => {
     store.openWindow('assembly', 'Assembly');
     const before = useLcosShellStore.getState();
     expect(before.windowRegions).toHaveLength(2);
-    expect(before.windowRegions.every((region) => region.windowIds.length === 1)).toBe(true);
+    expect(before.windowRegions.every((region) => windowIdsForRegion(region).length === 1)).toBe(true);
     const [first, second] = before.windowRegions;
     if (!first || !second) throw new Error('two regions must exist');
 
     store.groupWindowRegions(second.id, first.id);
     const grouped = useLcosShellStore.getState();
     expect(grouped.windowRegions).toHaveLength(1);
-    expect(grouped.windowRegions[0]?.windowIds).toHaveLength(2);
-    expect(grouped.windowRegions[0]?.activeWindowId).toBe(second.activeWindowId);
+    expect(windowIdsForRegion(grouped.windowRegions[0])).toHaveLength(2);
+    expect(activeWindowIdForRegion(grouped.windowRegions[0])).toBe(activeWindowIdForRegion(second));
 
     store.ungroupWindowRegion(grouped.windowRegions[0]!.id);
     const ungrouped = useLcosShellStore.getState();
     expect(ungrouped.windowRegions).toHaveLength(2);
-    expect(ungrouped.windowRegions.every((region) => region.windowIds.length === 1)).toBe(true);
-    expect(new Set(ungrouped.windowRegions.map((region) => region.activeWindowId)).size).toBe(2);
+    expect(ungrouped.windowRegions.every((region) => windowIdsForRegion(region).length === 1)).toBe(true);
+    expect(new Set(ungrouped.windowRegions.map((region) => activeWindowIdForRegion(region))).size).toBe(2);
+    store.clear();
+  });
+
+  it.each(['original', 'merged'] as const)('splits the %s active Reader without losing instance or reading state', (selection) => {
+    const store = useLcosShellStore.getState();
+    store.clear();
+    store.openReader('材料 A', 'artifact-a', { revisionId: 'revision-a' });
+    store.openReader('材料 B', 'artifact-b', { revisionId: 'revision-b' });
+    const [first, second] = useLcosShellStore.getState().windowRegions;
+    if (!first || !second) throw new Error('two regions must exist');
+    store.setWindowRegionRect(first.id, { x: 60, y: 90, width: 700, height: 500 });
+    store.rememberReaderPosition('artifact-a:revision-a', { scrollTop: 240, zoom: 1.25 });
+    store.rememberReaderRevision('artifact-a', 'revision-a');
+    store.setComposerPrompt('保留未发送的草稿');
+    store.groupWindowRegions(second.id, first.id);
+    const activeId = selection === 'original' ? activeWindowIdForRegion(first)! : activeWindowIdForRegion(second)!;
+    store.activateWindow(activeId);
+    const before = useLcosShellStore.getState();
+    store.ungroupWindowRegion(first.id);
+    const split = useLcosShellStore.getState();
+    expect(split.windowRegions).toHaveLength(2);
+    expect(new Set(split.windowRegions.map((region) => region.id)).size).toBe(2);
+    expect(split.windowRegions.find((region) => region.id === `region-${activeId}`)).toEqual(createWindowRegion(`region-${activeId}`, [activeId], activeId));
+    const remaining = split.windowRegions.find((region) => activeWindowIdForRegion(region) !== activeId);
+    expect(remaining?.rect).toEqual({ x: 60, y: 90, width: 700, height: 500 });
+    expect(split.windows).toBe(before.windows);
+    expect(split.windows.find((window) => window.active)?.id).toBe(activeId);
+    expect(split.readerPositions).toBe(before.readerPositions);
+    expect(split.readerLastRevisions).toBe(before.readerLastRevisions);
+    expect(split.composerPrompt).toBe('保留未发送的草稿');
+    // A repeated click on the now-single region must not duplicate or close either instance.
+    store.ungroupWindowRegion(first.id);
+    expect(useLcosShellStore.getState().windowRegions).toBe(split.windowRegions);
+    store.clear();
+  });
+
+  it('can repeatedly regroup and split either original host without losing a third region', () => {
+    const store = useLcosShellStore.getState();
+    store.clear();
+    store.openWindow('reader', '材料 A', 'a');
+    store.openWindow('reader', '材料 B', 'b');
+    store.openWindow('reader', '材料 C', 'c');
+    const [a, b, c] = useLcosShellStore.getState().windowRegions;
+    if (!a || !b || !c) throw new Error('three regions must exist');
+    for (const activeId of [activeWindowIdForRegion(a)!, activeWindowIdForRegion(b)!, activeWindowIdForRegion(a)!]) {
+      store.groupWindowRegions(b.id, a.id);
+      store.activateWindow(activeId);
+      store.ungroupWindowRegion(a.id);
+      const current = useLcosShellStore.getState();
+      expect(current.windowRegions).toHaveLength(3);
+      expect(current.windowRegions.find((region) => region.id === c.id)).toBe(c);
+      expect(current.windowRegions.flatMap(windowIdsForRegion).sort()).toEqual([activeWindowIdForRegion(a), activeWindowIdForRegion(b), activeWindowIdForRegion(c)].sort());
+      expect(new Set(current.windowRegions.map((region) => region.id)).size).toBe(3);
+      expect(current.windows.find((window) => window.active)?.id).toBe(activeId);
+    }
     store.clear();
   });
 
@@ -296,7 +355,31 @@ describe('Professional window topology', () => {
     store.ungroupWindowRegion(region.id);
     store.groupWindowRegions(region.id, region.id);
     expect(useLcosShellStore.getState().windowRegions).toHaveLength(1);
-    expect(useLcosShellStore.getState().windowRegions[0]?.windowIds).toEqual([useLcosShellStore.getState().windows[0]!.id]);
+    expect(windowIdsForRegion(useLcosShellStore.getState().windowRegions[0])).toEqual([useLcosShellStore.getState().windows[0]!.id]);
+    store.clear();
+  });
+
+  it('splits stable groups, persists the single groups topology, and collapses cleanly when a pane closes', () => {
+    const store = useLcosShellStore.getState();
+    store.clear(); store.setProject('split-persistence');
+    store.openReader('材料 A', 'artifact-a'); store.openReader('材料 B', 'artifact-b');
+    const [a, b] = useLcosShellStore.getState().windowRegions;
+    if (!a || !b) throw new Error('two regions required');
+    store.groupWindowRegions(b.id, a.id);
+    store.splitWindowRegion(a.id, 'vertical');
+    const split = useLcosShellStore.getState().windowRegions[0];
+    if (!split) throw new Error('split region missing');
+    expect(split.groups).toHaveLength(2); expect(split.splitDirection).toBe('vertical');
+    expect(split.splitRatio).toBe(0.5); expect(windowIdsForRegion(split)).toHaveLength(2);
+    store.setWindowRegionSplitRatio(a.id, 0.64);
+    expect(readProfessionalWindowLayout('split-persistence')?.windowRegions[0]?.splitRatio).toBe(0.64);
+    expect(readProfessionalWindowLayout('split-persistence')?.windowRegions[0]).not.toHaveProperty('windowIds');
+    const paneToClose = split.groups[1]?.activeWindowId;
+    if (!paneToClose) throw new Error('second pane missing');
+    store.closeWindow(paneToClose);
+    const collapsed = useLcosShellStore.getState().windowRegions[0];
+    expect(collapsed?.groups).toHaveLength(1);
+    expect(collapsed).not.toHaveProperty('splitDirection'); expect(collapsed).not.toHaveProperty('splitRatio');
     store.clear();
   });
 });
@@ -450,8 +533,29 @@ it('preserves the shared Assembly region geometry and group topology across targ
   const after = useLcosShellStore.getState();
   expect(after.windows).toHaveLength(2);
   expect(after.windowRegions, 'target 变化不得改变 group 拓扑').toHaveLength(1);
-  expect(after.windowRegions[0]?.windowIds).toHaveLength(2);
-  expect(after.windowRegions[0]?.activeWindowId).toBe('assembly');
+  expect(windowIdsForRegion(after.windowRegions[0])).toHaveLength(2);
+  expect(activeWindowIdForRegion(after.windowRegions[0])).toBe('assembly');
   expect(after.windows.find((window) => window.bodyKey === 'assembly')?.assemblyTargetRef)
     .toEqual({ kind: 'context', id: 'ctx-1' });
+});
+
+it('worksite-following Assembly updates its destination without stealing another window focus', () => {
+  const store = useLcosShellStore.getState();
+  store.clear();
+  store.openAssembly({ kind: 'main' }, '装配 · 主画布', true);
+  store.openWindow('conversation', '会话', 'conversation-one');
+  const regions = useLcosShellStore.getState().windowRegions;
+  store.retargetWorksiteAssembly({ kind: 'workspace', id: 'child-two' }, '装配 · 上下文');
+  const state = useLcosShellStore.getState();
+  expect(state.windows.find((w) => w.bodyKey === 'assembly')).toMatchObject({
+    assemblyTargetRef: { kind: 'workspace', id: 'child-two' }, active: false,
+  });
+  expect(state.windowRegions).toBe(regions);
+});
+it('explicit conversation Assembly target is not replaced by navigation', () => {
+  const store = useLcosShellStore.getState();
+  store.clear();
+  store.openAssembly({ kind: 'conversation', id: 'conversation-one' });
+  store.retargetWorksiteAssembly({ kind: 'main' }, '装配 · 主画布');
+  expect(useLcosShellStore.getState().windows[0]?.assemblyTargetRef).toEqual({ kind: 'conversation', id: 'conversation-one' });
 });

@@ -20,7 +20,8 @@ export type EntityType =
   | 'note'
   | 'scope'
   | 'view'
-  | 'workspace';
+  | 'workspace'
+  | 'collection';
 
 export type SpatialKind = 'node' | 'edge';
 

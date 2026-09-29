@@ -3,32 +3,37 @@
 // Professional Stage 常驻；Composer 仅由 canvas-local 明确命令按需挂载。
 
 import { ArrowLeft, Hand } from 'lucide-react';
-import { useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { AnimatePresence } from 'motion/react';
+import { useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 import useCanvasStore from '@/store/canvasStore';
 
 import { LcosGlobalHud } from './LcosGlobalHud';
+import { LcosProjectSystemMenu } from './LcosProjectSystemMenu';
 import { useLcosShellStore, type LcosSurfaceKey } from './lcosShellStore';
 import { LcosWorksiteStage } from './LcosWorksiteStage';
+import { PortalDropWorkspaceProvider, toPortalDropWorkspaces } from '../drop/PortalDropWorkspaceContext';
 import { useCollaborationSessionStore } from '../collaboration/collaborationSessionStore';
 import { useLcosHostStore } from '../host/lcosHostState';
 import { useLcosReferenceStore } from '../lcosReferenceState';
 import { beginChildWorksiteNavigation } from '../navigation/childWorksiteNavigation';
-import { waitForProjectedEntity } from '../navigation/waitForProjectedEntity';
-import { animateCurrentWorksiteCamera } from '../navigation/worksiteCameraTransition';
+import { returnToSourceWorksite } from '../navigation/returnToSourceWorksite';
+import { useAvoidingHudPosition } from '../navigation/useAvoidingHudPosition';
+import { useHudViewport } from '../navigation/useHudViewport';
 import { childSurfaceForItem } from '../navigation/workspaceTargets';
 import { LcosColorPinProvider } from '../pin/LcosColorPinProvider';
 import { ProfessionalWindowStage } from '../professional/ProfessionalWindowStage';
 import { ContextWorksite } from '../surfaces/context/ContextWorksite';
+import { MainCollectionAtlas } from '../surfaces/main/MainCollectionAtlas';
 import { MainWorksite } from '../surfaces/main/MainWorksite';
 import { WorkflowHandOverlay, WorkflowWorksite } from '../surfaces/workflow/WorkflowWorksite';
-import { LcosProjectIdentityView } from '../ui/families/LcosProjectIdentityView';
 import { FigmaShellGlyph } from '../ui/FigmaShellGlyph';
 import { LcosSurfaceFeedback } from '../ui/LcosSurfaceFeedback';
 import { lcosGlassStyle, lcosTokens } from '../ui/lcosTokens';
 
 import type { PortalTargetResolution } from '../professional/PortalPreviewBody';
+import type { AssemblyTargetRefV1 } from '@local-creative-os/contracts';
 import type { Workspace } from '@local-creative-os/domain';
 
 export interface LcosProjectShellProps {
@@ -65,6 +70,12 @@ export function LcosProjectShell({
   onRetry,
 }: LcosProjectShellProps): React.JSX.Element {
   const navigate = useNavigate();
+  const hudViewport = useHudViewport();
+  const projectPlacement = useAvoidingHudPosition({ x: 24, y: 24, width: childWorkspaceId ? 308 : 256, height: 44 });
+  const mainToolsPlacement = useAvoidingHudPosition({
+    x: hudViewport.width - 128, y: hudViewport.height - 24, width: 104, height: 48,
+  }, { y: 'end' }, '[data-lcos-surface-dock],[data-lcos-spatial-navigator-host]');
+
   const activeSurface = useLcosShellStore((s) => s.activeSurface);
   const stateProjectId = useLcosShellStore((s) => s.projectId);
   const setActiveSurface = useLcosShellStore((s) => s.setActiveSurface);
@@ -73,11 +84,12 @@ export function LcosProjectShell({
   );
   const activeWorkspaceId = useLcosShellStore((s) => s.activeWorkspaceId);
   const childReturn = useLcosShellStore((s) => s.childReturn);
-  const clearChildNavigation = useLcosShellStore((s) => s.clearChildNavigation);
   const setProject = useLcosShellStore((s) => s.setProject);
   const openAssembly = useLcosShellStore((s) => s.openAssembly);
   const mainNodeCount = useCanvasStore((s) => s.nodes.length);
   const [mainHandOpen, setMainHandOpen] = useState(false);
+  const [mainAtlasOpen, setMainAtlasOpen] = useState(false);
+  const retargetWorksiteAssembly = useLcosShellStore((s) => s.retargetWorksiteAssembly);
   const [returning, setReturning] = useState(false);
   const [returnError, setReturnError] = useState<string | undefined>(undefined);
   const watchArtifactChanges = useCollaborationSessionStore((s) => s.watchArtifactChanges);
@@ -127,7 +139,17 @@ export function LcosProjectShell({
     ? (_surface: LcosSurfaceKey, force = false) => ensureWorkspaceCanvas(childWorkspaceId, force)
     : ensureCanvas;
 
-  useEffect(() => { setMainHandOpen(false); }, [projectId, activeSurface]);
+  useEffect(() => { setMainHandOpen(false); setMainAtlasOpen(false); }, [projectId, activeSurface]);
+  useEffect(() => {
+    document.title = (projectName ?? '创意工作台') + ' · LCOS';
+  }, [projectName]);
+  const assemblyWorkspaceId = childWorkspaceId ?? [...surfaceByWorkspace.entries()].find(([, mapped]) => mapped === surface)?.[0];
+  const worksiteTarget = useMemo<AssemblyTargetRefV1 | undefined>(() => surface === 'main' && childWorkspaceId === undefined
+    ? { kind: 'main' } : assemblyWorkspaceId ? { kind: 'workspace', id: assemblyWorkspaceId } : undefined, [surface, childWorkspaceId, assemblyWorkspaceId]);
+  const assemblyTitle = '装配 · ' + ({ main: '主画布', context: '上下文', workflow: '工作流' }[surface]);
+  useEffect(() => {
+    if (worksiteTarget) retargetWorksiteAssembly(worksiteTarget, assemblyTitle);
+  }, [worksiteTarget, retargetWorksiteAssembly, assemblyTitle]);
 
   useEffect(() => {
     useLcosReferenceStore.getState().setProject(projectId);
@@ -147,75 +169,9 @@ export function LcosProjectShell({
     const context = childReturn;
     setReturning(true);
     setReturnError(undefined);
-    void (async () => {
-      let transitionId: string | undefined;
-      try {
-        if (context?.projectId === projectId && context.sourceCanvasId !== undefined) {
-          const shell = useLcosShellStore.getState();
-          const currentCanvas = useCanvasStore.getState();
-          const outgoingTransition = shell.worksiteCameraTransition;
-          if (
-            outgoingTransition?.canvasId === currentCanvas.canvasId
-            && outgoingTransition.targetViewport !== undefined
-          ) {
-            // Preserve the destination's intended settled framing even when a
-            // quick return interrupts its visible interpolation midway.
-            currentCanvas.setViewport(outgoingTransition.targetViewport);
-          }
-          transitionId = shell.requestWorksiteCameraTransition({
-            canvasId: context.sourceCanvasId,
-            kind: 'return-restore',
-            ...(context.sourceApproachViewport === undefined
-              ? {}
-              : { startViewport: context.sourceApproachViewport }),
-            ...(context.sourceViewport === undefined
-              ? {}
-              : { targetViewport: context.sourceViewport }),
-          });
-          await animateCurrentWorksiteCamera({ direction: 'retreat' });
-          if (useLcosShellStore.getState().worksiteCameraTransition?.id !== transitionId) return;
-          const loaded = await useCanvasStore.getState().switchCanvas(context.sourceCanvasId);
-          if (!loaded) throw new Error('来源现场暂不可读取，请重试');
-          const canvasState = useCanvasStore.getState();
-          const currentNodeIds = new Set(canvasState.nodes.map((node) => node.id));
-          const restoredNodeIds = new Set(
-            context.selectedNodeIds.filter((nodeId) => currentNodeIds.has(nodeId)),
-          );
-          // Node ids are spatial projection ids, not Core identity. If a
-          // reconcile rebuilt a selected node with a new id, resolve the
-          // captured entity ref against the current projection before
-          // selecting. This keeps sourceEntityRefs a real recovery input.
-          for (const ref of context.sourceEntityRefs ?? []) {
-            if (currentNodeIds.has(ref.nodeId)) {
-              restoredNodeIds.add(ref.nodeId);
-              continue;
-            }
-            const reboundNodeId = await waitForProjectedEntity({
-              projectId,
-              canvasId: context.sourceCanvasId,
-              entityType: ref.entityType,
-              entityId: ref.entityId,
-              timeoutMs: 5000,
-            });
-            if (reboundNodeId !== undefined) restoredNodeIds.add(reboundNodeId);
-          }
-          canvasState.selectNodes([...restoredNodeIds]);
-        }
-        if (context?.projectId === projectId) clearChildNavigation();
-        const sourceSurface = context?.projectId === projectId ? context.sourceSurface : 'main';
-        const sourceQuery = context?.projectId === projectId && context.sourceWasChild && context.sourceWorkspaceId !== undefined
-          ? `?workspaceId=${encodeURIComponent(context.sourceWorkspaceId)}`
-          : '';
-        navigate(`/projects/${encodeURIComponent(projectId)}/${sourceSurface}${sourceQuery}`, { replace: true });
-      } catch (error) {
-        if (transitionId !== undefined) {
-          useLcosShellStore.getState().consumeWorksiteCameraTransition(transitionId);
-        }
-        setReturnError(error instanceof Error ? error.message : String(error));
-      } finally {
-        setReturning(false);
-      }
-    })();
+    void returnToSourceWorksite({ projectId, context, navigate })
+      .catch((error: unknown) => setReturnError(error instanceof Error ? error.message : String(error)))
+      .finally(() => setReturning(false));
   };
 
   const active = activeSurface;
@@ -225,6 +181,7 @@ export function LcosProjectShell({
       data-lcos-family="project-shell"
       data-lcos-variant={active}
       data-lcos-project-shell
+      data-main-curtain={active === 'main' ? (mainAtlasOpen ? 'atlas' : mainHandOpen ? 'hand' : undefined) : undefined}
       className="relative h-full w-full overflow-hidden"
     >
       {shellStatus !== 'ready' || stateProjectId !== projectId ? (
@@ -234,6 +191,7 @@ export function LcosProjectShell({
       ) : (
         <LcosColorPinProvider projectId={projectId}>
           {/* 工作现场舞台（唯一 Canvas）；Main/Context/Workflow 各自壳（空态/仪器差异） */}
+          <PortalDropWorkspaceProvider workspaces={toPortalDropWorkspaces(workspaces)} mainCanvasId={effectiveCanvasBySurface.main}>
           <div className="absolute inset-0">
             {childUnavailable ? (
               <ChildWorkspaceUnavailable
@@ -285,9 +243,11 @@ export function LcosProjectShell({
               />
             )}
           </div>
+          </PortalDropWorkspaceProvider>
 
           {/* 项目身份胶囊（顶左；点击返回项目列表） */}
-          <div data-lcos-shell-project-cluster className="pointer-events-auto fixed top-6 left-6 z-40 flex items-center gap-2">
+          <div ref={projectPlacement.ref} data-lcos-shell-project-cluster className="pointer-events-auto fixed z-40 flex items-center gap-2"
+            style={{ left: projectPlacement.rect.x, top: projectPlacement.rect.y }}>
             {childWorkspaceId !== undefined && (
               <button
                 type="button"
@@ -297,33 +257,21 @@ export function LcosProjectShell({
                 className="inline-flex h-11 shrink-0 items-center gap-2 rounded-full px-3 text-sm font-medium transition-colors hover:opacity-90 disabled:opacity-60"
                 style={{ ...lcosGlassStyle, color: lcosTokens.color.text }}
                 title="返回来源现场"
+                aria-label={returning ? '返回中…' : '返回来源现场'}
               >
                 <ArrowLeft className="h-4 w-4" aria-hidden />
-                {returning ? '返回中…' : '返回来源现场'}
+                <span data-lcos-child-return-label>{returning ? '返回中…' : '返回来源现场'}</span>
               </button>
             )}
-            <Link to="/projects" data-lcos-project-identity title="返回项目列表">
-              <LcosProjectIdentityView name={projectName ?? projectId.slice(0, 12)} />
-            </Link>
+            <LcosProjectSystemMenu name={projectName ?? projectId.slice(0, 12)}
+              {...(worksiteTarget === undefined ? {} : { target: worksiteTarget })} assemblyTitle={assemblyTitle} />
             <button
               type="button"
               data-lcos-assembly-entry
               aria-label="Assembly"
-              title={`打开 Assembly · 投放到 ${active}`}
-              onClick={() => {
-                if (active === 'main') {
-                  openAssembly({ kind: 'main' }, 'Assembly · Main');
-                  return;
-                }
-                if (activeWorkspaceId) {
-                  openAssembly(
-                    { kind: 'workspace', id: activeWorkspaceId },
-                    `Assembly · ${active === 'context' ? 'Context' : 'Workflow'}`,
-                  );
-                  return;
-                }
-                openAssembly({ kind: 'project', id: projectId }, 'Assembly · 项目');
-              }}
+              title={worksiteTarget ? '打开' + assemblyTitle : '现场尚未就绪'}
+              disabled={worksiteTarget === undefined}
+              onClick={() => { if (worksiteTarget) openAssembly(worksiteTarget, assemblyTitle, true); }}
               className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full transition-colors hover:opacity-90"
               style={{ ...lcosGlassStyle, color: lcosTokens.color.text }}
             >
@@ -354,17 +302,27 @@ export function LcosProjectShell({
           />
           {active === 'main' && (
             <>
+              <div ref={mainToolsPlacement.ref} data-lcos-main-tools className="pointer-events-auto fixed z-40 flex flex-row-reverse gap-2"
+                style={{ left: mainToolsPlacement.rect.x, top: mainToolsPlacement.rect.y }}>
               <button
                 type="button"
                 aria-label="呼出工作流手牌"
                 aria-expanded={mainHandOpen}
                 title="工作流手牌"
-                onClick={() => setMainHandOpen((open) => !open)}
-                className="pointer-events-auto fixed right-6 bottom-6 z-40 flex h-12 w-12 items-center justify-center rounded-full"
+                onClick={() => { setMainAtlasOpen(false); setMainHandOpen((open) => !open); }}
+                className="pointer-events-auto flex h-12 w-12 items-center justify-center rounded-full"
                 style={lcosGlassStyle}
               >
                 <Hand size={18} aria-hidden />
               </button>
+              <button type="button" data-lcos-main-collection-atlas-trigger aria-label="打开项目集合总览" aria-expanded={mainAtlasOpen}
+                title="项目集合（不含现场导航）" onClick={() => { setMainHandOpen(false); setMainAtlasOpen((open) => !open); }}
+                className="pointer-events-auto flex h-12 w-12 items-center justify-center rounded-full"
+                style={lcosGlassStyle}><FigmaShellGlyph name="collection" size={21} /></button>
+              </div>
+              <AnimatePresence initial={false}>
+                {mainAtlasOpen && <MainCollectionAtlas projectId={projectId} onClose={() => setMainAtlasOpen(false)} />}
+              </AnimatePresence>
               <WorkflowHandOverlay
                 projectId={projectId}
                 workspaces={workspaces}

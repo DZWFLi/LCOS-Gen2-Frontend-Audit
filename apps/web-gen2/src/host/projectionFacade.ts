@@ -9,6 +9,7 @@
 
 import { HttpClient } from '../backend/client.js';
 import { CoreProjectClient } from '../backend/projects.js';
+import { CoreCollectionClient } from '../backend/collections.js';
 import { CoreConversationClient } from '../backend/conversations.js';
 import { CoreAssemblyClient } from '../backend/assembly.js';
 import { CoreRailwayClient } from '../backend/railway.js';
@@ -30,6 +31,7 @@ import { viewPresentationByArtifact } from '../spatial/reconciliationRunner.js';
 import { RelationProjection, type CoreEntityRef, type CoreRelationWriter, type RelationKind } from '../spatial/relationProjection.js';
 import { ReconciliationRunner } from '../spatial/reconciliationRunner.js';
 import { describeProjectedEntity, buildContentPreview } from '../presentation/projectedNodeDescriptor.js';
+import { resolveVisualFamily } from '../presentation/visualFamily.js';
 import { HostLifecycleReconciler, type ReconcileTrigger } from './lifecycleReconciler.js';
 import { connectSemantic, type SemanticConnectResult } from './hostConnectIntent.js';
 
@@ -60,6 +62,7 @@ export interface Gen2HostDeps {
 export class Gen2Host {
   readonly projectId: string;
   readonly projects: CoreProjectClient;
+  readonly collections: CoreCollectionClient;
   readonly artifacts: CoreArtifactClient;
   readonly relations: CoreRelationClient;
   readonly search: CoreSearchClient;
@@ -86,6 +89,7 @@ export class Gen2Host {
     this.projectId = deps.projectId;
     this.canvasId = deps.rfs.config.canvasId;
     this.projects = new CoreProjectClient(deps.http);
+    this.collections = new CoreCollectionClient(deps.http);
     this.artifacts = new CoreArtifactClient(deps.http);
     this.relations = new CoreRelationClient(deps.http);
     this.search = new CoreSearchClient(deps.http);
@@ -130,6 +134,7 @@ export class Gen2Host {
       projects: this.projects,
       relations: this.relations,
       conversations: this.conversations,
+      collections: this.collections,
       nodeProjector: this.nodeProjector,
       relationProjector: this.relationProjector,
       bindings: this.bindings,
@@ -296,6 +301,8 @@ export class Gen2Host {
         entityId,
         title: String(artifact.title ?? artifact.id),
         artifactKind: String(artifact.kind),
+        ...(selectedViews.get(entityId)?.viewId === undefined ? {} : { artifactViewId: selectedViews.get(entityId)?.viewId }),
+        ...(selectedRevisionId === '' ? {} : { presentedRevisionId: selectedRevisionId }),
         ...(typeof selectedRevision?.runId === 'string' && selectedRevision.runId !== ''
           ? { sourceRunId: selectedRevision.runId }
           : {}),
@@ -329,6 +336,51 @@ export class Gen2Host {
       });
     }
 
+    try {
+      const collections = await this.collections.list(this.projectId);
+      const artifactsById = new Map((graph?.artifacts ?? []).map((item) => [String(item.id), String(item.title ?? item.id)]));
+      const notesById = new Map((graph?.notes ?? []).map((item) => [String(item.id), String(item.body ?? item.id).split(/\r?\n/, 1)[0]?.slice(0, 48) || String(item.id)]));
+      const workspacesById = new Map((graph?.workspaces ?? []).map((item) => [String(item.id), String(item.name ?? item.id)]));
+      const collectionNames = new Map(collections.map((item) => [String(item.id), item.title]));
+      const conversationsById = new Map((await this.conversations.listConnectedConversations(this.projectId)).map((item) => [String(item.id), String(item.label ?? item.id)]));
+      await Promise.all(collections.map(async (collection) => {
+        const snapshot = await this.collections.members(this.projectId, String(collection.id));
+        const memberLabels = snapshot.members.flatMap((member) => {
+          const { type, id } = member.memberRef;
+          const title = type === 'artifact' ? artifactsById.get(id)
+            : type === 'note' ? notesById.get(id)
+              : type === 'collection' ? collectionNames.get(id)
+                : type === 'workspace' ? workspacesById.get(id)
+                  : type === 'conversation' ? conversationsById.get(id)
+                    : undefined;
+          return title === undefined ? [] : [title];
+        });
+        const members = snapshot.members.map(({ memberRef }) => {
+          const { type, id } = memberRef;
+          const label = type === 'artifact' ? artifactsById.get(id)
+            : type === 'note' ? notesById.get(id)
+              : type === 'collection' ? collectionNames.get(id)
+                : type === 'workspace' ? workspacesById.get(id)
+                  : type === 'conversation' ? conversationsById.get(id)
+                    : undefined;
+          const typeLabel = ({ artifact: '材料', note: '笔记', collection: '集合', scope: '范围', workspace: '工作区', conversation: '会话', run: '运行' } as const)[type];
+          return { ...memberRef, label: label ?? `${typeLabel} · ${id}` };
+        });
+        map.set(`collection:${collection.id}`, {
+          entityType: 'collection',
+          entityId: String(collection.id),
+          title: collection.title,
+          artifactKind: 'collection',
+          sourceKind: 'collection',
+          collectionMemberCount: snapshot.members.length,
+          collectionMemberLabels: memberLabels,
+          collectionMembers: members,
+        });
+      }));
+    } catch (error) {
+      console.warn('[lcos] 读取 canonical Collection membership 失败；不显示虚构成员。', error);
+    }
+
     // 承接会话 → Glyth 的真实身份/运行态（读不到就退回 entityType 降级，不编造）。
     try {
       for (const conversation of await this.conversations.listConnectedConversations(this.projectId)) {
@@ -351,7 +403,7 @@ export class Gen2Host {
 
   /**
    * 文本族 artifact 的**真实正文预览**（用户裁决 B 的 preview 位）。
-   * 只对文本类 kind 且体积有界的文件取；按 fileRecordId 缓存（同一 revision 内容不变）。
+   * 只对文本类 kind 且体积有界的文件取；按 fileRecordId + 呈现模式缓存（同一 revision 内容不变）。
    * 取不到就返回 undefined —— 调用方不写 preview 字段，body 退回形态说明。
    */
   private async readPreview(
@@ -363,14 +415,18 @@ export class Gen2Host {
     const record = fileRecordById.get(fileRecordId);
     const textLike = TEXT_PREVIEW_KINDS.has(kind) || record?.mimeType.startsWith('text/') === true;
     if (!textLike) return undefined;
-    const cached = this.previewCache.get(fileRecordId);
+    const preserveLineBreaks = resolveVisualFamily({ entityType: 'artifact', artifactKind: kind, mimeType: record?.mimeType }) === 'text';
+    const cacheKey = `${fileRecordId}:${preserveLineBreaks ? 'lines' : 'summary'}`;
+    const cached = this.previewCache.get(cacheKey);
     if (cached !== undefined) return cached === '' ? undefined : cached;
     if (record !== undefined && record.size > MAX_PREVIEW_BYTES) return undefined;
     try {
       const preview = buildContentPreview(
         await this.artifacts.getFileRecordText(this.projectId, fileRecordId),
+        160,
+        { preserveLineBreaks },
       );
-      this.previewCache.set(fileRecordId, preview);
+      this.previewCache.set(cacheKey, preview);
       return preview === '' ? undefined : preview;
     } catch (error) {
       console.warn(`[lcos] 读取文件正文预览失败（${fileRecordId}），节点退回形态说明`, error);

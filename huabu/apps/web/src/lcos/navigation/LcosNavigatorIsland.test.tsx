@@ -1,207 +1,104 @@
 import { act } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, expect, it, vi } from 'vitest';
-
 import { LcosNavigatorIsland } from './LcosNavigatorIsland';
-
 const search = vi.hoisted(() => vi.fn());
-const requestLocate = vi.hoisted(() => vi.fn());
-const nodeEntityRefs = vi.hoisted(() => new Map<string, { entityId: string; entityType: string }>());
-const canvasNodes = vi.hoisted(() => [] as Array<{ id: string }>);
-const navigation = vi.hoisted(() => ({ switchWorksite: vi.fn(), wait: vi.fn() }));
-vi.mock('../app/useLcosWorksiteNav', () => ({ useLcosWorksiteNav: () => ({ switchWorksite: navigation.switchWorksite }) }));
-vi.mock('./waitForProjectedEntity', () => ({ waitForProjectedEntity: navigation.wait }));
-// partial mock：只替换搜索客户端，其余导出（含 isCoreAbortError 等）保留真实实现，
-// 否则岛新增的 web-gen2 依赖会让整个 suite 在 import 期就崩掉（覆盖被静默清零）。
-vi.mock('@local-creative-os/web-gen2', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@local-creative-os/web-gen2')>();
-  return { ...actual, CoreSearchClient: class { searchProject = search; } };
-});
-vi.mock('../app/lcosCoreClient', () => ({
-  createLcosCoreSession: () => ({
-    http: {},
-    // R6 ColorPin：岛会订阅 canonical snapshot / graph truth（此处诚实为空真值）。
-    colorPins: {
-      snapshot: async () => ({ definitions: [], memberships: [] }),
-      assign: async () => ({ definition: {}, membership: {} }),
-      removeMembership: async () => ({ deleted: true, membershipId: '' }),
-    },
-    navigation: { resolveTarget: async () => ({ status: 'unresolved', reason: 'target-missing' }) },
-    projects: { getProjectGraph: async () => ({ scopes: [], workspaces: [] }) },
-  }),
-}));
-vi.mock('../lcosReferenceState', () => ({ useLcosReferenceStore: { getState: () => ({ nodeEntityRefs }) } }));
-vi.mock('../shell/lcosShellStore', () => ({
-  useLcosShellStore: (selector: (state: {
-    activeSurface: string;
-    activeWorkspaceId: string | null;
-    openWindow: () => void;
-    windowEnvironment: undefined;
-    requestLocate: typeof requestLocate;
-    setActiveSurface: () => void;
-  }) => unknown) =>
-    selector({
-      activeSurface: 'main',
-      activeWorkspaceId: null,
-      openWindow: () => {},
-      windowEnvironment: undefined,
-      requestLocate,
-      setActiveSurface: () => {},
-    }),
-}));
-vi.mock('@/store/canvasStore', () => ({ default: { getState: () => ({ nodes: canvasNodes, canvasId: 'canvas-context' }) } }));
-
+const where = vi.hoisted(() => vi.fn());
+vi.mock('@local-creative-os/web-gen2', async (original) => ({ ...await original<typeof import('@local-creative-os/web-gen2')>(), CoreSearchClient: class { searchProject = search; } }));
+vi.mock('../app/lcosCoreClient', () => ({ createLcosCoreSession: () => ({ http: {} }) }));
+vi.mock('../shell/lcosShellStore', () => ({ useLcosShellStore: (select: (state: unknown) => unknown) => select({ windowEnvironment: null, requestFocusWhere: where }) }));
 const roots: ReturnType<typeof createRoot>[] = [];
-afterEach(() => {
-  for (const root of roots.splice(0)) act(() => root.unmount());
-  document.body.replaceChildren();
-  vi.useRealTimers();
-  search.mockReset();
-  requestLocate.mockReset();
-  nodeEntityRefs.clear();
-  canvasNodes.length = 0;
-  navigation.switchWorksite.mockReset(); navigation.wait.mockReset();
-});
-
-async function chooseCrossLocation() {
-  vi.useFakeTimers();
-  search.mockResolvedValue({ hits: [{ entityType: 'artifact', entityId: 'cross-object', title: '跨现场材料', locationRefs: [{ kind: 'workspace', id: 'ws-context', name: '研究现场' }] }] });
+afterEach(() => { for (const root of roots.splice(0)) act(() => root.unmount()); document.body.replaceChildren(); vi.useRealTimers(); vi.clearAllMocks(); });
+async function render() {
   const container = document.createElement('div'); document.body.append(container);
   const root = createRoot(container); roots.push(root);
-  await act(async () => root.render(<LcosNavigatorIsland projectId="p" canvasBySurface={{ context: 'canvas-context' }} surfaceByWorkspace={new Map([['ws-context', 'context']])} ensureCanvas={async () => undefined} />));
-  await act(async () => container.querySelector<HTMLButtonElement>('button')?.click());
-  const input = container.querySelector('input');
-  const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set;
-  if (!input || !setter) throw new Error('Input missing');
-  await act(async () => { setter.call(input, '材料'); input.dispatchEvent(new Event('input', { bubbles: true })); });
-  await act(async () => vi.advanceTimersByTime(300));
-  await act(async () => container.querySelector<HTMLButtonElement>('[data-lcos-navigator-results] button')?.click());
-  const destination = [...container.querySelectorAll('button')].find((button) => button.textContent?.includes('前往并定位'));
-  if (!destination) throw new Error('Explicit destination missing');
-  await act(async () => destination.click());
+  await act(async () => root.render(<LcosNavigatorIsland projectId="p" canvasBySurface={{}} ensureCanvas={async () => undefined} />));
   return container;
 }
-
-it('switches the explicit workspace then locates its real projected node', async () => {
-  navigation.switchWorksite.mockResolvedValue(true);
-  navigation.wait.mockResolvedValue('cross-node');
-  const container = await chooseCrossLocation();
-  expect(navigation.switchWorksite).toHaveBeenCalledExactlyOnceWith('context');
-  expect(navigation.wait).toHaveBeenCalledWith(expect.objectContaining({ projectId: 'p', canvasId: 'canvas-context', entityId: 'cross-object' }));
-  expect(requestLocate).toHaveBeenCalledWith(expect.objectContaining({ surface: 'context', canvasId: 'canvas-context', nodeId: 'cross-node' }));
-  expect(container.querySelector('input')).toBeNull();
-});
-
-it('keeps search and the destination available when projection has not arrived', async () => {
-  navigation.switchWorksite.mockResolvedValue(true); navigation.wait.mockResolvedValue(undefined);
-  const container = await chooseCrossLocation();
-  expect(requestLocate).not.toHaveBeenCalled();
-  expect(container.querySelector('input')).not.toBeNull();
-  expect(container.textContent).toContain('投影尚未就绪');
-});
-
-it('ignores a late arrival after Escape closes the search', async () => {
-  navigation.switchWorksite.mockResolvedValue(true);
-  let finish: (id: string) => void = () => {};
-  navigation.wait.mockImplementation(() => new Promise<string>((resolve) => { finish = resolve; }));
-  const container = await chooseCrossLocation();
-  await act(async () => window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' })));
-  await act(async () => finish('late-node'));
-  expect(requestLocate).not.toHaveBeenCalled();
-  expect(container.querySelector('input')).toBeNull();
-});
-
-it('keeps search editable while empty, loading and failed, and closes with Escape', async () => {
+async function query(container: HTMLElement, text = '材料') {
+  await act(async () => container.querySelector<HTMLButtonElement>('button')?.click());
+  const input = container.querySelector('input')!;
+  await act(async () => { Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(input, text); input.dispatchEvent(new Event('input', { bubbles: true })); });
+  await act(async () => vi.advanceTimersByTime(250));
+  return input;
+}
+it('hands entity identity to full Where, never navigates to the first bounded search location', async () => {
   vi.useFakeTimers();
-  let rejectSearch: (reason: Error) => void = () => {};
-  search.mockImplementation(() => new Promise((_, reject) => { rejectSearch = reject; }));
-  const container = document.createElement('div');
-  document.body.append(container);
-  const root = createRoot(container);
-  roots.push(root);
-  await act(async () => root.render(<LcosNavigatorIsland projectId="p" canvasBySurface={{}} ensureCanvas={async () => undefined} />));
-  const toggle = container.querySelector<HTMLButtonElement>('button');
-  if (!toggle) throw new Error('Search toggle missing');
-  await act(async () => toggle.click());
-  const input = container.querySelector<HTMLInputElement>('input');
-  if (!input) throw new Error('Search input missing');
-  const setValue = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set;
-  if (!setValue) throw new Error('Input setter missing');
-  await act(async () => {
-    setValue.call(input, '山');
-    input.dispatchEvent(new Event('input', { bubbles: true }));
-    input.dispatchEvent(new Event('change', { bubbles: true }));
-  });
-  await act(async () => vi.advanceTimersByTime(300));
-  expect(search).toHaveBeenCalled();
-  expect(container.querySelector('input')).toBe(input);
-  await act(async () => rejectSearch(new Error('offline')));
-  expect(container.querySelector('input')).toBe(input);
-  expect(input.value).toBe('山');
+  search.mockResolvedValue({ hits: [{ entityType: 'artifact', entityId: 'a', title: '素材', locationRefs: [{ id: 'wrong-first' }] }] });
+  const container = await render(); await query(container);
+  await act(async () => container.querySelector<HTMLButtonElement>('[role="option"]')!.click());
+  expect(where).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ entityId: 'a', entityType: 'artifact', title: '素材' }));
+  expect(container.querySelector('input')).toBeNull();
+});
+it('keeps input mounted after failure and supports real retry', async () => {
+  vi.useFakeTimers(); search.mockRejectedValueOnce(new Error('offline')).mockResolvedValueOnce({ hits: [] });
+  const container = await render(); const input = await query(container);
+  expect(container.querySelector('input')).toBe(input); expect(input.value).toBe('材料');
   expect(container.textContent).toContain('搜索失败');
+  await act(async () => container.querySelector<HTMLButtonElement>('[role="alert"] button')!.click());
+  await act(async () => vi.advanceTimersByTime(250));
+  expect(container.textContent).toContain('没有匹配');
+});
+it('supports arrow and Enter without choosing during IME composition', async () => {
+  vi.useFakeTimers(); search.mockResolvedValue({ hits: [{ entityType: 'artifact', entityId: 'a' }, { entityType: 'artifact', entityId: 'b' }] });
+  const container = await render(); const input = await query(container);
+  await act(async () => input.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true })));
+  await act(async () => input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', isComposing: true, bubbles: true })));
+  expect(where).not.toHaveBeenCalled();
+  await act(async () => input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true })));
+  expect(where).toHaveBeenCalledWith(expect.objectContaining({ entityId: 'b' }));
+});
+it('does not steal local editor Find and closes search on one Escape', async () => {
+  const container = await render(); const editor = document.createElement('textarea'); document.body.append(editor);
+  await act(async () => editor.dispatchEvent(new KeyboardEvent('keydown', { key: 'f', ctrlKey: true, bubbles: true, cancelable: true })));
+  expect(container.querySelector('input')).toBeNull();
+  await act(async () => window.dispatchEvent(new KeyboardEvent('keydown', { key: 'f', ctrlKey: true, cancelable: true })));
+  expect(container.querySelector('input')).not.toBeNull();
   await act(async () => window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' })));
   expect(container.querySelector('input')).toBeNull();
 });
-
-it('restores the resting island after locating a projected search result', async () => {
-  vi.useFakeTimers();
-  nodeEntityRefs.set('node-1', { entityId: 'entity-1', entityType: 'artifact' });
-  canvasNodes.push({ id: 'node-1' });
-  search.mockResolvedValue({
-    hits: [{ entityType: 'artifact', entityId: 'entity-1', title: '参考稿', snippet: '', source: 'title', score: 1 }],
-  });
-  const container = document.createElement('div');
-  document.body.append(container);
-  const root = createRoot(container);
-  roots.push(root);
-  await act(async () => root.render(<LcosNavigatorIsland projectId="p" canvasBySurface={{}} ensureCanvas={async () => undefined} />));
-  await act(async () => container.querySelector<HTMLButtonElement>('button')?.click());
-  const input = container.querySelector<HTMLInputElement>('input');
-  if (!input) throw new Error('Search input missing');
-  await act(async () => {
-    const setValue = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set;
-    if (!setValue) throw new Error('Input setter missing');
-    setValue.call(input, '参考');
-    input.dispatchEvent(new Event('input', { bubbles: true }));
-    input.dispatchEvent(new Event('change', { bubbles: true }));
-  });
-  await act(async () => vi.advanceTimersByTime(300));
-  await act(async () => Promise.resolve());
-  const result = container.querySelector<HTMLButtonElement>('[data-lcos-navigator-results] button');
-  if (!result) throw new Error('Search result missing');
-  await act(async () => result.click());
-  expect(requestLocate).toHaveBeenCalledWith(expect.objectContaining({ surface: 'main', nodeId: 'node-1', status: 'projected' }));
-  expect(container.querySelector('input')).toBeNull();
-  expect(container.querySelector('[data-lcos-navigator-results]')).toBeNull();
+it('reacts to a resize without an unrelated state change', async () => {
+  const original = window.innerWidth;
+  const container = await render();
+  await act(async () => { Object.defineProperty(window, 'innerWidth', { configurable: true, value: 640 }); window.dispatchEvent(new Event('resize')); });
+  expect(parseFloat(container.querySelector<HTMLElement>('[data-lcos-navigator-island]')!.style.left) + 52 / 2).toBe(320);
+  Object.defineProperty(window, 'innerWidth', { configurable: true, value: original });
 });
 
-it('keeps search open when a binding is stale and the node is gone from the current canvas', async () => {
+it('consumes Escape before a separate window bubble listener can close the underlying window', async () => {
+  const container = await render();
+  const closeWindow = vi.fn(); window.addEventListener('keydown', closeWindow);
+  try {
+    await act(async () => container.querySelector<HTMLButtonElement>('button')!.click());
+    await act(async () => container.querySelector('input')!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true })));
+    expect(container.querySelector('input')).toBeNull(); expect(closeWindow).not.toHaveBeenCalled();
+  } finally { window.removeEventListener('keydown', closeWindow); }
+});
+
+
+it('uses the server truncated flag even when fewer than the client limit are returned', async () => {
+  vi.useFakeTimers(); search.mockResolvedValue({ hits: [{ entityType: 'artifact', entityId: 'a' }], truncated: true });
+  const container = await render(); await query(container);
+  expect(container.textContent).toContain('还有匹配结果');
+  expect(search).toHaveBeenCalledWith('p', expect.objectContaining({ limit: 50 }));
+});
+it('does not invent pagination or a truncation warning for a complete 50-result response', async () => {
+  vi.useFakeTimers(); search.mockResolvedValue({ hits: Array.from({ length: 50 }, (_, i) => ({ entityType: 'artifact', entityId: String(i) })), truncated: false });
+  const container = await render(); await query(container);
+  expect(container.querySelectorAll('[role="option"]')).toHaveLength(50);
+  expect(container.textContent).not.toContain('还有匹配结果');
+});
+
+it('explains why a hit matched and reports only the server full location count', async () => {
   vi.useFakeTimers();
-  nodeEntityRefs.set('stale-node', { entityId: 'entity-1', entityType: 'artifact' });
-  search.mockResolvedValue({
-    hits: [{ entityType: 'artifact', entityId: 'entity-1', title: '已移除节点', snippet: '', source: 'title', score: 1 }],
-  });
-  const container = document.createElement('div');
-  document.body.append(container);
-  const root = createRoot(container);
-  roots.push(root);
-  await act(async () => root.render(<LcosNavigatorIsland projectId="p" canvasBySurface={{}} ensureCanvas={async () => undefined} />));
-  await act(async () => container.querySelector<HTMLButtonElement>('button')?.click());
-  const input = container.querySelector<HTMLInputElement>('input');
-  if (!input) throw new Error('Search input missing');
-  await act(async () => {
-    const setValue = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set;
-    if (!setValue) throw new Error('Input setter missing');
-    setValue.call(input, '已移除');
-    input.dispatchEvent(new Event('input', { bubbles: true }));
-    input.dispatchEvent(new Event('change', { bubbles: true }));
-  });
-  await act(async () => vi.advanceTimersByTime(300));
-  await act(async () => Promise.resolve());
-  const result = container.querySelector<HTMLButtonElement>('[data-lcos-navigator-results] button');
-  if (!result) throw new Error('Search result missing');
-  await act(async () => result.click());
-  expect(requestLocate).not.toHaveBeenCalled();
-  expect(container.querySelector('input')).toBe(input);
-  expect(container.textContent).toContain('尚无可定位的位置');
+  search.mockResolvedValue({ hits: [{
+    entityType: 'artifact', entityId: 'a', title: '材料', snippet: '包含风险评估',
+    matchReason: 'body', locationCount: 7,
+    locationRefs: Array.from({ length: 5 }, (_, index) => ({ kind: 'workspace', id: `legacy-${index}` })),
+  }] });
+  const container = await render(); await query(container);
+  expect(container.querySelector('[data-lcos-search-match-reason]')?.textContent).toBe('正文匹配');
+  expect(container.querySelector('[data-lcos-search-location-count]')?.textContent).toBe('出现在 7 个位置');
+  expect(container.textContent).not.toContain('legacy-');
+  expect(container.textContent).not.toMatch(/vector|FTS|embedding|score/i);
 });

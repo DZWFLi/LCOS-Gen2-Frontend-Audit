@@ -53,7 +53,7 @@ export interface LcosRailwayViewProps {
   /** Canonical active Receiver identity, kept outside the ordered destination island. */
   readonly receiver?: ReactNode;
   /** 额外脚注（例如 rail order 读取结果）；不参与变体。 */
-  readonly footer?: string;
+  readonly footer?: ReactNode;
 }
 
 export function LcosRailwayView({
@@ -82,7 +82,7 @@ export function LcosRailwayView({
         style={{
           height: railwayHeight,
           maxHeight: 'min(70vh, 556px)',
-          overflowY: 'auto',
+          overflow: 'visible',
         }}
       >
         {items.map((item) => {

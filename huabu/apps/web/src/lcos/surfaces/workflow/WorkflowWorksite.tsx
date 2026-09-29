@@ -3,11 +3,15 @@
 // 打开/续接（Run 执行）Wave 8 接 T6 Run 事实。
 
 import { Hand, X } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import { useCloseOnEscape } from '@/hooks/useCloseOnEscape';
+import { useCanvasAttentionStore } from '@/store/canvasAttentionStore';
+
 
 import { WorkflowCardPool } from './WorkflowCardPool';
+import { useAvoidingHudPosition } from '../../navigation/useAvoidingHudPosition';
+import { useHudViewport } from '../../navigation/useHudViewport';
 import { LcosWorksiteStage } from '../../shell/LcosWorksiteStage';
 import { WorkflowHandView } from '../../ui/workflow/WorkflowHandView';
 
@@ -38,14 +42,15 @@ export interface WorkflowHandOverlayProps {
  */
 export function WorkflowHandOverlay({ projectId, workspaces, sourceSurface, sourceWasChild, open, onClose }: WorkflowHandOverlayProps): React.JSX.Element | null {
   useCloseOnEscape(open, onClose);
+  useEffect(() => { if (open) useCanvasAttentionStore.getState().setCanvasEngaged(false); }, [open]);
   return (
-    <WorkflowHandView key={projectId} open={open} header={<>
+    <WorkflowHandView key={projectId} open={open} onClose={onClose} header={<>
       <span>工作流</span>
       <button type="button" aria-label="收回手牌" onClick={onClose} className="lcos-workflow-hand-close">
         <X className="h-[22px] w-[22px]" aria-hidden />
       </button>
     </>}>
-      <WorkflowCardPool projectId={projectId} workspaces={workspaces} sourceSurface={sourceSurface} sourceWasChild={sourceWasChild} />
+      <WorkflowCardPool projectId={projectId} workspaces={workspaces} sourceSurface={sourceSurface} sourceWasChild={sourceWasChild} onEnterWorksite={onClose} />
     </WorkflowHandView>
   );
 }
@@ -59,6 +64,9 @@ export function WorkflowWorksite({
   ensureCanvas,
 }: WorkflowWorksiteProps): React.JSX.Element {
   const [handOpen, setHandOpen] = useState(false);
+  const viewport = useHudViewport();
+  const instrument = useAvoidingHudPosition({ x: 24, y: viewport.height - 140, width: 44, height: 44 }, {},
+    '[data-lcos-surface-dock],[data-lcos-spatial-navigator-host]');
 
   return (
     <div data-lcos-workflow-worksite data-hand-open={handOpen ? 'true' : undefined} className="relative h-full w-full">
@@ -69,18 +77,21 @@ export function WorkflowWorksite({
         ensureCanvas={(recreate?: boolean) => ensureCanvas(surface, recreate)}
       />
 
-      {/* 手牌呼出（真实：卡池） */}
+      {/* 手牌呼出（真实：卡池）；复用已有HUD几何避让，不移动画布。 */}
+      <div ref={instrument.ref} data-lcos-worksite-instrument-host className="pointer-events-auto fixed z-30" style={{ left: instrument.rect.x, top: instrument.rect.y }}>
       <button
         type="button"
         data-lcos-workflow-hand-toggle
         data-open={handOpen ? 'true' : undefined}
         onClick={() => setHandOpen((v) => !v)}
         className="lcos-workflow-hand-trigger"
+        style={{ position: 'relative', left: 0, bottom: 'auto' }}
         aria-label={handOpen ? '收起工作流手牌' : '打开工作流手牌'}
         title={handOpen ? '收起手牌' : '打开手牌'}
       >
         <Hand className="h-4 w-4" aria-hidden />
       </button>
+      </div>
 
       <WorkflowHandOverlay projectId={projectId} workspaces={workspaces} sourceSurface="workflow" sourceWasChild={isChildWorksite} open={handOpen} onClose={() => setHandOpen(false)} />
     </div>

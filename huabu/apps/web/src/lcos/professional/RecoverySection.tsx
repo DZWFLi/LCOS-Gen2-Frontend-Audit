@@ -4,7 +4,7 @@
 // 成功后用返回的 fresh projection 更新（重复 retry 不重复 create 由 Core journal/幂等保证）。
 
 import { RefreshCw } from 'lucide-react';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 
 import { lcosTokens } from '../ui/lcosTokens';
@@ -13,8 +13,8 @@ import type { ContinuationActionV1, ContinuationRecoveryProjectionV1 } from '@lo
 import type { CoreCollaborationClient } from '@local-creative-os/web-gen2';
 
 
-const ACTION_LABEL: Readonly<Record<string, string>> = {
-  retry_external_create: '重试外部会话',
+const ACTION_LABEL: Readonly<Record<ContinuationActionV1, string>> = {
+  recover_external: '恢复外部会话',
   recover_bind: '恢复绑定',
   retry_attach: '重试附加',
   retry_projection: '重试投影',
@@ -30,15 +30,17 @@ export interface RecoverySectionProps {
 }
 
 export function RecoverySection({ collaboration, projectId, operations, onRefreshed }: RecoverySectionProps): React.JSX.Element | null {
+  const pending = useRef(false);
   const [busyKey, setBusyKey] = useState<string | null>(null);
   const [errorDetail, setErrorDetail] = useState<string | undefined>(undefined);
   const [receipt, setReceipt] = useState<string | null>(null);
 
   const run = useCallback(
     (operation: ContinuationRecoveryProjectionV1, action: ContinuationActionV1): void => {
+      if (pending.current) return;
+      pending.current = true;
       const key = `${operation.operationId}:${action}`;
       setBusyKey(key);
-      setErrorDetail(undefined);
       setReceipt(null);
       void collaboration
         .recover(projectId, {
@@ -49,26 +51,24 @@ export function RecoverySection({ collaboration, projectId, operations, onRefres
         .then((result) => {
           if (!result.ok) throw new Error(result.error.userMessage);
           setReceipt(`已执行 · ${operation.operationId.slice(0, 8)}`);
-          // 恢复动作后重取 diagnostics projection（会话 store 走既有 SSE/手动 refresh）。
-          void collaboration.readDiagnostics(projectId, operation.connectedConversationId ?? '');
+          // The host owns diagnostics refresh; do not discard a duplicate read or create again.
           onRefreshed(operation);
         })
         .catch((error: unknown) => {
           setErrorDetail(error instanceof Error ? error.message : String(error));
         })
-        .finally(() => setBusyKey(null));
+        .finally(() => { pending.current = false; setBusyKey(null); });
     },
     [collaboration, projectId, onRefreshed],
   );
 
   useEffect(() => {
-    if (errorDetail === undefined && receipt === null) return;
+    if (receipt === null) return;
     const timer = window.setTimeout(() => {
-      setErrorDetail(undefined);
       setReceipt(null);
     }, 6000);
     return () => window.clearTimeout(timer);
-  }, [errorDetail, receipt]);
+  }, [receipt]);
 
   if (operations.length === 0) {
     return (
@@ -143,7 +143,7 @@ export function RecoverySection({ collaboration, projectId, operations, onRefres
                     key={descriptor.action}
                     type="button"
                     data-lcos-recovery-action={descriptor.action}
-                    disabled={busyKey === key}
+                    disabled={busyKey !== null}
                     title={descriptor.reason ?? (descriptor.requiresFreshRead ? '需要先读取最新状态' : undefined)}
                     onClick={() => run(operation, descriptor.action)}
                     className="rounded-full px-2.5 py-1 text-xs font-medium disabled:opacity-40"

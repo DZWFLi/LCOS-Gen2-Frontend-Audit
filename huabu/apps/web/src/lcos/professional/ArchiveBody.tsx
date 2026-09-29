@@ -2,9 +2,10 @@
 // It never owns a second archive store: every row is read from Core and restore keeps the same id.
 
 import { ArchiveRestore, BookOpen, Search } from 'lucide-react';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { createLcosCoreSession } from '../app/lcosCoreClient';
+import { useCollaborationSessionStore } from '../collaboration/collaborationSessionStore';
 import { useLcosHostStore } from '../host/lcosHostState';
 import { useLcosShellStore } from '../shell/lcosShellStore';
 import { lcosTokens } from '../ui/lcosTokens';
@@ -23,24 +24,54 @@ export function ArchiveBody({
   const [state, setState] = useState<'loading' | 'ready' | 'error'>('loading');
   const [busyId, setBusyId] = useState<string | undefined>();
   const [message, setMessage] = useState<string | undefined>();
-
-  const reload = useCallback((): void => {
-    setState('loading');
-    void session.artifacts
-      .listArtifacts(projectId, 'archived')
-      .then((value) => {
-        setItems(value);
-        setState('ready');
-      })
-      .catch((error: unknown) => {
-        setState('error');
-        setMessage(error instanceof Error ? error.message : '归档读取失败');
-      });
-  }, [projectId, session]);
+  const requestId = useRef(0);
+  const activeProjectId = useRef<string | null>(null);
+  const mounted = useRef(false);
+  const reloadRef = useRef<() => void>(() => undefined);
 
   useEffect(() => {
+    let disposed = false;
+    activeProjectId.current = projectId;
+    mounted.current = true;
+    setItems([]);
+    setState('loading');
+    setBusyId(undefined);
+    setMessage(undefined);
+
+    const reload = (): void => {
+      if (disposed || !mounted.current || activeProjectId.current !== projectId) return;
+      const currentRequestId = ++requestId.current;
+      setState('loading');
+      void session.artifacts
+        .listArtifacts(projectId, 'archived')
+        .then((value) => {
+          if (disposed || !mounted.current || activeProjectId.current !== projectId || requestId.current !== currentRequestId) return;
+          setItems(value);
+          setState('ready');
+        })
+        .catch((error: unknown) => {
+          if (disposed || !mounted.current || activeProjectId.current !== projectId || requestId.current !== currentRequestId) return;
+          setState('error');
+          setMessage(error instanceof Error ? error.message : '归档读取失败');
+        });
+    };
+
+    reloadRef.current = reload;
+    const stopWatching = useCollaborationSessionStore
+      .getState()
+      .watchArtifactChanges(projectId, reload);
     reload();
-  }, [reload]);
+
+    return () => {
+      disposed = true;
+      requestId.current += 1;
+      if (activeProjectId.current === projectId) {
+        activeProjectId.current = null;
+        mounted.current = false;
+      }
+      stopWatching();
+    };
+  }, [projectId, session]);
 
   const visible = items.filter((artifact) =>
     artifact.title
@@ -53,14 +84,19 @@ export function ArchiveBody({
     void session.artifacts
       .restoreArtifact(projectId, String(artifact.id))
       .then(() => {
+        const isCurrentProject = mounted.current && activeProjectId.current === projectId;
+        if (!isCurrentProject) return;
         useLcosHostStore.getState().host?.notifyMutationSuccess();
         setMessage(`已恢复「${artifact.title}」；将按当前现场重新落位。`);
-        reload();
+        reloadRef.current();
       })
-      .catch((error: unknown) =>
-        setMessage(error instanceof Error ? error.message : '恢复失败'),
-      )
-      .finally(() => setBusyId(undefined));
+      .catch((error: unknown) => {
+        if (!mounted.current || activeProjectId.current !== projectId) return;
+        setMessage(error instanceof Error ? error.message : '恢复失败');
+      })
+      .finally(() => {
+        if (mounted.current && activeProjectId.current === projectId) setBusyId(undefined);
+      });
   };
 
   return (
@@ -105,7 +141,7 @@ export function ArchiveBody({
       {state === 'error' && (
         <button
           type="button"
-          onClick={reload}
+          onClick={() => reloadRef.current()}
           className="min-h-11 rounded-xl px-3 text-left text-sm"
           style={{ color: lcosTokens.color.danger }}
         >

@@ -7,6 +7,7 @@
 import type { CoreProjectClient } from '../backend/projects.js';
 import type { CoreRelationClient } from '../backend/relations.js';
 import type { CoreConversationClient } from '../backend/conversations.js';
+import type { CoreCollectionClient } from '../backend/collections.js';
 import type { ProjectToSpaceProjection } from './projectToSpaceProjection.js';
 import type { ArtifactProjectionSource } from './projectToSpaceProjection.js';
 import { RelationProjection, type RelationKind, type SemanticRelation } from './relationProjection.js';
@@ -22,6 +23,8 @@ export interface ReconciliationResult {
   conversationsProjected: number;
   workflowScopesScanned: number;
   workflowScopesProjected: number;
+  collectionsScanned: number;
+  collectionsProjected: number;
   relationsScanned: number;
   reconciledEdges: number;
   removedOrphanEdges: number;
@@ -35,6 +38,7 @@ export interface ReconciliationFailureSummary {
   artifactProjection: number;
   conversationProjection: number;
   workflowScopeProjection: number;
+  collectionProjection: number;
   relationProjection: number;
   orphanCleanup: number;
 }
@@ -52,6 +56,7 @@ export interface ReconciliationDeps {
    * 并在会话消失时清理孤儿绑定；没有就跳过这一段（不假装有）。
    */
   conversations?: CoreConversationClient;
+  collections?: CoreCollectionClient;
 }
 
 function projectionArtifactKind(kind: unknown): ArtifactProjectionSource['kind'] {
@@ -280,6 +285,7 @@ export class ReconciliationRunner {
       artifactProjection: artifactReport.failures.length,
       conversationProjection: 0,
       workflowScopeProjection: 0,
+      collectionProjection: 0,
       relationProjection: 0,
       orphanCleanup: 0,
     };
@@ -320,6 +326,39 @@ export class ReconciliationRunner {
       nodeIdByEntity.set(entityKey(String(binding.entityType), binding.entityId), binding.spatialId);
     }
     failures.workflowScopeProjection = workflowScopeReport.failures.length;
+
+    // Canonical Collections are projected by identity only on the Main/root
+    // canvas. Membership remains Core-owned; this projection never derives it
+    // from parentId or frame geometry.
+    let collectionsScanned = 0;
+    let collectionsProjected = 0;
+    let collectionIds: ReadonlySet<string> | null = null;
+    if (isMainCanvas && this.deps.collections) {
+      try {
+        const collections = await this.deps.collections.list(projectId);
+        collectionsScanned = collections.length;
+        collectionIds = new Set(collections.map((collection) => String(collection.id)));
+        const collectionReport = collections.length === 0
+          ? { bindings: [], failures: [] }
+          : await this.deps.nodeProjector.projectBatchWithReport(collections.map((collection) => ({
+              projectId,
+              entityType: 'collection' as const,
+              entityId: String(collection.id),
+              kind: 'file' as const,
+              sourceKind: 'collection',
+              title: collection.title,
+              size: { width: 248, height: 244 },
+            })));
+        collectionsProjected = collectionReport.bindings.length;
+        failures.collectionProjection += collectionReport.failures.length;
+        for (const binding of collectionReport.bindings) {
+          nodeIdByEntity.set(entityKey(String(binding.entityType), binding.entityId), binding.spatialId);
+        }
+      } catch (error) {
+        failures.collectionProjection += 1;
+        console.warn('[lcos] Canonical Collection projection failed; existing spatial state is retained.', error);
+      }
+    }
 
     // 承接会话 → Glyth 节点：与 artifact 走同一条投影/落位/绑定路径（没有第二套 projector）。
     // 只投影**已确认身份**的会话（`pending-*` 不是身份，绝不伪造 Glyth）。
@@ -455,6 +494,20 @@ export class ReconciliationRunner {
       }
     }
 
+    if (collectionIds !== null) {
+      for (const binding of bindings) {
+        if (binding.projectId === projectId && binding.canvasId === canvasId && binding.spatialKind === 'node' && binding.entityType === 'collection' && !collectionIds.has(binding.entityId)) {
+          try {
+            await this.deps.nodeProjector.removeOrphanNode(binding);
+            removedOrphanNodes += 1;
+          } catch (error) {
+            failures.orphanCleanup += 1;
+            console.warn('[lcos] Failed to remove one orphan Collection projection.', { entityId: binding.entityId, error });
+          }
+        }
+      }
+    }
+
     return {
       projectId,
       canvasId,
@@ -464,6 +517,8 @@ export class ReconciliationRunner {
       conversationsProjected,
       workflowScopesScanned: workflowScopes.length,
       workflowScopesProjected: workflowScopeReport.bindings.length,
+      collectionsScanned,
+      collectionsProjected,
       relationsScanned: relations.length,
       reconciledEdges,
       removedOrphanEdges,
@@ -474,6 +529,7 @@ export class ReconciliationRunner {
         failures.artifactProjection > 0 ||
         failures.conversationProjection > 0 ||
         failures.workflowScopeProjection > 0 ||
+        failures.collectionProjection > 0 ||
         failures.relationProjection > 0 ||
         failures.orphanCleanup > 0,
     };

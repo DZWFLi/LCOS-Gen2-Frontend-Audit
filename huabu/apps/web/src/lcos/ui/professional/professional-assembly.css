@@ -54,12 +54,12 @@
 .lcos-assembly-result-meta .lcos-btn { color:var(--gen2-muted); }
 .lcos-assembly-scroll { flex:1; min-block-size:0; min-inline-size:0; overflow:auto; overscroll-behavior:contain; scrollbar-gutter:stable; padding:6px 24px 12px 32px; }
 .lcos-assembly-masonry { column-width:248px; column-gap:24px; inline-size:100%; }
-.lcos-assembly-item { display:inline-flex; vertical-align:top; flex-direction:column; position:relative; min-inline-size:0; inline-size:100%; gap:8px; padding:8px 6px 0; margin-block-end:24px; break-inside:avoid; border:1px solid transparent; border-radius:16px; color:var(--gen2-text); transition:background 150ms ease,border-color 150ms ease,box-shadow 150ms ease; }
+.lcos-assembly-item { display:inline-grid; grid-template-columns:minmax(0,1fr); vertical-align:top; position:relative; min-inline-size:0; inline-size:100%; gap:8px; padding:8px 6px 0; margin-block-end:24px; break-inside:avoid; border:1px solid transparent; border-radius:16px; color:var(--gen2-text); transition:background 150ms ease,border-color 150ms ease,box-shadow 150ms ease; }
 .lcos-assembly-item:hover,.lcos-assembly-item:focus-within,.lcos-assembly-item[data-visual-active='true'] { border-color:var(--gen2-border); background:color-mix(in srgb,var(--gen2-raised) 34%,transparent); box-shadow:0 4px 12px color-mix(in srgb,var(--gen2-text) 4%,transparent); }
 .lcos-assembly-item[data-selected='true'] { border-color:var(--gen2-accent); box-shadow:0 0 0 1px var(--gen2-accent); }
 .lcos-assembly-item[draggable='true'] .lcos-assembly-item-object { cursor:grab; }
 .lcos-assembly-item[draggable='true']:active .lcos-assembly-item-object { cursor:grabbing; }
-.lcos-assembly-item-object { position:relative; min-inline-size:0; inline-size:100%; }
+.lcos-assembly-item-object { grid-area:1 / 1; position:relative; min-inline-size:0; inline-size:100%; }
 .lcos-assembly-material-view { position:relative; width:100%; min-width:0; }
 .lcos-assembly-material-body { position:relative; overflow:hidden; width:100%; border-radius:12px; background:var(--gen2-raised); }
 .lcos-assembly-material-body.is-image { min-height:120px; }
@@ -81,7 +81,7 @@
 .lcos-assembly-material-glyph svg { width:24px; height:24px; }
 .lcos-assembly-preview-reason { display:flex; flex-direction:column; gap:4px; font-size:12px; }
 .lcos-assembly-preview-reason small { font-size:10px; }
-.lcos-assembly-item-caption { min-width:0; display:flex; flex-direction:column; gap:4px; padding:0 2px; }
+.lcos-assembly-item-caption { grid-area:2 / 1; min-width:0; display:flex; flex-direction:column; gap:4px; padding:0 2px; }
 .lcos-assembly-item-caption > strong { font:500 13px/20px 'Noto Sans SC',sans-serif; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .lcos-assembly-item-caption > span { font-size:10px; color:var(--gen2-muted); overflow-wrap:anywhere; }
 .lcos-assembly-select { position:absolute; top:8px; left:8px; display:grid; place-items:center; width:44px; height:44px; border-radius:12px; background:color-mix(in srgb,var(--gen2-surface) 94%,transparent); opacity:0; transition:opacity 150ms ease; cursor:pointer; z-index:3; }
@@ -90,10 +90,13 @@
 .lcos-assembly-body .lcos-assembly-more { position:absolute; top:8px; right:8px; padding:0; width:44px; height:44px; border-radius:12px; background:color-mix(in srgb,var(--gen2-surface) 94%,transparent); opacity:0; z-index:3; }
 .lcos-assembly-more > span { position:absolute; width:1px; height:1px; clip-path:inset(50%); overflow:hidden; }
 .lcos-assembly-item:hover .lcos-assembly-more,.lcos-assembly-item:focus-within .lcos-assembly-more,.lcos-assembly-item[data-visual-active='true'] .lcos-assembly-more { opacity:1; }
-.lcos-assembly-item-actions { display:flex; flex-wrap:wrap; align-items:center; gap:4px; min-height:44px; padding:0 0 4px; opacity:0; visibility:hidden; transition:opacity 150ms ease; }
+/* C02 5346:1877 floats over the material edge; idle items reserve no command row. */
+.lcos-assembly-item-actions { grid-area:1 / 1; align-self:end; position:relative; margin:6px; z-index:2; display:flex; flex-wrap:wrap; align-items:center; justify-content:center; gap:4px; min-height:44px; padding:4px; border:.5px solid var(--gen2-border); border-radius:12px; background:color-mix(in srgb,var(--gen2-surface) 92%,transparent); backdrop-filter:blur(12px); box-shadow:0 4px 16px color-mix(in srgb,var(--gen2-text) 10%,transparent); opacity:0; visibility:hidden; transition:opacity 150ms ease; }
 .lcos-assembly-item:hover .lcos-assembly-item-actions,.lcos-assembly-item:focus-within .lcos-assembly-item-actions,.lcos-assembly-item[data-visual-active='true'] .lcos-assembly-item-actions { opacity:1; visibility:visible; }
 .lcos-assembly-body .lcos-assembly-item-actions .lcos-btn { --lcos-control-font-size:12px; font-size:12px; }
 .lcos-assembly-item-actions .lcos-oreo-face { padding-inline:8px; }
+/* Real media/retry controls must remain directly reachable beneath their content. */
+.lcos-assembly-item:has(.lcos-assembly-item-object :is(button,audio,video)) .lcos-assembly-item-actions { grid-area:3 / 1; margin:0; box-shadow:none; }
 .lcos-assembly-item-actions [data-lcos-assembly-drop] { --lcos-control-font-size:14px; }
 .lcos-assembly-body .lcos-oreo-label { display:inline-flex; align-items:center; gap:4px; }
 .lcos-assembly-filter [aria-pressed='true'] { --oreo-fill:var(--gen2-text); --oreo-ink:var(--gen2-surface); }
@@ -161,7 +164,8 @@
  .lcos-assembly-result-meta { padding-inline:16px; }
  .lcos-assembly-scroll { padding-inline:16px; }
  .lcos-assembly-masonry { column-count:1; column-width:auto; }
- .lcos-assembly-item { display:flex; width:min(290px,100%); margin-inline:auto; }
+ .lcos-assembly-item { display:grid; width:100%; margin-inline:auto; }
+ .lcos-assembly-item[data-object-only='true'] { width:min(290px,100%); }
  .lcos-assembly-browse-hint { padding-inline:16px; }
  .lcos-assembly-selection-bar { padding-inline:16px; }
  .lcos-assembly-preview-heading,.lcos-assembly-preview-content,.lcos-assembly-preview > footer { padding-inline:18px; }
@@ -180,6 +184,12 @@
 }
 @media (hover:none), (pointer:coarse) {
  .lcos-assembly-body .lcos-assembly-more,.lcos-assembly-select,.lcos-assembly-item-actions { opacity:1; visibility:visible; }
+ /* Touch has no hover: keep controls beside the caption, never on top of preview content. */
+ .lcos-assembly-select,.lcos-assembly-body .lcos-assembly-more { grid-area:2 / 1; position:relative; inset:auto; margin:0; align-self:center; }
+ .lcos-assembly-select { justify-self:start; }
+ .lcos-assembly-body .lcos-assembly-more { justify-self:end; }
+ .lcos-assembly-item-caption { align-self:center; padding-inline:48px; }
+ .lcos-assembly-item-actions { grid-area:3 / 1; margin:0; box-shadow:none; }
 }
 @media (prefers-reduced-motion:reduce) {
  .lcos-assembly-body *, .lcos-assembly-body *::before { animation:none !important; transition:none !important; }

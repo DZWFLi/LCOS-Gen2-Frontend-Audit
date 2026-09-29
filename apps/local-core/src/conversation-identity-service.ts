@@ -23,6 +23,7 @@ import type {
   ConversationIdentityChainV1,
 } from '@local-creative-os/contracts'
 
+import { readBoundConversationContext } from './conversation-context.js'
 import type { ConversationImportService } from './conversation-import-service.js'
 import type { SessionLifecycleService } from './session-lifecycle-service.js'
 import type { SqliteMetadataRepository } from './metadata-repository.js'
@@ -138,23 +139,11 @@ export class ConversationIdentityService {
       })
     }
 
-    // ② bound：显式 conversation_context relation（source = conversationArtifactId 或 conversation ref）。
-    const conversationKeys = new Set<string>([connectedConversationId, connected.conversationRef])
-    if (connected.conversationSessionId !== undefined) conversationKeys.add(connected.conversationSessionId)
-    for (const relation of this.metadata.getRelations(projectId)) {
-      const sourceKey = String(relation.sourceEntityId)
-      if (!conversationKeys.has(sourceKey)) continue
-      if (relation.kind !== 'conversation_context' && relation.kind !== 'conversation-context') continue
-      const targetArtifact = this.metadata.getArtifact(String(relation.targetEntityId))
-      if (targetArtifact !== undefined) {
-        push({
-          entityRef: { type: 'artifact', id: String(relation.targetEntityId) },
-          tier: 'bound',
-          reason: 'explicit conversation_context binding',
-          createdAt: relation.createdAt,
-          sourceRef: `relation:${String(relation.id)}`,
-        })
-      }
+    // The same typed relation read feeds both Reach and continuation context.
+    for (const item of readBoundConversationContext(this.metadata, projectId, connectedConversationId)) {
+      const existing = items.findIndex((value) => value.entityRef.type === item.entityRef.type && value.entityRef.id === item.entityRef.id)
+      if (existing >= 0) items[existing] = item
+      else push(item)
     }
 
     // ③ referenced：conversation_file_references（导入会话维度）。

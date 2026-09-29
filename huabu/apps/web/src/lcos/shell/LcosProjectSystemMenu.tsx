@@ -1,0 +1,46 @@
+import { useLayoutEffect, useRef, useState } from 'react';
+import { Link } from 'react-router-dom';
+
+import { Popover } from '@/components/Common/Popover';
+
+import { useLcosShellStore } from './lcosShellStore';
+import { LcosProjectIdentityView } from '../ui/families/LcosProjectIdentityView';
+import { LcosButton } from '../ui/primitives/LcosButton';
+import '../ui/families/project-system.css';
+
+import type { AssemblyTargetRefV1 } from '@local-creative-os/contracts';
+
+/** Figma 5306:4057; native Popover owns placement and outside/Escape dismissal. */
+export function LcosProjectSystemMenu({ name, target, assemblyTitle }: {
+  readonly name: string; readonly target?: AssemblyTargetRefV1; readonly assemblyTitle: string;
+}): React.JSX.Element {
+  const [position, setPosition] = useState<{ x: number; y: number } | null>(null);
+  const trigger = useRef<HTMLButtonElement>(null);
+  const panel = useRef<HTMLDivElement>(null);
+  const close = (): void => { setPosition(null); trigger.current?.focus({ preventScroll: true }); };
+  useLayoutEffect(() => {
+    if (!position) return;
+    // The existing Popover first measures with visibility:hidden. Focus after it is placed.
+    const frame = requestAnimationFrame(() => panel.current?.querySelector<HTMLAnchorElement>('a')?.focus({ preventScroll: true }));
+    return () => cancelAnimationFrame(frame);
+  }, [position]);
+  return <>
+    <button ref={trigger} type="button" data-lcos-project-identity aria-label={`${name} · 项目菜单`}
+      aria-haspopup="dialog" aria-expanded={position !== null} onClick={() => {
+        if (position) { close(); return; }
+        const rect = trigger.current?.getBoundingClientRect();
+        if (rect) setPosition({ x: rect.left, y: rect.bottom + 8 });
+      }}><LcosProjectIdentityView name={name} /></button>
+    {position && <Popover position={position} onDismiss={close} className="lcos-project-system-popover">
+      <div ref={panel} role="dialog" aria-label="项目菜单" className="lcos-system-panel lcos-project-system-menu">
+        <header><Link to="/projects" title="返回项目列表" onClick={close}>{name}</Link><LcosButton appearance="oreo" variant="secondary" onClick={close}>关闭</LcosButton></header>
+        <button type="button" className="lcos-system-row" disabled={!target} title={target ? '打开装配中的收件与来源' : '现场尚未就绪'} onClick={() => {
+          if (!target) return; close(); useLcosShellStore.getState().openAssembly(target, assemblyTitle, true);
+        }}><span>收件与来源</span></button>
+        <button type="button" className="lcos-system-row" onClick={() => { close(); useLcosShellStore.getState().openWindow('runtime-doctor', '运行诊断'); }}>
+          <span>运行诊断</span><small>连接、兼容性与恢复</small>
+        </button>
+      </div>
+    </Popover>}
+  </>;
+}

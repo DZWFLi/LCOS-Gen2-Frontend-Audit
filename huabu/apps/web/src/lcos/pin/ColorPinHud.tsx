@@ -1,6 +1,10 @@
+import { ArrowUpRight, Trash2 } from 'lucide-react';
+import { ColorPinMemberPreview } from './ColorPinMemberPreview';
+import { useAvoidingHudPosition } from '../navigation/useAvoidingHudPosition';
+import { useNavigationHudSlot } from '../navigation/NavigationHudSlot';
+import { useHudViewport } from '../navigation/useHudViewport';
 import { colorPinTargetFromEntityRef, colorPinTargetKey } from '@local-creative-os/web-gen2';
 import { useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 
 import useCanvasStore from '@/store/canvasStore';
 
@@ -35,14 +39,14 @@ export interface ColorPinHudProps {
 }
 
 export function ColorPinHud(props: ColorPinHudProps): React.JSX.Element {
+  const slot = useNavigationHudSlot();
   const pinsProjection = useLcosColorPins();
+  const viewport = useHudViewport();
   const activeSurface = useLcosShellStore((state) => state.activeSurface);
   const windowEnvironment = useLcosShellStore((state) => state.windowEnvironment);
   const requestLocate = useLcosShellStore((state) => state.requestLocate);
   const requestFocusWhere = useLcosShellStore((state) => state.requestFocusWhere);
   const openWindow = useLcosShellStore((state) => state.openWindow);
-  const setActiveSurface = useLcosShellStore((state) => state.setActiveSurface);
-  const navigate = useNavigate();
   const { switchWorksite } = useLcosWorksiteNav({
     projectId: props.projectId,
     canvasBySurface: props.canvasBySurface,
@@ -60,14 +64,23 @@ export function ColorPinHud(props: ColorPinHudProps): React.JSX.Element {
   }, [props.projectId]);
   useEffect(() => {
     const close = (event: KeyboardEvent): void => {
-      if (event.key !== 'Escape') return;
+      if (event.defaultPrevented || event.key !== 'Escape' || slot.active !== 'pin') return;
+      if (document.querySelector('[data-lcos-pin-overflow]')) return;
+      event.preventDefault(); event.stopImmediatePropagation(); slot.close('pin');
       setOpenPinId(undefined);
       setTravelMessage(undefined);
       pinsProjection.closeAuthoring();
     };
-    window.addEventListener('keydown', close);
-    return () => window.removeEventListener('keydown', close);
-  }, [pinsProjection]);
+    window.addEventListener('keydown', close, true);
+    return () => window.removeEventListener('keydown', close, true);
+  }, [pinsProjection, slot.active, slot.close]);
+
+  useEffect(() => {
+    if (pinsProjection.authoringTarget !== undefined) slot.activate('pin');
+  }, [pinsProjection.authoringTarget, slot.activate]);
+  useEffect(() => {
+    if (slot.active !== 'pin') { setOpenPinId(undefined); setTravelMessage(undefined); pinsProjection.closeAuthoring(); }
+  }, [slot.active, pinsProjection.closeAuthoring]);
 
   const definitionsById = useMemo(
     () => new Map(pinsProjection.snapshot.definitions.map((definition) => [definition.id, definition])),
@@ -93,6 +106,7 @@ export function ColorPinHud(props: ColorPinHudProps): React.JSX.Element {
       });
 
   const openCurrentTarget = (): void => {
+    slot.activate('pin');
     setOpenPinId(undefined);
     setTravelMessage(undefined);
     const selectedNodeId = useCanvasStore.getState().nodes.find((node) => node.selected)?.id;
@@ -145,7 +159,7 @@ export function ColorPinHud(props: ColorPinHudProps): React.JSX.Element {
       const { surfaceKind, surfaceRef } = resolution.target;
       let surface: LcosSurfaceKey | undefined;
       let canvasId: string | undefined;
-      if (surfaceKind === 'main' || surfaceKind === 'context' || surfaceKind === 'workflow') {
+      if (!surfaceRef.startsWith('workspace:') && (surfaceKind === 'main' || surfaceKind === 'context' || surfaceKind === 'workflow')) {
         surface = surfaceKind;
         if (!await switchWorksite(surface)) throw new Error('未能进入目标现场，请重试');
         canvasId = useCanvasStore.getState().canvasId ?? undefined;
@@ -153,10 +167,9 @@ export function ColorPinHud(props: ColorPinHudProps): React.JSX.Element {
         const workspaceId = surfaceRef.slice('workspace:'.length);
         canvasId = await props.ensureWorkspaceCanvas(workspaceId);
         if (canvasId === undefined) throw new Error('目标现场还没有可用画布');
-        if (!await useCanvasStore.getState().switchCanvas(canvasId)) throw new Error('未能读取目标现场，请重试');
-        surface = props.surfaceByWorkspace.get(workspaceId) ?? 'main';
-        setActiveSurface(surface);
-        navigate(`/projects/${encodeURIComponent(props.projectId)}/${surface}?workspaceId=${encodeURIComponent(workspaceId)}`, { replace: true });
+        surface = props.surfaceByWorkspace.get(workspaceId);
+        if (surface === undefined) throw new Error('目标现场尚未绑定可用视图');
+        if (!await switchWorksite(surface, { canvasId, workspaceId })) throw new Error('未能读取目标现场，请重试');
       } else if (surfaceKind === 'conversation' && surfaceRef.startsWith('conversation:')) {
         const conversationId = surfaceRef.slice('conversation:'.length);
         openWindow('conversation', '会话', conversationId);
@@ -177,7 +190,7 @@ export function ColorPinHud(props: ColorPinHudProps): React.JSX.Element {
           setTravelMessage('已进入目标现场，但对象投影尚未就绪');
           return;
         }
-        requestLocate({ reqId: crypto.randomUUID(), surface, canvasId, nodeId, status: 'projected' });
+        requestLocate({ reqId: crypto.randomUUID(), surface, canvasId, nodeId, status: 'projected', preserveSelection: true });
       }
       setOpenPinId(undefined);
     } catch (error) {
@@ -187,9 +200,10 @@ export function ColorPinHud(props: ColorPinHudProps): React.JSX.Element {
     }
   };
 
-  const viewport = { width: window.innerWidth, height: window.innerHeight };
+
   const offsets = lcosHudEdgeOffsets(windowEnvironment ?? null, viewport);
   const left = (offsets.left + (viewport.width - offsets.right)) / 2;
+  const placement = useAvoidingHudPosition({ x: left, y: offsets.top + 56, width: 340, height: 160 }, { x: 'center' }, '[data-lcos-shell-project-cluster],[data-lcos-navigator-island]');
 
   return (
     <>
@@ -200,6 +214,7 @@ export function ColorPinHud(props: ColorPinHudProps): React.JSX.Element {
         ensureCanvas={props.ensureCanvas}
         pins={navigatorPins}
         onActivatePin={(pin) => {
+          slot.activate('pin');
           pinsProjection.closeAuthoring();
           setTravelMessage(undefined);
           setOpenPinId((current) => current === pin.id ? undefined : pin.id);
@@ -208,11 +223,12 @@ export function ColorPinHud(props: ColorPinHudProps): React.JSX.Element {
         createPinDisabled={pinsProjection.busy || pinsProjection.status === 'loading'}
       />
 
-      {(pinsProjection.authoringTarget !== undefined || openPinId !== undefined || travelMessage !== undefined || pinsProjection.message !== undefined) && (
+      {slot.active === 'pin' && (pinsProjection.authoringTarget !== undefined || openPinId !== undefined || travelMessage !== undefined || pinsProjection.message !== undefined) && (
         <div
+          ref={placement.ref}
           data-lcos-color-pin-hud
-          className="pointer-events-auto fixed z-40 -translate-x-1/2"
-          style={{ top: offsets.top + 56, left, maxWidth: '90vw' }}
+          className="pointer-events-auto fixed z-40"
+          style={{ top: placement.rect.y, left: placement.rect.x, maxWidth: '90vw' }}
         >
           {pinsProjection.authoringTarget !== undefined && (
             <div
@@ -279,29 +295,30 @@ export function ColorPinHud(props: ColorPinHudProps): React.JSX.Element {
               {(pinsProjection.membershipsByColorPinId.get(openPinId) ?? []).map((membership) => {
                 const identity = pinsProjection.targetIdentity(membership.targetRef);
                 return (
-                  <div key={membership.id} data-lcos-color-pin-member={membership.id} className="flex items-center gap-1 px-2 py-1">
-                    <span className="min-w-0 flex-1 truncate text-xs" style={{ color: lcosTokens.color.text }}>
-                      {identity?.label ?? `${membership.targetRef.kind} · ${membership.targetRef.id}`}
-                    </span>
+                  <div key={membership.id} data-lcos-color-pin-member={membership.id} className="flex items-center gap-1 px-1 py-1">
                     <button
                       type="button"
                       data-lcos-color-pin-travel
                       disabled={travelling}
                       onClick={() => { void travelToMembership(membership); }}
-                      className="shrink-0 rounded-full px-2 py-1 text-xs"
-                      style={{ color: lcosTokens.color.info, minHeight: 32 }}
+                      aria-label={`前往 ${identity?.label ?? membership.targetRef.id}`}
+                      className="flex min-w-0 flex-1 items-center gap-3 rounded-xl px-1 py-1 text-left hover:bg-black/[.04]"
+                      style={{ color: lcosTokens.color.text, minHeight: 52 }}
                     >
-                      前往
+                      <ColorPinMemberPreview target={membership.targetRef} identity={identity} />
+                      <span className="min-w-0 flex-1 truncate text-xs">{identity?.label ?? membership.targetRef.id}</span>
+                      <ArrowUpRight size={14} aria-hidden className="shrink-0 opacity-55" />
                     </button>
                     <button
                       type="button"
                       data-lcos-color-pin-remove
                       disabled={pinsProjection.busy}
                       onClick={() => { void pinsProjection.removeMembership(membership.id).catch(() => undefined); }}
-                      className="shrink-0 rounded-full px-2 py-1 text-xs"
-                      style={{ color: lcosTokens.color.danger, minHeight: 32 }}
+                      aria-label={`从颜色组移除 ${identity?.label ?? membership.targetRef.id}`} title="移出颜色组"
+                      className="grid h-8 w-8 shrink-0 place-items-center rounded-full hover:bg-black/[.04]"
+                      style={{ color: lcosTokens.color.muted }}
                     >
-                      移除
+                      <Trash2 size={14} aria-hidden />
                     </button>
                   </div>
                 );

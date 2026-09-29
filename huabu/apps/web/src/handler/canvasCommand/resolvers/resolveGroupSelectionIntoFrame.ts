@@ -19,15 +19,25 @@ export default function resolveGroupSelectionIntoFrame(
   const selectedIds = getSelectedNodeIds(ui.nodes);
   const commands: CanvasCommand[] = [];
 
-  if (selectedIds.length < 2) {
+  if (selectedIds.length < (_intent.collectionId ? 1 : 2)) {
     return { commands, trace: [] };
   }
 
   const frameId = createId('node');
-  const result = frameNodes(ui.nodes as NestableNode[], selectedIds, {
-    frameId,
-    label: 'Frame',
+  const frameLabel = _intent.frameLabel?.trim() || 'Frame';
+  const geometryById = new Map((_intent.geometryUpdates ?? []).map((item) => [item.nodeId, item]));
+  const layoutNodes = ui.nodes.map((node) => {
+    const update = geometryById.get(node.id as CanvasNodeId);
+    return update?.position ? { ...node, position: update.position } : node;
   });
+  const result = frameNodes(layoutNodes as NestableNode[], selectedIds, {
+    frameId,
+    label: frameLabel,
+  });
+
+  if (_intent.geometryUpdates?.length) {
+    commands.push({ type: 'SET_NODE_GEOMETRY', items: [..._intent.geometryUpdates] });
+  }
 
   const frameNode = result.nodes.find((n) => n.id === frameId);
   if (frameNode) {
@@ -37,7 +47,7 @@ export default function resolveGroupSelectionIntoFrame(
         {
           id: frameId as CanvasNodeId,
           nodeType: 'frame',
-          data: { label: 'Frame', origin: { type: 'user-created' } } as never,
+          data: { label: frameLabel, origin: { type: 'user-created' }, ...(_intent.collectionId ? { lcosCollectionId: _intent.collectionId } : {}), ...(_intent.collectionNodeId ? { lcosCollectionNodeId: _intent.collectionNodeId } : {}) } as never,
           position: frameNode.position,
           size: {
             width: (frameNode.style as Record<string, number>)?.width ?? 400,
@@ -56,7 +66,7 @@ export default function resolveGroupSelectionIntoFrame(
 
   commands.push({
     type: 'SET_NODE_SELECTION',
-    nodeIds: [frameId as CanvasNodeId],
+    nodeIds: [_intent.collectionNodeId ? _intent.collectionNodeId as CanvasNodeId : frameId as CanvasNodeId],
   });
 
   return {
@@ -64,7 +74,7 @@ export default function resolveGroupSelectionIntoFrame(
     trace: [
       {
         action: 'node_created' as const,
-        nodes: [{ id: frameId, type: 'frame' as const, label: 'Frame' }],
+        nodes: [{ id: frameId, type: 'frame' as const, label: frameLabel }],
       },
     ],
   };

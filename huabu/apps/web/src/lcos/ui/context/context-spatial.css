@@ -1,39 +1,66 @@
 /* Stage5 deep fidelity: Figma 5388:24294 / 5333:96 / 5388:25701 / 5348:1151. */
 .lcos-atlas-light-curtain { position:fixed; inset:0; z-index:40; overflow:auto; background:transparent; }
-.lcos-atlas-light-curtain-inner { position:relative; z-index:1; width:min(892px,calc(100vw - 96px)); margin:0 auto; padding:159px 0 100px; transform:translateX(-34px); pointer-events:none; }
+.lcos-atlas-light-curtain-inner { position:relative; z-index:1; width:min(892px,calc(100vw - 96px)); margin:0 auto; padding:max(159px,var(--lcos-atlas-safe-top,0px)) 0 100px; transform:translateX(-34px); pointer-events:none; }
 .lcos-atlas-light-curtain-head { display:flex; align-items:center; justify-content:space-between; height:44px; margin:0 -58px 15px; color:var(--gen2-muted); font-size:12px; line-height:19px; }
 .lcos-atlas-light-curtain-head > span { position:relative; top:1.5px; width:230px; max-width:calc(100% - 52px); }
-.lcos-atlas-light-curtain-head > button { pointer-events:auto; position:absolute; left:calc(100% + 127px); }
+.lcos-atlas-light-curtain-head > button { pointer-events:auto; position:relative; left:auto; }
+.lcos-atlas-light-curtain-head > button.lcos-atlas-close { position:absolute; left:calc(100% + 127px); }
 .lcos-atlas-grid .lcos-context-collection-slot, .lcos-atlas-light-curtain-inner [data-lcos-family='surface-feedback'] { pointer-events:auto; }
 .lcos-atlas-close { width: 44px; height: 44px; display: grid; place-items: center; border: 0; background: transparent; border-radius: 12px; color: var(--gen2-muted); }
 .lcos-atlas-close:hover,.lcos-atlas-close:focus-visible { background: rgba(255,255,255,.70); outline: 2px solid var(--gen2-accent); outline-offset: 2px; }
 .lcos-atlas-grid { display: grid; grid-template-columns: repeat(3,248px); gap: 42px 74px; justify-content: center; align-items: start; }
+.lcos-atlas-focus-summary { display:flex; align-items:baseline; gap:12px; margin:0 0 18px; padding:10px 14px; border:1px solid color-mix(in srgb,var(--gen2-accent) 28%,transparent); border-radius:12px; background:rgba(255,255,255,.48); color:var(--gen2-text); font-size:12px; }
+.lcos-atlas-focus-summary span { color:var(--gen2-muted); }
 .lcos-atlas-grid:has(.lcos-context-collection-slot:is(:hover,:focus-within,[data-active='true'])) .lcos-context-collection-slot:not(:hover):not(:focus-within):not([data-active='true']) { opacity: .68; filter: saturate(.72); transform: translateY(3px) scale(.985); }
 
 /* Context Collection 5333:96 — same identity, 2 organization × 3 rendition. */
 .lcos-context-collection-slot { position: relative; width: 248px; height: 244px; transition: opacity 150ms ease, filter 150ms ease, transform 180ms cubic-bezier(.22,1,.36,1); }
-.lcos-context-collection-slot[data-disabled='true'] { opacity: .65; }
+/* Unavailable bodies keep identity/reason legible; only their material retreats. */
+.lcos-context-collection-slot[data-disabled='true'] .lcos-context-collection-cover { opacity:.6; }
+.lcos-context-collection-slot[data-disabled='true'] .lcos-context-collection-pocket { filter:saturate(.55); }
 .lcos-context-collection { position:relative; width:248px; height:244px; color:var(--lcos-text-primary); outline:none; }
 .lcos-context-collection-back { box-sizing:border-box; position:absolute; left:18px; top:38px; width:212px; height:164px; border-radius:18px; background:var(--lcos-surface-base); border:1px solid var(--lcos-surface-base); box-shadow:var(--lcos-glass-shadow); }
 .lcos-context-collection[data-rendition='总览'] .lcos-context-collection-back { transform:rotate(3deg); transform-origin:0 0; }
 .lcos-context-collection-tab { position:absolute; left:30px; top:24px; width:82px; height:36px; border-radius:10px; background:var(--lcos-color-palette-blue-bg); }
 .lcos-context-collection-cover { position:absolute; overflow:hidden; background:transparent; border-radius:12px; transform-origin:0 0; }
 .lcos-context-collection-cover img { width:100%; height:100%; display:block; object-fit:cover; }
+.lcos-context-collection-cover.collection-cover-empty { border:1px solid color-mix(in srgb,var(--lcos-text-primary) 9%,transparent); background:linear-gradient(145deg,rgba(255,255,255,.9),rgba(235,241,247,.72)); box-shadow:0 5px 14px rgba(32,48,70,.12),inset 0 1px 0 rgba(255,255,255,.95); }
 .lcos-context-collection-cover.cover-a { left:31px; width:108px; height:133px; transform:rotate(6deg); }
 .lcos-context-collection-cover.cover-b { left:109px; width:104px; height:128px; transform:rotate(-5deg); }
 .lcos-context-collection[data-rendition='总览'] .cover-a { top:22px; }
 .lcos-context-collection[data-rendition='总览'] .cover-b { top:26px; }
 .lcos-context-collection:not([data-rendition='总览']) .cover-a { top:34px; }
 .lcos-context-collection:not([data-rendition='总览']) .cover-b { top:38px; }
+.lcos-context-collection[data-atlas-kind='scene'] .lcos-context-collection-tab,
+.lcos-context-collection[data-atlas-kind='context'] .lcos-context-collection-tab { display:none; }
+.lcos-context-collection[data-atlas-kind='scene'] .lcos-context-collection-pocket-base,
+.lcos-context-collection[data-atlas-kind='scene'] .lcos-context-collection-pocket,
+.lcos-context-collection[data-atlas-kind='scene'] .lcos-context-collection-depth,
+.lcos-context-collection[data-atlas-kind='context'] .lcos-context-collection-pocket-base,
+.lcos-context-collection[data-atlas-kind='context'] .lcos-context-collection-pocket,
+.lcos-context-collection[data-atlas-kind='context'] .lcos-context-collection-depth { display:none; }
+.lcos-context-collection[data-atlas-kind='scene'] .lcos-context-collection-back { left:17px; top:13px; width:214px; height:151px; transform:none!important; border-radius:15px; background:linear-gradient(180deg,rgba(115,151,170,.13),rgba(238,244,246,.42)); border-color:color-mix(in srgb,var(--lcos-color-palette-blue-text) 22%,transparent); }
+.lcos-context-collection[data-atlas-kind='scene'] .lcos-context-collection-cover.cover-a { left:27px; top:23px!important; width:194px; height:112px; transform:none; border-radius:10px; }
+.lcos-context-collection[data-atlas-kind='context'] .lcos-context-collection-back { left:28px; top:12px; width:192px; height:152px; transform:none!important; border-radius:22px 22px 16px 16px; background:linear-gradient(155deg,rgba(113,139,168,.1),rgba(238,244,246,.4)); border-color:color-mix(in srgb,var(--lcos-color-palette-blue-text) 22%,transparent); }
+.lcos-context-collection[data-atlas-kind='context'] .lcos-context-collection-cover.cover-a { left:45px; top:27px!important; width:158px; height:92px; transform:none; border-radius:14px; }
+.lcos-context-atlas-emblem { position:absolute; z-index:1; left:31px; top:24px; width:186px; height:99px; display:grid; place-items:center; border:1px solid color-mix(in srgb,var(--lcos-color-palette-blue-text) 18%,transparent); border-radius:12px; color:var(--lcos-color-palette-blue-text); background:linear-gradient(145deg,rgba(255,255,255,.58),rgba(218,233,239,.3)); pointer-events:none; }
+.lcos-context-collection[data-atlas-kind='context'] .lcos-context-atlas-emblem { left:45px; top:27px; width:158px; height:92px; border-radius:14px 14px 10px 10px; }
+.lcos-context-collection[data-atlas-kind='scene'] .lcos-context-atlas-emblem { left:27px; top:23px; width:194px; height:112px; border-radius:10px; }
 /* Original white carrier and blue frost are separate Figma layers. */
 .lcos-context-collection-pocket-base { box-sizing:border-box; position:absolute; left:12px; top:101px; width:224px; height:110px; border-radius:18px; background:var(--lcos-surface-base); border:1px solid var(--lcos-surface-base); box-shadow:var(--lcos-glass-shadow); }
 .lcos-context-collection-pocket { box-sizing:border-box; position:absolute; left:12px; top:101px; width:224px; height:110px; border-radius:18px; background:var(--lcos-color-palette-blue-bg); border:1px solid var(--lcos-surface-base); backdrop-filter:blur(7px); -webkit-backdrop-filter:blur(7px); }
+.lcos-context-collection-current { position:absolute; left:22px; top:108px; z-index:1; padding:2px 7px; border:1px solid color-mix(in srgb,var(--gen2-accent) 35%,transparent); border-radius:6px; background:color-mix(in srgb,var(--lcos-surface-base) 86%,transparent); color:var(--gen2-accent); font:500 10px/14px 'Noto Sans SC',sans-serif; pointer-events:none; }
 .lcos-context-collection-copy { position:absolute; left:22px; top:136px; width:198px; display:grid; grid-template-columns:21px 1fr; gap:5px; align-items:start; color:var(--lcos-color-palette-blue-text); }
 .lcos-context-collection-icon { width:21px; height:21px; display:grid; place-items:center; margin-top:1px; color:var(--lcos-color-palette-blue-text); }
 .lcos-context-collection-icon img { display:block; width:21px; height:21px; }
 .lcos-context-collection-copy > div { display:flex; flex-direction:column; gap:8px; min-width:0; width:172px; }
 .lcos-context-collection-copy strong { color:var(--lcos-text-primary); font:500 17px/1.45 'Noto Sans SC',sans-serif; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .lcos-context-collection-copy span { color:var(--lcos-color-text-secondary); font:400 12px/1.45 'Noto Sans SC',sans-serif; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+[data-lcos-collection-member-actions] { display:flex; flex-direction:column; gap:2px; }
+[data-lcos-collection-member-actions] > span { display:flex; align-items:center; gap:4px; min-width:0; }
+[data-lcos-collection-member-actions] button { flex:0 0 auto; width:18px; height:18px; border:1px solid color-mix(in srgb, var(--lcos-color-text-secondary) 30%, transparent); border-radius:50%; color:var(--lcos-color-text-secondary); line-height:1; cursor:pointer; }
+[data-lcos-collection-member-actions] button:hover { color:var(--lcos-text-primary); border-color:var(--lcos-text-primary); }
+[data-lcos-collection-member-actions] > button { width:auto; height:auto; align-self:flex-start; padding:1px 5px; border-radius:8px; font:400 11px/1.4 'Noto Sans SC',sans-serif; }
 .lcos-context-collection-action { position:absolute; left:195px; top:169.5px; z-index:2; width:44px; height:44px; color:var(--lcos-text-primary); }
 .lcos-context-collection-action > span { display:block; width:44px; height:44px; }
 .lcos-context-collection-action button > img { display:block; width:11px; height:11px; pointer-events:none; }
@@ -91,7 +118,7 @@
 }
 
 @media (max-width:1180px) { .lcos-atlas-grid { grid-template-columns:repeat(2,248px); } .lcos-atlas-light-curtain-inner { width:min(570px,calc(100vw - 72px)); transform:none; } .lcos-atlas-light-curtain-head > button { position:static; } .lcos-atlas-light-curtain-head { margin-inline:0; } }
-@media (max-width:720px) { .lcos-atlas-grid { grid-template-columns:248px; } .lcos-atlas-light-curtain-inner { width:calc(100vw - 36px); padding-top:92px; } .lcos-temporal-rail { right:12px; } }
+@media (max-width:720px) { .lcos-atlas-grid { grid-template-columns:248px; } .lcos-atlas-light-curtain-inner { width:calc(100vw - 36px); padding-top:max(92px,var(--lcos-atlas-safe-top,0px)); } .lcos-temporal-rail { right:12px; } }
 @media (prefers-reduced-motion:reduce) {
   .lcos-context-collection-slot { transition:none; }
   .lcos-atlas-grid:has(.lcos-context-collection-slot:is(:hover,:focus-within,[data-active='true'])) .lcos-context-collection-slot:not(:hover):not(:focus-within):not([data-active='true']) { transform:none; filter:none; opacity:.72; }
@@ -110,6 +137,8 @@
 .lcos-context-collection-action:empty { display:none; }
 .lcos-context-collection-action:not(:has(button,a)):not(:empty) { left:48px; width:172px; font-size:11px; line-height:16px; overflow-wrap:anywhere; color:var(--gen2-muted); }
 .lcos-context-collection-slot[data-focused='true'] .lcos-context-collection-pocket { outline:2px solid var(--gen2-accent); outline-offset:2px; }
+.lcos-context-collection-action button { display:flex; align-items:center; justify-content:center; gap:4px; padding:0 7px; width:auto; min-width:54px; white-space:nowrap; font-size:11px; }
+.lcos-context-action-unavailable { font-size:10px; color:var(--gen2-muted); white-space:nowrap; }
 
 .lcos-temporal-item:focus-visible { outline:2px solid var(--gen2-accent); outline-offset:2px; }
 
@@ -123,3 +152,31 @@
 .lcos-context-collection-hit:focus-visible { outline:none; }
 .lcos-context-collection:has(> .lcos-context-collection-hit) > :not(.lcos-context-collection-hit):not(.lcos-context-collection-action) { pointer-events:none; }
 .lcos-context-collection:has(> .lcos-context-collection-hit) .lcos-preview-media-message > button { pointer-events:auto; }
+
+/* Page 13 folder face owns its material; the R1 family must not add a second card. */
+.lcos-context-collection[data-lcos-family='collection-surface'] {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+.lcos-atlas-search { flex: 1; min-width: 0; max-width: 280px; pointer-events: auto; }
+.lcos-atlas-search input { width: 100%; min-width: 0; padding: 8px 12px; border-radius: 999px; background: var(--gen2-surface); color: var(--gen2-text); border: 1px solid var(--lcos-color-border-subtle); }
+.lcos-atlas-create-toggle,.lcos-atlas-create button { min-height:40px; padding:7px 13px; border:1px solid var(--lcos-color-border-subtle); border-radius:999px; background:var(--gen2-surface); color:var(--gen2-text); white-space:nowrap; }
+.lcos-atlas-create { position:sticky; top:calc(var(--lcos-atlas-safe-top,0px) + 68px); z-index:3; display:flex; align-items:center; gap:8px; width:min(640px,calc(100% - 32px)); margin:0 auto 14px; padding:10px 12px; border:1px solid var(--lcos-color-border-subtle); border-radius:18px; background:rgba(247,250,249,.94); backdrop-filter:blur(14px); }
+.lcos-atlas-create input { flex:1; min-width:0; min-height:40px; padding:7px 12px; border:1px solid var(--lcos-color-border-subtle); border-radius:999px; background:var(--gen2-surface); color:var(--gen2-text); }
+.lcos-atlas-create [role='status'] { position:absolute; top:100%; left:8px; margin-top:4px; max-width:min(600px,calc(100vw - 32px)); padding:6px 10px; border-radius:10px; background:var(--gen2-surface); color:var(--gen2-text); font-size:12px; }
+.lcos-atlas-create button:disabled { opacity:.55; cursor:wait; }
+.lcos-atlas-load-more { display: block; margin: 20px auto; padding: 8px 16px; color: var(--gen2-text); }
+
+.lcos-context-collection[data-lcos-family='collection-surface'][data-lcos-variant='selected'] { outline: none; }
+
+@media (max-width:720px) {
+  .lcos-atlas-light-curtain-head { gap:12px; position:sticky; top:var(--lcos-atlas-safe-top,0px); z-index:3; border-radius:24px; background:rgba(247,250,249,.76); backdrop-filter:blur(14px); }
+  .lcos-atlas-light-curtain-head > span { flex:0 0 auto; width:auto; white-space:nowrap; }
+  .lcos-atlas-search { max-width:none; }
+}
+
+/* Atlas pagination preserves the spatial field; recovery sits after retained objects. */
+.lcos-atlas-pagination-feedback { display:flex; justify-content:center; margin:20px auto 0; width:min(460px,100%); }
+.lcos-atlas-load-more { min-width:176px; min-height:44px; }

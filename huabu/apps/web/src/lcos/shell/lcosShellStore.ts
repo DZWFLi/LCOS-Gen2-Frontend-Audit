@@ -9,6 +9,8 @@ import type {
   ProfessionalRectV1,
   ProfessionalWindowEnvironmentV1,
 } from '@local-creative-os/web-gen2';
+import { activateRegionWindow, activeWindowIdForRegion, createWindowRegion, mergeRegionGroups, moveRegionWindow, normalizeWindowRegion, removeRegionWindow, splitRegionGroup, windowIdsForRegion, type LcosReaderSplitDirection, type LcosWindowRegion, type LcosWindowRegionLayout } from './windowRegionTopology';
+import { readProfessionalWindowLayout, removeProfessionalWindowLayout, writeProfessionalWindowLayout } from '../professional/professionalWindowPersistence';
 
 export type LcosSurfaceKey = 'main' | 'context' | 'workflow';
 
@@ -39,6 +41,8 @@ export interface LcosLocateRequest {
    * 相机与 selection 只由当前 Huabu canvas consumer 执行，不在 Shell 保存第二份状态。
    */
   readonly nodeIds?: readonly string[];
+  /** Navigation reveals a location without changing the user's selection. */
+  readonly preserveSelection?: boolean;
   /** 未投影 → unavailable 展示原因（不假定位）。 */
   readonly status?: 'projected' | 'unprojected' | 'unavailable';
 }
@@ -134,6 +138,8 @@ export interface LcosWindow {
   readonly targetKind?: 'canvas';
   /** Assembly caller 注入的 canonical target；Assembly 本身不保存 target truth。 */
   readonly assemblyTargetRef?: AssemblyTargetRefV1;
+  /** Shell-opened Assembly follows the current worksite; explicit object targets remain fixed. */
+  readonly assemblyFollowsWorksite?: boolean;
   /** Reader 的 canonical revision target；缺失表示由 Reader 恢复最后一次 UI 阅读目标。 */
   readonly readerRevisionId?: string;
   /** 打开 Reader 的真实节点来源；只用于关闭/返回时定位，不复制 Canvas geometry。 */
@@ -161,22 +167,7 @@ export interface LcosReaderPositionV1 {
  * A region owns grouping/layout; an instance owns body identity and target.
  * Geometry is published by ProfessionalWindowStage, never inferred here.
  */
-export type LcosWindowRegionLayout = 'floating' | 'docked-right';
-
-export interface LcosWindowRegion {
-  readonly id: string;
-  readonly layout: LcosWindowRegionLayout;
-  readonly windowIds: readonly string[];
-  readonly activeWindowId: string;
-  /**
-   * R2-B：用户显式几何 override（仅 floating 生效）。缺省 = 由 Stage 派生初始摆放。
-   * 它进 `windowRegions` 而不是 body 局部 state —— 拓扑/几何只有这一份真相，
-   * 因此工程/现场往返回来时几何随拓扑一起恢复。
-   */
-  readonly rect?: ProfessionalRectV1;
-  /** R2-B：用户显式 dock 宽度（仅 docked-right 生效）。缺省 = 该 region 的 preferredWidth。 */
-  readonly dockWidth?: number;
-}
+export type { LcosWindowRegion, LcosWindowRegionLayout } from './windowRegionTopology';
 
 export interface LcosShellUiState {
   projectId: string | null;
@@ -230,6 +221,7 @@ export interface LcosShellUiState {
   consumeLocate(): void;
   consumeFocusWhere(): void;
   openComposer(target: LcosComposerTarget): void;
+  prepareComposerContinuation(projectId: string, expected: LcosComposerTarget, operationId: string): void;
   closeComposer(): void;
   setComposerPrompt(prompt: string): void;
   clearSubmittedComposerPrompt(projectId: string, target: LcosComposerTarget, prompt: string): void;
@@ -243,19 +235,36 @@ export interface LcosShellUiState {
   rememberReaderPosition(key: string, value: LcosReaderPositionV1): void;
   rememberReaderRevision(key: string, revisionId: string): void;
   clearReaderContinuity(): void;
-  openAssembly(targetRef: AssemblyTargetRefV1, title?: string): void;
+  openAssembly(targetRef: AssemblyTargetRefV1, title?: string, followWorksite?: boolean): void;
+  retargetWorksiteAssembly(targetRef: AssemblyTargetRefV1, title: string): void;
   closeWindow(id: string): void;
   activateWindow(id: string): void;
   setWindowRegionLayout(regionId: string, layout: LcosWindowRegionLayout): void;
+  dockWindowRegionRight(regionId: string, width: number): void;
+  floatWindowRegionAt(regionId: string, rect: ProfessionalRectV1): void;
   /** R2-B：提交一次 move/resize 后的 region 几何（唯一几何真相仍是 windowRegions）。 */
   setWindowRegionRect(regionId: string, rect: ProfessionalRectV1): void;
   /** R2-B：提交 docked-right 的宽度（左缘 resize）。 */
   setWindowRegionDockWidth(regionId: string, dockWidth: number): void;
+  setWindowRegionSplitRatio(regionId: string, ratio: number): void;
+  splitWindowRegion(regionId: string, direction: LcosReaderSplitDirection): void;
+  mergeWindowRegionGroups(regionId: string): void;
   /**
    * R2-B 显式分组：把 sourceRegion 的**全部**窗口并进 targetRegion 成为 tab，
    * sourceRegion 消失。绝不自动把多个 instance 合成一个 tab 组 —— 只有本动作会。
    */
   groupWindowRegions(sourceRegionId: string, targetRegionId: string): void;
+  /** Drag a whole existing region into the tab group under the pointer. */
+  groupWindowRegionInto(sourceRegionId: string, targetRegionId: string, targetGroupId: string): void;
+  /** Drag a whole existing region onto a target pane edge to create a split. */
+  splitWindowRegionInto(sourceRegionId: string, targetRegionId: string, targetGroupId: string, direction: LcosReaderSplitDirection, sourceFirst: boolean): void;
+  /** Drag one tab into the tab group under the pointer. */
+  moveWindowToGroup(windowId: string, targetRegionId: string, targetGroupId: string): void;
+  /** Drag one tab onto a pane edge to split it out. */
+  splitWindowToGroup(windowId: string, targetRegionId: string, targetGroupId: string, direction: LcosReaderSplitDirection, sourceFirst: boolean): void;
+  /** Drag a tab out into a free floating region at the pointer position. */
+  detachWindowToRegion(windowId: string, rect: ProfessionalRectV1): void;
+  detachWindowToDockRight(windowId: string, width: number): void;
   /** R2-B 显式取消分组：把该 region 的活动窗口拆成独立 floating region。 */
   ungroupWindowRegion(regionId: string): void;
   publishWindowEnvironment(environment: ProfessionalWindowEnvironmentV1): void;
@@ -307,16 +316,21 @@ export const useLcosShellStore = create<LcosShellUiState>((set) => ({
         activeSurface: state.activeSurface,
       });
     }
-    const restored = projectUiSessions.get(projectId);
+    const sameTabRestored = projectUiSessions.get(projectId);
+    const diskRestored = sameTabRestored === undefined ? readProfessionalWindowLayout(projectId) : undefined;
+    if (diskRestored !== undefined) {
+      // One-time flat-region migration: save only canonical groups after legacy read.
+      writeProfessionalWindowLayout(projectId, diskRestored.windows, diskRestored.windowRegions.map(normalizeWindowRegion));
+    }
     return {
       projectId,
-      windows: restored?.windows ?? [],
-      windowRegions: restored?.windowRegions ?? [],
+      windows: sameTabRestored?.windows ?? diskRestored?.windows ?? [],
+      windowRegions: sameTabRestored?.windowRegions.map(normalizeWindowRegion) ?? diskRestored?.windowRegions.map(normalizeWindowRegion) ?? [],
       windowEnvironment: null,
-      composerPrompt: restored?.composerPrompt ?? '',
-      composerTarget: restored?.composerTarget ?? null,
-      composerOpen: restored?.composerOpen ?? false,
-      activeSurface: restored?.activeSurface ?? 'main',
+      composerPrompt: sameTabRestored?.composerPrompt ?? '',
+      composerTarget: sameTabRestored?.composerTarget ?? null,
+      composerOpen: sameTabRestored?.composerOpen ?? false,
+      activeSurface: sameTabRestored?.activeSurface ?? 'main',
       childReturn: null,
       worksiteCameraTransition: null,
       activeWorkspaceId: null,
@@ -359,6 +373,16 @@ export const useLcosShellStore = create<LcosShellUiState>((set) => ({
   consumeLocate: () => set({ locateRequest: null }),
   consumeFocusWhere: () => set({ focusWhereRequest: null }),
   openComposer: (composerTarget) => set({ composerOpen: true, composerTarget }),
+  prepareComposerContinuation: (projectId, expected, operationId) => set((state) => {
+    if (state.projectId !== projectId || !state.composerOpen || state.composerTarget !== expected
+      || expected.intent !== 'continue' || !expected.receiverConversationId) return state;
+    // The caller just confirmed the live capability; retire the entry-time reason.
+    const { receiverBlockedReason: _previousReason, ...prepared } = expected;
+    return { composerTarget: {
+      ...prepared, continuationOperationId: operationId,
+      messageId: expected.messageId ?? createComposerMessageId(),
+    } };
+  }),
   closeComposer: () => set({ composerOpen: false }),
   setComposerPrompt: (composerPrompt) => set({ composerPrompt }),
   clearSubmittedComposerPrompt: (projectId, target, prompt) => set((state) => {
@@ -390,11 +414,7 @@ export const useLcosShellStore = create<LcosShellUiState>((set) => ({
             ...w,
             active: w.id === existing.id,
           })),
-          windowRegions: s.windowRegions.map((region) =>
-            region.windowIds.includes(existing.id)
-              ? { ...region, activeWindowId: existing.id }
-              : region,
-          ),
+          windowRegions: s.windowRegions.map((region) => activateRegionWindow(normalizeWindowRegion(region), existing.id)),
         };
       }
       const id = `${bodyKey}-${crypto.randomUUID()}`;
@@ -403,10 +423,7 @@ export const useLcosShellStore = create<LcosShellUiState>((set) => ({
           ...s.windows.map((w) => ({ ...w, active: false })),
           { id, bodyKey, title, target, ...(targetKind ? { targetKind } : {}), active: true },
         ],
-        windowRegions: [
-          ...s.windowRegions.map((region) => ({ ...region, activeWindowId: region.activeWindowId })),
-          { id: `region-${id}`, layout: 'floating', windowIds: [id], activeWindowId: id },
-        ],
+        windowRegions: [...s.windowRegions.map(normalizeWindowRegion), createWindowRegion(`region-${id}`, [id], id)],
       };
     }),
   openReader: (title, artifactId, options) =>
@@ -426,9 +443,7 @@ export const useLcosShellStore = create<LcosShellUiState>((set) => ({
                 active: true,
               }
             : { ...window, active: false }),
-          windowRegions: state.windowRegions.map((region) => region.windowIds.includes(existing.id)
-            ? { ...region, activeWindowId: existing.id }
-            : region),
+          windowRegions: state.windowRegions.map((region) => activateRegionWindow(normalizeWindowRegion(region), existing.id)),
         };
       }
       const id = `reader-${crypto.randomUUID()}`;
@@ -445,10 +460,7 @@ export const useLcosShellStore = create<LcosShellUiState>((set) => ({
             active: true,
           },
         ],
-        windowRegions: [
-          ...state.windowRegions,
-          { id: `region-${id}`, layout: 'floating', windowIds: [id], activeWindowId: id },
-        ],
+        windowRegions: [...state.windowRegions.map(normalizeWindowRegion), createWindowRegion(`region-${id}`, [id], id)],
       };
     }),
   rememberReaderPosition: (key, value) => set((state) => ({
@@ -458,24 +470,30 @@ export const useLcosShellStore = create<LcosShellUiState>((set) => ({
     readerLastRevisions: { ...state.readerLastRevisions, [key]: revisionId },
   })),
   clearReaderContinuity: () => set({ readerPositions: {}, readerLastRevisions: {} }),
-  openAssembly: (assemblyTargetRef, title = 'Assembly') =>
+  retargetWorksiteAssembly: (assemblyTargetRef, title) => set((state) => ({
+    windows: state.windows.map((window) => window.bodyKey === 'assembly' && window.assemblyFollowsWorksite
+      ? { ...window, assemblyTargetRef, title } : window),
+  })),
+  openAssembly: (assemblyTargetRef, title = 'Assembly', assemblyFollowsWorksite = false) =>
     set((s) => {
       // R4 / C1-3：一个 Project 只有一个共享 Assembly region。
       // target 不编码进 regionId —— 换 target 只 live 更新同一 instance 的
       // assemblyTargetRef/title 并激活它所在区域，绝不新建第二个 Assembly、也不重建 body。
       const shared = s.windows.find((window) => window.bodyKey === 'assembly');
       if (shared !== undefined) {
-        const hostRegion = s.windowRegions.find((region) => region.windowIds.includes(shared.id));
+        const hostRegion = s.windowRegions.find((region) => windowIdsForRegion(region).includes(shared.id));
         return {
           windows: s.windows.map((window) =>
             window.id === shared.id
-              ? { ...window, title, assemblyTargetRef, active: true }
+              ? { ...window, title, assemblyTargetRef, assemblyFollowsWorksite, active: true }
               : { ...window, active: false }),
           // 保留该 region 既有 geometry / dock / group topology，只把活动窗口指回 Assembly。
-          windowRegions: s.windowRegions.map((region) =>
-            hostRegion !== undefined && region.id === hostRegion.id
-              ? { ...region, activeWindowId: shared.id }
-              : region),
+          windowRegions: s.windowRegions.map((input) => {
+            const region = normalizeWindowRegion(input);
+            return hostRegion !== undefined && region.id === hostRegion.id
+              ? activateRegionWindow(region, shared.id)
+              : region;
+          }),
         };
       }
       const id = 'assembly';
@@ -487,28 +505,18 @@ export const useLcosShellStore = create<LcosShellUiState>((set) => ({
             bodyKey: 'assembly',
             title,
             assemblyTargetRef,
+            assemblyFollowsWorksite,
             active: true,
           },
         ],
-        windowRegions: [
-          ...s.windowRegions.map((region) => ({ ...region, activeWindowId: region.activeWindowId })),
-          { id: `region-${id}`, layout: 'floating', windowIds: [id], activeWindowId: id },
-        ],
+        windowRegions: [...s.windowRegions.map(normalizeWindowRegion), createWindowRegion(`region-${id}`, [id], id)],
       };
     }),
   closeWindow: (id) =>
     set((s) => {
       const remaining = s.windows.filter((w) => w.id !== id);
-      const windowRegions = s.windowRegions
-        .map((region) => {
-          if (!region.windowIds.includes(id)) return region;
-          const windowIds = region.windowIds.filter((windowId) => windowId !== id);
-          if (windowIds.length === 0) return undefined;
-          const activeWindowId = region.activeWindowId === id
-            ? windowIds[windowIds.length - 1]
-            : region.activeWindowId;
-          return { ...region, windowIds, activeWindowId };
-        })
+      const windowRegions = s.windowRegions.map(normalizeWindowRegion)
+        .map((region) => removeRegionWindow(region, id))
         .filter((region): region is LcosWindowRegion => region !== undefined);
       if (remaining.length === 0) return { windows: [], windowRegions };
       const anyActive = remaining.some((w) => w.active);
@@ -524,9 +532,7 @@ export const useLcosShellStore = create<LcosShellUiState>((set) => ({
   activateWindow: (id) =>
     set((s) => ({
       windows: s.windows.map((w) => ({ ...w, active: w.id === id })),
-      windowRegions: s.windowRegions.map((region) =>
-        region.windowIds.includes(id) ? { ...region, activeWindowId: id } : region,
-      ),
+      windowRegions: s.windowRegions.map((region) => activateRegionWindow(normalizeWindowRegion(region), id)),
     })),
   setWindowRegionLayout: (regionId, layout) =>
     set((s) => ({
@@ -547,6 +553,42 @@ export const useLcosShellStore = create<LcosShellUiState>((set) => ({
         region.id === regionId ? { ...region, dockWidth: Math.max(1, Math.round(dockWidth)) } : region,
       ),
     })),
+  dockWindowRegionRight: (regionId, width) => set((s) => ({
+    windowRegions: s.windowRegions.map((input) => {
+      const region = normalizeWindowRegion(input);
+      return region.id === regionId ? { ...region, layout: 'docked-right', dockWidth: Math.max(360, Math.round(width)) } : region;
+    }),
+  })),
+  floatWindowRegionAt: (regionId, rect) => set((s) => ({
+    windowRegions: s.windowRegions.map((input) => {
+      const region = normalizeWindowRegion(input);
+      if (region.id !== regionId) return region;
+      const { dockWidth: _dockWidth, ...floating } = region;
+      return { ...floating, layout: 'floating', rect };
+    }),
+  })),
+  setWindowRegionSplitRatio: (regionId, ratio) => set((s) => ({
+    windowRegions: s.windowRegions.map((input) => {
+      const region = normalizeWindowRegion(input);
+      return region.id === regionId && region.groups.length > 1
+        ? { ...region, splitRatio: Math.min(0.8, Math.max(0.2, ratio)) }
+        : region;
+    }),
+  })),
+  splitWindowRegion: (regionId, direction) => set((s) => ({
+    windowRegions: s.windowRegions.map((input) => {
+      const region = normalizeWindowRegion(input);
+      if (region.id !== regionId) return region;
+      const active = region.groups.find((group) => group.id === region.activeGroupId)?.activeWindowId ?? region.groups[0]?.activeWindowId;
+      return active === undefined ? region : splitRegionGroup(region, active, direction);
+    }),
+  })),
+  mergeWindowRegionGroups: (regionId) => set((s) => ({
+    windowRegions: s.windowRegions.map((input) => {
+      const region = normalizeWindowRegion(input);
+      return region.id === regionId ? mergeRegionGroups(region) : region;
+    }),
+  })),
   // R2-B 显式分组：只有这个动作会把多个 region 合成一个 tab 组。
   groupWindowRegions: (sourceRegionId, targetRegionId) =>
     set((s) => {
@@ -554,51 +596,159 @@ export const useLcosShellStore = create<LcosShellUiState>((set) => ({
       const source = s.windowRegions.find((region) => region.id === sourceRegionId);
       const target = s.windowRegions.find((region) => region.id === targetRegionId);
       if (source === undefined || target === undefined) return s;
-      const merged = [...target.windowIds];
-      for (const windowId of source.windowIds) {
+      const merged = [...windowIdsForRegion(target)];
+      for (const windowId of windowIdsForRegion(source)) {
         if (!merged.includes(windowId)) merged.push(windowId);
       }
       return {
         windowRegions: s.windowRegions
           .filter((region) => region.id !== sourceRegionId)
-          .map((region) =>
-            region.id === targetRegionId
-              ? {
-                  ...region,
-                  windowIds: merged,
-                  activeWindowId: source.activeWindowId,
-                  // tab 顶栏接管呈现：dock 专用宽度不再适用，几何交回 Stage 派生。
-                  ...(region.dockWidth === undefined ? {} : { dockWidth: undefined }),
-                }
-              : region,
-          ),
+          .map((region) => {
+            if (region.id !== targetRegionId) return region;
+            const { splitDirection: _splitDirection, splitRatio: _splitRatio, ...withoutSplit } = region;
+            const groupId = target.groups[0]?.id ?? `group-${merged[0]}`;
+            return {
+              ...withoutSplit,
+              groups: [{ id: groupId, windowIds: merged, activeWindowId: source.groups.find((group) => group.id === source.activeGroupId)?.activeWindowId ?? source.groups[0]?.activeWindowId ?? merged.at(-1)! }],
+              activeGroupId: groupId,
+              // tab 顶栏接管呈现：dock 专用宽度不再适用，几何交回 Stage 派生。
+              ...(region.dockWidth === undefined ? {} : { dockWidth: undefined }),
+            };
+          }),
       };
     }),
+  groupWindowRegionInto: (sourceRegionId, targetRegionId, targetGroupId) => set((s) => {
+    if (sourceRegionId === targetRegionId) return s;
+    const regions = s.windowRegions.map(normalizeWindowRegion);
+    const source = regions.find((region) => region.id === sourceRegionId);
+    const target = regions.find((region) => region.id === targetRegionId);
+    const targetGroup = target?.groups.find((group) => group.id === targetGroupId);
+    const activeWindowId = source === undefined ? undefined : activeWindowIdForRegion(source);
+    if (!source || !target || !targetGroup || !activeWindowId) return s;
+    const sourceIds = windowIdsForRegion(source);
+    return { windowRegions: regions.flatMap((region) => {
+      if (region.id === source.id) return [];
+      if (region.id !== target.id) return [region];
+      return [{ ...region, activeGroupId: targetGroupId, groups: region.groups.map((group) => group.id === targetGroupId
+        ? { ...group, windowIds: [...group.windowIds, ...sourceIds.filter((id) => !group.windowIds.includes(id))], activeWindowId }
+        : group) }];
+    }) };
+  }),
+  splitWindowRegionInto: (sourceRegionId, targetRegionId, targetGroupId, direction, sourceFirst) => set((s) => {
+    if (sourceRegionId === targetRegionId) return s;
+    const regions = s.windowRegions.map(normalizeWindowRegion);
+    const source = regions.find((region) => region.id === sourceRegionId);
+    const target = regions.find((region) => region.id === targetRegionId);
+    const targetGroup = target?.groups.find((group) => group.id === targetGroupId);
+    const sourceActive = source === undefined ? undefined : activeWindowIdForRegion(source);
+    const sourceIds = source === undefined ? [] : windowIdsForRegion(source);
+    if (!source || !target || !targetGroup || target.groups.length !== 1 || !sourceActive || sourceIds.length === 0) return s;
+    let sourceGroupId = `group-${sourceActive}`;
+    while (target.groups.some((group) => group.id === sourceGroupId)) sourceGroupId = `${sourceGroupId}-split`;
+    const sourceGroup = { id: sourceGroupId, windowIds: sourceIds, activeWindowId: sourceActive };
+    const groups = sourceFirst ? [sourceGroup, targetGroup] : [targetGroup, sourceGroup];
+    return { windowRegions: regions.flatMap((region) => {
+      if (region.id === source.id) return [];
+      if (region.id !== target.id) return [region];
+      return [{ ...region, groups, activeGroupId: sourceGroupId, splitDirection: direction, splitRatio: 0.5 }];
+    }) };
+  }),
+  moveWindowToGroup: (windowId, targetRegionId, targetGroupId) => set((s) => {
+    const regions = s.windowRegions.map(normalizeWindowRegion);
+    const source = regions.find((region) => windowIdsForRegion(region).includes(windowId));
+    const target = regions.find((region) => region.id === targetRegionId);
+    const targetGroup = target?.groups.find((group) => group.id === targetGroupId);
+    if (!source || !target || !targetGroup) return s;
+    if (source.id === target.id) {
+      const moved = moveRegionWindow(source, windowId, targetGroupId);
+      return moved === source ? s : { windowRegions: regions.map((region) => region.id === source.id ? moved : region) };
+    }
+    const remaining = removeRegionWindow(source, windowId);
+    return { windowRegions: regions.flatMap((region) => {
+      if (region.id === source.id) return remaining === undefined ? [] : [remaining];
+      if (region.id !== target.id) return [region];
+      return [{ ...region, activeGroupId: targetGroupId, groups: region.groups.map((group) => group.id === targetGroupId
+        ? { ...group, windowIds: [...group.windowIds, windowId], activeWindowId: windowId }
+        : group) }];
+    }) };
+  }),
+  splitWindowToGroup: (windowId, targetRegionId, targetGroupId, direction, sourceFirst) => set((s) => {
+    const regions = s.windowRegions.map(normalizeWindowRegion);
+    const source = regions.find((region) => windowIdsForRegion(region).includes(windowId));
+    const target = regions.find((region) => region.id === targetRegionId);
+    const targetGroup = target?.groups.find((group) => group.id === targetGroupId);
+    if (!source || !target || !targetGroup || target.groups.length !== 1) return s;
+    const remaining = removeRegionWindow(source, windowId);
+    const remainderTarget = source.id === target.id ? remaining : target;
+    if (!remainderTarget || remainderTarget.groups.length !== 1) return s;
+    const baseGroup = remainderTarget.groups.find((group) => group.id === targetGroupId);
+    if (!baseGroup) return s;
+    let sourceGroupId = `group-${windowId}`;
+    while (remainderTarget.groups.some((group) => group.id === sourceGroupId)) sourceGroupId = `${sourceGroupId}-split`;
+    const sourceGroup = { id: sourceGroupId, windowIds: [windowId], activeWindowId: windowId };
+    const groups = sourceFirst ? [sourceGroup, baseGroup] : [baseGroup, sourceGroup];
+    const nextTarget = { ...remainderTarget, groups, activeGroupId: sourceGroupId, splitDirection: direction, splitRatio: 0.5 };
+    if (source.id === target.id) return { windowRegions: regions.map((region) => region.id === source.id ? nextTarget : region) };
+    return { windowRegions: regions.flatMap((region) => {
+      if (region.id === source.id) return remaining === undefined ? [] : [remaining];
+      if (region.id === target.id) return [nextTarget];
+      return [region];
+    }) };
+  }),
+  detachWindowToRegion: (windowId, rect) => set((s) => {
+    const regions = s.windowRegions.map(normalizeWindowRegion);
+    const source = regions.find((region) => windowIdsForRegion(region).includes(windowId));
+    if (!source) return s;
+    const remaining = removeRegionWindow(source, windowId);
+    const nextRegions = regions.flatMap((region) => region.id === source.id ? remaining === undefined ? [] : [remaining] : [region]);
+    let id = `region-${windowId}`;
+    while (nextRegions.some((region) => region.id === id)) id = `${id}-float`;
+    return { windowRegions: [...nextRegions, { ...createWindowRegion(id, [windowId], windowId), rect }] };
+  }),
+  detachWindowToDockRight: (windowId, width) => set((s) => {
+    const regions = s.windowRegions.map(normalizeWindowRegion);
+    const source = regions.find((region) => windowIdsForRegion(region).includes(windowId));
+    if (!source) return s;
+    const remaining = removeRegionWindow(source, windowId);
+    const nextRegions = regions.flatMap((region) => region.id === source.id ? remaining === undefined ? [] : [remaining] : [region]);
+    let id = `region-${windowId}`;
+    while (nextRegions.some((region) => region.id === id)) id = `${id}-dock`;
+    const docked = { ...createWindowRegion(id, [windowId], windowId), layout: 'docked-right' as const, dockWidth: Math.max(360, Math.round(width)) };
+    return { windowRegions: [...nextRegions, docked] };
+  }),
   // R2-B 显式取消分组：把活动窗口拆出去，剩余窗口留在原 region。
   ungroupWindowRegion: (regionId) =>
     set((s) => {
       const source = s.windowRegions.find((region) => region.id === regionId);
-      if (source === undefined || source.windowIds.length < 2) return s;
-      const detached = source.windowIds.filter((windowId) => windowId !== source.activeWindowId);
-      const nextRegionId = `region-${source.activeWindowId}`;
-      if (s.windowRegions.some((region) => region.id === nextRegionId)) return s;
+      if (source === undefined || windowIdsForRegion(source).length < 2) return s;
+      const activeWindowId = source.groups.find((group) => group.id === source.activeGroupId)?.activeWindowId ?? source.groups[0]?.activeWindowId;
+      if (activeWindowId === undefined) return s;
+      const remaining = windowIdsForRegion(source).filter((windowId) => windowId !== activeWindowId);
+      const remainingActiveWindowId = remaining[remaining.length - 1];
+      if (remainingActiveWindowId === undefined) return s;
+      const nextRegionId = `region-${activeWindowId}`;
+      // 拆出原组宿主时，其 region 身份随该窗口走；剩余组继续使用自己的窗口身份。
+      const remainingRegionId = source.id === nextRegionId
+        ? `region-${remainingActiveWindowId}`
+        : source.id;
+      if (s.windowRegions.some((region) => region.id !== source.id
+        && (region.id === nextRegionId || region.id === remainingRegionId))) return s;
       const index = s.windowRegions.findIndex((region) => region.id === regionId);
       const regions = s.windowRegions.map((region) =>
         region.id === regionId
-          ? { ...region, windowIds: detached, activeWindowId: detached[detached.length - 1]! }
+          ? { ...createWindowRegion(remainingRegionId, remaining, remainingActiveWindowId), layout: region.layout, ...(region.rect === undefined ? {} : { rect: region.rect }), ...(region.dockWidth === undefined ? {} : { dockWidth: region.dockWidth }) }
           : region,
       );
       regions.splice(index + 1, 0, {
-        id: nextRegionId,
-        layout: 'floating',
-        windowIds: [source.activeWindowId],
-        activeWindowId: source.activeWindowId,
+        ...createWindowRegion(nextRegionId, [activeWindowId], activeWindowId),
       });
       return { windowRegions: regions };
     }),
   publishWindowEnvironment: (windowEnvironment) => set({ windowEnvironment }),
   clearWindowEnvironment: () => set({ windowEnvironment: null }),
   clear: () => {
+    const projectId = useLcosShellStore.getState().projectId;
+    if (projectId !== null) removeProfessionalWindowLayout(projectId);
     projectUiSessions.clear();
     set({
       projectId: null,
@@ -621,3 +771,9 @@ export const useLcosShellStore = create<LcosShellUiState>((set) => ({
     });
   },
 }));
+
+useLcosShellStore.subscribe((state, previous) => {
+  if (state.projectId === null || state.projectId !== previous.projectId
+    || (state.windows === previous.windows && state.windowRegions === previous.windowRegions)) return;
+  writeProfessionalWindowLayout(state.projectId, state.windows, state.windowRegions.map(normalizeWindowRegion));
+});

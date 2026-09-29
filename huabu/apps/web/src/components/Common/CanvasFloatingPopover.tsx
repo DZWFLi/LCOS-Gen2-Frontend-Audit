@@ -20,6 +20,7 @@ import { createPortal } from 'react-dom';
 import { useCanvasAttentionStore } from '@/store/canvasAttentionStore';
 import { useAnyGlobalModalOpen } from '@/store/globalModalUi';
 
+import { avoidNearbyControls, type PopoverHitRect } from './boundedPopoverAvoidance';
 import { FLOATING_CHROME_PROPS } from './floatingChrome';
 
 /**
@@ -47,7 +48,11 @@ export interface CanvasFloatingPopoverProps {
   /** Minimum gap to the visible browser viewport edges. Default `8`. */
   viewportPadding?: number;
   /** Preferred placement relative to the anchor. Default `'top'`. */
-  side?: 'top' | 'bottom';
+  side?: 'top' | 'bottom' | 'top-start' | 'top-end' | 'bottom-start' | 'bottom-end' | 'right' | 'right-start' | 'right-end';
+  /** Screen-pixel shift along the edge; does not scale with canvas zoom. */
+  crossAxisOffset?: number;
+  /** Optional bounded avoidance of real interactive controls in neighbouring canvas nodes. */
+  nearbyControls?: { readonly excludeNodeId: string; readonly maxShift?: number; readonly hitRects?: readonly PopoverHitRect[] };
   className?: string;
   style?: CSSProperties;
   children: ReactNode;
@@ -82,6 +87,8 @@ export function CanvasFloatingPopover({
   offset = 12,
   viewportPadding = 8,
   side = 'top',
+  crossAxisOffset = 0,
+  nearbyControls,
   className,
   style,
   children,
@@ -148,9 +155,25 @@ export function CanvasFloatingPopover({
     open: open && !!virtualReference,
     placement: side,
     middleware: [
-      offsetMiddleware(offset),
+      offsetMiddleware({ mainAxis: offset, crossAxis: crossAxisOffset }),
       flip({ boundary: domNode ?? undefined, padding: viewportPadding }),
       shift({ boundary: domNode ?? undefined, padding: viewportPadding }),
+      ...(nearbyControls === undefined ? [] : [{
+        name: 'nearbyControls',
+        fn: ({ x, y, rects, strategy }: { x: number; y: number; rects: { floating: { width: number; height: number } }; strategy: string }) => {
+          if (!domNode) return {};
+          const scrollX = strategy === 'fixed' ? 0 : window.scrollX;
+          const scrollY = strategy === 'fixed' ? 0 : window.scrollY;
+          const obstacles = [...domNode.querySelectorAll<HTMLElement>('.react-flow__node[data-id] button, .react-flow__node[data-id] [role="button"], .react-flow__node[data-id] input, .react-flow__node[data-id] a[href]')]
+            .filter((element) => element.closest<HTMLElement>('.react-flow__node')?.dataset.id !== nearbyControls.excludeNodeId
+              && !element.matches(':disabled, [aria-disabled="true"]') && getComputedStyle(element).visibility !== 'hidden')
+            .map((element) => { const r = element.getBoundingClientRect(); return { x: r.x + scrollX, y: r.y + scrollY, width: r.width, height: r.height }; })
+            .filter((r) => r.width > 0 && r.height > 0);
+          const bounds = domNode.getBoundingClientRect();
+          return avoidNearbyControls({ x, y }, nearbyControls.hitRects ?? [{ x: 0, y: 0, ...rects.floating }], obstacles,
+            { x: bounds.x + scrollX, y: bounds.y + scrollY, width: bounds.width, height: bounds.height }, nearbyControls.maxShift ?? 48);
+        },
+      }]),
     ],
     whileElementsMounted: autoUpdate,
   });

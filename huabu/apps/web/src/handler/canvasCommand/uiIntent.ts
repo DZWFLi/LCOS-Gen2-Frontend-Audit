@@ -97,7 +97,7 @@ export interface AddNodeInput {
 
 export type CanvasUiIntent =
   // --- Composite gestures (need resolvers) ---
-  | { type: 'GROUP_SELECTION_INTO_FRAME'; frameLabel?: string }
+  | { type: 'GROUP_SELECTION_INTO_FRAME'; frameLabel?: string; collectionId?: string; collectionNodeId?: string; geometryUpdates?: Extract<CanvasCommand, { type: 'SET_NODE_GEOMETRY' }>['items'] }
   | {
       type: 'GROUP_RECT_INTO_FRAME';
       flowRect: CanvasFlowRect;

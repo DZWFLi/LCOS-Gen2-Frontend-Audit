@@ -38,11 +38,17 @@ export class DropTargetRegistry {
   }
 
   get(targetId: string): DropTargetRegistration | undefined {
-    return this.targets.get(targetId);
+    const target = this.targets.get(targetId);
+    if (target === undefined || target.readRect === undefined) return target;
+    const rect = target.readRect();
+    return rect === undefined ? undefined : { ...target, rect };
   }
 
   snapshot(): readonly DropTargetRegistration[] {
-    return [...this.targets.values()].sort(
+    return [...this.targets.values()].flatMap((target) => {
+      const live = this.get(target.targetId);
+      return live === undefined ? [] : [live];
+    }).sort(
       (a, b) => b.priority - a.priority || a.targetId.localeCompare(b.targetId),
     );
   }

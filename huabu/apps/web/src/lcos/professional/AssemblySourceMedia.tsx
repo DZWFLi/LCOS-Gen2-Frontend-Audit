@@ -61,6 +61,10 @@ export function AssemblyArtifactMedia({ client, projectId, artifactId, ...props 
     if (!revision) { return {}; }
     if (detail.artifact.kind === 'image') { return { image: await client.getFileRecordContent(projectId, String(revision.fileRecordId), signal) }; }
     if (detail.artifact.kind === 'markdown') { return { text: await client.getFileRecordText(projectId, String(revision.fileRecordId), signal) }; }
+    if (detail.artifact.kind === 'other') {
+      const bytes = await client.getFileRecordContent(projectId, String(revision.fileRecordId), signal);
+      if (bytes.type.startsWith('text/')) return { text: await bytes.text() };
+    }
     return {};
   }, [client, artifactId, projectId]);
   return <DeferredMedia {...props} load={load} />;

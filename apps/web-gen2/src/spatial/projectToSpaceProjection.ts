@@ -156,6 +156,7 @@ function delay(ms: number): Promise<void> {
 export function huabuNodeTypeForPresentation(
   source: Pick<SpaceEntityProjectionSource, 'kind'> & Partial<VisualFamilySource>,
 ): AgentCreatableNodeType {
+  if (source.entityType === 'collection') return 'note'; // Existing Collection body seam owns the visible folder face.
   const family = resolveVisualFamily({
     entityType: source.entityType,
     artifactKind: source.kind,

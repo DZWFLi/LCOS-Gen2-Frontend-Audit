@@ -80,6 +80,16 @@
   line-height: 18px;
 }
 .lcos-reader-body [data-lcos-reader-actions] { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+[data-lcos-reader-tools] {
+  flex: 0 0 auto;
+  min-inline-size: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 0 0 12px;
+  border-bottom: 1px solid var(--gen2-border);
+}
+.lcos-reader-body [data-lcos-reader-tools] [data-lcos-reader-revisions] { max-block-size: 68px; overflow: auto; }
 .lcos-reader-body button:focus-visible, .lcos-reader-group :is(button, a):focus-visible {
   outline: 2px solid var(--gen2-accent);
   outline-offset: 2px;
@@ -150,3 +160,10 @@
 @media (prefers-reduced-motion: reduce) {
   .lcos-reader-content-tabs-track { scroll-behavior: auto; }
 }
+
+.lcos-reader-document-media { min-height: 320px; padding: 0; }
+
+/* A short window scrolls its body; controls may not collapse the document to a line. */
+.lcos-reader-body { min-block-size: min-content; }
+.lcos-reader-page, .lcos-reader-media-page { min-block-size: 280px; flex-shrink: 1; }
+.lcos-reader-body > :not(.lcos-reader-page):not(.lcos-reader-media-page) { flex-shrink: 0; }

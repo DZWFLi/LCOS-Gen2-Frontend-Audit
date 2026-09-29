@@ -4,6 +4,9 @@ import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 
 import { PortalNodeBody } from './PortalNodeBody';
 import { useLcosShellStore } from '../shell/lcosShellStore';
+import { PortalDropWorkspaceProvider } from '../drop/PortalDropWorkspaceContext';
+import { resolveDropIntent } from '../drop/dropIntentResolver';
+import { useLcosDropStore } from '../lcosDropState';
 
 const state = vi.hoisted(() => ({ nodes: [{ id: 'portal-1', selected: true }] }));
 vi.mock('@/store/canvasStore', () => ({ default: (select: (value: typeof state) => unknown) => select(state) }));
@@ -13,11 +16,14 @@ let host: HTMLDivElement;
 let root: Root;
 beforeEach(async () => {
   useLcosShellStore.getState().clear();
+  useLcosDropStore.getState().reset();
   state.nodes = [{ id: 'portal-1', selected: true }];
   host = document.createElement('div'); document.body.append(host); root = createRoot(host);
-  await act(async () => root.render(<PortalNodeBody nodeId="portal-1" nodeType="canvasRef" data={{ targetCanvasId: 'child-canvas', label: '资料现场' }} />));
+  await act(async () => root.render(<PortalDropWorkspaceProvider workspaces={[{ id: 'workspace-child', name: '资料现场', canvasId: 'child-canvas' }]}>
+    <PortalNodeBody nodeId="portal-1" nodeType="canvasRef" data={{ targetCanvasId: 'child-canvas', label: '资料入口' }} />
+  </PortalDropWorkspaceProvider>));
 });
-afterEach(async () => { await act(async () => root.unmount()); host.remove(); });
+afterEach(async () => { await act(async () => root.unmount()); host.remove(); useLcosDropStore.getState().reset(); });
 async function enter(target: EventTarget = window) {
   await act(async () => { target.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true })); });
 }
@@ -43,4 +49,24 @@ it('does not open a portal on multi selection', async () => {
   await act(async () => root.render(<PortalNodeBody nodeId="portal-1" nodeType="canvasRef" data={{ targetCanvasId: 'child-canvas' }} />));
   await enter();
   expect(useLcosShellStore.getState().windows).toHaveLength(0);
+});
+
+it('registers Portal as a receive target only when its canvas resolves to one real workspace', () => {
+  const target = useLcosDropStore.getState().targets().find((entry) => entry.targetId === 'portal:portal-1');
+  expect(target).toMatchObject({
+    kind: 'portal-receive', enabled: true, label: '入口 · 资料入口 → 资料现场',
+    semantic: { kind: 'portal-receive', targetRef: { kind: 'workspace', id: 'workspace-child' } },
+  });
+});
+
+it('keeps an ambiguous Portal visible as an ineligible receiver instead of guessing a workspace', async () => {
+  await act(async () => root.render(<PortalDropWorkspaceProvider workspaces={[
+    { id: 'workspace-a', name: '现场 A', canvasId: 'child-canvas' },
+    { id: 'workspace-b', name: '现场 B', canvasId: 'child-canvas' },
+  ]}>
+    <PortalNodeBody nodeId="portal-1" nodeType="canvasRef" data={{ targetCanvasId: 'child-canvas', label: '资料入口' }} />
+  </PortalDropWorkspaceProvider>));
+  const target = useLcosDropStore.getState().targets().find((entry) => entry.targetId === 'portal:portal-1');
+  expect(target?.enabled).toBe(false);
+  expect(resolveDropIntent({ kind: 'object', entityType: 'note', entityId: 'note-1' }, target!).status).toBe('ineligible');
 });

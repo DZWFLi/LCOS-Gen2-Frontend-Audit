@@ -27,7 +27,7 @@ export function retainContinuationIntent(
     action,
     targetKey,
     operationId: allocate(),
-    ...(orderedReferences === undefined ? {} : { orderedReferences: [...orderedReferences] }),
+    ...(orderedReferences === undefined ? {} : { orderedReferences: orderedReferences.map((item) => ({ ...item, ref: { ...item.ref } })) }),
   };
 }
 

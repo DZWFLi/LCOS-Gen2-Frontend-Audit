@@ -23,6 +23,10 @@ export interface ProjectedEntityFacts {
   /** Core `ArtifactAvailability`（current / missing / stale …）。 */
   readonly availability?: string;
   readonly currentRevisionId?: string;
+  /** Revision actually presented by the selected ArtifactView. It may be historical. */
+  readonly presentedRevisionId?: string;
+  /** Selected canonical ArtifactView for this projection, distinct from artifact identity. */
+  readonly artifactViewId?: string;
   readonly mimeType?: string;
   readonly sourceKind?: string;
   /**
@@ -40,6 +44,9 @@ export interface ProjectedEntityFacts {
   readonly provider?: string;
   readonly active?: boolean;
   readonly waiting?: boolean;
+  readonly collectionMemberCount?: number;
+  readonly collectionMemberLabels?: readonly string[];
+  readonly collectionMembers?: readonly { readonly type: 'artifact' | 'note' | 'collection' | 'scope' | 'workspace' | 'conversation' | 'run'; readonly id: string; readonly label: string }[];
 }
 
 /** 前端树上挂载的呈现描述。 */
@@ -87,6 +94,9 @@ export function buildNodeSecondaryLine(facts: ProjectedEntityFacts): string {
     else if (facts.active === false) parts.push('空闲');
     return parts.length === 0 ? '会话 · 身份未确认' : parts.join(' · ');
   }
+  if (facts.entityType === 'collection') {
+    return facts.collectionMemberCount === undefined ? '集合' : `集合 · ${facts.collectionMemberCount} 项`;
+  }
 
   const kind = facts.artifactKind;
   if (kind !== undefined && kind !== '') parts.push(KIND_LABEL[kind] ?? kind);
@@ -96,8 +106,9 @@ export function buildNodeSecondaryLine(facts: ProjectedEntityFacts): string {
   if (availability !== undefined && availability !== '' && availability !== 'current') {
     parts.push(AVAILABILITY_LABEL[availability] ?? availability);
   }
-  if (facts.currentRevisionId !== undefined && facts.currentRevisionId !== '') {
-    parts.push(`rev ${facts.currentRevisionId.slice(0, 8)}`);
+  const visibleRevisionId = facts.presentedRevisionId ?? facts.currentRevisionId;
+  if (visibleRevisionId !== undefined && visibleRevisionId !== '') {
+    parts.push(`rev ${visibleRevisionId.slice(0, 8)}`);
   }
   if (parts.length === 0) parts.push('（无 Core 元数据）');
   return parts.join(' · ');
@@ -157,20 +168,21 @@ export function describeProjectedEntity(facts: ProjectedEntityFacts): ProjectedN
  * 只做忠实截断与轻量去噪，不改写内容语义：
  *   - 去掉 front-matter / 代码块 / 列表符号 / 行内强调标记；
  *   - 去掉首个 H1（通常与 artifact 标题重复，标题已经单独渲染）；
- *   - 折叠空白后截断到 maxChars，截断处加省略号。
+ *   - 默认折叠空白；轻文本可保留真实换行/段落，仍截断到 maxChars并加省略号。
  * 空正文返回空串 —— 调用方据此**不写** preview 字段（绝不编造正文）。
  */
-export function buildContentPreview(raw: string, maxChars = 160): string {
+export function buildContentPreview(raw: string, maxChars = 160, options: { readonly preserveLineBreaks?: boolean } = {}): string {
   const withoutFrontMatter = raw.replace(/^\uFEFF?---\r?\n[\s\S]*?\r?\n---\r?\n?/, '');
-  const cleaned = withoutFrontMatter
+  const text = withoutFrontMatter
     .replace(/```[\s\S]*?```/g, ' ')
     .replace(/^\s*#\s+.*$/m, '')
     .replace(/^\s{0,3}#{1,6}\s+/gm, '')
     .replace(/^\s*[-*+]\s+/gm, '')
     .replace(/^\s*\d+\.\s+/gm, '')
-    .replace(/[*_`>]/g, '')
-    .replace(/\s+/g, ' ')
-    .trim();
+    .replace(/[*_`>]/g, '');
+  const cleaned = options.preserveLineBreaks
+    ? text.replace(/\r\n?/g, '\n').split('\n').map((line) => line.replace(/[^\S\n]+/g, ' ').trim()).join('\n').replace(/\n{3,}/g, '\n\n').trim()
+    : text.replace(/\s+/g, ' ').trim();
   if (cleaned === '') return '';
   return cleaned.length <= maxChars ? cleaned : `${cleaned.slice(0, maxChars).trimEnd()}…`;
 }

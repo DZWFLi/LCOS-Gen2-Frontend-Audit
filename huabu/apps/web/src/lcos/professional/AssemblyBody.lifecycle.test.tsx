@@ -216,6 +216,17 @@ it('opens the canonical archive body from Assembly instead of fabricating a seco
   expect(mocks.openWindow).toHaveBeenCalledWith('archive', '归档');
 });
 
+it('uses plain Chinese for read failures while keeping the real diagnostic code in a tooltip', async () => {
+  mocks.warehouse.mockRejectedValue(Object.assign(new Error('failed'), { code: 'READ_SOURCE_42' }));
+  mocks.workspaces.mockResolvedValue([]);
+  await render('project-a');
+  await act(async () => mocks.warehouse.mock.results[0]?.value.catch(() => undefined));
+  const failure = host.querySelector<HTMLElement>('[data-lcos-assembly-error="project"]');
+  expect(failure?.textContent).toContain('材料读取失败，请重试。');
+  expect(failure?.textContent).not.toContain('READ_SOURCE_42');
+  expect(failure?.title).toBe('读取诊断代码：READ_SOURCE_42');
+});
+
 it('cannot let a late A response replace the already loaded B warehouse', async () => {
   const a = deferred<{ items: readonly unknown[] }>();
   const b = deferred<{ items: readonly unknown[] }>();

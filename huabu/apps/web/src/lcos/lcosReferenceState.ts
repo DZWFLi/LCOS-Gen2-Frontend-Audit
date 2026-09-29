@@ -39,8 +39,23 @@ export interface LcosNodeEntityRef extends CoreEntityRefLike {
 
 export interface LcosReferenceState {
   projectId: string | null;
+  /** Ephemeral pick gesture; refs still belong only to draft. */
+  referencePickOwner: string | null;
+  setReferencePickOwner(owner: string | null): void;
   /** Restore only this project's explicit draft; node bindings are re-read. */
   setProject(projectId: string): void;
+  /** Read lifecycle for this presentation cache, not another binding/domain owner. */
+  bindingCanvasId: string | null;
+  bindingReadStatus: 'idle' | 'loading' | 'ready' | 'error';
+  /** The first canonical identity list has resolved for bindingCanvasId (including an empty list). */
+  bindingIdentitiesReady: boolean;
+  bindingRefreshVersion: number;
+  beginNodeBindingRead(projectId: string, canvasId: string): void;
+  applyNodeBindings(projectId: string, canvasId: string,
+    bindings: readonly { spatialId: string; entityType: string; entityId: string; descriptor?: ProjectedNodeDescriptor }[],
+    status: 'loading' | 'ready'): void;
+  failNodeBindingRead(projectId: string, canvasId: string): void;
+  requestNodeBindingRefresh(): void;
   /** nodeId → Core entity ref, populated at projection time. */
   nodeEntityRefs: ReadonlyMap<string, LcosNodeEntityRef>;
   /** Ordered explicit references of the active composer draft. */
@@ -54,6 +69,8 @@ export interface LcosReferenceState {
   toggleNodeReference(nodeId: string): boolean;
   /**（Wave 5）直接把实体加入草稿（Assembly/卡面条目；Selection≠Reference）。 */
   addEntityToDraft(ref: LcosNodeEntityRef): void;
+  /** Remove only this explicit reference; keep the entity, node and selection. */
+  removeEntityFromDraft(ref: CoreEntityRefLike): void;
   /** Ordered read for the Reference Strip. */
   orderedNodeReferences(): readonly CoreEntityRefLike[];
   /** Is this node's entity currently referenced? (badge rendering) */
@@ -65,11 +82,16 @@ const projectDrafts = new Map<string, ReferenceControllerState<LcosNodeEntityRef
 
 export const useLcosReferenceStore = create<LcosReferenceState>((set, get) => ({
   projectId: null,
+  referencePickOwner: null,
+  setReferencePickOwner: (referencePickOwner) => set({ referencePickOwner }),
+  bindingCanvasId: null, bindingReadStatus: 'idle', bindingIdentitiesReady: false, bindingRefreshVersion: 0,
   setProject: (projectId) => set((state) => {
     if (state.projectId === projectId) return state;
     if (state.projectId !== null) projectDrafts.set(state.projectId, state.draft);
     return {
       projectId,
+      referencePickOwner: null,
+      bindingCanvasId: null, bindingReadStatus: 'idle', bindingIdentitiesReady: false, bindingRefreshVersion: 0,
       nodeEntityRefs: new Map(),
       draft: projectDrafts.get(projectId) ?? createReferenceControllerState<LcosNodeEntityRef>('canvas-draft'),
     };
@@ -78,7 +100,30 @@ export const useLcosReferenceStore = create<LcosReferenceState>((set, get) => ({
   draft: createReferenceControllerState<LcosNodeEntityRef>('canvas-draft'),
 
   resetNodeEntities: () =>
-    set({ nodeEntityRefs: new Map() }),
+    set({ nodeEntityRefs: new Map(), bindingCanvasId: null, bindingReadStatus: 'idle', bindingIdentitiesReady: false }),
+
+  beginNodeBindingRead: (projectId, canvasId) => set((state) => state.projectId !== projectId ? state : ({
+    bindingCanvasId: canvasId, bindingReadStatus: 'loading',
+    bindingIdentitiesReady: state.bindingCanvasId === canvasId && state.bindingIdentitiesReady,
+    nodeEntityRefs: state.bindingCanvasId === canvasId ? state.nodeEntityRefs : new Map(),
+  })),
+  applyNodeBindings: (projectId, canvasId, bindings, status) => set((state) => {
+    if (state.projectId !== projectId || state.bindingCanvasId !== canvasId) return state;
+    const next = new Map<string, LcosNodeEntityRef>();
+    for (const binding of bindings) {
+      const prior = state.nodeEntityRefs.get(binding.spatialId);
+      // An early identity read may preserve an already visible descriptor for the same identity.
+      // The authoritative final list replaces the set, removing deleted/reprojected identities.
+      const descriptor = binding.descriptor ?? (status === 'loading'
+        && prior?.entityType === binding.entityType && prior.entityId === binding.entityId ? prior.descriptor : undefined);
+      next.set(binding.spatialId, { entityType: binding.entityType, entityId: binding.entityId,
+        ...(descriptor === undefined ? {} : { descriptor }) });
+    }
+    return { nodeEntityRefs: next, bindingReadStatus: status, bindingIdentitiesReady: true };
+  }),
+  failNodeBindingRead: (projectId, canvasId) => set((state) =>
+    state.projectId === projectId && state.bindingCanvasId === canvasId ? { bindingReadStatus: 'error' } : state),
+  requestNodeBindingRefresh: () => set((state) => ({ bindingRefreshVersion: state.bindingRefreshVersion + 1 })),
 
   registerNodeEntity: (nodeId, ref) => {
     set((state) => {
@@ -108,6 +153,10 @@ export const useLcosReferenceStore = create<LcosReferenceState>((set, get) => ({
       ? state : { draft: toggleReference(state.draft, ref) });
   },
 
+  removeEntityFromDraft: (ref) => {
+    set((state) => ({ draft: removeReference(state.draft, ref) }));
+  },
+
   orderedNodeReferences: () => orderedReferences(get().draft),
 
   isNodeReferenced: (nodeId) => {
@@ -120,6 +169,8 @@ export const useLcosReferenceStore = create<LcosReferenceState>((set, get) => ({
     projectDrafts.clear();
     set({
       projectId: null,
+      referencePickOwner: null,
+      bindingCanvasId: null, bindingReadStatus: 'idle', bindingIdentitiesReady: false, bindingRefreshVersion: 0,
       nodeEntityRefs: new Map(),
       draft: createReferenceControllerState<LcosNodeEntityRef>('canvas-draft'),
     });

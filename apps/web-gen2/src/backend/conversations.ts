@@ -7,8 +7,11 @@
 import type {
   ConnectedConversationV1,
   ConversationIdentityChainV1,
+  ConversationSessionV1,
   ConversationReachResultV0,
   ConversationWorkViewAggregateV1,
+  CompleteConversationImportResultV1,
+  ImportManualConversationInputV1,
   ProjectReceiverBindingV1,
 } from '@local-creative-os/contracts';
 import { HttpClient } from './client.js';
@@ -27,6 +30,45 @@ export class CoreConversationClient {
       'GET',
       `/projects/${encodeURIComponent(projectId)}/connected-conversations`,
       { signal },
+    );
+  }
+
+  /** GET /projects/:pid/conversations → project-owned imported conversation sessions. */
+  listSessions(projectId: string, signal?: AbortSignal): Promise<ConversationSessionV1[]> {
+    return coreRequest<ConversationSessionV1[]>(
+      this.http,
+      'GET',
+      `/projects/${encodeURIComponent(projectId)}/conversations`,
+      { signal },
+    );
+  }
+
+  /** POST /projects/:pid/conversations/import-manual → create from user-provided timeline entries. */
+  importManual(
+    projectId: string,
+    input: ImportManualConversationInputV1,
+    signal?: AbortSignal,
+  ): Promise<CompleteConversationImportResultV1> {
+    return coreRequest<CompleteConversationImportResultV1>(
+      this.http,
+      'POST',
+      `/projects/${encodeURIComponent(projectId)}/conversations/import-manual`,
+      { body: input, signal },
+    );
+  }
+
+  /** Explicitly link an existing imported session to a ConnectedConversation. */
+  linkSession(
+    projectId: string,
+    connectedConversationId: string,
+    conversationSessionId: string,
+    signal?: AbortSignal,
+  ): Promise<ConversationIdentityChainV1> {
+    return coreRequest<ConversationIdentityChainV1>(
+      this.http,
+      'POST',
+      `/projects/${encodeURIComponent(projectId)}/connected-conversations/${encodeURIComponent(connectedConversationId)}/link-session`,
+      { body: { conversationSessionId }, signal },
     );
   }
 

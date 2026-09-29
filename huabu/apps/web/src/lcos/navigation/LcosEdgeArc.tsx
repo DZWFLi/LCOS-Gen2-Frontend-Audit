@@ -77,6 +77,7 @@ function useEdgeMidpoint(edgeId: string | undefined): CanvasAnchorRect | null {
 
 export function LcosEdgeArc(): React.JSX.Element | null {
   const edges = useCanvasStore((s) => s.edges);
+  const edgesVisible = useCanvasStore((s) => s.edgesVisible);
   const executeCommands = useCanvasStore((s) => s.executeCommands);
   const disconnectEdges = useCanvasStore((s) => s.disconnectEdges);
 
@@ -84,7 +85,7 @@ export function LcosEdgeArc(): React.JSX.Element | null {
   const edge = selected.length === 1 ? selected[0] : undefined;
   const anchor = useEdgeMidpoint(edge?.id);
 
-  if (!edge || !anchor) return null;
+  if (!edgesVisible || !edge || !anchor) return null;
 
   const style = ((edge.data as { edgeStyle?: EdgeStyle } | undefined)?.edgeStyle ?? {}) as EdgeStyle;
   const setStyle = (patch: Partial<EdgeStyle>): void => {

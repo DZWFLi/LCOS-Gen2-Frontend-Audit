@@ -67,6 +67,32 @@ export interface Scope {
   readonly updatedAt: IsoDateTime
 }
 
+/** Canonical Gen2 Collection identity. Legacy Scope(kind='collection') rows are migration input only. */
+export interface Collection {
+  readonly id: CollectionId
+  readonly projectId: ProjectId
+  readonly title: string
+  readonly createdAt: IsoDateTime
+  readonly updatedAt: IsoDateTime
+}
+
+export type CollectionId = Brand<string, 'CollectionId'>
+/** Stable typed Core endpoints; view/spatial projections are intentionally not canonical members. */
+export type CollectionMemberType = 'artifact' | 'note' | 'collection' | 'scope' | 'workspace' | 'conversation' | 'run'
+
+export interface CollectionMemberRef {
+  readonly type: CollectionMemberType
+  readonly id: string
+}
+
+/** Read projection of the canonical collection-member relation; it is not spatial containment. */
+export interface CollectionMembership {
+  readonly collectionId: CollectionId
+  readonly memberRef: CollectionMemberRef
+  readonly relationId: RelationId
+  readonly addedAt: IsoDateTime
+}
+
 // B3R5: only Collection containment contributes structural depth. Context,
 // Workflow and Scene membership are references/presentation, never ownership.
 export const MAX_STRUCTURAL_CONTAINER_DEPTH = 2

@@ -36,6 +36,7 @@ import {
 import { resolveGeometryEdit } from '@/utils/node/geometry';
 
 import type { CanvasNodeType, NodeData } from '@/components/Nodes/types';
+import '@/lcos/ui/nearfield/fallbackCommandSurface.css';
 
 /** Sentinel token representing "no accent". */
 const ACCENT_NONE = ACCENT_NONE_TOKEN;
@@ -60,6 +61,8 @@ interface NodeFloatingToolbarProps {
    * Rendered as the last group before the optional delete button.
    */
   actions?: ReactNode;
+  /** LCOS keeps uncovered native commands, but presents them in the LCOS glass language. */
+  chromeMode?: 'huabu' | 'lcos';
 }
 
 /**
@@ -89,7 +92,7 @@ interface NodeFloatingToolbarProps {
  * `CanvasFloatingPopover`.
  */
 export const NodeFloatingToolbar = memo(
-  ({ id, type, data, toolbar, actions }: NodeFloatingToolbarProps) => {
+  ({ id, type, data, toolbar, actions, chromeMode = 'huabu' }: NodeFloatingToolbarProps) => {
     const { t } = useTranslation();
     const internalNode = useInternalNode(id);
     // While the node is collapsed to its takeover mark the card has faded
@@ -236,7 +239,7 @@ export const NodeFloatingToolbar = memo(
         open={!multiSelectModifierHeld}
         offset={12}
         side="top"
-        className={FLOATING_TOOLBAR_CLASS}
+        className={chromeMode === 'lcos' ? `${FLOATING_TOOLBAR_CLASS} lcos-fallback-command-surface` : FLOATING_TOOLBAR_CLASS}
       >
         {/* Leading type indicator. */}
         {type === 'text' || type === 'note' ? (

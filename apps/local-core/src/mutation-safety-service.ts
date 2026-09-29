@@ -7,8 +7,9 @@ import type {
   ColorPinDefinitionV0,
   ColorPinMembershipV0,
   SpatialMarkerIntentV0,
+  CollectionMembershipReceipt,
 } from '@local-creative-os/contracts'
-import type { Relation } from '@local-creative-os/domain'
+import type { Collection, CollectionMembership, Relation } from '@local-creative-os/domain'
 import type { SqliteMetadataRepository } from './metadata-repository.js'
 import { PresentationApplicationService } from './presentation-application-service.js'
 import type { ProjectEventHub } from './project-events/project-event-hub.js'
@@ -91,6 +92,92 @@ export class MutationSafetyService {
 
   list(projectId: string, limit = 50): readonly MutationChangeSetV1[] {
     return this.#metadata.listMutationChangeSets(projectId, limit)
+  }
+
+  createCollection(input: { readonly projectId: string; readonly title: string; readonly actorKind?: MutationChangeSetV1['actorKind']; readonly origin?: ProjectEventOrigin }): { readonly collection: Collection; readonly changeSet: MutationChangeSetV1 } {
+    const title = input.title.trim()
+    if (!title || title.length > 200) throw new Error('Collection title must contain 1–200 characters.')
+    const now = new Date().toISOString()
+    const collection: Collection = { id: `collection-${randomUUID()}` as never, projectId: input.projectId as never, title, createdAt: now, updatedAt: now }
+    const change: MutationChangeItemV1 = {
+      type: 'collection_identity_add', collection,
+      inverse: { type: 'collection_identity_remove', collectionId: String(collection.id) },
+      forward: { type: 'collection_identity_add', collection },
+      appliedFingerprint: `collection:${collection.id}:present`,
+    }
+    const changeSet = this.#buildChangeSet({ projectId: input.projectId, operationId: input.origin?.operationId ?? `collection-create-${randomUUID()}`, actorKind: input.actorKind ?? 'web', changes: [change] })
+    this.#metadata.runCurationMutation({ projectId: input.projectId, collectionAdds: [collection], changeSet })
+    this.#publishChangeSet(changeSet, input.origin)
+    return { collection, changeSet }
+  }
+
+  addCollectionMember(input: { readonly projectId: string; readonly collectionId: string; readonly memberRef: CollectionMembership['memberRef']; readonly actorKind?: MutationChangeSetV1['actorKind']; readonly origin?: ProjectEventOrigin }): CollectionMembershipReceipt {
+    const collection = this.#metadata.getCollection(input.collectionId)
+    if (collection === undefined || String(collection.projectId) !== input.projectId) throw new Error('Collection does not belong to project.')
+    this.#assertCollectionMemberExists(input.projectId, input.memberRef)
+    const existing = this.#metadata.getCollectionMembership(input.projectId, input.collectionId, input.memberRef.type, input.memberRef.id)
+    if (existing !== undefined) return { status: 'already-member', collectionId: input.collectionId, memberRef: input.memberRef, relationId: String(existing.relationId) }
+    if (input.memberRef.type === 'collection') this.#assertCollectionNesting(input.projectId, input.collectionId, input.memberRef.id)
+    const now = new Date().toISOString()
+    const membership: CollectionMembership = { collectionId: collection.id, memberRef: input.memberRef, relationId: `collection-member-${randomUUID()}` as never, addedAt: now }
+    const change: MutationChangeItemV1 = {
+      type: 'collection_membership_add', membership,
+      inverse: { type: 'collection_membership_remove', membership },
+      forward: { type: 'collection_membership_add', membership },
+      appliedFingerprint: `collection-membership:${membership.relationId}:present`,
+    }
+    const changeSet = this.#buildChangeSet({ projectId: input.projectId, operationId: input.origin?.operationId ?? `collection-member-add-${randomUUID()}`, actorKind: input.actorKind ?? 'web', changes: [change] })
+    try {
+      this.#metadata.runCurationMutation({ projectId: input.projectId, collectionMembershipAdds: [membership], changeSet })
+    } catch (error) {
+      const raced = this.#metadata.getCollectionMembership(input.projectId, input.collectionId, input.memberRef.type, input.memberRef.id)
+      if (raced !== undefined) return { status: 'already-member', collectionId: input.collectionId, memberRef: input.memberRef, relationId: String(raced.relationId) }
+      throw error
+    }
+    this.#publishChangeSet(changeSet, input.origin)
+    return { status: 'applied', collectionId: input.collectionId, memberRef: input.memberRef, relationId: String(membership.relationId), changeSetId: changeSet.id }
+  }
+
+  removeCollectionMember(input: { readonly projectId: string; readonly collectionId: string; readonly memberRef: CollectionMembership['memberRef']; readonly actorKind?: MutationChangeSetV1['actorKind']; readonly origin?: ProjectEventOrigin }): CollectionMembershipReceipt {
+    const membership = this.#metadata.getCollectionMembership(input.projectId, input.collectionId, input.memberRef.type, input.memberRef.id)
+    if (membership === undefined) return { status: 'not-member', collectionId: input.collectionId, memberRef: input.memberRef }
+    const change: MutationChangeItemV1 = {
+      type: 'collection_membership_remove', membership,
+      inverse: { type: 'collection_membership_add', membership },
+      forward: { type: 'collection_membership_remove', membership },
+      appliedFingerprint: `collection-membership:${membership.relationId}:absent`,
+    }
+    const changeSet = this.#buildChangeSet({ projectId: input.projectId, operationId: input.origin?.operationId ?? `collection-member-remove-${randomUUID()}`, actorKind: input.actorKind ?? 'web', changes: [change] })
+    this.#metadata.runCurationMutation({ projectId: input.projectId, collectionMembershipDeletes: [membership], changeSet })
+    this.#publishChangeSet(changeSet, input.origin)
+    return { status: 'removed', collectionId: input.collectionId, memberRef: input.memberRef, relationId: String(membership.relationId), changeSetId: changeSet.id }
+  }
+
+  #assertCollectionMemberExists(projectId: string, ref: CollectionMembership['memberRef']): void {
+    const exists = ref.type === 'artifact' ? String(this.#metadata.getArtifact(ref.id)?.projectId ?? '') === projectId
+      : ref.type === 'note' ? String(this.#metadata.getNote(ref.id)?.projectId ?? '') === projectId
+        : ref.type === 'collection' ? String(this.#metadata.getCollection(ref.id)?.projectId ?? '') === projectId
+          : ref.type === 'scope' ? (this.#metadata.get(projectId)?.scopes.some((scope) => String(scope.id) === ref.id && scope.kind !== 'collection' && scope.kind !== 'workflow') ?? false)
+            : ref.type === 'workspace' ? String(this.#metadata.getWorkspace(ref.id)?.projectId ?? '') === projectId
+              : ref.type === 'conversation' ? this.#metadata.getConnectedConversation(projectId, ref.id) !== undefined
+                : String(this.#metadata.getRun(ref.id as never)?.projectId ?? '') === projectId
+    if (!exists) throw new Error('Collection member must be a canonical entity in the same project.')
+  }
+
+  #assertCollectionNesting(projectId: string, parentId: string, childId: string): void {
+    if (parentId === childId) throw new Error('A Collection cannot contain itself.')
+    const edges = this.#metadata.listCollectionMemberships(projectId).filter((m) => m.memberRef.type === 'collection')
+    const graph = new Map<string, string[]>()
+    for (const m of edges) graph.set(String(m.collectionId), [...(graph.get(String(m.collectionId)) ?? []), m.memberRef.id])
+    graph.set(parentId, [...(graph.get(parentId) ?? []), childId])
+    const visit = (id: string, depth: number, stack: Set<string>): void => {
+      if (stack.has(id)) throw new Error('Collection nesting would create a cycle.')
+      if (depth > 2) throw new Error('Collection nesting exceeds the supported depth of 2.')
+      const next = new Set(stack).add(id)
+      for (const child of graph.get(id) ?? []) visit(child, depth + 1, next)
+    }
+    // Validate the whole changed component: path depth is bounded in both directions.
+    for (const id of new Set([parentId, ...graph.keys()])) visit(id, 0, new Set())
   }
 
 
@@ -650,6 +737,16 @@ export class MutationSafetyService {
         if (this.#metadata.getColorPinMembership(change.membershipId) === undefined) return { revertable: false, reason: 'TOUCHED_STATE_CHANGED_AFTER_APPLY', changeSetId }
       } else if (change.type === 'color_pin_membership_remove') {
         if (this.#metadata.getColorPinMembership(change.membershipId) !== undefined) return { revertable: false, reason: 'TOUCHED_STATE_CHANGED_AFTER_APPLY', changeSetId }
+      } else if (change.type === 'collection_identity_add') {
+        if (this.#metadata.getCollection(String(change.collection.id)) === undefined || this.#metadata.hasCollectionMemberships(String(change.collection.id))) return { revertable: false, reason: 'TOUCHED_STATE_CHANGED_AFTER_APPLY', changeSetId }
+      } else if (change.type === 'collection_identity_remove') {
+        if (this.#metadata.getCollection(change.collection.id) !== undefined) return { revertable: false, reason: 'TOUCHED_STATE_CHANGED_AFTER_APPLY', changeSetId }
+      } else if (change.type === 'collection_membership_add') {
+        const m = change.membership
+        if (this.#metadata.getCollectionMembership(changeSet.projectId, String(m.collectionId), m.memberRef.type, m.memberRef.id) === undefined) return { revertable: false, reason: 'TOUCHED_STATE_CHANGED_AFTER_APPLY', changeSetId }
+      } else if (change.type === 'collection_membership_remove') {
+        const m = change.membership
+        if (this.#metadata.getCollectionMembership(changeSet.projectId, String(m.collectionId), m.memberRef.type, m.memberRef.id) !== undefined) return { revertable: false, reason: 'TOUCHED_STATE_CHANGED_AFTER_APPLY', changeSetId }
       }
     }
 
@@ -724,6 +821,14 @@ export class MutationSafetyService {
         this.#metadata.runCurationMutation({ projectId: changeSet.projectId, colorPinMembershipDeletes: [change.membershipId] })
       } else if (change.type === 'color_pin_membership_remove') {
         this.#metadata.runCurationMutation({ projectId: changeSet.projectId, colorPinMembershipAdds: [change.membership] })
+      } else if (change.type === 'collection_identity_add') {
+        this.#metadata.runCurationMutation({ projectId: changeSet.projectId, collectionDeletes: [String(change.collection.id)] })
+      } else if (change.type === 'collection_identity_remove') {
+        this.#metadata.runCurationMutation({ projectId: changeSet.projectId, collectionAdds: [change.collection] })
+      } else if (change.type === 'collection_membership_add') {
+        this.#metadata.runCurationMutation({ projectId: changeSet.projectId, collectionMembershipDeletes: [change.membership] })
+      } else if (change.type === 'collection_membership_remove') {
+        this.#metadata.runCurationMutation({ projectId: changeSet.projectId, collectionMembershipAdds: [change.membership] })
       }
     }
 
@@ -815,6 +920,16 @@ export class MutationSafetyService {
         if (this.#metadata.getColorPinMembership(change.membershipId) !== undefined) return { revertable: false, reason: 'TOUCHED_STATE_CHANGED_AFTER_APPLY', changeSetId }
       } else if (change.type === 'color_pin_membership_remove') {
         if (this.#metadata.getColorPinMembership(change.membershipId) === undefined) return { revertable: false, reason: 'TOUCHED_STATE_CHANGED_AFTER_APPLY', changeSetId }
+      } else if (change.type === 'collection_identity_add') {
+        if (this.#metadata.getCollection(String(change.collection.id)) !== undefined) return { revertable: false, reason: 'TOUCHED_STATE_CHANGED_AFTER_APPLY', changeSetId }
+      } else if (change.type === 'collection_identity_remove') {
+        if (this.#metadata.getCollection(change.collection.id) === undefined) return { revertable: false, reason: 'TOUCHED_STATE_CHANGED_AFTER_APPLY', changeSetId }
+      } else if (change.type === 'collection_membership_add') {
+        const m = change.membership
+        if (this.#metadata.getCollectionMembership(changeSet.projectId, String(m.collectionId), m.memberRef.type, m.memberRef.id) !== undefined) return { revertable: false, reason: 'TOUCHED_STATE_CHANGED_AFTER_APPLY', changeSetId }
+      } else if (change.type === 'collection_membership_remove') {
+        const m = change.membership
+        if (this.#metadata.getCollectionMembership(changeSet.projectId, String(m.collectionId), m.memberRef.type, m.memberRef.id) === undefined) return { revertable: false, reason: 'TOUCHED_STATE_CHANGED_AFTER_APPLY', changeSetId }
       }
     }
 
@@ -891,6 +1006,14 @@ export class MutationSafetyService {
         this.#metadata.runCurationMutation({ projectId: changeSet.projectId, colorPinMembershipAdds: [change.membership] })
       } else if (change.type === 'color_pin_membership_remove') {
         this.#metadata.runCurationMutation({ projectId: changeSet.projectId, colorPinMembershipDeletes: [change.membershipId] })
+      } else if (change.type === 'collection_identity_add') {
+        this.#metadata.runCurationMutation({ projectId: changeSet.projectId, collectionAdds: [change.collection] })
+      } else if (change.type === 'collection_identity_remove') {
+        this.#metadata.runCurationMutation({ projectId: changeSet.projectId, collectionDeletes: [change.collection.id] })
+      } else if (change.type === 'collection_membership_add') {
+        this.#metadata.runCurationMutation({ projectId: changeSet.projectId, collectionMembershipAdds: [change.membership] })
+      } else if (change.type === 'collection_membership_remove') {
+        this.#metadata.runCurationMutation({ projectId: changeSet.projectId, collectionMembershipDeletes: [change.membership] })
       }
     }
 

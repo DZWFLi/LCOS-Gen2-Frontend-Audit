@@ -141,6 +141,11 @@ export class PointerRouterCore<E extends RoutablePointerEvent, C> {
     this.events.delete(event.pointerId);
   }
 
+  /** Release gestures on Escape, lost window focus, or host unmount. */
+  cancelAll(): void {
+    for (const event of [...this.events.values()]) this.handleCancel(event);
+  }
+
   private broadcast(hook: ObserveHook, event: E, ctx: C): void {
     for (const recognizer of this.recognizers) {
       const fn = recognizer.observe?.[hook];

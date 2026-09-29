@@ -32,6 +32,8 @@ function workspace(id: string, scopeId: string, canvasId?: string): Workspace {
   };
 }
 
+const actionAnchor = { x: 48, y: 64, width: 120, height: 36 };
+
 describe('Workflow card pool UX semantics', () => {
   it('reserves TaskCard semantics for workflow while separating material and receiver lanes', () => {
     expect(isWorkflowCardItem(item('workflow'))).toBe(true);
@@ -43,46 +45,30 @@ describe('Workflow card pool UX semantics', () => {
     expect(isWorkflowReceiverItem(item('conversation'))).toBe(true);
   });
 
-  it('keeps task, material, and receiver identities and presentation lanes distinct', () => {
-    const cards = toWorkflowHandCards(
-      [item('workflow'), item('artifact'), item('conversation')],
-      [{ id: 'skill-1', source: 'system', name: 'Summarize', description: 'summary' }],
-    );
-    expect(cards.map((card) => card.entityType)).toEqual(['workflow', 'skill', 'artifact', 'conversation']);
-    expect(cards.map((card) => card.lane)).toEqual(['task', 'task', 'material', 'receiver']);
-    expect(cards.filter((card) => card.lane === 'task').every((card) => card.entityType === 'workflow' || card.entityType === 'skill')).toBe(true);
-    expect(cards.filter((card) => card.lane === 'material').every((card) => card.entityType === 'artifact')).toBe(true);
-    expect(cards.filter((card) => card.lane === 'receiver').every((card) => card.entityType === 'conversation')).toBe(true);
-    expect(cards.find((card) => card.entityType === 'conversation')?.conversationReceiver).toBe(true);
-    expect(cards.find((card) => card.entityType === 'skill')?.conversationReceiver).toBe(false);
+  it('keeps only workflows even when the warehouse contains material and receivers', () => {
+    const cards = toWorkflowHandCards([item('workflow'), item('artifact'), item('conversation'), item('context')]);
+    expect(cards.map(card => card.entityType)).toEqual(['workflow']);
+    const card = cards[0]!;
+    expect(workflowComposerTarget(card, 'workspace-workflow', actionAnchor).receiverBlockedReason).toContain('Glyth');
+    expect(workflowComposerTarget(card, 'workspace-workflow', actionAnchor, 'current-session').receiverConversationId).toBe('current-session');
+  });
 
-    const material = cards.find((card) => card.entityType === 'artifact');
-    const conversation = cards.find((card) => card.entityType === 'conversation');
-    expect(material).toBeDefined();
-    expect(conversation).toBeDefined();
-    if (material === undefined || conversation === undefined) throw new Error('expected material and conversation cards');
-
-    const materialTarget = workflowComposerTarget(material, 'workspace-workflow');
-    expect(materialTarget.workspaceId).toBe('workspace-workflow');
-    expect(materialTarget.receiverConversationId).toBeUndefined();
-    expect(materialTarget.receiverBlockedReason).toContain('选择一个会话');
-
-    const conversationTarget = workflowComposerTarget(conversation, 'workspace-workflow');
-    expect(conversationTarget.receiverConversationId).toBe('conversation-1');
-    expect(conversationTarget.receiverBlockedReason).toBeUndefined();
+  it('surfaces only real warehouse provenance and usage facts in the preview model', () => {
+    const source = {
+      ...item('workflow'),
+      updatedAt: '2026-09-28T10:00:00.000Z',
+      usageCount: 3,
+      provenance: { origin: 'run-return' as const, birthRunId: 'run-1' },
+      relationHint: { neighborCount: 2, topKinds: ['artifact'] },
+    };
+    expect(toWorkflowHandCards([source])[0]?.previewFacts).toEqual([
+      '来源：运行结果', '项目内已使用 3 次', '最近更新：2026-09-28T10:00:00.000Z', '关联 2 项',
+    ]);
+    expect(toWorkflowHandCards([item('workflow')])[0]?.previewFacts).toEqual([]);
   });
 
   it('enters only the single exact workflow scope target and never resolves skills or titles as workspaces', () => {
-    const cards = toWorkflowHandCards(
-      [item('workflow')],
-      [{ id: 'skill-1', source: 'system', name: 'workflow-1', description: 'same-looking title' }],
-    );
-    const workflow = cards.find((card) => card.entityType === 'workflow');
-    const skill = cards.find((card) => card.entityType === 'skill');
-    expect(workflow).toBeDefined();
-    expect(skill).toBeDefined();
-    if (workflow === undefined || skill === undefined) throw new Error('expected workflow and skill cards');
-
+    const workflow = toWorkflowHandCards([item('workflow')])[0]!;
     expect(resolveWorkflowCardEntry(workflow, [workspace('workspace-1', 'workflow-1', 'canvas-1')])).toMatchObject({
       status: 'ready',
       targetSurface: 'workflow',
@@ -94,9 +80,15 @@ describe('Workflow card pool UX semantics', () => {
       workspace('workspace-1', 'workflow-1', 'canvas-1'),
       workspace('workspace-2', 'workflow-1', 'canvas-2'),
     ])).toMatchObject({ status: 'unavailable', code: 'target_ambiguous' });
-    expect(resolveWorkflowCardEntry(skill, [workspace('workspace-by-title', 'unrelated', 'canvas-3')])).toMatchObject({
-      status: 'unavailable',
-      code: 'skill_without_worksite',
-    });
+
   });
+});
+
+it('preserves a canonical artifact ref on a workflow projection instead of replacing it with the visual kind', () => {
+  const original = { ...item('workflow'), entityRef: { type: 'artifact', id: 'source-workflow' } } as WarehouseItemV1;
+  const card = toWorkflowHandCards([original])[0]!;
+  expect(card.entityType).toBe('artifact');
+  expect(card.entityId).toBe('source-workflow');
+  expect(card.workspaceTargetRef?.kind).toBe('workflow');
+  expect(workflowComposerTarget(card, null, actionAnchor).nodeId).toBe('artifact:source-workflow');
 });

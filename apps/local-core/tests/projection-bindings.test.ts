@@ -33,7 +33,7 @@ afterEach(() => {
 describe('projection_bindings (current schema + route)', () => {
   it('migrates to the current schema and creates the projection_bindings table', () => {
     const { repo, dbPath } = createRepo()
-    expect(userVersion(dbPath)).toBe(56)
+    expect(userVersion(dbPath)).toBe(57)
     // Upsert without error proves the table exists and accepts the identity columns.
     repo.createProject({ id: 'p-g0' as never, name: 'g0', rootPath: '/tmp/g0' })
     repo.upsertProjectionBinding({ projectId: 'p-g0', canvasId: 'c1', spatialKind: 'node', spatialId: 'n1', entityType: 'artifact', entityId: 'a1' })

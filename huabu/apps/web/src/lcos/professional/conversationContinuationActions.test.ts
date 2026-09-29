@@ -54,4 +54,11 @@ describe('conversation continuation UI intents', () => {
     ]);
     expect(result.unsupportedEntityTypes).toEqual(['note']);
   });
+  it('copies nested reference identity so later mutations cannot rewrite a submitted snapshot', () => {
+    const refs = [{ order: 0, ref: { type: 'artifact' as const, artifactId: 'before' } }];
+    const intent = retainContinuationIntent(undefined, 'selected_context', 'p:c', () => 'op', refs);
+    if (refs[0] !== undefined) refs[0].ref.artifactId = 'after';
+    expect(intent.orderedReferences?.[0]?.ref).toEqual({ type: 'artifact', artifactId: 'before' });
+  });
+
 });

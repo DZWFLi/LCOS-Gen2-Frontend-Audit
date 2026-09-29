@@ -9,7 +9,7 @@ import { TextSourceView } from './TextSourceView';
 import { AudioSourceMorphology } from '../../nodes/source/AudioSourceMorphology';
 
 describe('source presentation, not spatial ownership', () => {
-  it('keeps bodies and markers inside the existing source caller', async () => {
+  it('keeps source bodies and does not invent missing waveform or Pin membership', async () => {
     const host = document.createElement('div'); document.body.append(host);
     const root = createRoot(host);
     try {
@@ -20,10 +20,10 @@ describe('source presentation, not spatial ownership', () => {
         <AudioSourceView family="audio" title="声音" durationText="00:38" density="working" />
       </>));
       expect(host.querySelectorAll('[data-lcos-source-visual]')).toHaveLength(4);
-      expect(host.querySelectorAll('[data-lcos-wave-bar]')).toHaveLength(64);
+      expect(host.querySelectorAll('[data-lcos-wave-bar]')).toHaveLength(0);
       expect(host.textContent).toContain('00:38');
-      expect(host.querySelector('[data-waveform-source]')?.getAttribute('data-waveform-source'))
-        .toBe('figma-decorative');
+      expect(host.querySelector('[data-waveform-source]')).toBeNull();
+      expect(host.querySelector('[data-lcos-source-corner-marker]')).toBeNull();
     } finally { await act(async () => root.unmount()); host.remove(); }
   });
   it('takes mark density from the owner, without a new viewport threshold', async () => {

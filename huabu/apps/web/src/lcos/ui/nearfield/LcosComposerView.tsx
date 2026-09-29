@@ -11,7 +11,7 @@ import type { JSX } from 'react';
 
 /**
  * Figma 5388:324 + 5280:669. Controlled View, no stores, async calls or synthetic
- * progress. The original textarea is still exposed to the host's live drop registry.
+ * progress. The reference/input surface exposes geometry to the existing drop registry.
  */
 export function LcosComposerView(props: LcosComposerViewProps): JSX.Element {
   const editorRef = useRef<HTMLTextAreaElement | null>(null);
@@ -77,6 +77,8 @@ export function LcosComposerView(props: LcosComposerViewProps): JSX.Element {
         </LcosIconButton>
       </div>
 
+      <div ref={props.referenceSurfaceRef} className="lcos-composer-reference-surface"
+        data-lcos-composer-reference-surface data-drop-active={props.referenceDropActive || undefined}>
       <ComposerReferenceStrip items={props.references} />
 
       <div className="lcos-composer-editor">
@@ -102,7 +104,8 @@ export function LcosComposerView(props: LcosComposerViewProps): JSX.Element {
                 <LcosNearfieldGlyph name="attach" />
               </LcosIconButton>
             )}
-            {props.referencePickAction && (
+            {props.referencePicker}
+            {props.referencePicker === undefined && props.referencePickAction && (
               <LcosIconButton type="button" appearance="oreo" variant="secondary" className="lcos-composer-tool-hit"
                 disabled={props.referencePickAction.disabled}
                 title={props.referencePickAction.disabledReason ?? props.referencePickAction.label}
@@ -126,6 +129,8 @@ export function LcosComposerView(props: LcosComposerViewProps): JSX.Element {
           </LcosIconButton>
         </div>
       </div>
+      </div>
+      {props.continuationControls !== undefined && <div className="lcos-composer-options">{props.continuationControls}</div>}
       {(props.feedback !== null && props.feedback !== undefined ||
         props.feedbackAction !== undefined) && (
         <div className="lcos-composer-feedback" aria-live="polite">

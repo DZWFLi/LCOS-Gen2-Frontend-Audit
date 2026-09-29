@@ -20,6 +20,36 @@ async function setup() {
 afterEach(async()=>{for(const r of repos.splice(0)){try{r.close()}catch{}};await Promise.all(roots.splice(0).map((p)=>rm(p,{recursive:true,force:true,maxRetries:3})))})
 
 describe('B5 MutationSafety relation lifecycle', () => {
+  it('persists canonical Collection membership with safe undo, redo, and idempotent receipts', async () => {
+    const { repo, service, projectId } = await setup()
+    const { collection } = service.createCollection({ projectId, title: 'Reference set' })
+    const memberRef = { type: 'artifact', id: 'artifact-feedback' } as const
+
+    const added = service.addCollectionMember({ projectId, collectionId: String(collection.id), memberRef })
+    expect(added.status).toBe('applied')
+    expect(repo.listCollectionMemberships(projectId, String(collection.id))).toHaveLength(1)
+    expect(service.addCollectionMember({ projectId, collectionId: String(collection.id), memberRef })).toMatchObject({ status: 'already-member', relationId: added.relationId })
+    expect(added.changeSetId).toBeTruthy()
+    expect(service.revert(added.changeSetId!).revertable).toBe(true)
+    expect(repo.listCollectionMemberships(projectId, String(collection.id))).toHaveLength(0)
+    expect(service.reapply(added.changeSetId!).revertable).toBe(true)
+    expect(repo.listCollectionMemberships(projectId, String(collection.id))).toHaveLength(1)
+
+    const removed = service.removeCollectionMember({ projectId, collectionId: String(collection.id), memberRef })
+    expect(removed.status).toBe('removed')
+    expect(repo.listCollectionMemberships(projectId, String(collection.id))).toHaveLength(0)
+    expect(service.removeCollectionMember({ projectId, collectionId: String(collection.id), memberRef }).status).toBe('not-member')
+  })
+
+  it('rejects cross-project and cyclic Collection members', async () => {
+    const { service, projectId } = await setup()
+    const { collection: first } = service.createCollection({ projectId, title: 'First' })
+    const { collection: second } = service.createCollection({ projectId, title: 'Second' })
+    expect(() => service.addCollectionMember({ projectId, collectionId: String(first.id), memberRef: { type: 'artifact', id: 'missing-artifact' } })).toThrow(/canonical entity/i)
+    service.addCollectionMember({ projectId, collectionId: String(first.id), memberRef: { type: 'collection', id: String(second.id) } })
+    expect(() => service.addCollectionMember({ projectId, collectionId: String(second.id), memberRef: { type: 'collection', id: String(first.id) } })).toThrow(/cycle/i)
+  })
+
   it('records create, safely reverts, and reapplies a Relation including provenance evidence', async () => {
     const { repo, service, projectId } = await setup()
     const now = new Date().toISOString()

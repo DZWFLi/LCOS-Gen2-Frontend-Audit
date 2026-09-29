@@ -22,7 +22,6 @@ import { Loading } from '../../components/Common/Loading';
 import { toast } from '../../components/Common/Toast';
 import { LcosProjectRoute } from '../../lcos/app/LcosProjectRoute';
 import { useLcosCanvasBinding } from '../../lcos/app/useLcosCanvasBinding';
-import { useTrackCanvasAttention } from '../../store/canvasAttentionStore';
 import useStore, { dismissVersionConflictToast } from '../../store/canvasStore';
 import { openPreviewNode } from '../../store/previewWorkspace/actions';
 import { useToolStore } from '../../store/toolStore';
@@ -98,7 +97,6 @@ export default function CanvasPage() {
   // Canvas floating chrome still steps aside while the user works in a
   // professional window / composer. Tracked at route level so the arbitration
   // survives the retirement of the old three-column shell.
-  useTrackCanvasAttention();
 
   const binding = useLcosCanvasBinding(canvasId);
 

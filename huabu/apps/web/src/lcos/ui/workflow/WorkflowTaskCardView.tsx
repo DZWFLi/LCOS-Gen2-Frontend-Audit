@@ -1,10 +1,14 @@
+import { ArrowUpRight, Paperclip, X } from 'lucide-react';
 import { motion, useReducedMotion } from 'motion/react';
+import { useRef } from 'react';
+
 
 import { WorkflowTaskCardFace, workflowTaskSecondary } from './WorkflowTaskCardFace';
 import { PRESENTATION_EXIT, PRESENTATION_SPRING, presentationPose } from '../spatial/presentationMotion';
 import { useDescendantFocus } from '../spatial/useDescendantFocus';
 
 import type { WorkflowTaskCardFaceProps } from './WorkflowTaskCardFace';
+import type { ReactNode } from 'react';
 import './workflow-hand.css';
 
 export type { WorkflowTaskCardVisualState } from './WorkflowTaskCardFace';
@@ -12,11 +16,16 @@ export type { WorkflowTaskCardVisualState } from './WorkflowTaskCardFace';
 export interface WorkflowTaskCardViewProps extends WorkflowTaskCardFaceProps {
   /** Single pointer activation only changes local preview presentation. */
   readonly onPreview?: () => void;
+  readonly onClosePreview?: () => void;
   /** Double click / Enter delegates navigation to the canonical target owner. */
   readonly onEnter?: () => void;
   readonly entryHint?: string;
   /** Honest target state; onEnter may still exist to surface a fail-close reason. */
   readonly entryAvailable?: boolean;
+  /** Existing target owner supplies explicit choices for multiple real workspaces. */
+  readonly entryControl?: ReactNode;
+  /** Read-only facts from the existing Warehouse projection; absent facts stay absent. */
+  readonly previewFacts?: readonly string[];
   /** Transitional selector for the current production/e2e contract. */
   readonly legacyWorkflowKind?: string;
 }
@@ -28,14 +37,22 @@ export function WorkflowTaskCardView({
   state,
   onUse,
   onPreview,
+  onClosePreview,
   onEnter,
   entryHint,
   entryAvailable = false,
+  entryControl,
+  previewFacts = [],
   disabledReason,
   dataSource,
   dataEntity,
   legacyWorkflowKind,
 }: WorkflowTaskCardViewProps): React.JSX.Element {
+  const card = useRef<HTMLElement>(null);
+  const closePreview = (): void => {
+    onClosePreview?.();
+    card.current?.focus({ preventScroll: true });
+  };
   const reducedMotion = Boolean(useReducedMotion());
   const focus = useDescendantFocus();
   const disabled = state === '不可用';
@@ -45,6 +62,7 @@ export function WorkflowTaskCardView({
   return (
     <div className="lcos-workflow-task-slot" data-card-state={state} onFocusCapture={focus.onFocusCapture} onBlurCapture={focus.onBlurCapture}>
       <motion.article
+        ref={card}
         data-lcos-family="task-card"
         data-lcos-variant={state}
         {...(legacyWorkflowKind === undefined ? {} : { 'data-lcos-workflow-card': legacyWorkflowKind })}
@@ -72,6 +90,7 @@ export function WorkflowTaskCardView({
           onEnter();
         }}
         onKeyDown={(event) => {
+          if (event.key === 'Escape' && state === '预览' && onClosePreview) { event.preventDefault(); event.stopPropagation(); closePreview(); return; }
           if (event.target !== event.currentTarget || disabled) return;
           if (event.key === 'Enter' && enterAllowed) {
             event.preventDefault();
@@ -90,10 +109,21 @@ export function WorkflowTaskCardView({
         <WorkflowTaskCardFace {...{title, state}}
           {...(summary === undefined ? {} : {summary})}
           {...(previewUrl === undefined ? {} : {previewUrl})}
-          {...(onUse === undefined ? {} : {onUse})}
+          {...(onUse === undefined || state === '预览' ? {} : {onUse})}
           {...(disabledReason === undefined ? {} : {disabledReason})}
           {...(dataSource === undefined ? {} : {dataSource})}
           {...(dataEntity === undefined ? {} : {dataEntity})} />
+        {state === '预览' && <div className="lcos-workflow-card-preview" role="group" aria-label={`${title} · 预览操作`}>
+          <button type="button" className="lcos-workflow-preview-close" aria-label="返回手牌" onClick={closePreview}><X size={16} aria-hidden /></button>
+          <strong className="lcos-workflow-preview-title">{title}</strong>
+          <span>{summary ?? '工作流身份；取用仅加入草稿引用，进入需要可用的目标现场。'}</span>
+          {previewFacts.map((fact) => <span key={fact}>{fact}</span>)}
+          <button type="button" onClick={(event) => {
+            const rect = event.currentTarget.getBoundingClientRect();
+            onUse?.({ x: rect.x, y: rect.y, width: rect.width, height: rect.height });
+          }} disabled={onUse === undefined}><Paperclip size={16} aria-hidden />加入当前草稿</button>
+          {entryControl ?? <button type="button" onClick={onEnter} disabled={!entryAvailable} title={entryHint}><ArrowUpRight size={16} aria-hidden />打开工作流现场</button>}
+        </div>}
       </motion.article>
     </div>
   );

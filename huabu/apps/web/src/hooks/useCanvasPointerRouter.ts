@@ -114,12 +114,21 @@ export function useCanvasPointerRouter(
       core.handleCancel(event);
     };
 
+    const cancelAll = (): void => core.cancelAll();
+    const onKeyDown = (event: KeyboardEvent): void => {
+      if (event.key === 'Escape') cancelAll();
+    };
+    window.addEventListener('blur', cancelAll);
+    window.addEventListener('keydown', onKeyDown);
     el.addEventListener('pointerdown', onDown, { capture: true });
     el.addEventListener('pointermove', onMove, { capture: true });
     el.addEventListener('pointerup', onUp, { capture: true });
     el.addEventListener('pointercancel', onCancel, { capture: true });
 
     return () => {
+      cancelAll();
+      window.removeEventListener('blur', cancelAll);
+      window.removeEventListener('keydown', onKeyDown);
       el.removeEventListener('pointerdown', onDown, { capture: true });
       el.removeEventListener('pointermove', onMove, { capture: true });
       el.removeEventListener('pointerup', onUp, { capture: true });

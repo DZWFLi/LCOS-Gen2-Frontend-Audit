@@ -18,13 +18,14 @@
 import { isReferencePick, pointerModifiersOf } from '@local-creative-os/web-gen2';
 
 
+import { getDragActivationDistance } from '@/handler/canvasGestureSession';
 import { nodeIdAtScreenPoint } from '@/handler/canvasNodeAtPoint';
 
-
+import { resolveDropIntent } from './drop/dropIntentResolver';
 import { useLcosDropStore } from './lcosDropState';
 import { useLcosReferenceStore } from './lcosReferenceState';
+import { markCarryCompleted } from './referenceClickSuppressor';
 import { markReferencePickCompleted } from './referenceClickSuppressor';
-import { resolveDropIntent } from './drop/dropIntentResolver';
 
 import type { CanvasPointerRouterContext } from '@/handler/canvasPointerRouterContext';
 import type { PointerRecognizer } from '@/handler/pointerRouter';
@@ -57,7 +58,8 @@ export function createReferencePickRecognizer(): PointerRecognizer<
       event.pointerType === 'mouse' &&
       event.button === 0 &&
       event.isPrimary &&
-      isReferencePick(pointerModifiersOf(event)),
+      (isReferencePick(pointerModifiersOf(event))
+        || (!event.shiftKey && !event.altKey && useLcosReferenceStore.getState().referencePickOwner !== null)),
     onDown: (event) => {
       const nodeId = nodeIdAtScreenPoint(event.clientX, event.clientY);
       // No node under the pointer → nothing to reference.
@@ -139,10 +141,10 @@ export function advanceDropAtScreenPoint(
   if (state.status === 'idle' || state.status === 'committing' || state.status === 'failed') return;
   const rect = ctx.wrapper.getBoundingClientRect();
   store.setBounds({
-    left: rect.left,
-    right: rect.right,
-    top: rect.top,
-    bottom: rect.bottom,
+    left: 0,
+    right: rect.width,
+    top: 0,
+    bottom: rect.height,
   });
   const target = store.targetAt({ x: point.clientX, y: point.clientY });
   const destination = target === undefined
@@ -156,7 +158,10 @@ export function advanceDropAtScreenPoint(
       };
   const resolution = target === undefined
     ? undefined
-    : resolveDropIntent(state.payload, target);
+    : store.carrySourceNodeId !== null && target.kind === 'canvas'
+      ? { status: 'ineligible' as const, targetId: target.targetId,
+          reason: '原对象保留在现场；请拖到会话、输入框或轨道目标' }
+      : resolveDropIntent(state.payload, target);
   const placementPoint = target?.kind === 'canvas'
     ? ctx.instance.screenToFlowPosition({
         x: point.clientX,
@@ -207,8 +212,9 @@ export function createDropRecognizer(): PointerRecognizer<
         if (event.pointerId !== activePointerId) return;
         advanceDropAtScreenPoint(event, ctx);
       },
-      onUp: (event) => {
+      onUp: (event, ctx) => {
         if (event.pointerId !== activePointerId) return;
+        advanceDropAtScreenPoint(event, ctx);
         activePointerId = null;
         const store = useLcosDropStore.getState();
         const status = store.state.status;
@@ -243,5 +249,91 @@ export function createLcosRecognizers(): readonly PointerRecognizer<
   PointerEvent,
   CanvasPointerRouterContext
 >[] {
-  return [createReferencePickRecognizer(), createDropRecognizer()];
+  return [createReferencePickRecognizer(), createNodeCarryRecognizer(), createDropRecognizer()];
+}
+
+/** T3 Right Carry uses the existing router; no source geometry or selection writes. */
+export function createNodeCarryRecognizer(): PointerRecognizer<PointerEvent, CanvasPointerRouterContext> {
+  let pointerId: number | null = null;
+  let start = { x: 0, y: 0 };
+  let payload: DropPayload | null = null;
+  let sourceNodeId: string | null = null;
+  let locked = false;
+  let wrapper: HTMLDivElement | null = null;
+
+  const reset = (): void => {
+    if (pointerId !== null && wrapper?.hasPointerCapture?.(pointerId)) {
+      wrapper.releasePointerCapture(pointerId);
+    }
+    pointerId = null;
+    payload = null;
+    sourceNodeId = null;
+    locked = false;
+    wrapper = null;
+  };
+  const stop = (event: PointerEvent): void => {
+    event.preventDefault();
+    event.stopPropagation();
+  };
+  return {
+    id: 'lcos/node-carry',
+    canClaim: (event, ctx) => pointerId === null
+      && !ctx.interactivityLocked && !ctx.explicitToolActive
+      && event.pointerType === 'mouse' && event.isPrimary && event.button === 2
+      && useLcosDropStore.getState().state.status === 'idle',
+    onDown: (event, ctx) => {
+      const target = event.target;
+      if (target instanceof Element && target.closest(
+        'input,textarea,select,button,a[href],[contenteditable="true"],.react-flow__handle,[data-resize-handle]',
+      )) return 'pass';
+      const nodeId = nodeIdAtScreenPoint(event.clientX, event.clientY);
+      const ref = nodeId ? useLcosReferenceStore.getState().nodeEntityRefs.get(nodeId) : undefined;
+      if (!ref) return 'pass';
+      pointerId = event.pointerId;
+      start = { x: event.clientX, y: event.clientY };
+      payload = { kind: 'object', entityType: ref.entityType, entityId: ref.entityId,
+        ...(ref.descriptor?.artifactViewId ? { artifactViewId: ref.descriptor.artifactViewId } : {}) };
+      sourceNodeId = nodeId;
+      wrapper = ctx.wrapper;
+      stop(event);
+      return 'claim';
+    },
+    onMove: (event, ctx) => {
+      if (event.pointerId !== pointerId || payload === null) return;
+      stop(event);
+      if (!locked) {
+        if (Math.hypot(event.clientX - start.x, event.clientY - start.y) < getDragActivationDistance('mouse')) return;
+        locked = true;
+        markCarryCompleted();
+        wrapper?.setPointerCapture?.(event.pointerId);
+        useLcosDropStore.getState().begin(payload, sourceNodeId ?? undefined);
+      }
+      advanceDropAtScreenPoint(event, ctx);
+    },
+    onUp: (event, ctx) => {
+      if (event.pointerId !== pointerId) return;
+      if (locked) {
+        stop(event);
+        markCarryCompleted();
+        advanceDropAtScreenPoint(event, ctx);
+        const store = useLcosDropStore.getState();
+        if (store.state.status === 'preview' && store.resolution?.status === 'ready') {
+          store.commitAt(crypto.randomUUID());
+        } else if (store.state.status !== 'committing' && store.state.status !== 'failed') {
+          store.cancel();
+        }
+      }
+      // The shared drop observer commits the exact preview before this owner releases.
+      reset();
+    },
+    onCancel: (event) => {
+      if (event.pointerId !== pointerId) return;
+      if (locked) {
+        markCarryCompleted();
+        const store = useLcosDropStore.getState();
+        if (store.state.status !== 'committing') store.cancel();
+      }
+      reset();
+    },
+  };
 }

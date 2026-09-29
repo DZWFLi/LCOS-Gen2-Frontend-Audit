@@ -6,6 +6,7 @@
 // store owners injected by dropCommitRouter.
 
 import type {
+  AssemblyApplyItemResultV1,
   AssemblySourceRefV1,
   AssemblyTargetRefV1,
   ProjectViewRailRefV0,
@@ -21,6 +22,9 @@ export type DropTargetKind =
   | 'railway-receive'
   | 'composer-reference'
   | 'collaboration-reference'
+  | 'portal-receive'
+  | 'collection-membership'
+  | 'drop-exclusion'
   | 'external-import';
 
 export interface DropRect {
@@ -48,10 +52,21 @@ export type DropTargetSemantic =
       readonly destinationRef: ProjectViewRailRefV0;
     }
   | {
+      /** Portal body is a named route into an existing workspace; it never reorders Railway. */
+      readonly kind: 'portal-receive';
+      readonly targetRef?: AssemblyTargetRefV1;
+    }
+  | {
+      /** A visible control that is explicitly not a drag receiver; blocks canvas fallback. */
+      readonly kind: 'drop-exclusion';
+      readonly reason: string;
+    }
+  | { readonly kind: 'collection-membership'; readonly collectionId: string }
+  | {
       readonly kind: 'composer-reference';
     }
   | {
-      /** CollaborationTarget（收敛方案 V1 §15）：Drop 到 Glyth = 作为 Reference 交给该 Conversation。 */
+      /** Glyth body / user ruling 2026-09-27: durable context via existing Assembly apply. */
       readonly kind: 'collaboration-reference';
       readonly conversationId: string;
     }
@@ -66,6 +81,8 @@ export interface DropTargetRegistration {
   readonly kind: DropTargetKind;
   readonly label: string;
   readonly rect: DropRect;
+  /** Read current DOM geometry at hit-test time; transforms do not trigger ResizeObserver. */
+  readonly readRect?: () => DropRect | undefined;
   readonly priority: number;
   readonly enabled: boolean;
   readonly ineligibleReason?: string;
@@ -107,10 +124,18 @@ export interface DropCollaborationReferenceIntent {
   readonly reference: DropEntityRef;
 }
 
+export interface DropCollectionMembershipIntent {
+  readonly kind: 'collection-membership';
+  readonly targetId: string;
+  readonly collectionId: string;
+  readonly memberRef: { readonly type: 'artifact' | 'note' | 'collection' | 'scope' | 'workspace' | 'conversation' | 'run'; readonly id: string };
+}
+
 export type DropIntent =
   | DropAssemblyApplyIntent
   | DropComposerReferenceIntent
   | DropCollaborationReferenceIntent
+  | DropCollectionMembershipIntent
   | DropExternalImportIntent;
 
 export type DropResolution =
@@ -122,11 +147,14 @@ export type DropResolution =
     };
 
 export interface DropCommitReceipt {
-  readonly status: 'success' | 'failed';
+  readonly status: 'success' | 'partial' | 'failed';
   readonly transactionId: string;
   readonly targetId: string;
   readonly message?: string;
   readonly canonicalReceipt?: unknown;
+  /** Derived display/retry scope only; the actual Core receipt remains untouched. */
+  readonly assemblyItems?: readonly AssemblyApplyItemResultV1[];
+  readonly retrySourceRefs?: readonly AssemblySourceRefV1[];
 }
 
 export type { DropDestination, DropPayload, SurfacePoint };

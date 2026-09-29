@@ -8,8 +8,10 @@ import { afterEach, describe, expect, it } from 'vitest';
 
 import { LcosDropPreview } from './LcosDropPreview';
 import { useLcosDropStore } from './lcosDropState';
+import { resolveDropIntent } from './drop/dropIntentResolver';
 
 import type { SemanticDropState } from '@local-creative-os/web-gen2';
+import type { DropTargetRegistration } from './drop/dropTypes';
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT =
   true;
@@ -40,7 +42,7 @@ afterEach(() => {
 
 const previewState: SemanticDropState = {
   status: 'preview',
-  payload: { kind: 'object', entityType: 'artifact', entityId: 'a1' },
+  payload: { kind: 'object', entityType: 'artifact', entityId: 'a1', artifactViewId: 'view-a' },
   destination: {
     targetId: 'railway:context-a',
     previewPoint: { x: 400, y: 700 },
@@ -59,8 +61,8 @@ describe('LcosDropPreview (A06)', () => {
     const container = render(<LcosDropPreview />);
     const el = container.querySelector('[data-lcos-drop-preview]');
     expect(el).not.toBeNull();
-    expect(el?.textContent).toContain('放置 artifact·a1');
-    expect(el?.textContent).toContain('目标 railway:context-a');
+    expect(el?.textContent).toContain('材料');
+    expect(el?.textContent).toContain('等待接收位置');
   });
 
   it('unmounts the hint when the drop is cancelled', () => {
@@ -71,5 +73,23 @@ describe('LcosDropPreview (A06)', () => {
       useLcosDropStore.getState().cancel();
     });
     expect(container.querySelector('[data-lcos-drop-preview]')).toBeNull();
+  });
+
+  it.each([
+    [{ targetId: 'glyth:node-a', kind: 'collaboration-reference', label: '创作会话', priority: 20, enabled: true,
+      semantic: { kind: 'collaboration-reference', conversationId: 'conversation-a' } }, '持久加入「创作会话」的上下文'],
+    [{ targetId: 'composer:one', kind: 'composer-reference', label: '本次草稿', priority: 20, enabled: true,
+      semantic: { kind: 'composer-reference' } }, '仅加入本次草稿引用'],
+    [{ targetId: 'railway:context-a', kind: 'railway-receive', label: '上下文现场', priority: 20, enabled: true,
+      semantic: { kind: 'railway-receive', targetRef: { kind: 'workspace', id: 'workspace-a' }, destinationRef: { kind: 'context', viewId: 'context-a' } } }, '投递到 Railway · 上下文现场'],
+    [{ targetId: 'portal:node-a', kind: 'portal-receive', label: '入口 · 资料现场', priority: 20, enabled: true,
+      semantic: { kind: 'portal-receive', targetRef: { kind: 'workspace', id: 'workspace-a' } } }, '投递到「入口 · 资料现场」'],
+  ] as const)('names the real destination and distinguishes durable from draft-only actions', (targetShape, expected) => {
+    const target = { ...targetShape, rect: { left: 10, top: 20, width: 80, height: 80 } } as DropTargetRegistration;
+    useLcosDropStore.getState().registerTarget(target);
+    const resolution = resolveDropIntent(previewState.payload, target);
+    useLcosDropStore.setState({ state: { ...previewState, destination: { ...previewState.destination, targetId: target.targetId } }, resolution });
+    const container = render(<LcosDropPreview />);
+    expect(container.querySelector('[data-lcos-drop-preview]')?.textContent).toContain(expected);
   });
 });

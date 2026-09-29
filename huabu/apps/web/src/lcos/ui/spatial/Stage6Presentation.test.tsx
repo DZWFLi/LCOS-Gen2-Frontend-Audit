@@ -176,3 +176,20 @@ describe('Stage6 real React presentation', () => {
     expect(host.querySelector('.lcos-temporal-ticks')).toBeNull();
   });
 });
+
+it('shows the three distinct B03 actions without inventing an original conversation', async () => {
+  const use = vi.fn(); const enter = vi.fn(); const close = vi.fn();
+  await render(<WorkflowTaskCardView title="品牌研究" state="预览" onUse={use} onEnter={enter} entryAvailable onClosePreview={close} />);
+  const preview = host.querySelector('.lcos-workflow-card-preview');
+  expect(preview).not.toBeNull();
+  const action = (name: string) => Array.from(preview?.querySelectorAll('button') ?? []).find((button) => button.textContent === name);
+  await act(async () => action('用于当前会话')?.click());
+  expect(use).toHaveBeenCalledTimes(1);
+  expect(enter).not.toHaveBeenCalled();
+  await act(async () => action('打开工作流现场')?.click());
+  expect(enter).toHaveBeenCalledTimes(1);
+  expect(action('续接原会话')?.disabled).toBe(true);
+  expect(preview?.textContent).toContain('无明确来源会话');
+  await act(async () => button('[aria-label="返回手牌"]').click());
+  expect(close).toHaveBeenCalledTimes(1);
+});

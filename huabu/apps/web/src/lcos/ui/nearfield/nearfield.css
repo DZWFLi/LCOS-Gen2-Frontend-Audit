@@ -260,3 +260,15 @@
   align-self: flex-start;
   inline-size: fit-content;
 }
+
+.lcos-composer-reference-picker{max-height:300px;width:min(300px,calc(100vw - 32px));overflow:auto;border-radius:12px;font-family:var(--font-sans);padding:5px}
+.lcos-composer-reference-picker [role=menuitem]{min-height:44px;border-radius:8px}
+
+/* T3 section 20: confirmation expands inside the same nearfield, with bounded scroll. */
+.lcos-composer-options { min-width: 0; margin-top: 8px; max-height: min(38dvh, 280px); overflow: auto; overscroll-behavior: contain; }
+
+/* Reuse the focus treatment for an explicit, currently eligible reference drop. */
+.lcos-composer-reference-surface { min-width: 0; border-radius: var(--lcos-radius-medium); }
+.lcos-composer-reference-surface[data-drop-active] { outline: 1.5px solid var(--lcos-pin-violet); outline-offset: 3px; }
+
+.lcos-composer-tool-hit[aria-pressed="true"] { color:var(--gen2-accent); outline:1px solid currentColor; outline-offset:-4px; border-radius:50%; }

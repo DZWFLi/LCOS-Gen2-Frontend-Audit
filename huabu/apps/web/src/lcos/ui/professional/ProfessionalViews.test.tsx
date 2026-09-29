@@ -33,8 +33,22 @@ describe('Reader production presentation', () => {
   it('preserves all supplied text and escapes markup instead of adding an HTML execution channel', async () => {
     const value = '第一行\n<script>window.bad = true</script>\n最后一行';
     const host = await mount(<ReaderContentView content={{ kind: 'text', value }} kind="markdown" fileName="资料" />);
-    expect(host.querySelector('pre')?.textContent).toBe(value);
+    const lines = Array.from(host.querySelectorAll('[data-donor-text-reader] [data-line]'), (line) => line.textContent);
+    expect(lines).toEqual(value.split('\n'));
     expect(host.querySelector('script')).toBeNull();
+    expect(host.querySelector('[data-line="1"]')?.innerHTML).toContain('&lt;script&gt;');
+  });
+  it('keeps executable tags, inline handlers and unsafe links as inert visible text', async () => {
+    const value = '<img src=x onerror="alert(1)">\n<a href="javascript:alert(1)">链接</a>\n<iframe srcdoc="<script>alert(1)</script>"></iframe>';
+    const host = await mount(<ReaderContentView content={{ kind: 'text', value }} kind="markdown" fileName="外部文本" />);
+    expect(Array.from(host.querySelectorAll('[data-line]'), (line) => line.textContent)).toEqual(value.split('\n'));
+    expect(host.querySelector('img, a, script, iframe, [onerror]')).toBeNull();
+  });
+  it('preserves plain text bytes including newlines without Markdown interpretation', async () => {
+    const value = '# 原始文本\n<script>untrusted()</script>\n最后一行';
+    const host = await mount(<ReaderContentView content={{ kind: 'text', value }} kind="text" fileName="原文" />);
+    expect(host.querySelector('pre')?.textContent).toBe(value);
+    expect(host.querySelector('script, h2')).toBeNull();
   });
   it('keeps the scroll ref on the actual content viewport', async () => {
     const ref = vi.fn();
@@ -58,6 +72,8 @@ describe('Reader production presentation', () => {
   it('keeps unsupported content honest and invents no Open/Retry callback', async () => {
     const host = await mount(<ReaderContentView content={null} kind="pdf" fileName="尚不可读" />);
     expect(host.textContent).toContain('暂无可用正文读取通道');
+    expect(host.textContent).toContain('PDF 文档');
+    expect(host.textContent).not.toContain('pdf 暂无');
     expect(host.querySelector('button')).toBeNull();
   });
   it('consumes supplied feedback instead of manufacturing a success state', async () => {

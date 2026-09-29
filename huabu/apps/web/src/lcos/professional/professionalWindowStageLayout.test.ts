@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   deriveProfessionalStageRegionPlacementsV1,
+  needsCompactProfessionalStageV1,
   PROFESSIONAL_STAGE_MIN_HEIGHT,
   PROFESSIONAL_STAGE_MIN_WIDTH,
 } from './professionalWindowStageLayout';
@@ -49,4 +50,11 @@ describe('deriveProfessionalStageRegionPlacementsV1', () => {
     expect(floating.rect.x + floating.rect.width).toBeLessThanOrEqual(dock.rect.x - 16);
     expect(overlaps(dock.rect, floating.rect)).toBe(false);
   });
+});
+
+it('uses existing-window tab presentation when the viewport cannot contain the minimum regions', () => {
+  const regions = Array.from({ length: 6 }, (_, index) => ({ regionId: `${index}`, layout: 'floating' as const, preferredWidth: 640 }));
+  expect(needsCompactProfessionalStageV1({ x: 0, y: 0, width: 1440, height: 900 }, regions.slice(0, 2))).toBe(false);
+  expect(needsCompactProfessionalStageV1({ x: 0, y: 0, width: 600, height: 700 }, regions.slice(0, 2))).toBe(true);
+  expect(needsCompactProfessionalStageV1({ x: 0, y: 0, width: 1440, height: 500 }, regions)).toBe(true);
 });

@@ -20,6 +20,8 @@
 // 能力来源：`rendererRegistry.descriptorFor(entity).capabilities`（Core family → capability），
 // 不再自造第二套 capability 词表。
 
+import type { CollaborationSessionProjectionV1 } from '@local-creative-os/contracts';
+
 import type { NodeCapability } from '../presentation/rendererRegistry.js';
 
 /** 节点命令 id（唯一具名动作；dispatch 一律按 id）。 */
@@ -27,6 +29,9 @@ export type LcosNodeCommandId =
   // 能力驱动（来自 descriptorFor / 原生节点语义）
   | 'open'
   | 'compose'
+  | 'answer-input'
+  | 'review-result'
+  | 'view-progress'
   | 'reference'
   | 'color-pin'
   // 画布机械（复用 Huabu 既有命令，不重写 store）
@@ -50,6 +55,8 @@ export interface LcosNodeCommand {
   readonly capability?: NodeCapability;
   /** 有值即不可用，值就是真实原因（显示在命令上）。 */
   readonly disabledReason?: string;
+  /** Explicit false keeps auxiliary actions in More instead of replacing a session action. */
+  readonly primary?: boolean;
 }
 
 export interface LcosNodeCommandInput {
@@ -64,6 +71,8 @@ export interface LcosNodeCommandInput {
   readonly capabilities: readonly NodeCapability[];
   /** 是否已在 Composer 草稿引用里（真实 presentation state）。 */
   readonly referenced: boolean;
+  /** Real, current Collaboration projection; absence is not a ready session. */
+  readonly conversation?: CollaborationSessionProjectionV1;
   /** note 节点当前高度模式（'auto' 时给出"固定高度"动作）。 */
   readonly noteHeightMode?: 'auto' | 'fixed';
 }
@@ -138,24 +147,65 @@ function referenceCommand(input: LcosNodeCommandInput): LcosNodeCommand {
   };
 }
 
+/** R5 session actions: state and capabilities come from the existing projection only. */
+function conversationCommands(input: LcosNodeCommandInput): LcosNodeCommand[] {
+  const open: LcosNodeCommand = { id: 'open', label: '打开', group: '进入', primary: true };
+  const session = input.conversation;
+  if (session === undefined || session.conversationId !== input.entityId) return [open];
+  const { userState, capabilities, capabilityReasons } = session;
+  const action = (
+    id: LcosNodeCommandId, label: string,
+    capability?: 'canSend' | 'canAnswerInput' | 'canApprove',
+  ): LcosNodeCommand => ({
+    id, label, group: '进入', primary: true,
+    ...(capability !== undefined && !capabilities[capability]
+      ? { disabledReason: capabilityReasons?.[capability] ?? '当前会话暂不支持此操作' }
+      : {}),
+  });
+  // Never send another continuation into an active run.
+  if (userState === 'thinking' || userState === 'working') {
+    return [action('view-progress', '查看进度'), open];
+  }
+  // A pending input takes precedence over a pending return. Both remain reachable in WorkView.
+  if (session.activity.pendingInputId !== undefined) {
+    return [action('answer-input', '回答', 'canAnswerInput'), open];
+  }
+  if (session.recentReturns.some((item) => item.status === 'pending_review')) {
+    return [action('review-result', '复核', 'canApprove'), open];
+  }
+  if (userState === 'ready' || userState === 'done') {
+    return [action('compose', '继续', 'canSend'), open];
+  }
+  // needs_user without a known input/review and unavailable never invent an actionable target.
+  return [open];
+}
+
 /**
  * 完整命令清单（Arc 的"更多"面板按 group 展示）。
  * 顺序 = 进入 → 关系 → 编辑 → 外观 → 空间；表外类型返回空数组。
  */
 export function buildLcosNodeCommands(input: LcosNodeCommandInput): readonly LcosNodeCommand[] {
   const bound = !isLcosNodeDeleteAllowed(input);
-  const surface = input.nodeType === 'text' && !bound
+  const hostSurface = input.nodeType === 'text' && !bound
     ? undefined
     : input.nodeType === undefined ? undefined : ARC_SURFACES[input.nodeType];
   // 纵深防御：Arc 本身也按类型闸门，这里再挡一层 —— 未覆盖类型继续挂旧壳。
-  if (!surface) return [];
+  if (!hostSurface) return [];
+  // A Conversation is hosted in a note-shaped kernel node, but it is not a note
+  // document. These handlers modify native note content/style or open the old
+  // note preview, none of which owns the Glyth / Conversation body.
+  const surface = bound && input.entityType === 'conversation'
+    ? { ...hostSurface, typeToggle: false, autoHeight: false, accent: false, openLarge: false }
+    : hostSurface;
 
   const commands: LcosNodeCommand[] = [];
 
   // 进入
+  const isConversation = bound && input.entityType === 'conversation';
   const open = openCommand(input);
-  if (open) commands.push(open);
-  if (bound) {
+  if (isConversation) commands.push(...conversationCommands(input));
+  else if (open) commands.push(open);
+  if (bound && !isConversation) {
     // Composer 由当前选中对象的近场 Arc 显式呼出；Assembly 保持独立项目级入口。
     commands.push({ id: 'compose', label: '围绕此对象工作', group: '进入' });
   }
@@ -193,11 +243,17 @@ export function buildLcosNodeCommands(input: LcosNodeCommandInput): readonly Lco
 
   // 空间
   if (surface.openLarge) commands.push({ id: 'open-large', label: '打开大视图', group: '空间' });
-  if (surface.move) commands.push({ id: 'move-space', label: '移动到其它现场', group: '空间' });
+  if (surface.move) commands.push({ id: 'move-space', label: '移动到其它现场', group: '空间',
+    // Huabu moves physical nodes only; it does not relocate the Core binding.
+    // Keep native moves intact, but never claim a projected object's move works.
+    ...(bound ? { disabledReason: '当前对象还不能跨现场移动' } : {}),
+  });
   // fit = 相机呈现命令，owner = LCOS shell `requestCamera('fit')`，任何表内类型都给。
   commands.push({ id: 'fit', label: '适合画面', group: '空间' });
 
-  return commands;
+  return isConversation
+    ? commands.map((command) => command.primary === true ? command : { ...command, primary: false })
+    : commands;
 }
 
 /**
@@ -208,6 +264,9 @@ export function buildLcosNodeCommands(input: LcosNodeCommandInput): readonly Lco
 const PRIMARY_ELIGIBLE: ReadonlySet<LcosNodeCommandId> = new Set([
   'open',
   'compose',
+  'answer-input',
+  'review-result',
+  'view-progress',
   'reference',
   'convert-note',
   'auto-height',
@@ -222,6 +281,6 @@ export function primaryNodeCommands(
   max = 3,
 ): readonly LcosNodeCommand[] {
   return commands
-    .filter((command) => command.disabledReason === undefined && PRIMARY_ELIGIBLE.has(command.id))
+    .filter((command) => command.primary !== false && command.disabledReason === undefined && PRIMARY_ELIGIBLE.has(command.id))
     .slice(0, max);
 }

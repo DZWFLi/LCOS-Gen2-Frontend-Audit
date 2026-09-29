@@ -8,9 +8,9 @@
 // recognizer touches (interactivityLocked for the picker; wrapper bounding
 // rect for the drop driver).
 
+import { DROP_INTENT_TOKENS } from '@local-creative-os/web-gen2';
 import { describe, expect, it, beforeEach, vi } from 'vitest';
 
-import { DROP_INTENT_TOKENS } from '@local-creative-os/web-gen2';
 
 import { useLcosDropStore } from './lcosDropState';
 import { createReferencePickRecognizer, createDropRecognizer, acquireDrop } from './lcosRecognizers';
@@ -95,6 +95,27 @@ beforeEach(() => {
 });
 
 describe('reference-pick recognizer (A03)', () => {
+  it('explicit pick mode uses the original toggle without a modifier, while Shift and pen retain their owners', () => {
+    const state = useLcosReferenceStore.getState();
+    state.registerNodeEntity('node-1', REF_A); state.setReferencePickOwner('composer-a'); mockHitNode.current = 'node-1';
+    const recognizer = createReferencePickRecognizer();
+    expect(recognizer.canClaim(fakeEvent(), ctx)).toBe(true);
+    expect(recognizer.canClaim(fakeEvent({ shiftKey: true }), ctx)).toBe(false);
+    expect(recognizer.canClaim(fakeEvent({ pointerType: 'pen' }), ctx)).toBe(false);
+    expect(recognizer.onDown(fakeEvent(), ctx)).toBe('claim'); recognizer.onUp?.(fakeEvent(), ctx);
+    expect(state.orderedNodeReferences()).toEqual([REF_A]);
+    state.setReferencePickOwner(null);
+    expect(recognizer.canClaim(fakeEvent(), ctx)).toBe(false);
+    expect(state.orderedNodeReferences()).toEqual([REF_A]);
+  });
+  it('switching project cancels pick mode without copying draft references to the new project', () => {
+    const state = useLcosReferenceStore.getState(); state.setProject('a'); state.setReferencePickOwner('composer-a');
+    state.addEntityToDraft(REF_A); state.setProject('b');
+    expect(useLcosReferenceStore.getState().referencePickOwner).toBeNull();
+    expect(state.orderedNodeReferences()).toEqual([]);
+    state.setProject('a'); expect(state.orderedNodeReferences()).toEqual([REF_A]);
+  });
+
   it('Ctrl+click a projected node toggles it into the ordered draft references', () => {
     useLcosReferenceStore.getState().registerNodeEntity('node-1', REF_A);
     mockHitNode.current = 'node-1';
@@ -254,7 +275,7 @@ describe('semantic-drop recognizer (A06)', () => {
   });
 
   it('observes pointer movement into the dwell band, then cancels on release', () => {
-    acquireDrop({ kind: 'object', entityType: 'artifact', entityId: 'a1' });
+    acquireDrop({ kind: 'object', entityType: 'artifact', entityId: 'a1', artifactViewId: 'view-a1' });
     const recognizer = createDropRecognizer();
 
     recognizer.observe?.onDown?.(fakeEvent(), dropCtx);
@@ -277,7 +298,7 @@ describe('semantic-drop recognizer (A06)', () => {
       semantic: { kind: 'canvas', targetRef: { kind: 'main' } },
     };
     useLcosDropStore.getState().registerTarget(target);
-    acquireDrop({ kind: 'object', entityType: 'artifact', entityId: 'a1' });
+    acquireDrop({ kind: 'object', entityType: 'artifact', entityId: 'a1', artifactViewId: 'view-a1' });
     const { advanceDropAtScreenPoint } = await import('./lcosRecognizers');
     advanceDropAtScreenPoint({ clientX: 400, clientY: 795 }, dropCtxWithInstance, 1000);
     advanceDropAtScreenPoint({ clientX: 400, clientY: 795 }, dropCtxWithInstance, 1500);
@@ -302,7 +323,7 @@ describe('semantic-drop recognizer (A06)', () => {
     expect(useLcosDropStore.getState().state.status).toBe('idle');
   });
 
-  it('R1 pin: 裸 Canvas 目标在画布中央也驻足→预览，且 placementPoint 是真实落点（边带不是前提）', async () => {
+  it('T3: 注册 Canvas 目标在中央即预览，且 placementPoint 是真实落点（边带不是前提）', async () => {
     const target: DropTargetRegistration = {
       targetId: 'canvas:main',
       kind: 'canvas',
@@ -313,12 +334,12 @@ describe('semantic-drop recognizer (A06)', () => {
       semantic: { kind: 'canvas', targetRef: { kind: 'main' } },
     };
     useLcosDropStore.getState().registerTarget(target);
-    acquireDrop({ kind: 'object', entityType: 'artifact', entityId: 'a1' });
+    acquireDrop({ kind: 'object', entityType: 'artifact', entityId: 'a1', artifactViewId: 'view-a1' });
     const { advanceDropAtScreenPoint } = await import('./lcosRecognizers');
     // (600,400) 在画布中央，距左/下边带都很远：边带不参与本次判定。
     const point = { clientX: 600, clientY: 400 };
     advanceDropAtScreenPoint(point, dropCtxWithInstance, 1_000);
-    expect(useLcosDropStore.getState().state.status, '中央点必须能驻足').toBe('dwell');
+    expect(useLcosDropStore.getState().state.status, '注册目标无需旧边带驻足').toBe('preview');
     advanceDropAtScreenPoint(point, dropCtxWithInstance, 1_000 + DROP_INTENT_TOKENS.dwellMs);
     const store = useLcosDropStore.getState();
     expect(store.state.status).toBe('preview');

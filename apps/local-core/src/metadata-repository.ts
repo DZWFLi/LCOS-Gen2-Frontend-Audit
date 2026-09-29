@@ -40,6 +40,9 @@ import type {
   WorkspaceMembership,
   WorkspaceMembershipSource,
   WorkspaceEntityMembership,
+  Collection,
+  CollectionId,
+  CollectionMembership,
 } from '@local-creative-os/domain'
 import { assertContainmentWrite } from '@local-creative-os/domain'
 import type { ColorPinDefinitionV0, ColorPinMembershipV0, SpatialMarkerIntentV0 } from '@local-creative-os/contracts'
@@ -330,7 +333,39 @@ export class SqliteMetadataRepository {
     if (current === 53) { this.#migrate_054_from_v53(); current = 54 }
     if (current === 54) { this.#migrate_055_from_v54(); current = 55 }
     if (current === 55) { this.#migrate_056_from_v55(); current = 56 }
-    if (current !== 56) throw new Error(`Unsupported metadata schema version ${current}.`)
+    if (current === 56) { this.#migrate_057_from_v56(); current = 57 }
+    if (current !== 57) throw new Error(`Unsupported metadata schema version ${current}.`)
+  }
+
+  #migrate_057_from_v56(): void {
+    // Canonical Collection identity and durable project membership. Legacy Scope(kind=collection)
+    // rows remain read-only migration input; no implicit identity duplication occurs here.
+    this.#database.exec(`
+      BEGIN;
+      CREATE TABLE IF NOT EXISTS collections (
+        id TEXT PRIMARY KEY,
+        project_id TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+        title TEXT NOT NULL,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL,
+        UNIQUE(project_id, id)
+      );
+      CREATE INDEX IF NOT EXISTS idx_collections_project ON collections(project_id, created_at, id);
+      CREATE TABLE IF NOT EXISTS collection_memberships (
+        id TEXT PRIMARY KEY,
+        project_id TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+        collection_id TEXT NOT NULL,
+        member_type TEXT NOT NULL CHECK(member_type IN ('artifact','note','collection','scope','workspace','conversation','run')),
+        member_id TEXT NOT NULL,
+        added_at TEXT NOT NULL,
+        UNIQUE(project_id, collection_id, member_type, member_id),
+        CHECK(member_type <> 'collection' OR member_id <> collection_id),
+        FOREIGN KEY(project_id, collection_id) REFERENCES collections(project_id, id) ON DELETE CASCADE
+      );
+      CREATE INDEX IF NOT EXISTS idx_collection_members_project ON collection_memberships(project_id, collection_id, added_at, id);
+      PRAGMA user_version = 57;
+      COMMIT;
+    `)
   }
 
   #migrate_037_from_v36(): void {
@@ -1990,6 +2025,8 @@ export class SqliteMetadataRepository {
       graphVersion: project.graphVersion as GraphVersion,
       project,
       scopes,
+      collections: this.listCollections(String(project.id)),
+      collectionMemberships: this.listCollectionMemberships(String(project.id)),
       workspaces,
       artifacts,
       fileRecords,
@@ -2793,6 +2830,10 @@ export class SqliteMetadataRepository {
     readonly colorPinDefinitionDeletes?: readonly string[]
     readonly colorPinMembershipAdds?: readonly ColorPinMembershipV0[]
     readonly colorPinMembershipDeletes?: readonly string[]
+    readonly collectionMembershipAdds?: readonly CollectionMembership[]
+    readonly collectionMembershipDeletes?: readonly CollectionMembership[]
+    readonly collectionAdds?: readonly Collection[]
+    readonly collectionDeletes?: readonly string[]
     readonly artifactViewDeletes?: readonly ArtifactViewId[]
     readonly noteDeletes?: readonly NoteId[]
     readonly artifactArchiveStates?: readonly {
@@ -2862,9 +2903,33 @@ export class SqliteMetadataRepository {
       }
       for (const marker of plan.spatialMarkerAdds ?? []) this.#insertSpatialMarkerIntent(marker)
       for (const markerId of plan.spatialMarkerDeletes ?? []) this.#database.prepare('DELETE FROM spatial_marker_intents WHERE id = ?').run(markerId as SQLInputValue)
+      for (const collection of plan.collectionAdds ?? []) {
+        if (String(collection.projectId) !== plan.projectId) throw new Error('Collection identity must belong to route project.')
+        this.#insertCollection(collection)
+      }
+      for (const collectionId of plan.collectionDeletes ?? []) {
+        const hasMembers = this.#database.prepare('SELECT 1 AS present FROM collection_memberships WHERE collection_id = ? LIMIT 1').get(collectionId as SQLInputValue)
+        if (hasMembers !== undefined) throw new Error('Collection still has members.')
+        this.#database.prepare('DELETE FROM collections WHERE id = ? AND project_id = ?').run(collectionId as SQLInputValue, plan.projectId as SQLInputValue)
+      }
       for (const definition of plan.colorPinDefinitionAdds ?? []) this.#insertColorPinDefinition(definition)
       for (const membership of plan.colorPinMembershipAdds ?? []) this.#insertColorPinMembership(membership)
       for (const membershipId of plan.colorPinMembershipDeletes ?? []) this.#database.prepare('DELETE FROM color_pin_memberships WHERE id = ?').run(membershipId as SQLInputValue)
+      for (const membership of plan.collectionMembershipAdds ?? []) {
+        const target = membership.memberRef.type === 'scope'
+          ? this.#database.prepare("SELECT id FROM scopes WHERE id = ? AND project_id = ? AND kind NOT IN ('collection','workflow')")
+            .get(membership.memberRef.id as SQLInputValue, plan.projectId as SQLInputValue)
+          : this.#database.prepare(`SELECT id FROM ${this.#collectionMemberTable(membership.memberRef.type)} WHERE id = ? AND project_id = ?`)
+            .get(membership.memberRef.id as SQLInputValue, plan.projectId as SQLInputValue)
+        if (target === undefined) throw new Error('Collection member must be a canonical entity in the same project.')
+        this.#database.prepare(`
+          INSERT INTO collection_memberships (id, project_id, collection_id, member_type, member_id, added_at)
+          VALUES (?, ?, ?, ?, ?, ?)
+        `).run(membership.relationId as SQLInputValue, plan.projectId as SQLInputValue, membership.collectionId as SQLInputValue, membership.memberRef.type, membership.memberRef.id, membership.addedAt)
+      }
+      for (const membership of plan.collectionMembershipDeletes ?? []) this.#database.prepare(`
+        DELETE FROM collection_memberships WHERE project_id = ? AND collection_id = ? AND member_type = ? AND member_id = ?
+      `).run(plan.projectId as SQLInputValue, membership.collectionId as SQLInputValue, membership.memberRef.type, membership.memberRef.id)
       for (const colorPinId of plan.colorPinDefinitionDeletes ?? []) this.#database.prepare('DELETE FROM color_pin_definitions WHERE id = ?').run(colorPinId as SQLInputValue)
       for (const viewId of plan.artifactViewDeletes ?? []) this.#database.prepare('DELETE FROM artifact_views WHERE id = ?').run(viewId as SQLInputValue)
       for (const noteId of plan.noteDeletes ?? []) this.#database.prepare('DELETE FROM notes WHERE id = ?').run(noteId as SQLInputValue)
@@ -5576,6 +5641,75 @@ export class SqliteMetadataRepository {
     return Number((this.#database.prepare('PRAGMA user_version').get() as { user_version: number }).user_version)
   }
 
+  listCollections(projectId: string): Collection[] {
+    return (this.#database.prepare('SELECT * FROM collections WHERE project_id = ? ORDER BY created_at, id').all(projectId as SQLInputValue) as Row[]).map((row) => ({
+      id: String(row.id) as CollectionId,
+      projectId: String(row.project_id) as ProjectId,
+      title: String(row.title),
+      createdAt: String(row.created_at),
+      updatedAt: String(row.updated_at),
+    }))
+  }
+
+  getCollection(collectionId: string): Collection | undefined {
+    const row = this.#database.prepare('SELECT * FROM collections WHERE id = ?').get(collectionId as SQLInputValue) as Row | undefined
+    return row === undefined ? undefined : {
+      id: String(row.id) as CollectionId,
+      projectId: String(row.project_id) as ProjectId,
+      title: String(row.title),
+      createdAt: String(row.created_at),
+      updatedAt: String(row.updated_at),
+    }
+  }
+
+  hasCollectionMemberships(collectionId: string): boolean {
+    return this.#database.prepare('SELECT 1 AS present FROM collection_memberships WHERE collection_id = ? LIMIT 1').get(collectionId as SQLInputValue) !== undefined
+  }
+
+  insertCollection(collection: Collection): void {
+    this.#insertCollection(collection)
+  }
+
+  listCollectionMemberships(projectId: string, collectionId?: string): CollectionMembership[] {
+    const rows = collectionId === undefined
+      ? this.#database.prepare('SELECT * FROM collection_memberships WHERE project_id = ? ORDER BY added_at, id').all(projectId as SQLInputValue) as Row[]
+      : this.#database.prepare('SELECT * FROM collection_memberships WHERE project_id = ? AND collection_id = ? ORDER BY added_at, id').all(projectId as SQLInputValue, collectionId as SQLInputValue) as Row[]
+    return rows.map((row) => ({
+      collectionId: String(row.collection_id) as CollectionId,
+      memberRef: { type: String(row.member_type) as CollectionMembership['memberRef']['type'], id: String(row.member_id) },
+      relationId: String(row.id) as CollectionMembership['relationId'],
+      addedAt: String(row.added_at),
+    }))
+  }
+
+  getCollectionMembership(projectId: string, collectionId: string, memberType: CollectionMembership['memberRef']['type'], memberId: string): CollectionMembership | undefined {
+    const row = this.#database.prepare('SELECT * FROM collection_memberships WHERE project_id = ? AND collection_id = ? AND member_type = ? AND member_id = ?')
+      .get(projectId as SQLInputValue, collectionId as SQLInputValue, memberType, memberId) as Row | undefined
+    return row === undefined ? undefined : {
+      collectionId: String(row.collection_id) as CollectionId,
+      memberRef: { type: String(row.member_type) as CollectionMembership['memberRef']['type'], id: String(row.member_id) },
+      relationId: String(row.id) as CollectionMembership['relationId'],
+      addedAt: String(row.added_at),
+    }
+  }
+
+  #insertCollection(collection: Collection): void {
+    this.#database.prepare('INSERT INTO collections (id, project_id, title, created_at, updated_at) VALUES (?, ?, ?, ?, ?)')
+      .run(collection.id as SQLInputValue, collection.projectId as SQLInputValue, collection.title, collection.createdAt, collection.updatedAt)
+  }
+
+  #collectionMemberTable(type: CollectionMembership['memberRef']['type']): string {
+    switch (type) {
+      case 'artifact': return 'artifacts'
+      case 'note': return 'notes'
+      case 'collection': return 'collections'
+      case 'scope': return 'scopes'
+      case 'workspace': return 'workspaces'
+      case 'conversation': return 'connected_conversations'
+      case 'run': return 'runs'
+    }
+  }
+
   // ==================== Private helpers ====================
 
   #removePresentationEntityRefs(projectId: string, type: 'scope' | 'workspace', id: string): void {
@@ -6782,16 +6916,18 @@ export class SqliteMetadataRepository {
     readonly id: string
     readonly projectId: string
     readonly provider: string
+    readonly conversationArtifactId?: string
     readonly originMeta: Readonly<Record<string, unknown>>
   } | undefined {
     const row = this.#database.prepare(
-      'SELECT id, project_id, provider, origin_meta_json FROM conversation_sessions WHERE project_id = ? AND id = ?',
+      'SELECT id, project_id, provider, origin_meta_json, conversation_artifact_id FROM conversation_sessions WHERE project_id = ? AND id = ?',
     ).get(projectId, conversationSessionId) as Row | undefined
     if (row === undefined) return undefined
     return {
       id: String(row.id),
       projectId: String(row.project_id),
       provider: String(row.provider),
+      ...(row.conversation_artifact_id == null ? {} : { conversationArtifactId: String(row.conversation_artifact_id) }),
       originMeta: json<Readonly<Record<string, unknown>>>(row.origin_meta_json as SQLInputValue),
     }
   }

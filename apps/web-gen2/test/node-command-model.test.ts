@@ -153,7 +153,7 @@ test('R2 命令模型：未绑定 Core 的 note 不出现 open / reference（不
   // 会话/物件的打开语义仍按 Core 绑定区分
   assert.equal(
     byId(buildLcosNodeCommands({ ...base, entityType: 'conversation', entityId: 'c1' }), 'open')?.label,
-    '打开会话窗口',
+    '打开',
   );
 });
 
@@ -207,4 +207,17 @@ test('R2 命令模型：通用不变量——带 disabledReason 的命令，原�
       );
     }
   }
+});
+
+
+test('Glyth management preserves conversation actions without native note conversion or preview', () => {
+  const commands = buildLcosNodeCommands({ ...base, entityType: 'conversation', entityId: 'c1', capabilities: ['reference'] });
+  for (const id of ['convert-text', 'convert-note', 'auto-height', 'accent', 'open-large']) {
+    assert.equal(byId(commands, id), undefined, `Glyth must not expose native note handler ${id}`);
+  }
+  for (const id of ['open', 'reference', 'color-pin', 'size', 'fit']) assert.ok(byId(commands, id));
+  assert.equal(byId(commands, 'move-space')?.disabledReason, '当前对象还不能跨现场移动');
+  const native = buildLcosNodeCommands(base);
+  for (const id of ['convert-text', 'auto-height', 'accent', 'open-large']) assert.ok(byId(native, id));
+  assert.equal(byId(native, 'move-space')?.disabledReason, undefined);
 });

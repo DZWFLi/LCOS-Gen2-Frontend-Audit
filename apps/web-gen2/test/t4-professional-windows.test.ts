@@ -31,6 +31,7 @@ function jsonResponse(data: unknown, status = 200): Response {
 interface Captured {
   url: string;
   method: string;
+  body?: string;
 }
 
 /** 可手动控制 resolve 的 fetcher，用于制造迟到回包。 */
@@ -40,7 +41,7 @@ function deferredHttp() {
   const fetcher = async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
     const url = typeof input === 'string' ? input : input.url;
     const method = init?.method ?? 'GET';
-    captured.push({ url, method });
+    captured.push({ url, method, ...(typeof init?.body === 'string' ? { body: init.body } : {}) });
     return new Promise((resolve) => {
       pending.push({ resolve, url });
     });
@@ -171,6 +172,43 @@ test('CoreConversationClient.listConnectedConversations unwraps the envelope', a
   d.release('/connected-conversations', [{ id: 'c1' }]);
   assert.deepEqual(await promise, [{ id: 'c1' }]);
   assert.equal(d.captured[0]?.method, 'GET');
+});
+
+test('CoreConversationClient lists real project sessions and explicitly links the selected identity', async () => {
+  const d = deferredHttp();
+  const client = new CoreConversationClient(d.http);
+  const listing = client.listSessions('p1');
+  d.release('/projects/p1/conversations', [{ id: 'session-1', title: 'Imported source', status: 'ready' }]);
+  assert.equal((await listing)[0]?.id, 'session-1');
+
+  const linking = client.linkSession('p1', 'connected-1', 'session-1');
+  assert.equal(d.captured[1]?.method, 'POST');
+  assert.match(d.captured[1]?.url ?? '', /connected-conversations\/connected-1\/link-session$/);
+  // Confirm the caller sends the selected canonical id, not a title/provider heuristic.
+  assert.deepEqual(JSON.parse(d.captured[1]?.body ?? '{}'), { conversationSessionId: 'session-1' });
+  // The request is validated by the route; resolving its canonical identity response
+  // verifies the typed client unwraps the server-owned result.
+  d.release('/link-session', { projectId: 'p1', connectedConversation: { id: 'connected-1' }, conversationSession: { id: 'session-1', title: 'Imported source' } });
+  assert.equal((await linking).conversationSession?.id, 'session-1');
+});
+
+test('CoreConversationClient imports only the supplied manual timeline into its explicit project worksite', async () => {
+  const d = deferredHttp();
+  const client = new CoreConversationClient(d.http);
+  const promise = client.importManual('p1', {
+    title: '真实访谈摘录',
+    scopeId: 'scope-1',
+    workspaceId: 'workspace-1',
+    entries: [{ role: 'user', contentText: '请整理访谈重点。' }],
+  });
+  assert.equal(d.captured[0]?.method, 'POST');
+  assert.match(d.captured[0]?.url ?? '', /projects\/p1\/conversations\/import-manual$/);
+  assert.deepEqual(JSON.parse(d.captured[0]?.body ?? '{}'), {
+    title: '真实访谈摘录', scopeId: 'scope-1', workspaceId: 'workspace-1',
+    entries: [{ role: 'user', contentText: '请整理访谈重点。' }],
+  });
+  d.release('/import-manual', { session: { id: 'session-1', title: '真实访谈摘录' } });
+  assert.equal((await promise).session.id, 'session-1');
 });
 
 test('CoreConversationClient.getReceiverBinding reads the canonical active receiver', async () => {

@@ -5,9 +5,9 @@
 // interaction/overlayArbitration 的纯函数 visibleOverlays 裁决当前应显示哪
 // 一些，并按统一 overlayLayers 分级 z-index 渲染。
 //
-// 仲裁输入从各 store 采集（drop 在拖拽/让步 → 只可能保留 drop-preview），
+// 仲裁输入从各 store 采集（拖拽保留已打开 Composer 接收面与 drop-preview），
 // 仲裁结果决定挂载哪些子浮层。Composer 只有显式 selection-local open intent
-// 才挂载；拖拽这类全局高优先级状态会经仲裁把它让道，草稿仍留在 ephemeral store。
+// 才挂载；后续拖拽保留真实接收面，草稿仍留在既有 ephemeral store。
 
 import {
   CoreAssemblyClient,
@@ -20,11 +20,16 @@ import { toast } from '@/components/Common/Toast';
 import useCanvasStore from '@/store/canvasStore';
 
 import { createLcosCoreSession } from './app/lcosCoreClient';
+import { useCollaborationSessionStore } from './collaboration/collaborationSessionStore';
+import { composerHasVisibleWindowOwner } from './composer/composerPresentationOwner';
 import { LcosComposerHost } from './composer/LcosComposerHost';
 import { DropCommitRouter } from './drop/dropCommitRouter';
+import { collectionExpansionGeometry } from './nodes/collectionExpandLayout';
 import { rectFromDomRect } from './drop/dropTargetRegistry';
+import { LcosDropReceipt } from './drop/LcosDropReceipt';
 import { useLcosHostStore } from './host/lcosHostState';
 import { LcosDropPreview } from './LcosDropPreview';
+import { useProfessionalViewport, visibleWindowIdsForStage } from './professional/professionalStageVisibility';
 import { useLcosDropStore } from './lcosDropState';
 import { advanceDropAtScreenPoint } from './lcosRecognizers';
 import { useLcosReferenceStore } from './lcosReferenceState';
@@ -37,10 +42,11 @@ import {
 
 import type {
   DropAssemblyApplyIntent,
-  DropCollaborationReferenceIntent,
   DropComposerReferenceIntent,
+  DropCollectionMembershipIntent,
   DropTargetRegistration,
 } from './drop/dropTypes';
+import type { AssemblyApplyResultV1 } from '@local-creative-os/contracts';
 
 const has = (kinds: readonly string[], kind: string): boolean =>
   kinds.includes(kind);
@@ -66,6 +72,8 @@ export const LcosHostOverlay: React.FC = () => {
   const host = useLcosHostStore((state) => state.host);
   const composerOpen = useLcosShellStore((state) => state.composerOpen);
   const composerTarget = useLcosShellStore((state) => state.composerTarget);
+  const windows = useLcosShellStore((state) => state.windows);
+  const windowRegions = useLcosShellStore((state) => state.windowRegions);
   const closeComposer = useLcosShellStore((state) => state.closeComposer);
   const canvasId = useCanvasStore((state) => state.canvasId);
   const canvasWrapper = useCanvasStore((state) => state.canvasWrapper);
@@ -76,6 +84,15 @@ export const LcosHostOverlay: React.FC = () => {
   if (commitRouterRef.current === null) {
     commitRouterRef.current = new DropCommitRouter();
   }
+
+  const feedbackProjectRef = useRef(projectId);
+  useEffect(() => {
+    if (feedbackProjectRef.current === projectId) return;
+    feedbackProjectRef.current = projectId;
+    // A gesture/receipt belongs to its original project, never the next route.
+    useLcosDropStore.getState().cancel();
+    commitRouterRef.current?.clear();
+  }, [projectId]);
 
   // Native HTML5 drag sources emit dragover rather than pointermove while the
   // payload is held. Feed that event into the same resolver path as the
@@ -218,13 +235,15 @@ export const LcosHostOverlay: React.FC = () => {
       projectId === null
     ) return;
     let active = true;
+    const dropCanvasId = canvasId;
     const store = useLcosDropStore.getState();
+    if (store.state.status !== 'committing' || store.state.transactionId !== dropState.transactionId) return;
     const intent = dropResolution.intent;
     const router = commitRouterRef.current;
     if (router === null) return;
     const owners = {
-      applyAssembly: async (assemblyIntent: DropAssemblyApplyIntent, signal?: AbortSignal): Promise<unknown> => {
-        const point = assemblyIntent.placementPoint;
+      applyAssembly: async (assemblyIntent: DropAssemblyApplyIntent, signal?: AbortSignal): Promise<AssemblyApplyResultV1> => {
+        const point = assemblyIntent.targetRef.kind === 'conversation' ? undefined : assemblyIntent.placementPoint;
         const placementBySource = point === undefined
           ? undefined
           : assemblyIntent.sourceRefs.reduce<Record<string, { readonly x: number; readonly y: number }>>(
@@ -237,7 +256,7 @@ export const LcosHostOverlay: React.FC = () => {
               },
               {},
             );
-        return assembly.apply(
+        const result = await assembly.apply(
           projectId,
           {
             schemaVersion: 1,
@@ -248,40 +267,48 @@ export const LcosHostOverlay: React.FC = () => {
           },
           signal,
         );
+        if (assemblyIntent.targetRef.kind === 'conversation' && !signal?.aborted) {
+          void useCollaborationSessionStore.getState().refresh(projectId, assemblyIntent.targetRef.id);
+        }
+        return result;
       },
       addComposerReference: (referenceIntent: DropComposerReferenceIntent): void => {
         useLcosReferenceStore.getState().addEntityToDraft(referenceIntent.reference);
       },
-      // CollaborationTarget（R1 合流）：把对象作为 Reference 交给该 Conversation。
-      // 真实 owner = 该会话的 Composer target + draft references（delegate 提交时随
-      // receiverConversationId 送达）；preview 即 execute，无二次选择。
-      addConversationReference: (referenceIntent: DropCollaborationReferenceIntent) => {
-        useLcosReferenceStore.getState().addEntityToDraft(referenceIntent.reference);
-        const shell = useLcosShellStore.getState();
-        if (shell.composerTarget?.receiverConversationId === referenceIntent.conversationId) {
-          // 已锚定该会话的 Composer：引用已入草稿，保持现状即可。
-          return;
+      addCollectionMember: async (membershipIntent: DropCollectionMembershipIntent) => {
+        const receipt = await session.collections.addMember(projectId, membershipIntent.collectionId, membershipIntent.memberRef);
+        const canvasState = useCanvasStore.getState();
+        const shellState = useLcosShellStore.getState();
+        if ((receipt.status === 'applied' || receipt.status === 'already-member')
+          && shellState.projectId === projectId && active
+          && canvasState.canvasId === dropCanvasId) {
+          const frame = canvasState.nodes.find((node) => node.type === 'frame'
+            && (node.data as Record<string, unknown> | undefined)?.lcosCollectionId === membershipIntent.collectionId);
+          const collectionNodeId = typeof (frame?.data as Record<string, unknown> | undefined)?.lcosCollectionNodeId === 'string'
+            ? String((frame?.data as Record<string, unknown>).lcosCollectionNodeId) : undefined;
+          const memberNode = [...useLcosReferenceStore.getState().nodeEntityRefs].find(([, ref]) =>
+            ref.entityType === membershipIntent.memberRef.type && ref.entityId === membershipIntent.memberRef.id);
+          const projectedNode = memberNode ? canvasState.nodes.find((node) => node.id === memberNode[0]) : undefined;
+          const isCollapsed = frame ? useCanvasStore.getState().collapsedFrameIds.has(frame.id) : false;
+          if (frame && collectionNodeId && !isCollapsed && projectedNode && !projectedNode.parentId) {
+            const frameChildIds = canvasState.nodes.filter((node) => node.parentId === frame.id).map((node) => node.id);
+            const geometry = collectionExpansionGeometry(canvasState.nodes, collectionNodeId, [projectedNode.id], frameChildIds);
+            if (geometry.length > 0) useCanvasStore.getState().setNodeGeometry(geometry);
+            useCanvasStore.getState().moveNodeIntoFrame(projectedNode.id, frame.id);
+          }
         }
-        shell.openComposer({
-          nodeId: `conversation:${referenceIntent.conversationId}`,
-          title: '会话引用',
-          anchor: { x: 0, y: 0, width: 0, height: 0 },
-          ...(shell.activeWorkspaceId === null ? {} : { workspaceId: shell.activeWorkspaceId }),
-          receiverConversationId: referenceIntent.conversationId,
-        });
+        useLcosReferenceStore.getState().requestNodeBindingRefresh();
+        return receipt;
       },
+
     };
     void router.commit(intent, dropState.transactionId, owners)
       .then((receipt) => {
-        if (!active) return;
-        if (receipt.status === 'success') {
-          store.cancel();
-        } else {
-          store.fail(receipt.message ?? '投放失败', true);
-        }
+        if (!active || useLcosShellStore.getState().projectId !== projectId) return;
+        store.settle(receipt);
       });
     return () => { active = false; };
-  }, [assembly, dropResolution, dropState, projectId]);
+  }, [assembly, canvasId, dropResolution, dropState, projectId]);
 
   const dropActive =
     dropStatus === 'tracking' ||
@@ -304,15 +331,21 @@ export const LcosHostOverlay: React.FC = () => {
   });
 
   const showDrop = has(visible, 'drop-preview');
-  // Professional bodies render the same Composer inline. Keep this canvas host
-  // silent while any window is foregrounded, so one shell intent never double-renders.
-  const professionalWindowOpen = useLcosShellStore((state) => state.windows.length > 0);
-  const showComposer = has(visible, 'composer') && !professionalWindowOpen;
+  const viewport = useProfessionalViewport();
+  const visibleWindowIds = useMemo(
+    () => visibleWindowIdsForStage(windows, windowRegions, viewport).windowIds,
+    [viewport, windowRegions, windows],
+  );
+  // Only the visible body that actually owns this intent takes its inline Composer.
+  // Unrelated Readers/Assembly windows must leave canvas-local intent reachable.
+  const windowOwnsComposer = composerHasVisibleWindowOwner(composerTarget, windows, visibleWindowIds);
+  const showComposer = has(visible, 'composer') && !windowOwnsComposer;
 
   return (
     <>
       <TemporalPreviewOutlines />
       {showDrop && <LcosDropPreview />}
+      <LcosDropReceipt />
       {projectId && composerTarget && (
         <LcosComposerHost
           projectId={projectId}

@@ -1,300 +1,146 @@
-// LcosNavigatorIsland — 顶部导航岛（Figma NavigatorIsland 5384:367：静息 52×48 → 搜索 402×48 hug）。
-// Cmd/Ctrl+F 聚焦；输入防抖调真实 Core search；结果含对象/原因/位置分级。
-// 同现场已投影 → 直接唯一 camera focus；跨现场 → 切真实 worksite（不假定位）。
-// 岛形 tell：静息 52（仅搜索图标）→ focus 展开；Esc 分层关闭。
-
-
+import { useAvoidingHudPosition } from './useAvoidingHudPosition';
+// One physical HUD slot. Search resolves identity; Where resolves complete spatial occurrences.
 import { CoreSearchClient, HttpError } from '@local-creative-os/web-gen2';
 import { ArrowRight, LoaderCircle } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-
-
-import useCanvasStore from '@/store/canvasStore';
-
-import { waitForProjectedEntity } from './waitForProjectedEntity';
 import { createLcosCoreSession } from '../app/lcosCoreClient';
-import { useLcosWorksiteNav } from '../app/useLcosWorksiteNav';
-import { useLcosReferenceStore } from '../lcosReferenceState';
 import { lcosHudEdgeOffsets } from '../shell/lcosHudPlacement';
 import { useLcosShellStore, type LcosSurfaceKey } from '../shell/lcosShellStore';
 import { LcosNavigatorIslandView } from '../ui/families';
 import { lcosGlassStyle, lcosTokens } from '../ui/lcosTokens';
-
+import { useHudViewport } from './useHudViewport';
+import { useNavigationHudSlot } from './NavigationHudSlot';
 import type { LcosNavigatorIslandState, LcosNavigatorPin } from '../ui/families';
 import type { SearchHitVNext } from '@local-creative-os/contracts';
+
+const SEARCH_REASON_LABELS: Readonly<Record<NonNullable<SearchHitVNext['matchReason']>, string>> = {
+  title: '标题匹配',
+  body: '正文匹配',
+  ocr: '图片文字匹配',
+  visual: '图像相似',
+  semantic: '内容相关',
+  source: '来源信息匹配',
+  relation: '关联内容匹配',
+  metadata: '内容匹配',
+};
+
+function searchReasonLabel(hit: SearchHitVNext): string | undefined {
+  return hit.matchReason === undefined ? undefined : SEARCH_REASON_LABELS[hit.matchReason];
+}
+
+function locationCountLabel(hit: SearchHitVNext): string | undefined {
+  const count = hit.locationCount;
+  return Number.isSafeInteger(count) && count! > 0 ? `出现在 ${count} 个位置` : undefined;
+}
 
 interface NavigatorIslandProps {
   readonly projectId: string;
   readonly canvasBySurface: Readonly<Partial<Record<LcosSurfaceKey, string>>>;
   readonly surfaceByWorkspace?: Readonly<Map<string, LcosSurfaceKey>>;
   readonly ensureCanvas: (surface: LcosSurfaceKey, force?: boolean) => Promise<string | undefined>;
-  /** ColorPin owner supplies only the lightweight family presentation. */
   readonly pins?: readonly LcosNavigatorPin[];
   readonly onActivatePin?: (pin: LcosNavigatorPin) => void;
   readonly onCreatePin?: () => void;
   readonly createPinDisabled?: boolean;
 }
-
-/** 搜索链路的真实状态；变体语言与 Figma 11 状态同名。 */
-type IslandState = '静息' | '搜索' | 'loading' | 'error' | 'empty';
-
-export function LcosNavigatorIsland(_props: NavigatorIslandProps): React.JSX.Element {
-  const { projectId } = _props;
-  const activeSurface = useLcosShellStore((s) => s.activeSurface);
-  const windowEnvironment = useLcosShellStore((s) => s.windowEnvironment);
-  const requestLocate = useLcosShellStore((s) => s.requestLocate);
-  const [focus, setFocus] = useState(false);
+export function LcosNavigatorIsland(props: NavigatorIslandProps): React.JSX.Element {
+  const slot = useNavigationHudSlot();
+  const focus = slot.active === 'search';
+  const viewport = useHudViewport();
+  const environment = useLcosShellStore((s) => s.windowEnvironment);
+  const requestFocusWhere = useLcosShellStore((s) => s.requestFocusWhere);
   const [query, setQuery] = useState('');
   const [hits, setHits] = useState<readonly SearchHitVNext[]>([]);
-  const [state, setState] = useState<IslandState>('静息');
-  const [detail, setDetail] = useState<string | undefined>(undefined);
+  const [state, setState] = useState<'idle' | 'loading' | 'ready' | 'error'>('idle');
+  const [detail, setDetail] = useState<string>();
+  const [activeIndex, setActiveIndex] = useState(0);
+  const [truncated, setTruncated] = useState(false);
+  const [retry, setRetry] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
-  const arrival = useRef<AbortController | null>(null);
-  const [destinationHit, setDestinationHit] = useState<SearchHitVNext | null>(null);
-  const [arriving, setArriving] = useState(false);
-  const { switchWorksite } = useLcosWorksiteNav({ projectId, canvasBySurface: _props.canvasBySurface, ensureCanvas: _props.ensureCanvas });
-
-  useEffect(() => () => { arrival.current?.abort(); }, [projectId, query, focus]);
-
   const session = useMemo(() => createLcosCoreSession(), []);
-  const searchClient = useMemo(() => new CoreSearchClient(session.http), [session]);
-
-  // Cmd/Ctrl+F 全局热键展开
+  const search = useMemo(() => new CoreSearchClient(session.http), [session]);
+  const close = useCallback(() => { slot.close('search'); setQuery(''); setHits([]); setTruncated(false); setState('idle'); setDetail(undefined); }, [slot.close]);
+  const open = useCallback(() => { slot.activate('search'); setQuery(''); setActiveIndex(0); }, [slot.activate]);
+  useEffect(() => { if (focus) inputRef.current?.focus(); }, [focus]);
+  useEffect(() => { close(); }, [props.projectId, close]);
   useEffect(() => {
     const onKey = (event: KeyboardEvent): void => {
-      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'f') {
-        event.preventDefault();
-        setFocus(true);
-        setQuery('');
-        window.setTimeout(() => inputRef.current?.focus(), 30);
-      }
-      if (event.key === 'Escape') {
-        arrival.current?.abort();
-        setDestinationHit(null);
-        setArriving(false);
-        setFocus(false);
-        setQuery('');
-        setHits([]);
-        setState('静息');
-        setDetail(undefined);
+      if (event.defaultPrevented) return;
+      const target = event.target instanceof Element ? event.target : null;
+      // An editor/reader owns its local Find command. Do not steal it.
+      const editing = target?.closest('input,textarea,[contenteditable="true"],[data-lcos-reader],[data-lcos-reader-content]');
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'f' && (!editing || target === inputRef.current)) {
+        event.preventDefault(); open();
+      } else if (event.key === 'Escape' && focus) {
+        if (document.querySelector('[data-lcos-pin-overflow]')) return;
+        event.preventDefault(); event.stopImmediatePropagation(); close();
       }
     };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, []);
-
-  // 防抖搜索
+    window.addEventListener('keydown', onKey, true);
+    return () => window.removeEventListener('keydown', onKey, true);
+  }, [close, focus, open]);
   useEffect(() => {
     const q = query.trim();
-    if (!focus || q === '') {
-      setHits([]);
-      setState(q === '' ? '静息' : 'empty');
-      return;
-    }
-    setState('loading');
-    const controller = new AbortController();
+    if (!focus || !q) { setHits([]); setState('idle'); return; }
     let cancelled = false;
+    setState('loading'); setDetail(undefined);
     const timer = window.setTimeout(() => {
-      void searchClient
-        .searchProject(projectId, { query: q, limit: 12 })
-        .then((result) => {
-          if (cancelled) return;
-          setHits(result.hits);
-          setState(result.hits.length === 0 ? 'empty' : '搜索');
-          setDetail(undefined);
-        })
-        .catch((error: unknown) => {
-          if (cancelled) return;
-          if ((error as { code?: string }).code === 'aborted') return;
-          setState('error');
-          setDetail(error instanceof HttpError ? error.message : String(error));
-        });
-    }, 260);
-    return () => {
-      cancelled = true;
-      controller.abort();
-      window.clearTimeout(timer);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [focus, query, projectId]);
-
-  const pins = _props.pins ?? [];
-
-  const closeSearch = useCallback((): void => {
-    arrival.current?.abort();
-    setDestinationHit(null);
-    setArriving(false);
-    setFocus(false);
-    setQuery('');
-    setHits([]);
-    setState('静息');
-    setDetail(undefined);
-  }, []);
-
-  const goToLocation = async (hit: SearchHitVNext, surface: LcosSurfaceKey): Promise<void> => {
-    if (arrival.current && !arrival.current.signal.aborted) return;
-    arrival.current?.abort();
-    const controller = new AbortController();
-    arrival.current = controller;
-    setArriving(true);
-    setDetail('正在前往对象所在的现场…');
-    try {
-      if (!await switchWorksite(surface) || controller.signal.aborted) {
-        if (!controller.signal.aborted) setDetail('现场切换未完成，请重试。');
-        return;
-      }
-      const canvasId = useCanvasStore.getState().canvasId;
-      if (!canvasId) { setDetail('目标现场的画布尚未就绪。'); return; }
-      const nodeId = await waitForProjectedEntity({ projectId, canvasId, entityType: hit.entityType, entityId: hit.entityId, signal: controller.signal });
-      if (controller.signal.aborted) return;
-      if (!nodeId) {
-        setDetail('已进入目标现场，但对象投影尚未就绪。可重试定位，搜索结果已保留。');
-        return;
-      }
-      requestLocate({ reqId: crypto.randomUUID(), surface, canvasId, nodeId, status: 'projected' });
-      closeSearch();
-    } catch (error: unknown) {
-      if (!controller.signal.aborted) setDetail(error instanceof Error ? error.message : '定位失败，请重试。');
-    } finally {
-      if (arrival.current === controller) { arrival.current = null; setArriving(false); }
-    }
+      void search.searchProject(props.projectId, { query: q, limit: 50 }).then((result) => {
+        if (cancelled) return;
+        setHits(result.hits); setTruncated(result.truncated === true); setActiveIndex(0); setState('ready');
+      }).catch((error: unknown) => {
+        if (cancelled) return;
+        setState('error'); setDetail(error instanceof HttpError ? error.message : String(error));
+      });
+    }, 220);
+    return () => { cancelled = true; window.clearTimeout(timer); };
+  }, [focus, query, props.projectId, search, retry]);
+  const choose = (hit: SearchHitVNext): void => {
+    close();
+    requestFocusWhere({ reqId: crypto.randomUUID(), entityType: hit.entityType, entityId: hit.entityId, title: hit.title ?? hit.entityId });
   };
-
-  const locateHit = useCallback(
-    (hit: SearchHitVNext): void => {
-      const location = hit.locationRefs?.[0];
-      // 同现场已投影？（reference store nodeEntityRefs 反查 entityId）
-      const store = useLcosReferenceStore.getState();
-      const currentNodeIds = new Set(useCanvasStore.getState().nodes.map((node) => node.id));
-      let ownNodeId: string | undefined;
-      for (const [nodeId, ref] of store.nodeEntityRefs) {
-        if (currentNodeIds.has(nodeId) && ref.entityId === hit.entityId && ref.entityType === hit.entityType) {
-          ownNodeId = nodeId;
-          break;
-        }
-      }
-      if (ownNodeId) {
-        requestLocate({ reqId: `${Date.now()}`, surface: activeSurface, nodeId: ownNodeId, status: 'projected' });
-        if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
-        // Search is a transient replacement for the resting island. Once the
-        // projected target is handed to the camera consumer, restore the island
-        // so stale query/results do not remain over the arrival target.
-        closeSearch();
-      } else {
-        setDestinationHit(hit);
-        setDetail(
-          location
-            ? `选择「${hit.title ?? hit.entityId}」的位置`
-            : '该对象尚无可定位的位置；可以从装配中查找并取用。',
-        );
-      }
-    },
-    [activeSurface, closeSearch, requestLocate],
-  );
-
-  // 输入是否展开由用户意图决定；异步读取/空结果不能卸载正在输入的文本框。
-  const viewState: LcosNavigatorIslandState =
-    focus ? '搜索' : pins.length > 0 ? '彩色标' : '静息';
-  const viewport = { width: window.innerWidth, height: window.innerHeight };
-  const edgeOffsets = lcosHudEdgeOffsets(windowEnvironment ?? null, viewport);
-  // R2-B：与 SurfaceDock 同一规则 —— 导航岛在 safe area 内居中，右侧停靠窗口不会盖住它。
-  // 无窗口 / 只有浮动窗口时结果仍是视口中心（与旧行为一致）。
-  const safeCenteredLeft = (edgeOffsets.left + (viewport.width - edgeOffsets.right)) / 2;
-
-  return (
-    <div
-      data-lcos-navigator-island
-      className="pointer-events-auto fixed top-6 z-40 -translate-x-1/2"
-      style={{ maxWidth: '90vw', top: edgeOffsets.top, left: safeCenteredLeft }}
-    >
-      <LcosNavigatorIslandView
-        state={viewState}
-        pins={pins}
-        onActivatePin={_props.onActivatePin}
-        onCreatePin={_props.onCreatePin}
-        createPinDisabled={_props.createPinDisabled}
-        query={query}
-        onQueryChange={(value) => {
-          arrival.current?.abort();
-          setDestinationHit(null);
-          setArriving(false);
-          setDetail(undefined);
-          setQuery(value);
-        }}
-        onToggleSearch={() => {
-          if (focus) {
-            closeSearch();
-            return;
-          }
-          setFocus(true);
-          setQuery('');
-          window.setTimeout(() => inputRef.current?.focus(), 30);
-        }}
-        message={state === 'error' ? `搜索失败${detail ? `（${detail}）` : ''} · 请重试` : undefined}
-        inputRef={inputRef}
-      />
-
-      {focus && (state === '搜索' || state === 'loading' || state === 'empty' || state === 'error') && (
-        <div
-          data-lcos-navigator-results
-          className="mt-2 max-h-[50vh] overflow-y-auto rounded-xl p-2"
-          style={{ ...lcosGlassStyle, width: 402, maxWidth: '90vw' }}
-        >
-          {state === 'loading' && (
-            <div className="flex items-center gap-2 px-3 py-2 text-sm" style={{ color: lcosTokens.color.muted }}>
-              <LoaderCircle className="h-4 w-4 lcos-static-pulse" aria-hidden />
-              正在搜索…
-            </div>
-          )}
-          {state === 'empty' && (
-            <div className="px-3 py-2 text-sm" style={{ color: lcosTokens.color.muted }}>
-              没有匹配的对象
-            </div>
-          )}
-          {state === 'error' && (
-            <div className="px-3 py-2 text-sm" style={{ color: lcosTokens.color.danger }}>
-              搜索失败{detail ? `（${detail}）` : ''} · 请重试
-            </div>
-          )}
-          {state === '搜索' &&
-            hits.map((hit) => (
-              <button
-                key={`${hit.entityType}:${hit.entityId}`}
-                type="button"
-                disabled={arriving}
-                onClick={() => locateHit(hit)}
-                className="flex w-full items-center justify-between gap-2 rounded-lg px-3 py-2 text-left transition-colors"
-                style={{ minHeight: 44 }}
-              >
-                <span className="min-w-0">
-                  <span className="block truncate text-sm font-medium" style={{ color: lcosTokens.color.text }}>
-                    {hit.title ?? (hit.entityId ?? '未命名')}
-                  </span>
-                  <span className="block truncate text-xs" style={{ color: lcosTokens.color.muted }}>
-                    {hit.entityType} · {hit.locationRefs?.[0]?.name ?? '位置未知'}
-                  </span>
-                </span>
-                <ArrowRight className="h-4 w-4 shrink-0" style={{ color: lcosTokens.color.muted }} aria-hidden />
-              </button>
-            ))}
-        </div>
-      )}
-
-      {detail && (
-        <div className="mt-2 max-w-[90vw] rounded-xl px-4 py-2 text-xs" style={{ ...lcosGlassStyle, color: lcosTokens.color.muted }} aria-live="polite">
-          <p>{detail}</p>
-          {destinationHit?.locationRefs?.map((location) => {
-            const surface = _props.surfaceByWorkspace?.get(location.id);
-            return <button key={location.id} type="button" disabled={!surface || arriving}
-              className="mt-1 flex min-h-11 w-full items-center justify-between gap-2 text-left disabled:opacity-50"
-              onClick={() => { if (surface) void goToLocation(destinationHit, surface); }}>
-              <span>{location.name ?? surface ?? '未知现场'}</span>
-              <span>{surface ? (arriving ? '前往中…' : '前往并定位') : '位置暂不可打开'}</span>
-            </button>;
-          })}
-        </div>
-      )}
-
-    </div>
-  );
+  const pins = props.pins ?? [];
+  const viewState: LcosNavigatorIslandState = focus && state === 'loading' ? 'loading'
+    : focus && state === 'error' ? 'error' : focus ? '搜索' : pins.length > 0 ? '彩色标' : '静息';
+  const offsets = lcosHudEdgeOffsets(environment ?? null, viewport);
+  const width = Math.max(52, viewport.width - offsets.left - offsets.right);
+  const islandWidth = focus && state !== 'idle' ? Math.min(402, width) : Math.min(width, 52 + (focus ? 218 : 0) + Math.min(3, pins.length) * 44);
+  const placement = useAvoidingHudPosition({ x: (offsets.left + viewport.width - offsets.right) / 2,
+    y: offsets.top, width: islandWidth, height: 48 }, { x: 'center' }, '[data-lcos-shell-project-cluster]');
+  return <div ref={placement.ref} data-lcos-navigator-island className="pointer-events-auto fixed z-40"
+    style={{ top: placement.rect.y, left: placement.rect.x, maxWidth: width, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+    <LcosNavigatorIslandView state={viewState} expanded={focus} pins={pins} availableWidth={width}
+      onActivatePin={props.onActivatePin} onCreatePin={props.onCreatePin} createPinDisabled={props.createPinDisabled}
+      query={query} onQueryChange={setQuery} onToggleSearch={() => focus ? close() : open()}
+      inputRef={inputRef} inputAriaControls="lcos-project-search-results"
+      activeDescendant={focus && hits[activeIndex] ? `lcos-search-result-${activeIndex}` : undefined}
+      onInputKeyDown={(event) => {
+        if (event.nativeEvent.isComposing) return;
+        if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+          event.preventDefault(); const delta = event.key === 'ArrowDown' ? 1 : -1;
+          setActiveIndex((current) => Math.max(0, Math.min(hits.length - 1, current + delta)));
+        } else if (event.key === 'Enter' && hits[activeIndex] && state === 'ready') { event.preventDefault(); choose(hits[activeIndex]!); }
+      }} />
+    {focus && state !== 'idle' && <div data-lcos-navigator-results id="lcos-project-search-results"
+      className="mt-2 max-h-[50vh] overflow-y-auto rounded-xl p-2" style={{ ...lcosGlassStyle, width: Math.min(402, width) }}>
+      {state === 'loading' && <div role="status" className="flex items-center gap-2 px-3 py-2 text-sm"><LoaderCircle size={16} className="lcos-static-pulse" />正在搜索…</div>}
+      {state === 'error' && <div role="alert" className="px-3 py-2 text-sm" style={{ color: lcosTokens.color.danger }}>搜索失败{detail ? `：${detail}` : ''}<button className="ml-2 underline" onClick={() => setRetry((value) => value + 1)}>重试</button></div>}
+      {state === 'ready' && <div role="listbox" aria-label="项目搜索结果">
+        {hits.length === 0 && <div role="status" className="px-3 py-2 text-sm">没有匹配的对象</div>}
+        {hits.map((hit, index) => <button key={`${hit.entityType}:${hit.entityId}`} id={`lcos-search-result-${index}`} type="button"
+          role="option" aria-selected={activeIndex === index} onMouseEnter={() => setActiveIndex(index)} onClick={() => choose(hit)}
+          className="flex min-h-11 w-full items-center justify-between gap-2 rounded-lg px-3 py-2 text-left"
+          style={{ background: activeIndex === index ? lcosTokens.color.raised : undefined }}>
+          <span className="min-w-0"><span className="block truncate text-sm font-medium">{hit.title ?? hit.entityId}</span>
+            {hit.snippet && hit.snippet !== hit.title && <span className="block truncate text-xs" style={{ color: lcosTokens.color.muted }}>{hit.snippet}</span>}
+            {(searchReasonLabel(hit) || locationCountLabel(hit)) && <span data-lcos-search-result-context className="mt-0.5 flex min-w-0 flex-wrap gap-x-2 text-[11px]" style={{ color: lcosTokens.color.muted }}>
+              {searchReasonLabel(hit) && <span data-lcos-search-match-reason>{searchReasonLabel(hit)}</span>}
+              {locationCountLabel(hit) && <span data-lcos-search-location-count>{locationCountLabel(hit)}</span>}
+            </span>}
+          </span><ArrowRight size={16} aria-hidden />
+        </button>)}
+        {truncated && <p className="px-3 py-2 text-xs" style={{ color: lcosTokens.color.muted }}>还有匹配结果；补充关键词可缩小范围。</p>}
+      </div>}
+    </div>}
+  </div>;
 }

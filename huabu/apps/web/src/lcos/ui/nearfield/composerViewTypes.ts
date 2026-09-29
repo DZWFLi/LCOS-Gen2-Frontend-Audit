@@ -34,6 +34,9 @@ export interface LcosComposerViewProps {
   readonly references: readonly ComposerReferenceViewItem[];
   readonly text: string;
   readonly textareaRef?: Ref<HTMLTextAreaElement> | undefined;
+  /** Explicit reference/input surface; receiver identity is deliberately outside. */
+  readonly referenceSurfaceRef?: Ref<HTMLDivElement> | undefined;
+  readonly referenceDropActive?: boolean | undefined;
   readonly onTextChange: ChangeEventHandler<HTMLTextAreaElement>;
   readonly onKeyDown: KeyboardEventHandler<HTMLTextAreaElement>;
   readonly onClose: () => void;
@@ -45,6 +48,9 @@ export interface LcosComposerViewProps {
   readonly readOnly?: boolean | undefined;
   readonly attachAction?: ComposerVisualAction | undefined;
   readonly referencePickAction?: ComposerVisualAction | undefined;
+  readonly referencePicker?: ReactNode;
+  /** Progressive controls reuse this Composer; never another panel or draft owner. */
+  readonly continuationControls?: ReactNode;
   readonly feedback?: ReactNode;
   readonly feedbackAction?: ComposerVisualAction | undefined;
 }

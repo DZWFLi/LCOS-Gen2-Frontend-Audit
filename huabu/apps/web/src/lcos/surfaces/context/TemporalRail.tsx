@@ -31,11 +31,14 @@ export function TemporalRail({ projectId, workspaceId, canvasId }: TemporalRailP
   const [reason, setReason] = useState<string>();
   const [activationReason, setActivationReason] = useState<string>();
   const [windowStart, setWindowStart] = useState(0);
+  const [attempt, setAttempt] = useState(0);
   const nodeEntityRefs = useLcosReferenceStore((referenceState) => referenceState.nodeEntityRefs);
+  const bindingCanvasId = useLcosReferenceStore((referenceState) => referenceState.bindingCanvasId);
   const previewOwnerKey = `${projectId}:${workspaceId ?? 'none'}:${canvasId ?? 'none'}`;
 
-  useEffect(() => () => {
-    useTemporalPreviewStore.getState().clear(previewOwnerKey);
+  useEffect(() => {
+    setActivationReason(undefined);
+    return () => useTemporalPreviewStore.getState().clear(previewOwnerKey);
   }, [previewOwnerKey]);
 
   useEffect(() => {
@@ -47,11 +50,13 @@ export function TemporalRail({ projectId, workspaceId, canvasId }: TemporalRailP
     }
     const controller = new AbortController();
     setState('loading');
+    setIndex(null);
     setWindowStart(0);
     setReason(undefined);
     setActivationReason(undefined);
     const session = createLcosCoreSession();
     void session.temporal.getIndex(projectId, workspaceId, controller.signal).then((response) => {
+      if (controller.signal.aborted) return;
       setIndex(response.value);
       setState(response.value.facts.length > 0 ? 'ready' : 'empty');
       setReason(response.value.facts.length > 0 ? undefined : '这个 Context 还没有可定位的时间记录');
@@ -62,7 +67,7 @@ export function TemporalRail({ projectId, workspaceId, canvasId }: TemporalRailP
       setReason(error instanceof Error ? error.message : '时间记录读取失败');
     });
     return () => controller.abort();
-  }, [projectId, workspaceId]);
+  }, [projectId, workspaceId, attempt]);
 
   const allGroups = useMemo(() => index?.mid ?? [], [index]);
   const window = useMemo(
@@ -71,8 +76,13 @@ export function TemporalRail({ projectId, workspaceId, canvasId }: TemporalRailP
   );
   const groups = window.groups;
   const projections = useMemo(
-    () => new Map(groups.map((group) => [group.id, projectTemporalGroupTargets(group, nodeEntityRefs)])),
-    [groups, nodeEntityRefs],
+    () => {
+      // Bindings belong to the existing canvas owner. During recovery, an old
+      // canvas map must never be sent as a locate request to the new canvas.
+      const currentBindings = canvasId !== undefined && bindingCanvasId === canvasId ? nodeEntityRefs : new Map();
+      return new Map(groups.map((group) => [group.id, projectTemporalGroupTargets(group, currentBindings)]));
+    },
+    [groups, nodeEntityRefs, canvasId, bindingCanvasId],
   );
   const items = useMemo<readonly TemporalRailItemView[]>(() => groups.map((group) => {
     const projection = projections.get(group.id);
@@ -131,12 +141,19 @@ export function TemporalRail({ projectId, workspaceId, canvasId }: TemporalRailP
     store.preview({ ownerKey: previewOwnerKey, canvasId, nodeIds: projection.nodeIds });
   }, [canvasId, previewOwnerKey, projections]);
 
+  const unavailableReason = state === 'ready' && items.length > 0 && items.every((item) => item.disabled)
+    ? canvasId === undefined ? '当前子现场尚无可定位的画布'
+      : bindingCanvasId !== canvasId ? '当前现场的对象绑定尚未就绪'
+        : `${items.length} 组时间记录的目标尚未投影到当前现场`
+    : undefined;
+
   return <TemporalRailView
     items={items}
     window={windowView}
-    reason={activationReason ?? reason}
+    reason={unavailableReason ?? activationReason ?? reason}
     state={activationReason === undefined ? state : 'recovery'}
-    scopeKey={`${workspaceId ?? 'none'}:${window.startIndex}`}
+    scopeKey={`${previewOwnerKey}:${window.startIndex}`}
+    onRetry={() => setAttempt((value) => value + 1)}
     onActivate={activate}
     onPreviewChange={preview}
     onWindowShift={(direction) => {

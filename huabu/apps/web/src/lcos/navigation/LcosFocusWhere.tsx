@@ -1,303 +1,145 @@
-// LcosFocusWhere — F 键「在哪」：按已知实体身份枚举真实空间绑定，不通过全文搜索猜身份。
-// Search 找未知；Focus/Where 回答已知对象在哪（T2 C2-2B；P10 分开心智）。
-// 行标签用 occurrenceRowLabel 去重逻辑；前往 = 真实 worksite 切换；未绑定 → unavailable。
-
+import { useAvoidingHudPosition } from './useAvoidingHudPosition';
+// T2 C2-2B: known identity -> complete bindings -> explicit destination -> exact projection.
 import { SqliteBindingStore } from '@local-creative-os/web-gen2';
 import { ArrowRight, Focus, MapPin, X } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-
-
 import useCanvasStore from '@/store/canvasStore';
-
-import { occurrenceRowLabel } from './occurrenceRowLabelHost';
 import { waitForProjectedEntity } from './waitForProjectedEntity';
+import { resolveOccurrenceDestination, type OccurrenceDestination } from './resolveOccurrenceDestination';
+import { useNavigationHudSlot } from './NavigationHudSlot';
+import { useHudViewport } from './useHudViewport';
 import { createLcosCoreSession } from '../app/lcosCoreClient';
 import { useLcosWorksiteNav } from '../app/useLcosWorksiteNav';
 import { useLcosReferenceStore } from '../lcosReferenceState';
 import { lcosHudEdgeOffsets } from '../shell/lcosHudPlacement';
-import { SURFACE_LABEL, useLcosShellStore, type LcosSurfaceKey } from '../shell/lcosShellStore';
+import { useLcosShellStore, type LcosSurfaceKey } from '../shell/lcosShellStore';
 import { lcosGlassStyle, lcosTokens } from '../ui/lcosTokens';
-
-
-
 export interface LcosFocusWhereProps {
   readonly projectId: string;
   readonly surfaceByWorkspace: Readonly<Map<string, LcosSurfaceKey>>;
   readonly canvasBySurface: Readonly<Partial<Record<LcosSurfaceKey, string>>>;
   readonly ensureCanvas: (surface: LcosSurfaceKey, force?: boolean) => Promise<string | undefined>;
 }
-
 interface OccurrenceRow {
   readonly key: string;
-  readonly nodeId?: string;
-  readonly entityId?: string;
-  readonly entityType?: string;
-  readonly surface: LcosSurfaceKey | 'unknown';
-  readonly label: string;
+  readonly nodeId: string;
+  readonly canvasId: string;
+  readonly entityId: string;
+  readonly entityType: string;
+  readonly destination?: OccurrenceDestination;
+  readonly local: boolean;
   readonly current: boolean;
-  readonly entityTitle: string | null;
+  readonly label: string;
 }
-
 export function LcosFocusWhere(props: LcosFocusWhereProps): React.JSX.Element {
+  const slot = useNavigationHudSlot();
+  const viewport = useHudViewport();
   const activeSurface = useLcosShellStore((s) => s.activeSurface);
-  const windowEnvironment = useLcosShellStore((s) => s.windowEnvironment);
+  const environment = useLcosShellStore((s) => s.windowEnvironment);
   const requestLocate = useLcosShellStore((s) => s.requestLocate);
-  const focusWhereRequest = useLcosShellStore((s) => s.focusWhereRequest);
-  const consumeFocusWhere = useLcosShellStore((s) => s.consumeFocusWhere);
-  const [open, setOpen] = useState(false);
+  const request = useLcosShellStore((s) => s.focusWhereRequest);
+  const consume = useLcosShellStore((s) => s.consumeFocusWhere);
   const [rows, setRows] = useState<readonly OccurrenceRow[]>([]);
-  const [entityTitle, setEntityTitle] = useState<string | null>(null);
-  const [unavailable, setUnavailable] = useState<string | undefined>(undefined);
-  const collectGeneration = useRef(0);
-  const arrival = useRef<AbortController | null>(null);
+  const [title, setTitle] = useState('当前对象');
+  const [message, setMessage] = useState<string>();
+  const [loading, setLoading] = useState(false);
   const [arriving, setArriving] = useState(false);
-  const { switchWorksite } = useLcosWorksiteNav({
-    projectId: props.projectId,
-    canvasBySurface: props.canvasBySurface,
-    ensureCanvas: props.ensureCanvas,
-  });
-
+  const generation = useRef(0);
+  const arrival = useRef<AbortController | null>(null);
+  const lastRequest = useRef<{ entityId: string; entityType: string; title?: string } | undefined>(undefined);
   const session = useMemo(() => createLcosCoreSession(), []);
-  const bindingStore = useMemo(() => new SqliteBindingStore(session.http, props.projectId), [session, props.projectId]);
-
-  const invalidatePendingCollect = useCallback((): void => {
-    collectGeneration.current += 1;
-    arrival.current?.abort();
-  }, []);
-
-  const close = useCallback((): void => {
-    invalidatePendingCollect();
-    setArriving(false);
-    setOpen(false);
-  }, [invalidatePendingCollect]);
-
-  const collect = useCallback(async (requested?: {
-    readonly entityType: string;
-    readonly entityId: string;
-    readonly title?: string;
-  }): Promise<void> => {
-    arrival.current?.abort();
-    setArriving(false);
-    const generation = collectGeneration.current + 1;
-    collectGeneration.current = generation;
-    const selected = useCanvasStore
-      .getState()
-      .nodes.filter((n) => n.selected)
-      .map((n) => n.id);
-    const nodeId = selected[0];
-    if (requested === undefined && !nodeId) {
-      setUnavailable('没有选中的对象 · 先选择一个节点再按 F');
-      setRows([]);
-      setEntityTitle(null);
-      setOpen(true);
-      return;
-    }
-    const selectedRef = nodeId === undefined
-      ? undefined
-      : useLcosReferenceStore.getState().nodeEntityRefs.get(nodeId);
+  const bindings = useMemo(() => new SqliteBindingStore(session.http, props.projectId), [session, props.projectId]);
+  const { switchWorksite } = useLcosWorksiteNav({ projectId: props.projectId, canvasBySurface: props.canvasBySurface, ensureCanvas: props.ensureCanvas });
+  const invalidate = useCallback(() => { generation.current += 1; arrival.current?.abort(); }, []);
+  const close = useCallback(() => { invalidate(); setArriving(false); slot.close('where'); }, [invalidate, slot.close]);
+  const collect = useCallback(async (requested?: { entityId: string; entityType: string; title?: string }) => {
+    invalidate(); const version = generation.current;
+    const canvas = useCanvasStore.getState();
+    const selected = canvas.nodes.find((node) => node.selected)?.id;
+    const selectedRef = selected === undefined ? undefined : useLcosReferenceStore.getState().nodeEntityRefs.get(selected);
     const ref = requested ?? selectedRef;
-    if (!ref) {
-      setUnavailable('该对象暂时无法定位');
-      setRows([]);
-      setEntityTitle(null);
-      setOpen(true);
-      return;
-    }
-    // 同现场 occurrences：同一 canonical entity 的所有投影。
-    const own: OccurrenceRow[] = [];
-    const currentNodeIds = new Set(useCanvasStore.getState().nodes.map((node) => node.id));
-    for (const [nid, r] of useLcosReferenceStore.getState().nodeEntityRefs) {
-      if (currentNodeIds.has(nid) && r.entityId === ref.entityId && r.entityType === ref.entityType) {
-        own.push({
-          key: nid,
-          nodeId: nid,
-          surface: activeSurface,
-          label: occurrenceRowLabel({ surface: activeSurface, workspaceName: undefined }),
-          current: nid === nodeId,
-          entityTitle: null,
-        });
-      }
-    }
-    // 跨现场 occurrence：绑定只证明投影存在，不把它升级成 semantic membership。
-    let cross: OccurrenceRow[] = [];
-    try {
-      const bindings = await bindingStore.list();
-      if (generation !== collectGeneration.current) return;
-      const currentCanvasId = useCanvasStore.getState().canvasId;
-      cross = bindings
-        .filter((binding) => binding.projectId === props.projectId && binding.spatialKind === 'node'
-          && binding.entityType === ref.entityType && binding.entityId === ref.entityId
-          && binding.canvasId !== currentCanvasId)
-        .map((binding): OccurrenceRow => {
-          const surface = (Object.entries(props.canvasBySurface) as [LcosSurfaceKey, string][])
-            .find(([, canvasId]) => canvasId === binding.canvasId)?.[0];
-          return {
-            key: `cross-${binding.canvasId}-${binding.spatialId}`,
-            entityId: ref.entityId,
-            entityType: ref.entityType,
-            surface: surface ?? 'unknown',
-            label: surface ? occurrenceRowLabel({ surface: SURFACE_LABEL[surface], workspaceName: undefined }) : '其它现场（暂不可打开）',
-            current: false,
-            entityTitle: null,
-          };
-        });
-    } catch {
-      if (generation !== collectGeneration.current) return;
-      // 绑定读取失败不阻塞已知同现场列表；跨现场明确显示失败原因。
-      cross = [{ key: 'search-failed', surface: 'unknown', label: '跨现场位置读取失败', current: false, entityTitle: null }];
-    }
-    const merged = [...own, ...cross];
-    setRows(merged);
-    setEntityTitle(requested?.title ?? selectedRef?.descriptor?.title ?? null);
-    setUnavailable(undefined);
-    setOpen(true);
-  }, [activeSurface, props.projectId, props.canvasBySurface, bindingStore]);
-
+    slot.activate('where'); setRows([]); setArriving(false); setMessage(undefined);
+    setTitle(requested?.title ?? selectedRef?.descriptor?.title ?? '当前对象');
+    if (!ref) { setLoading(false); setMessage('先选择一个对象，再查看它的位置。'); return; }
+    lastRequest.current = { entityId: ref.entityId, entityType: ref.entityType, ...(requested?.title ? { title: requested.title } : {}) };
+    const liveIds = new Set(canvas.nodes.filter((node) => !node.hidden).map((node) => node.id));
+    const own: OccurrenceRow[] = [...useLcosReferenceStore.getState().nodeEntityRefs].flatMap(([nodeId, candidate]) =>
+      liveIds.has(nodeId) && candidate.entityId === ref.entityId && candidate.entityType === ref.entityType && canvas.canvasId
+        ? [{ key: `${canvas.canvasId}:${nodeId}`, nodeId, canvasId: canvas.canvasId, entityId: ref.entityId, entityType: ref.entityType,
+          local: true, current: nodeId === selected, label: ({ main: '主画布', context: '上下文', workflow: '工作流' }[activeSurface]) }] : []);
+    setRows(own); setLoading(true);
+    const [bindingResult, workspaceResult] = await Promise.allSettled([bindings.list(), session.projects.getWorkspaces(props.projectId)]);
+    if (version !== generation.current) return;
+    const workspaces = workspaceResult.status === 'fulfilled' ? workspaceResult.value : [];
+    const remote = bindingResult.status === 'fulfilled' ? bindingResult.value.flatMap((binding): OccurrenceRow[] => {
+      if (binding.projectId !== props.projectId || binding.spatialKind !== 'node' || binding.entityId !== ref.entityId
+        || binding.entityType !== ref.entityType) return [];
+      if (own.some((row) => row.canvasId === binding.canvasId && row.nodeId === binding.spatialId)) return [];
+      const local = binding.canvasId === canvas.canvasId;
+      const destination = resolveOccurrenceDestination(binding.canvasId, workspaces, props.canvasBySurface);
+      return [{ key: `${binding.canvasId}:${binding.spatialId}`, nodeId: binding.spatialId, canvasId: binding.canvasId,
+        entityId: ref.entityId, entityType: ref.entityType, ...(destination ? { destination } : {}), local, current: false,
+        label: local ? '当前现场 · 投影待就绪' : destination?.label ?? '位置暂不可打开' }];
+    }) : [];
+    const all = [...own, ...remote];
+    setRows([...new Map(all.map((row) => [row.key, row])).values()]); setLoading(false);
+    if (bindingResult.status === 'rejected') setMessage('其他位置读取失败；当前现场的位置仍可使用。');
+    else if (workspaceResult.status === 'rejected') setMessage('部分现场信息读取失败，可重试。');
+    else if (all.length === 0) setMessage('这个对象目前没有可定位的画布投影。');
+  }, [activeSurface, bindings, invalidate, props.canvasBySurface, props.projectId, session, slot.activate]);
   useEffect(() => {
-    if (focusWhereRequest === undefined || focusWhereRequest === null) return;
-    consumeFocusWhere?.();
-    void collect(focusWhereRequest);
-  }, [collect, consumeFocusWhere, focusWhereRequest]);
-
-  const goToOccurrence = async (row: OccurrenceRow, surface: LcosSurfaceKey): Promise<void> => {
-    if (!row.entityId || !row.entityType || (arrival.current && !arrival.current.signal.aborted)) return;
-    const controller = new AbortController();
-    arrival.current = controller;
-    setArriving(true);
-    setUnavailable(undefined);
-    try {
-      const switched = await switchWorksite(surface);
-      if (controller.signal.aborted) return;
-      const canvasId = useCanvasStore.getState().canvasId;
-      if (!switched || !canvasId) {
-        setUnavailable('目标现场暂时无法打开，可重试。');
-        return;
-      }
-      const nodeId = await waitForProjectedEntity({ projectId: props.projectId, canvasId,
-        entityType: row.entityType, entityId: row.entityId, signal: controller.signal });
-      if (controller.signal.aborted) return;
-      if (!nodeId) {
-        setUnavailable('已进入目标现场，但对象投影尚未就绪，可重试定位。');
-        return;
-      }
-      requestLocate({ reqId: crypto.randomUUID(), surface, canvasId, nodeId, status: 'projected' });
-      close();
-    } catch {
-      if (!controller.signal.aborted) setUnavailable('前往对象位置失败，可重试。');
-    } finally {
-      if (arrival.current === controller) {
-        arrival.current = null;
-        if (!controller.signal.aborted) setArriving(false);
-      }
-    }
-  };
-
+    if (!request) return;
+    consume?.(); void collect(request);
+  }, [request, consume, collect]);
+  useEffect(() => { if (slot.active !== 'where') invalidate(); }, [slot.active, invalidate]);
+  useEffect(() => { close(); return invalidate; }, [props.projectId, close, invalidate]);
   useEffect(() => {
-    invalidatePendingCollect();
-    setOpen(false);
-  }, [invalidatePendingCollect, props.projectId]);
-
-  useEffect(() => () => invalidatePendingCollect(), [invalidatePendingCollect]);
-
-  useEffect(() => {
-    const onKey = (event: KeyboardEvent): void => {
-      const target = event.target as HTMLElement | null;
-      const typing = target?.tagName === 'INPUT' || target?.tagName === 'TEXTAREA' || target?.isContentEditable;
-      if (event.key.toLowerCase() === 'f' && !event.metaKey && !event.ctrlKey && !typing) {
-        event.preventDefault();
-        void collect();
-      }
-      if (event.key === 'Escape') close();
+    const key = (event: KeyboardEvent): void => {
+      if (event.defaultPrevented) return;
+      const target = event.target instanceof Element ? event.target : null;
+      if (event.key.toLowerCase() === 'f' && !event.metaKey && !event.ctrlKey && !event.altKey && !target?.closest('input,textarea,[contenteditable="true"]')) {
+        event.preventDefault(); void collect();
+      } else if (event.key === 'Escape' && slot.active === 'where') { event.preventDefault(); event.stopImmediatePropagation(); close(); }
     };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [activeSurface, close, collect, props.projectId, props.surfaceByWorkspace]);
-
-  if (!open) return <div data-lcos-focus-where data-open="false" className="hidden" aria-hidden />;
-
-  const edgeOffsets = lcosHudEdgeOffsets(windowEnvironment ?? null, {
-    width: window.innerWidth,
-    height: window.innerHeight,
-  });
-
-  return (
-    <div
-      data-lcos-focus-where
-      data-open="true"
-      className="pointer-events-auto fixed left-1/2 top-24 z-40 w-[380px] -translate-x-1/2 rounded-xl p-3"
-      style={{ ...lcosGlassStyle, maxWidth: '88vw', top: edgeOffsets.top + 72 }}
-      role="dialog"
-      aria-label="对象位置（在哪）"
-    >
-      <div className="mb-2 flex items-center justify-between">
-        <span className="flex items-center gap-1.5 text-sm font-semibold" style={{ color: lcosTokens.color.text }}>
-          <Focus className="h-4 w-4" aria-hidden />
-          在哪 · {entityTitle ?? '当前对象'}
-        </span>
-        <button type="button" aria-label="关闭" onClick={close} className="rounded-full p-1">
-          <X className="h-4 w-4" style={{ color: lcosTokens.color.muted }} />
-        </button>
-      </div>
-
-      {unavailable && (
-        <div className="rounded-lg px-3 py-2 text-sm" style={{ background: 'rgba(194,91,78,0.08)', color: lcosTokens.color.danger }}>
-          {unavailable}
-        </div>
-      )}
-
-      {rows.length === 0 && !unavailable && (
-        <div className="px-3 py-2 text-sm" style={{ color: lcosTokens.color.muted }}>
-          在当前现场没有其它投影
-        </div>
-      )}
-
-      <div className="flex max-h-[46vh] flex-col gap-1 overflow-y-auto">
-        {rows.map((row) => {
-              const goSurface = row.surface === 'main' || row.surface === 'context' || row.surface === 'workflow' ? row.surface : null;
-              return (
-                <div
-                  key={row.key}
-                  className="flex items-center justify-between gap-2 rounded-lg px-3 py-2"
-                  style={{ background: row.current ? 'rgba(0,0,0,0.04)' : 'transparent', minHeight: 44 }}
-                >
-                  <span className="flex min-w-0 items-center gap-2">
-                    <MapPin className="h-3.5 w-3.5 shrink-0" style={{ color: lcosTokens.color.muted }} aria-hidden />
-                    <span className="truncate text-sm" style={{ color: lcosTokens.color.text }}>{row.label}</span>
-                    {row.entityTitle && (
-                      <span className="truncate text-xs" style={{ color: lcosTokens.color.muted }}>{row.entityTitle}</span>
-                    )}
-                  </span>
-                  {row.current ? (
-                    <span className="shrink-0 text-[10px]" style={{ color: lcosTokens.color.muted }}>当前现场</span>
-                  ) : row.nodeId ? (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        requestLocate({ reqId: crypto.randomUUID(), surface: activeSurface, nodeId: row.nodeId, status: 'projected' });
-                        close();
-                      }}
-                      className="flex shrink-0 items-center gap-1 rounded-full px-2 py-1 text-xs font-medium"
-                      style={{ color: lcosTokens.color.text }}
-                    >
-                      前往
-                      <ArrowRight className="h-3 w-3" aria-hidden />
-                    </button>
-                  ) : goSurface ? (
-                    <button
-                      type="button"
-                      disabled={arriving}
-                      onClick={() => void goToOccurrence(row, goSurface)}
-                      className="flex shrink-0 items-center gap-1 rounded-full px-2 py-1 text-xs font-medium"
-                      style={{ color: lcosTokens.color.text }}
-                    >
-                      前往
-                      <ArrowRight className="h-3 w-3" aria-hidden />
-                    </button>
-                  ) : null}
-                </div>
-              );
-            })}
-      </div>
-    </div>
-  );
+    window.addEventListener('keydown', key, true); return () => window.removeEventListener('keydown', key, true);
+  }, [collect, close, slot.active]);
+  const go = async (row: OccurrenceRow): Promise<void> => {
+    if (arriving || (!row.local && !row.destination)) return;
+    const controller = new AbortController(); arrival.current = controller; setArriving(true); setMessage(undefined);
+    try {
+      const surface = row.local ? activeSurface : row.destination!.surface;
+      if (!row.local && !await switchWorksite(surface, { canvasId: row.canvasId,
+        ...(row.destination?.workspaceId ? { workspaceId: row.destination.workspaceId } : {}) })) {
+        if (!controller.signal.aborted) setMessage('目标现场暂时无法打开，请重试。'); return;
+      }
+      if (controller.signal.aborted) return;
+      const nodeId = await waitForProjectedEntity({ projectId: props.projectId, canvasId: row.canvasId,
+        entityType: row.entityType, entityId: row.entityId, nodeId: row.nodeId, signal: controller.signal });
+      if (controller.signal.aborted) return;
+      if (nodeId !== row.nodeId) { setMessage('所选投影尚未就绪或已移除，请刷新位置后重试。'); return; }
+      requestLocate({ reqId: crypto.randomUUID(), surface, canvasId: row.canvasId, nodeId, status: 'projected', preserveSelection: true }); close();
+    } catch (error) { if (!controller.signal.aborted) setMessage(error instanceof Error ? error.message : '定位失败，请重试。'); }
+    finally { if (arrival.current === controller) { arrival.current = null; setArriving(false); } }
+  };
+  const offsets = lcosHudEdgeOffsets(environment ?? null, viewport);
+  const placement = useAvoidingHudPosition({ x: (offsets.left + viewport.width - offsets.right) / 2,
+    y: offsets.top + 56, width: Math.min(380, viewport.width - offsets.left - offsets.right), height: 160 }, { x: 'center' }, '[data-lcos-shell-project-cluster],[data-lcos-navigator-island]');
+  if (slot.active !== 'where') return <div data-lcos-focus-where data-open="false" hidden />;
+  return <div ref={placement.ref} data-lcos-focus-where data-open="true" role="dialog" aria-label="对象位置"
+    className="pointer-events-auto fixed z-40 rounded-2xl p-2"
+    style={{ ...lcosGlassStyle, width: Math.min(380, viewport.width - offsets.left - offsets.right), top: placement.rect.y,
+      left: placement.rect.x }}>
+    <div className="flex items-center gap-2 px-2 pb-2 text-sm"><Focus size={16} aria-hidden /><span className="min-w-0 flex-1 truncate">{title}</span>
+      <button type="button" aria-label="关闭对象位置" onClick={close} className="rounded-full p-2"><X size={16} /></button></div>
+    {loading && <p role="status" className="px-2 py-2 text-xs">正在查找全部位置…</p>}
+    {message && <p role="status" className="px-2 py-2 text-xs" style={{ color: lcosTokens.color.muted }}>{message}
+      {lastRequest.current && <button type="button" className="ml-2 underline" onClick={() => void collect(lastRequest.current)}>刷新位置</button>}</p>}
+    <div className="max-h-[46vh] overflow-y-auto">{rows.map((row) => <button key={row.key} type="button"
+      data-lcos-occurrence={row.nodeId} data-lcos-occurrence-canvas={row.canvasId}
+      disabled={arriving || (!row.local && !row.destination)} onClick={() => void go(row)}
+      className="flex min-h-11 w-full items-center gap-2 rounded-lg px-2 py-2 text-left text-sm disabled:opacity-50">
+      <MapPin size={16} aria-hidden /><span className="min-w-0 flex-1 truncate">{row.label}</span>
+      <span className="text-xs" style={{ color: lcosTokens.color.muted }}>{row.current ? '当前投影' : row.local ? '当前现场' : ''}</span><ArrowRight size={15} aria-label="前往" />
+    </button>)}</div>
+  </div>;
 }

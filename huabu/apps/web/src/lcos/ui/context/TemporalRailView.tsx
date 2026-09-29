@@ -69,6 +69,7 @@ export function TemporalRailView({
   const [focusY, setFocusY] = useState<number | null>(null);
   const [previewId, setPreviewId] = useState<string | null>(null);
   const previewRef = useRef<string | null>(null);
+  const previewValue = useRef<TemporalRailItemView | null>(null);
   const previewNotifier = useRef<typeof onPreviewChange>(undefined);
   const [rovingId, setRovingId] = useState<string | null>(null);
   const callbacks = useRef({ onPreviewChange, onWindowShift });
@@ -94,6 +95,7 @@ export function TemporalRailView({
     const id = item?.id ?? null;
     if (previewRef.current === id) return;
     previewRef.current = id;
+    previewValue.current = item;
     setPreviewId(id);
     const notify = item === null ? previewNotifier.current : callbacks.current.onPreviewChange;
     previewNotifier.current = item === null ? undefined : notify;
@@ -138,23 +140,25 @@ export function TemporalRailView({
 
   useEffect(() => {
     if (previewRef.current === null) return;
-    if (sorted.some((item) => item.id === previewRef.current && item.disabled !== true)) return;
-    previewRef.current = null;
-    setPreviewId(null);
+    const current = sorted.find((item) => item.id === previewRef.current && item.disabled !== true);
+    // The group id can survive a binding refresh while its real nodes change.
+    // Retire that stale preview; a new hover reads the current producer value.
+    if (current !== undefined && current === previewValue.current) return;
     setFocusY(null);
-    previewNotifier.current?.(null);
-    previewNotifier.current = undefined;
-  }, [sorted]);
+    setPreview(null);
+  }, [sorted, setPreview]);
 
   useEffect(() => {
     setRovingId(null);
     setFocusY(null);
     setPreviewId(null);
     previewRef.current = null;
+    previewValue.current = null;
     return () => {
       if (previewRef.current !== null) previewNotifier.current?.(null);
       previewNotifier.current = undefined;
       previewRef.current = null;
+      previewValue.current = null;
     };
   }, [scopeKey]);
 

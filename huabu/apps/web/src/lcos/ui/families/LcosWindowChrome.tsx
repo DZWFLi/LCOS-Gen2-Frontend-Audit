@@ -1,3 +1,5 @@
+import { useEffect, useRef } from 'react';
+
 import { LcosButton } from '../primitives/LcosButton';
 // LcosWindowChrome — 共享组件族 ProfessionalWindowChrome（Figma 5387:331，布局 浮动/停靠/分组）。
 // 几何取自 structures/window-chrome：h48 · pad 8/24 · gap 8 · 标题 12px / 18px（22px 内容框） · 图标键 32×32 r999。
@@ -42,6 +44,24 @@ export function LcosWindowChrome({
   overflowTrigger,
   busy = false,
 }: LcosWindowChromeProps): React.JSX.Element {
+  const tabsRef = useRef<HTMLDivElement>(null);
+  const selectedTab = tabs.find((tab) => tab.selected)?.value ?? tabs.find((tab) => tab.selected)?.key;
+  useEffect(() => {
+    const strip = tabsRef.current;
+    if (!strip) return;
+    const revealSelection = () => {
+      const selected = strip.querySelector<HTMLElement>('[aria-current="true"]');
+      if (!selected) return;
+      const bounds = strip.getBoundingClientRect();
+      const tabBounds = selected.getBoundingClientRect();
+      if (tabBounds.left < bounds.left) strip.scrollLeft -= bounds.left - tabBounds.left;
+      else if (tabBounds.right > bounds.right) strip.scrollLeft += tabBounds.right - bounds.right;
+    };
+    revealSelection();
+    const observer = typeof ResizeObserver === 'undefined' ? undefined : new ResizeObserver(revealSelection);
+    observer?.observe(strip);
+    return () => observer?.disconnect();
+  }, [selectedTab, tabs.length]);
   const managedOverflow = primaryActions !== undefined && primaryActions !== null
     && overflowTrigger !== undefined && overflowTrigger !== null;
   return (
@@ -53,7 +73,7 @@ export function LcosWindowChrome({
       aria-busy={busy || undefined}
     >
       {tabs.length > 0 ? (
-        <div data-lcos-window-tabs aria-label={title}>{tabs.map((tab) => (
+        <div ref={tabsRef} data-lcos-window-tabs aria-label={title}>{tabs.map((tab) => (
           <LcosButton
             key={tab.value ?? tab.key}
             type="button"

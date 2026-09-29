@@ -3,7 +3,7 @@
 // （answerInput，receipt-or-error）。UI 不再访问 runs raw client。
 
 import { CircleHelp } from 'lucide-react';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { useCollaborationSessionStore } from '../collaboration/collaborationSessionStore';
 import { lcosTokens } from '../ui/lcosTokens';
@@ -24,24 +24,41 @@ export function WaitingInputSection({ collaboration, projectId, conversationId }
   const [submitting, setSubmitting] = useState(false);
   const [receipt, setReceipt] = useState<string | null>(null);
   const [errorDetail, setErrorDetail] = useState<string | undefined>(undefined);
+  const pendingRead = useRef<AbortController | null>(null);
+  const scope = useRef(`${projectId}:${conversationId}`);
+  scope.current = `${projectId}:${conversationId}`;
 
   const load = useCallback((): void => {
+    pendingRead.current?.abort();
+    const controller = new AbortController();
+    pendingRead.current = controller;
     setState('loading');
+    setRequest(undefined);
+    setErrorDetail(undefined);
     void collaboration
-      .readPendingInput(projectId, conversationId)
+      .readPendingInput(projectId, conversationId, controller.signal)
       .then((value) => {
+        if (controller.signal.aborted) return;
         setRequest(value);
         setState('ready');
       })
       .catch((error: unknown) => {
+        if (controller.signal.aborted) return;
         setState('error');
         setErrorDetail(error instanceof Error ? error.message : String(error));
       });
   }, [collaboration, projectId, conversationId]);
 
   useEffect(() => {
+    scope.current = `${projectId}:${conversationId}`;
+    setRequest(undefined);
+    setAnswerText('');
+    setSelected([]);
+    setSubmitting(false);
+    setReceipt(null);
     load();
-  }, [load]);
+    return () => { pendingRead.current?.abort(); scope.current = ''; };
+  }, [load, projectId, conversationId]);
 
   if (request === undefined && state === 'ready') return null;
   if (request === undefined && state === 'loading') {
@@ -57,11 +74,14 @@ export function WaitingInputSection({ collaboration, projectId, conversationId }
         <span className="text-xs" style={{ color: lcosTokens.color.danger }}>
           读取失败{errorDetail ? `（${errorDetail}）` : ''}
         </span>
+        <button type="button" onClick={load}>重试读取问题</button>
       </section>
     );
   }
 
   const submit = (): void => {
+    if (submitting) return;
+    const submittedScope = scope.current;
     const text = answerText.trim();
     if (text === '' && selected.length === 0) return;
     setSubmitting(true);
@@ -74,6 +94,7 @@ export function WaitingInputSection({ collaboration, projectId, conversationId }
         ...(selected.length === 0 ? {} : { selectedOptions: selected }),
       })
       .then((result) => {
+        if (scope.current !== submittedScope) return;
         if (result.ok) {
           setReceipt('回答已提交（同一 Run，不新建）');
           setAnswerText('');
@@ -88,9 +109,10 @@ export function WaitingInputSection({ collaboration, projectId, conversationId }
         }
       })
       .catch((error: unknown) => {
+        if (scope.current !== submittedScope) return;
         setErrorDetail(error instanceof Error ? error.message : String(error));
       })
-      .finally(() => setSubmitting(false));
+      .finally(() => { if (scope.current === submittedScope) setSubmitting(false); });
   };
 
   return (
@@ -115,6 +137,7 @@ export function WaitingInputSection({ collaboration, projectId, conversationId }
                 key={option}
                 type="button"
                 data-lcos-waiting-option
+                aria-pressed={on}
                 onClick={() =>
                   setSelected((prev) => (prev.includes(option) ? prev.filter((o) => o !== option) : [...prev, option]))
                 }

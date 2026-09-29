@@ -1,8 +1,6 @@
-import { Image as ImageIcon } from 'lucide-react';
-
 import { SourceFeedbackSlot } from './SourceFeedbackSlot';
 import { FIGMA_SOURCE_GEOMETRY, FIGMA_SOURCE_NODE_IDS } from '../../nodes/source/sourceFigmaGeometry';
-import { SourceMarker } from '../../nodes/source/SourceMarker';
+import { PreviewMedia } from '../spatial/PreviewMedia';
 import './source-presentation.css';
 
 import type { SourceVisualProps } from './sourceViewTypes';
@@ -20,15 +18,12 @@ export function ImageSourceView(props: SourceVisualProps): JSX.Element {
       data-ui-interaction={props.interaction}
     >
       <div data-lcos-source-media className="lcos-image-media">
-        {props.mediaSrc
-          ? <img src={props.mediaSrc} alt={props.title} draggable={false} />
-          : <div className="lcos-image-unavailable"><ImageIcon size={28} strokeWidth={1.5} aria-hidden /></div>}
+        <PreviewMedia label={props.title} fit="contain"
+          {...(props.mediaSrc === undefined ? {} : { src: props.mediaSrc })} />
       </div>
-      <SourceMarker size={compact ? 9 : 11} tone={compact ? 'green' : 'amber'}
-        right={compact ? 0 : -3} top={compact ? -4 : -5} />
       {props.density !== 'mark' && (
         <span className="lcos-source-caption">
-          {props.title}{props.secondary ? ` · ${props.secondary}` : ''}
+          {props.title}{props.density === 'reading' && props.secondary ? ` · ${props.secondary}` : ''}
         </span>
       )}
       <SourceFeedbackSlot feedback={props.feedback} />

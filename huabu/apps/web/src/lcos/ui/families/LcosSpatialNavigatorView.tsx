@@ -1,15 +1,19 @@
 // Figma 5386:274 fixes the 52×48 collapsed camera control. The expanded
 // composition follows T2 C2-3B and only arranges mechanics supplied by Huabu.
+import { GitBranch } from 'lucide-react';
+
 import { FigmaShellGlyph } from '../FigmaShellGlyph';
 import { LcosIconButton } from '../primitives/LcosIconButton';
 
-import type { ReactNode } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
 
 export interface LcosSpatialNavigatorViewProps {
+  readonly style?: CSSProperties;
   readonly expanded: boolean;
   readonly zoom: number;
   readonly minimapEnabled: boolean;
   readonly gridEnabled: boolean;
+  readonly edgesVisible: boolean;
   readonly interactivityLocked: boolean;
   readonly miniMap: ReactNode;
   readonly onToggleExpanded: () => void;
@@ -20,6 +24,7 @@ export interface LcosSpatialNavigatorViewProps {
   readonly onToggleInteractivity: () => void;
   readonly onToggleMinimap: () => void;
   readonly onToggleGrid: () => void;
+  readonly onToggleEdges: () => void;
   readonly zoomOutIcon: ReactNode;
   readonly zoomInIcon: ReactNode;
   readonly fitIcon: ReactNode;
@@ -29,10 +34,11 @@ export interface LcosSpatialNavigatorViewProps {
 }
 
 export function LcosSpatialNavigatorView({
-  expanded,
+  style, expanded,
   zoom,
   minimapEnabled,
   gridEnabled,
+  edgesVisible,
   interactivityLocked,
   miniMap,
   onToggleExpanded,
@@ -43,6 +49,7 @@ export function LcosSpatialNavigatorView({
   onToggleInteractivity,
   onToggleMinimap,
   onToggleGrid,
+  onToggleEdges,
   zoomOutIcon,
   zoomInIcon,
   fitIcon,
@@ -52,6 +59,7 @@ export function LcosSpatialNavigatorView({
 }: LcosSpatialNavigatorViewProps): React.JSX.Element {
   return (
     <section
+      style={style}
       data-lcos-spatial-navigator
       data-lcos-camera-controls
       data-lcos-family="spatial-navigator"
@@ -114,6 +122,14 @@ export function LcosSpatialNavigatorView({
               onClick={onToggleGrid}
             >
               {gridIcon}
+            </LcosIconButton>
+            <LcosIconButton
+              aria-label={edgesVisible ? '隐藏连线' : '显示连线'}
+              title={edgesVisible ? '隐藏连线' : '显示连线'}
+              aria-pressed={edgesVisible}
+              onClick={onToggleEdges}
+            >
+              <GitBranch aria-hidden size={17} />
             </LcosIconButton>
             <LcosIconButton
               aria-label={minimapEnabled ? '隐藏小地图' : '显示小地图'}

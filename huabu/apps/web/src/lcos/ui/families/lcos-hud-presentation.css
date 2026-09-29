@@ -46,9 +46,8 @@
   gap: var(--lcos-space-8);
   padding: 6px 8px;
   border-radius: var(--lcos-radius-capsule);
-  overflow-x: auto;
-  scrollbar-width: none;
-  transition: opacity 120ms ease, background-color 120ms ease;
+  overflow: visible;
+  transition: width 200ms cubic-bezier(0.22, 1, 0.36, 1), opacity 120ms ease, background-color 120ms ease;
 }
 [data-lcos-family='navigator-island'][data-lcos-variant='hover'] {
   background: var(--gen2-raised);
@@ -288,7 +287,7 @@
 [data-lcos-railway-overflow-list] { display: flex; flex-direction: column; gap: 6px; }
 [data-lcos-railway-overflow-row] {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 18px;
+  grid-template-columns: minmax(0, 1fr) 28px;
   gap: 4px 8px;
   align-items: center;
   padding: 6px;
@@ -669,4 +668,31 @@
   [data-lcos-project-identity] {
     background: var(--lcos-hud-surface);
   }
+}
+
+/* Navigation overflow is transient and stays outside the 48px island geometry. */
+[data-lcos-pin-overflow] { position:absolute; top:56px; right:0; min-width:210px; max-width:min(320px,88vw); max-height:45vh; overflow-y:auto; padding:8px; border-radius:18px; background:var(--lcos-hud-surface); box-shadow:var(--lcos-glass-shadow); backdrop-filter:blur(var(--lcos-glass-blur)); }
+[data-lcos-pin-overflow] button { display:flex; align-items:center; gap:10px; width:100%; min-height:40px; padding:6px 8px; border-radius:10px; text-align:left; font:400 12px/1.4 var(--lcos-hud-font); }
+[data-lcos-pin-overflow] button:hover { background:var(--gen2-raised); }
+[data-lcos-pin-overflow] button:focus-visible { outline:2px solid var(--lcos-pin-violet); outline-offset:-2px; }
+[data-lcos-pin-overflow] button span:not([data-lcos-pin-mark]):not([data-lcos-pin-shape]) { flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+[data-lcos-pin-overflow] small { color:var(--gen2-muted); }
+[data-lcos-nav-part='overflow'] { font:500 11px/1 var(--lcos-hud-font); }
+[data-lcos-railway-entry]::after { content:''; position:absolute; left:100%; top:0; width:14px; height:100%; }
+@media (prefers-reduced-motion: reduce) { [data-lcos-family='navigator-island'] { transition:none; } }
+
+/* +N uses the same local management actions as the primary rail. */
+[data-lcos-railway-overflow-manage] { grid-column: 2; grid-row: 1 / span 2; width: 28px; height: 32px; display: grid; place-items: center; border: 0; border-radius: 8px; background: transparent; color: var(--gen2-muted); }
+[data-lcos-railway-overflow-menu] { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 4px; padding: 5px 0; }
+[data-lcos-railway-overflow-menu] button { display: inline-flex; align-items: center; gap: 4px; min-height: 30px; padding: 4px 7px; border: 0; border-radius: 7px; background: var(--gen2-raised); color: var(--gen2-text); cursor: pointer; }
+[data-lcos-railway-overflow-menu] button:disabled { opacity: .45; cursor: not-allowed; }
+[data-lcos-railway-overflow-menu] [data-lcos-railway-overflow-remove] { width: auto; height: auto; }
+[data-lcos-railway-receiver-status][data-user-state='needs_user'] { background: var(--lcos-pin-amber); }
+[data-lcos-railway-receiver-status][data-user-state='unavailable'],
+[data-lcos-railway-receiver-status][data-user-state='unknown'] { background: var(--gen2-muted); }
+
+/* Keep return discoverable without a full sentence displacing the project on narrow viewports. */
+@media (max-width: 720px) {
+  [data-lcos-child-return] { width: 44px; padding-inline: 0; justify-content: center; }
+  [data-lcos-child-return-label] { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 }

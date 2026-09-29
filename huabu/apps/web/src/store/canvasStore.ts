@@ -323,6 +323,7 @@ function writeViewportToStorage(
 
 const MINIMAP_STORAGE_KEY = 'huabu.minimapEnabled';
 const GRID_STORAGE_KEY = 'huabu.gridEnabled';
+const EDGES_VISIBLE_STORAGE_KEY = 'huabu.edgesVisible';
 
 function readMinimapEnabledFromStorage(): boolean {
   try {
@@ -356,6 +357,23 @@ function writeGridEnabledToStorage(value: boolean): void {
     localStorage.setItem(GRID_STORAGE_KEY, String(value));
   } catch {
     // Ignore quota / private-mode errors; in-memory state still toggles.
+  }
+}
+
+function readEdgesVisibleFromStorage(): boolean {
+  try {
+    return localStorage.getItem(EDGES_VISIBLE_STORAGE_KEY) === 'true';
+  } catch {
+    // Keep first-time/private-mode canvases quiet when preferences are unavailable.
+    return false;
+  }
+}
+
+function writeEdgesVisibleToStorage(value: boolean): void {
+  try {
+    localStorage.setItem(EDGES_VISIBLE_STORAGE_KEY, String(value));
+  } catch {
+    // Ignore quota/private-mode errors; in-memory state still toggles.
   }
 }
 
@@ -786,7 +804,7 @@ type RFState = {
   ) => void;
   sendSelectedToOrder: (direction: 'top' | 'bottom') => void;
 
-  frameSelectedNodes: () => void;
+  frameSelectedNodes: (options?: { readonly label?: string; readonly collectionId?: string; readonly collectionNodeId?: string; readonly geometryUpdates?: Extract<CanvasUiIntent, { type: 'GROUP_SELECTION_INTO_FRAME' }>['geometryUpdates'] }) => void;
   frameNodesInRect: (flowRect: {
     x: number;
     y: number;
@@ -832,6 +850,9 @@ type RFState = {
   /** Background grid visibility; a global, discardable UI preference. */
   gridEnabled: boolean;
   toggleGrid: () => void;
+  /** Canonical Huabu edges remain in store/Core; this only controls their canvas projection. */
+  edgesVisible: boolean;
+  toggleEdges: () => void;
 
   moveNodeIntoFrame: (
     nodeId: string,
@@ -3635,8 +3656,8 @@ const useCanvasStore = create<RFState>()(
       });
     },
 
-    frameSelectedNodes: () => {
-      get().dispatchUiIntent({ type: 'GROUP_SELECTION_INTO_FRAME' });
+    frameSelectedNodes: (options) => {
+      get().dispatchUiIntent({ type: 'GROUP_SELECTION_INTO_FRAME', ...(options?.label ? { frameLabel: options.label } : {}), ...(options?.collectionId ? { collectionId: options.collectionId } : {}), ...(options?.collectionNodeId ? { collectionNodeId: options.collectionNodeId } : {}), ...(options?.geometryUpdates ? { geometryUpdates: options.geometryUpdates } : {}) });
     },
 
     frameNodesInRect: (flowRect) => {
@@ -3711,6 +3732,12 @@ const useCanvasStore = create<RFState>()(
       const next = !get().gridEnabled;
       writeGridEnabledToStorage(next);
       set({ gridEnabled: next });
+    },
+    edgesVisible: readEdgesVisibleFromStorage(),
+    toggleEdges: () => {
+      const next = !get().edgesVisible;
+      writeEdgesVisibleToStorage(next);
+      set({ edgesVisible: next });
     },
 
     moveNodeIntoFrame: (nodeId, frameId, reorderTarget) => {

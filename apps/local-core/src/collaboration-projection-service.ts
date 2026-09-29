@@ -1,3 +1,4 @@
+import { readBoundConversationContext } from './conversation-context.js'
 /**
  * Collaboration Projection Service（收敛方案 V1 §11.1）。
  *
@@ -108,6 +109,14 @@ export class CollaborationProjectionService {
       relation: {
         ...(conversation.workspaceRef === null ? {} : { workspaceId: conversation.workspaceRef }),
         targetRefs,
+        boundContext: readBoundConversationContext(this.metadata, projectId, connectedConversationId).map(({ entityRef }) => ({
+          entityRef,
+          title: entityRef.type === 'artifact' ? this.metadata.getArtifact(entityRef.id)?.title ?? '材料'
+            : entityRef.type === 'note' ? this.metadata.getNote(entityRef.id)?.body.slice(0, 60) ?? '笔记'
+            : entityRef.type === 'scope' ? this.metadata.getScopes(projectId).find((scope) => String(scope.id) === entityRef.id)?.name ?? '集合'
+            : entityRef.type === 'workspace' ? this.metadata.getWorkspace(entityRef.id)?.name ?? '工作现场'
+            : entityRef.id,
+        })),
       },
       activity: {
         ...(lastActivityAt === undefined ? {} : { lastActivityAt }),

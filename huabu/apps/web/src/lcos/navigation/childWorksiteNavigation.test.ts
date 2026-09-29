@@ -38,6 +38,7 @@ vi.mock('../shell/lcosShellStore', () => ({
   useLcosShellStore: {
     getState: () => ({
       beginChildNavigation: mocks.begin,
+      consumeWorksiteCameraTransition: (id: string) => { if (mocks.transition?.id === id) mocks.transition = null; },
       worksiteCameraTransition: mocks.transition,
       requestWorksiteCameraTransition: (value: Omit<NonNullable<typeof mocks.transition>, 'id'>) => {
         mocks.transition = { id: 'transition-1', ...value };
@@ -66,7 +67,7 @@ describe('beginChildWorksiteNavigation', () => {
       return true;
     });
 
-    expect(beginChildWorksiteNavigation({
+    expect(await beginChildWorksiteNavigation({
       projectId: 'project-1',
       sourceSurface: 'context',
       sourceWorkspaceId: 'workspace-context',
@@ -98,12 +99,12 @@ describe('beginChildWorksiteNavigation', () => {
     expect(navigate).toHaveBeenCalledWith('/projects/project-1/context?workspaceId=workspace-child');
   });
 
-  it('fails closed when the target workspace has no canvas', () => {
+  it('fails closed when the target workspace has no canvas', async () => {
     const navigate = vi.fn();
     mocks.begin.mockReset();
     mocks.transition = null;
 
-    expect(beginChildWorksiteNavigation({
+    expect(await beginChildWorksiteNavigation({
       projectId: 'project-1',
       sourceSurface: 'main',
       sourceWasChild: false,
@@ -115,4 +116,25 @@ describe('beginChildWorksiteNavigation', () => {
     expect(mocks.transition).toBeNull();
     expect(navigate).not.toHaveBeenCalled();
   });
+});
+
+
+it.each([false, 'throw'])('does not route or commit return history when Canvas fails: %s', async (outcome) => {
+  const navigate = vi.fn(); mocks.begin.mockReset(); mocks.transition = null;
+  mocks.canvas.canvasId = 'canvas-source';
+  mocks.canvas.switchCanvas.mockImplementation(async () => { if (outcome === 'throw') throw new Error('network'); return false; });
+  expect(await beginChildWorksiteNavigation({ projectId: 'p', sourceSurface: 'main', sourceWasChild: false,
+    targetSurface: 'context', targetWorkspace: { id: 'child' as Workspace['id'], canvasId: 'bad' }, navigate })).toBe(false);
+  expect(navigate).not.toHaveBeenCalled(); expect(mocks.begin).not.toHaveBeenCalled(); expect(mocks.transition).toBeNull();
+});
+it('ignores a superseded load result without consuming the newer transition or changing history', async () => {
+  const navigate = vi.fn(); mocks.begin.mockReset(); mocks.transition = null;
+  let resolve!: (loaded: boolean) => void;
+  mocks.canvas.switchCanvas.mockImplementation(() => new Promise<boolean>(r => { resolve = r; }));
+  const pending = beginChildWorksiteNavigation({ projectId: 'p', sourceSurface: 'main', sourceWasChild: false,
+    targetSurface: 'context', targetWorkspace: { id: 'child' as Workspace['id'], canvasId: 'slow' }, navigate });
+  await vi.waitFor(() => expect(resolve).toBeTypeOf('function'));
+  mocks.transition = { id: 'newer', kind: 'enter-settle', canvasId: 'newer-canvas' };
+  resolve(true); expect(await pending).toBe(false);
+  expect(navigate).not.toHaveBeenCalled(); expect(mocks.begin).not.toHaveBeenCalled(); expect(mocks.transition.id).toBe('newer');
 });

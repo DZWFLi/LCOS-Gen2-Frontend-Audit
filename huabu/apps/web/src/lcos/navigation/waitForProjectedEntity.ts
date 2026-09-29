@@ -7,6 +7,8 @@ export interface WaitForProjectedEntityOptions {
   readonly canvasId: string;
   readonly entityType: string;
   readonly entityId: string;
+  /** Exact projection selected by Where; never fall back to another occurrence. */
+  readonly nodeId?: string;
   readonly signal?: AbortSignal;
   readonly timeoutMs?: number;
 }
@@ -27,6 +29,7 @@ function findProjectedNode(
   const currentNodeIds = new Set(canvasState.nodes.map((node) => node.id));
   for (const [nodeId, ref] of referenceState.nodeEntityRefs) {
     if (
+      (options.nodeId === undefined || nodeId === options.nodeId) &&
       currentNodeIds.has(nodeId) &&
       ref.entityType === options.entityType &&
       ref.entityId === options.entityId

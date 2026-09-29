@@ -11,10 +11,15 @@ import {
   type LcosSurfaceKey,
 } from '../shell/lcosShellStore';
 
+export interface ExactWorksiteTarget {
+  readonly canvasId: string;
+  readonly workspaceId?: string;
+}
+
 export interface WorksiteNavHandle {
   readonly busySurface: LcosSurfaceKey | null;
   readonly transitionError: string | undefined;
-  switchWorksite(surface: LcosSurfaceKey): Promise<boolean>;
+  switchWorksite(surface: LcosSurfaceKey, target?: ExactWorksiteTarget): Promise<boolean>;
 }
 
 export function useLcosWorksiteNav(opts: {
@@ -38,15 +43,19 @@ export function useLcosWorksiteNav(opts: {
   );
 
   const switchWorksite = useCallback(
-    async (surface: LcosSurfaceKey): Promise<boolean> => {
+    async (surface: LcosSurfaceKey, target?: ExactWorksiteTarget): Promise<boolean> => {
       // React state updates are deferred: two requests in the same event turn
       // must not both flush/switch the shared canvas before the next render.
       if (switching.current) return false;
       switching.current = true;
+      // A newly accepted Surface navigation supersedes a child approach/load.
+      // Reuse the existing one-shot intent; do not let its late response route back.
+      const pendingChild = useLcosShellStore.getState().worksiteCameraTransition;
+      if (pendingChild) useLcosShellStore.getState().consumeWorksiteCameraTransition(pendingChild.id);
       const previousSurface = useLcosShellStore.getState().activeSurface;
       const isCurrent = (): boolean => mounted.current && currentProject.current === opts.projectId;
       setTransitionError(undefined);
-      const existing = opts.canvasBySurface[surface];
+      const existing = target?.canvasId ?? opts.canvasBySurface[surface];
       setBusySurface(surface);
       try {
         const canvasId = existing ?? (await opts.ensureCanvas(surface));
@@ -61,7 +70,8 @@ export function useLcosWorksiteNav(opts: {
           throw new Error(failure?.canvasId === canvasId ? failure.message : '未能进入目标现场，请重试');
         }
         setActiveSurface(surface);
-        navigate(`/projects/${encodeURIComponent(opts.projectId)}/${surface}`, {
+        const suffix = target?.workspaceId === undefined ? '' : `?workspaceId=${encodeURIComponent(target.workspaceId)}`;
+        navigate(`/projects/${encodeURIComponent(opts.projectId)}/${surface}${suffix}`, {
           replace: true,
         });
         return true;

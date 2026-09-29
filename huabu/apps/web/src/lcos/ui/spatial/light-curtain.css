@@ -12,13 +12,17 @@
 /* Full-scene Figma layer order: content alpha is separate from the fog alpha.
    Only the already loaded worksite stage recedes. HUD/Composer/Window siblings
    and explicit load/error surfaces keep their original treatment. */
+[data-lcos-main-worksite] > [data-lcos-worksite-stage],
 [data-lcos-context-worksite] > [data-lcos-worksite-stage],
 [data-lcos-workflow-worksite] > [data-lcos-worksite-stage] {
   transition: opacity 200ms ease-out;
 }
+[data-lcos-project-shell][data-main-curtain='atlas'] [data-lcos-main-worksite] > [data-lcos-worksite-stage] { opacity:.22; }
+[data-lcos-project-shell][data-main-curtain='hand'] [data-lcos-main-worksite] > [data-lcos-worksite-stage] { opacity:.66; }
 [data-lcos-context-worksite][data-atlas-open='true'] > [data-lcos-worksite-stage] { opacity:.22; }
 [data-lcos-workflow-worksite][data-hand-open='true'] > [data-lcos-worksite-stage] { opacity:.66; }
 @media (prefers-reduced-motion:reduce) {
-  [data-lcos-context-worksite] > [data-lcos-worksite-stage],
+  [data-lcos-main-worksite] > [data-lcos-worksite-stage],
+[data-lcos-context-worksite] > [data-lcos-worksite-stage],
   [data-lcos-workflow-worksite] > [data-lcos-worksite-stage] { transition:none; }
 }

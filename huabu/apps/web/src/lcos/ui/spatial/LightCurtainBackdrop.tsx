@@ -11,10 +11,11 @@ export function LightCurtainBackdrop({ kind }: { readonly kind: 'atlas' | 'hand'
 }
 
 /** Native click semantics reject drags that began on a foreground control. */
-export function LightCurtainDismissPlane({ onClose, disabled = false }: {
+export function LightCurtainDismissPlane({ onClose, disabled = false, label = '收回集合总览' }: {
   readonly onClose: () => void;
   readonly disabled?: boolean;
+  readonly label?: string;
 }): React.JSX.Element {
   return <button type="button" className="lcos-atlas-dismiss-plane" tabIndex={-1}
-    aria-label="收回集合总览" disabled={disabled} onClick={onClose} />;
+    aria-label={label} disabled={disabled} onClick={onClose} />;
 }

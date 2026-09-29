@@ -155,6 +155,8 @@ type DropdownMenuProps = {
     | 'left-top';
   /** Controlled open state. When provided, the component becomes controlled. */
   open?: boolean;
+  /** Allow a focused child to own Escape and restore its input focus. */
+  dismissOnEscape?: boolean;
   /** Called when the open state changes (controlled mode). */
   onOpenChange?: (open: boolean) => void;
 };
@@ -180,6 +182,7 @@ export const DropdownMenu: React.FC<DropdownMenuProps> = ({
   align = 'bottom-left',
   open: controlledOpen,
   onOpenChange,
+  dismissOnEscape = true,
 }) => {
   const [uncontrolledOpen, setUncontrolledOpen] = useState(false);
   const isControlled = controlledOpen !== undefined;
@@ -256,6 +259,7 @@ export const DropdownMenu: React.FC<DropdownMenuProps> = ({
         <Popover
           position={computePosition()}
           onDismiss={handleDismiss}
+          dismissOnEscape={dismissOnEscape}
           anchor={anchor}
           offset={
             offset ??

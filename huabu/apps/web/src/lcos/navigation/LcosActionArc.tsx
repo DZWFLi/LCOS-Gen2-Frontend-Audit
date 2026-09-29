@@ -3,8 +3,8 @@
 // 形态（对照 T3-A02「selection/node near-field overlay」）：
 //   - 锚在**选中节点**上（flow 坐标 → Huabu `CanvasFloatingPopover` 负责翻转/夹边），
 //     不是固定在屏幕右侧的大菜单；
-//   - 近场一排 = **3 个常规动作 + 1 个「更多」**（T3-A02: 3 normal / 4 max）；
-//   - 「更多」在同一条近场浮层里展开分组面板（尺寸/外观/空间），不换位置。
+//   - 近场 = **2 个常用动作 + 1 个「更多」**（最终 Figma 三项；T3 上限仍保留）；
+//   - 「更多」锚在节点右上近场，只列短动作；尺寸/强调色在相邻二级 inspector 编辑。
 //   - Arc 已覆盖类型的右键菜单复用同一命令模型和 dispatch；未覆盖类型保留 Huabu 原生壳。
 //
 // 纪律：
@@ -23,19 +23,23 @@ import {
   type LcosNodeCommand,
 } from '@local-creative-os/web-gen2';
 import {
+  Activity,
+  CheckCheck,
   ChevronsUpDown,
   Expand,
   FileText,
   Link2,
   Maximize2,
   MessageSquarePlus,
+  MessageSquareReply,
   Move,
+  PanelTop,
   Sparkles,
   TextCursorInput,
   Trash2,
 } from 'lucide-react';
 import { AnimatePresence } from 'motion/react';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { ACCENT_PALETTE } from '@huabu/shared';
 
@@ -46,9 +50,12 @@ import {
 import { useHeightMode } from '@/components/Nodes/shared/height/useHeightMode';
 import { shouldStandDownLegacyNodeToolbar } from '@/lcos-seam/chromeModeSlot';
 import useCanvasStore from '@/store/canvasStore';
+import { useCanvasAttentionStore } from '@/store/canvasAttentionStore';
 import { openPreviewNode } from '@/store/previewWorkspace/actions';
 
-import { resolveActionArcGeometry } from './actionArcGeometry';
+import { focusConversationSection } from './focusConversationSection';
+import { useCollaborationSession } from '../collaboration/useCollaborationSession';
+import { ACTION_ARC_HIT_INSET, ACTION_ARC_HIT_SIZE, resolveActionArcGeometry } from './actionArcGeometry';
 import { useLcosReferenceStore } from '../lcosReferenceState';
 import { useOptionalLcosColorPins } from '../pin/LcosColorPinProvider';
 import { useLcosShellStore } from '../shell/lcosShellStore';
@@ -86,9 +93,15 @@ function flowBoxOf(node: Node): NodeBox {
 function primaryCommandIcon(command: LcosNodeCommand): React.JSX.Element {
   switch (command.id) {
     case 'open':
-      return <Sparkles size={17} strokeWidth={1.8} aria-hidden />;
+      return <PanelTop size={17} strokeWidth={1.8} aria-hidden />;
     case 'compose':
       return <MessageSquarePlus size={17} strokeWidth={1.8} aria-hidden />;
+    case 'answer-input':
+      return <MessageSquareReply size={17} strokeWidth={1.8} aria-hidden />;
+    case 'review-result':
+      return <CheckCheck size={17} strokeWidth={1.8} aria-hidden />;
+    case 'view-progress':
+      return <Activity size={17} strokeWidth={1.8} aria-hidden />;
     case 'reference':
       return <Link2 size={17} strokeWidth={1.8} aria-hidden />;
     case 'auto-height':
@@ -112,32 +125,39 @@ function primaryCommandIcon(command: LcosNodeCommand): React.JSX.Element {
 
 export function LcosActionArc(): React.JSX.Element | null {
   const nodes = useCanvasStore((s) => s.nodes);
+  const canvasId = useCanvasStore((s) => s.canvasId);
+  const shellProjectId = useLcosShellStore((s) => s.projectId);
+  const identitiesReady = useLcosReferenceStore((s) => s.projectId !== null && s.projectId === shellProjectId
+    && s.bindingCanvasId === canvasId && s.bindingIdentitiesReady);
   const [moreOpen, setMoreOpen] = useState(false);
+  const [inspector, setInspector] = useState<'size' | 'accent' | null>(null);
   const [sizeDraft, setSizeDraft] = useState<{ width: number; height: number } | null>(null);
-  const [contextMenu, setContextMenu] = useState<{ nodeId: string; x: number; y: number } | null>(null);
   const composerOpen = useLcosShellStore((state) => state.composerOpen);
-  const professionalWindowOpen = useLcosShellStore((state) => state.windows.length > 0);
+  const canvasEngaged = useCanvasAttentionStore((state) => state.isCanvasEngaged);
   const colorPins = useOptionalLcosColorPins();
+  const projectId = useLcosReferenceStore((state) => state.projectId);
+  const cancelSectionFocus = useRef<(() => void) | undefined>(undefined);
+  useEffect(() => () => cancelSectionFocus.current?.(), [projectId]);
 
   // 近场入口只在"恰好选中一个节点"时出现（多选由 MultiSelect 承担），
   // 且该类型的旧工具条已被本 Arc 覆盖 —— 未覆盖类型（pdf/office/web/sketch/question/frame/text）
   // 仍在挂旧工具条，Arc 不出现，避免同一动作两套入口并存。
   const selectedNodes = useMemo(() => nodes.filter((n) => n.selected), [nodes]);
   const soleSelected = selectedNodes.length === 1 ? selectedNodes[0] : undefined;
-  const contextNode = contextMenu === null
-    ? undefined
-    : nodes.find((candidate) => candidate.id === contextMenu.nodeId);
-  const commandNode = contextNode ?? soleSelected;
+  const commandNode = soleSelected;
   const candidateRef = useLcosReferenceStore((s) =>
     commandNode ? s.nodeEntityRefs.get(commandNode.id) : undefined,
   );
-  const node = commandNode !== undefined && shouldStandDownLegacyNodeToolbar(
+  const node = identitiesReady && commandNode !== undefined && shouldStandDownLegacyNodeToolbar(
     'lcos',
     commandNode.type ?? '',
     candidateRef?.entityType !== undefined && candidateRef.entityId !== undefined,
   ) ? commandNode : undefined;
   const nodeId = node?.id;
   const ref = candidateRef;
+  const collaborationEntry = useCollaborationSession(projectId,
+    node !== undefined && ref?.entityType === 'conversation' ? ref.entityId : null);
+  const conversation = collaborationEntry?.status === 'ready' ? collaborationEntry.projection : undefined;
   const draftRefs = useLcosReferenceStore((s) => s.draft.orderedEntityRefs);
   // 高度模式：hook 必须无条件调用（nodeId 缺省时传空串，返回值不参与渲染）。
   const heightMode = useHeightMode(nodeId ?? '');
@@ -145,6 +165,7 @@ export function LcosActionArc(): React.JSX.Element | null {
   // 选择变化即收起"更多"，避免浮层停在旧节点上。
   useEffect(() => {
     setMoreOpen(false);
+    setInspector(null);
     setSizeDraft(null);
   }, [nodeId]);
 
@@ -170,16 +191,17 @@ export function LcosActionArc(): React.JSX.Element | null {
       ...(targetCanvasId ? { targetCanvasId } : {}),
       capabilities: [...capabilities],
       referenced,
+      ...(conversation === undefined ? {} : { conversation }),
       ...(node.type === 'note' ? { noteHeightMode: heightMode === 'auto' ? 'auto' : 'fixed' } : {}),
     });
-  }, [node, nodeId, ref, draftRefs, heightMode]);
+  }, [node, nodeId, ref, draftRefs, heightMode, conversation]);
 
-  // Canvas.tsx suppresses the browser menu in LCOS mode. Reopen it only for
-  // node types whose LCOS Arc already owns the corresponding commands, so
-  // right-click and the near-field Arc share one command model and dispatch.
+  // Right click selects the object and exposes its existing near-field Arc.
+  // The compact Arc is the one command surface; do not replace it with a second
+  // full-height grouped menu that duplicates the same commands.
   useEffect(() => {
     const onContextMenu = (event: MouseEvent): void => {
-      if (composerOpen || professionalWindowOpen) return;
+      if (composerOpen || !identitiesReady) return;
       const target = event.target;
       if (!(target instanceof Element)) return;
       if (target.closest('input, textarea, select, [contenteditable="true"], a[href]')) return;
@@ -198,54 +220,43 @@ export function LcosActionArc(): React.JSX.Element | null {
       event.preventDefault();
       useCanvasStore.getState().selectNodes([targetNodeId]);
       setMoreOpen(false);
-      setContextMenu({ nodeId: targetNodeId, x: event.clientX, y: event.clientY });
     };
     window.addEventListener('contextmenu', onContextMenu);
     return () => window.removeEventListener('contextmenu', onContextMenu);
-  }, [composerOpen, nodes, professionalWindowOpen]);
+  }, [composerOpen, nodes, identitiesReady]);
 
   useEffect(() => {
-    if (contextMenu === null) return;
-    const close = (event: PointerEvent): void => {
-      const target = event.target;
-      if (target instanceof Element && target.closest('[data-lcos-context-menu]') !== null) return;
-      setContextMenu(null);
-    };
+    if (!moreOpen && inspector === null) return;
     const onKeyDown = (event: KeyboardEvent): void => {
-      if (event.key === 'Escape') setContextMenu(null);
+      if (event.key !== 'Escape' || event.defaultPrevented) return;
+      event.preventDefault(); event.stopPropagation(); setMoreOpen(false); setInspector(null);
     };
-    window.addEventListener('pointerdown', close, true);
     window.addEventListener('keydown', onKeyDown);
-    return () => {
-      window.removeEventListener('pointerdown', close, true);
-      window.removeEventListener('keydown', onKeyDown);
-    };
-  }, [contextMenu]);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [moreOpen, inspector]);
 
-  useEffect(() => {
-    if (contextMenu !== null && (node === undefined || commands.length === 0)) {
-      setContextMenu(null);
-    }
-  }, [commands.length, contextMenu, node]);
-
-  // Professional Window owns the foreground interaction; keep the node Arc out
-  // of the reader, Assembly, portal, and conversation work view.
-  if (!node || !nodeId || composerOpen || professionalWindowOpen) return <AnimatePresence />;
+  // Canvas attention is the shared visibility owner. Reader/Assembly focus
+  // steps the Arc aside; returning focus to the canvas restores it.
+  if (!node || !nodeId || composerOpen || !canvasEngaged) return <AnimatePresence />;
 
   const box = flowBoxOf(node);
+  const absolutePosition = useCanvasStore.getState().rfInstance?.getInternalNode(nodeId)?.internals.positionAbsolute ?? node.position;
   const anchor: CanvasAnchorRect = {
-    x: node.position.x,
-    y: node.position.y,
+    x: absolutePosition.x,
+    y: absolutePosition.y,
     width: box.width,
     height: box.height,
   };
 
   const dispatch = (command: LcosNodeCommand): void => {
+    if (command.disabledReason !== undefined) return;
+    cancelSectionFocus.current?.();
     const shell = useLcosShellStore.getState();
     const canvas = useCanvasStore.getState();
     const title = (node.data as { label?: string } | undefined)?.label ?? '未命名';
     const data = node.data as Record<string, unknown> | undefined;
     const target = typeof data?.targetCanvasId === 'string' ? data.targetCanvasId : undefined;
+    const presentedRevisionId = ref?.descriptor?.presentedRevisionId ?? ref?.descriptor?.currentRevisionId;
     switch (command.id) {
       case 'open':
         if (node.type === 'canvasRef') shell.openWindow('portal-preview', `入口 · ${title}`, target, 'canvas');
@@ -253,11 +264,18 @@ export function LcosActionArc(): React.JSX.Element | null {
           shell.openWindow('conversation', `会话窗口 · ${title}`, ref.entityId);
         else if (ref?.entityType === 'artifact')
           shell.openReader(`阅读 · ${title}`, ref.entityId, {
-            ...(ref.descriptor?.currentRevisionId === undefined
-              ? {}
-              : { revisionId: ref.descriptor.currentRevisionId }),
+            ...(presentedRevisionId === undefined ? {} : { revisionId: presentedRevisionId }),
             source: { surface: shell.activeSurface, nodeId },
           });
+        break;
+      case 'answer-input':
+      case 'review-result':
+      case 'view-progress':
+        if (ref?.entityType === 'conversation') {
+          shell.openWindow('conversation', `会话窗口 · ${title}`, ref.entityId);
+          cancelSectionFocus.current = focusConversationSection(ref.entityId, command.id);
+        }
+        setMoreOpen(false);
         break;
       case 'compose':
         shell.openComposer({
@@ -268,7 +286,6 @@ export function LcosActionArc(): React.JSX.Element | null {
             ? {
                 intent: 'continue' as const,
                 receiverConversationId: ref.entityId,
-                receiverBlockedReason: '请先在会话窗口确认可用的续聊 operation',
               }
             : { intent: 'delegate' as const }),
           ...(shell.activeWorkspaceId === null
@@ -287,7 +304,6 @@ export function LcosActionArc(): React.JSX.Element | null {
             label: ref.descriptor?.title ?? title,
           });
           setMoreOpen(false);
-          setContextMenu(null);
         }
         break;
       case 'auto-height':
@@ -312,7 +328,7 @@ export function LcosActionArc(): React.JSX.Element | null {
         canvas.deleteNodes([nodeId]);
         break;
       default:
-        break; // size/accent 由面板内联控件处理（不是 dispatch 型命令）
+        break; // 尺寸/强调色由二级 inspector 写入既有画布呈现字段。
     }
   };
 
@@ -324,83 +340,36 @@ export function LcosActionArc(): React.JSX.Element | null {
     setSizeDraft(null);
   };
 
-  const primary = primaryNodeCommands(commands);
-  const grouped = ARC_GROUPS.map((group) => ({
+  // Final Figma 5388:311: two common actions plus More. All commands stay in More.
+  const primary = primaryNodeCommands(commands).slice(0, 2);
+  const commandGroups = ARC_GROUPS.map((group) => ({
     group,
-    items: commands.filter((command) => command.group === group).filter((c) => !primary.includes(c)),
+    items: commands.filter((command) => command.group === group),
   })).filter((entry) => entry.items.length > 0);
-
-  const contextMenuView = contextMenu !== null && node !== undefined && nodeId !== undefined
-    ? (
-      <div
-        key="context-menu"
-        data-lcos-context-menu
-        role="menu"
-        aria-label="节点命令"
-        className="pointer-events-auto fixed z-[70] flex max-h-[60vh] w-64 max-w-[calc(100vw-24px)] flex-col gap-1 overflow-y-auto rounded-2xl p-2"
-        style={{
-          ...lcosGlassStyle,
-          left: Math.min(contextMenu.x, Math.max(12, window.innerWidth - 268)),
-          top: Math.min(contextMenu.y, Math.max(12, window.innerHeight - 360)),
-        }}
-      >
-        <span className="px-2 py-1 text-[10px]" style={{ color: lcosTokens.color.muted }}>
-          {((node.data as { label?: string } | undefined)?.label ?? '节点')} · 命令
-        </span>
-        {grouped.map(({ group, items }) => (
-          <div key={group} data-lcos-context-command-group={group} className="flex flex-col gap-0.5">
-            <span className="px-2 pt-1 text-[10px]" style={{ color: lcosTokens.color.muted }}>{group}</span>
-            {items.map((command) => (
-              <button
-                key={command.id}
-                type="button"
-                role="menuitem"
-                data-lcos-context-command={command.id}
-                disabled={command.disabledReason !== undefined}
-                title={command.disabledReason ?? command.label}
-                onClick={() => {
-                  if (command.id === 'size' || command.id === 'accent') {
-                    setContextMenu(null);
-                    setMoreOpen(true);
-                    return;
-                  }
-                  dispatch(command);
-                  setContextMenu(null);
-                }}
-                className="flex min-h-8 flex-col items-start rounded-xl px-2 py-1 text-left text-[11px] hover:bg-black/5 disabled:cursor-not-allowed disabled:opacity-50"
-                style={{ color: lcosTokens.color.text }}
-              >
-                <span className="font-medium">{command.label}</span>
-                {command.disabledReason && (
-                  <span className="text-[10px]" style={{ color: lcosTokens.color.muted }}>
-                    {command.disabledReason}
-                  </span>
-                )}
-              </button>
-            ))}
-          </div>
-        ))}
-      </div>
-    )
-    : null;
+  const grouped = commandGroups.map((entry) => ({
+    ...entry, items: entry.items.filter((command) => !primary.includes(command)),
+  })).filter((entry) => entry.items.length > 0);
 
   const arcGeometry = resolveActionArcGeometry(primary.length + 1);
   const arcPoints = arcGeometry.points;
   const arcMode = arcGeometry.mode;
   const arcWidth = arcGeometry.width;
   const arcHeight = arcGeometry.height;
+  const nearbyControls = { excludeNodeId: nodeId, maxShift: 48,
+    hitRects: arcPoints.map((point) => ({ x: point.x - ACTION_ARC_HIT_INSET, y: point.y - ACTION_ARC_HIT_INSET, width: ACTION_ARC_HIT_SIZE, height: ACTION_ARC_HIT_SIZE })) };
 
   return (
     <AnimatePresence>
-      {contextMenuView}
-      {contextMenu === null && (
-      <CanvasFloatingPopover key={nodeId} anchor={anchor} open side="top" offset={10}>
+      <CanvasFloatingPopover key={nodeId}
+        anchor={{ x: anchor.x + anchor.width, y: anchor.y, width: 0, height: 0 }}
+        open side="bottom-start" offset={-48} crossAxisOffset={-34}
+        style={{ pointerEvents: 'none', zIndex: 30 }} nearbyControls={nearbyControls}>
       <LcosActionArcMotionHost
         data-lcos-action-arc
         data-lcos-arc-node={nodeId}
         data-lcos-arc-mode={arcMode}
         data-figma-node-id="5388:311"
-        className="pointer-events-auto flex flex-col items-start gap-2"
+        className="pointer-events-none flex flex-col items-start"
         style={{ maxWidth: 320 }}
       >
         {/* Figma 5388:311：每个动作是独立 30×30 玻璃圆，沿节点近场弧线展开。 */}
@@ -422,153 +391,110 @@ export function LcosActionArc(): React.JSX.Element | null {
             point={arcPoints[primary.length]}
             label={moreOpen ? '收起更多命令' : '更多命令'}
             expanded={moreOpen}
-            onClick={() => setMoreOpen((v) => !v)}
+            onClick={() => { setMoreOpen((v) => !v); setInspector(null); }}
           >
             <LcosNearfieldGlyph name="more" size={17} />
           </ActionArcOrb>
         </LcosActionOrbitMotion>
 
-        {moreOpen && (
-          <div
-            data-lcos-arc-panel
-            className="flex max-h-[46vh] flex-col gap-1.5 overflow-y-auto"
-            style={{
-              ...lcosGlassStyle,
-              width: 280,
-              maxWidth: 'min(320px, 78vw)',
-              padding: 6,
-            }}
-          >
-            {grouped.map(({ group, items }) => (
-              <div key={group} data-lcos-command-group={group} className="flex flex-col gap-0.5">
-                <span className="px-1 text-[10px]" style={{ color: lcosTokens.color.muted }}>
-                  {group}
-                </span>
-                {items.map((command) => {
-                  if (command.id === 'size') {
-                    return (
-                      <div key={command.id} data-lcos-command="size" className="flex items-center gap-1 px-1 py-0.5">
-                        <span className="text-[11px]" style={{ color: lcosTokens.color.text }}>
-                          尺寸
-                        </span>
-                        <input
-                          data-lcos-size-width
-                          type="number"
-                          aria-label="宽度"
-                          value={sizeDraft?.width ?? Math.round(box.width)}
-                          onChange={(e) =>
-                            setSizeDraft({
-                              width: Number(e.target.value) || 0,
-                              height: sizeDraft?.height ?? Math.round(box.height),
-                            })
-                          }
-                          className="w-14 rounded px-1 text-[11px]"
-                          style={{ minHeight: 28, background: lcosTokens.color.raised, color: lcosTokens.color.text }}
-                        />
-                        <span className="text-[10px]" style={{ color: lcosTokens.color.muted }}>
-                          ×
-                        </span>
-                        <input
-                          data-lcos-size-height
-                          type="number"
-                          aria-label="高度"
-                          value={sizeDraft?.height ?? Math.round(box.height)}
-                          onChange={(e) =>
-                            setSizeDraft({
-                              width: sizeDraft?.width ?? Math.round(box.width),
-                              height: Number(e.target.value) || 0,
-                            })
-                          }
-                          className="w-14 rounded px-1 text-[11px]"
-                          style={{ minHeight: 28, background: lcosTokens.color.raised, color: lcosTokens.color.text }}
-                        />
-                        <button
-                          type="button"
-                          data-lcos-size-apply
-                          disabled={sizeDraft === null}
-                          onClick={applySize}
-                          className="rounded px-2 text-[11px]"
-                          style={{ minHeight: 28, color: lcosTokens.color.text }}
-                        >
-                          应用
-                        </button>
-                      </div>
-                    );
-                  }
-                  if (command.id === 'accent') {
-                    return (
-                      <div key={command.id} data-lcos-command="accent" className="flex items-center gap-1 px-1 py-0.5">
-                        <span className="text-[11px]" style={{ color: lcosTokens.color.text }}>
-                          强调色
-                        </span>
-                        {ACCENT_PALETTE.map((entry) => (
-                          <button
-                            key={entry.token}
-                            type="button"
-                            data-lcos-accent={entry.token}
-                            aria-label={`强调色 ${entry.name}`}
-                            title={entry.name}
-                            onClick={() =>
-                              useCanvasStore.getState().updateNodeData(nodeId, {
-                                // 存储的是**调色板 token**（主题跟随），不是 hex。
-                                style: { ...((node.data as { style?: object }).style ?? {}), accent: entry.token },
-                              })
-                            }
-                            className="h-4 w-4 rounded-full"
-                            style={{ background: entry.value, border: `1px solid ${lcosTokens.color.borderSubtle}` }}
-                          />
-                        ))}
-                        <button
-                          type="button"
-                          data-lcos-accent-clear
-                          aria-label="清除强调色"
-                          onClick={() =>
-                            useCanvasStore.getState().updateNodeData(nodeId, {
-                              style: { ...((node.data as { style?: object }).style ?? {}), accent: null },
-                            })
-                          }
-                          className="rounded px-1 text-[10px]"
-                          style={{ color: lcosTokens.color.muted }}
-                        >
-                          清除
-                        </button>
-                      </div>
-                    );
-                  }
-                  return (
-                    <button
-                      key={command.id}
-                      type="button"
-                      data-lcos-command={command.id}
-                      disabled={command.disabledReason !== undefined}
-                      title={command.disabledReason}
-                      onClick={() => {
-                        dispatch(command);
-                        setMoreOpen(false);
-                      }}
-                      className="flex flex-col items-start rounded-lg px-2 py-1 text-left text-[11px]"
-                      style={{
-                        minHeight: 30,
-                        color: command.disabledReason ? lcosTokens.color.muted : lcosTokens.color.text,
-                        cursor: command.disabledReason ? 'not-allowed' : 'pointer',
-                        opacity: command.disabledReason ? 0.6 : 1,
-                      }}
-                    >
-                      <span className="font-medium">{command.label}</span>
-                      {command.disabledReason && (
-                        <span data-lcos-command-reason className="text-[10px]">
-                          {command.disabledReason}
-                        </span>
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
-            ))}
-          </div>
-        )}
       </LcosActionArcMotionHost>
       </CanvasFloatingPopover>
+      {moreOpen && (
+        <CanvasFloatingPopover key={`${nodeId}-more`}
+          anchor={{ x: anchor.x + anchor.width, y: anchor.y, width: 0, height: 0 }}
+          open side="right-start" offset={8} crossAxisOffset={-8}
+          style={{ zIndex: 30 }}
+          nearbyControls={{ excludeNodeId: nodeId, maxShift: 48 }}>
+          <LcosActionArcMotionHost
+            data-lcos-arc-panel
+            data-lcos-arc-panel-node={nodeId}
+            className="pointer-events-auto flex max-h-[min(300px,55vh)] flex-col gap-1 overflow-y-auto"
+            style={{
+              ...lcosGlassStyle,
+              width: 232,
+              maxWidth: 'min(252px, 72vw)',
+              padding: 5,
+            }}
+          >
+            <div className="grid grid-cols-2 gap-1">
+              {grouped.flatMap(({ items }) => items).map((command) => {
+                if (command.id === 'size' || command.id === 'accent') return (
+                  <button key={command.id} type="button" data-lcos-command={command.id}
+                    aria-haspopup="dialog" aria-expanded={inspector === command.id}
+                    onClick={() => setInspector(command.id === 'size' ? 'size' : 'accent')}
+                    className="flex min-h-9 items-center gap-2 rounded-lg px-2 text-left text-[11px]"
+                    style={{ color: lcosTokens.color.text }}>
+                    <span className="grid h-6 w-6 shrink-0 place-items-center rounded-md" style={{ background: lcosTokens.color.raised }}>
+                      {primaryCommandIcon(command)}
+                    </span>
+                    <span>{command.label}</span>
+                  </button>
+                );
+                return (
+                  <button key={command.id} type="button" data-lcos-command={command.id}
+                    disabled={command.disabledReason !== undefined} title={command.disabledReason}
+                    onClick={() => { dispatch(command); setMoreOpen(false); setInspector(null); }}
+                    className="flex min-h-9 items-center gap-2 rounded-lg px-2 text-left text-[11px]"
+                    style={{ color: command.disabledReason ? lcosTokens.color.muted : lcosTokens.color.text,
+                      cursor: command.disabledReason ? 'not-allowed' : 'pointer', opacity: command.disabledReason ? 0.6 : 1 }}>
+                    <span className="grid h-6 w-6 shrink-0 place-items-center rounded-md" style={{ background: lcosTokens.color.raised }}>
+                      {primaryCommandIcon(command)}
+                    </span>
+                    <span className="min-w-0 truncate">{command.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </LcosActionArcMotionHost>
+        </CanvasFloatingPopover>
+      )}
+      {moreOpen && inspector !== null && (
+        <CanvasFloatingPopover key={`${nodeId}-${inspector}-inspector`}
+          anchor={{ x: anchor.x + anchor.width, y: anchor.y, width: 0, height: 0 }}
+          open side="right-start" offset={248} crossAxisOffset={-8}
+          style={{ zIndex: 31 }} nearbyControls={{ excludeNodeId: nodeId, maxShift: 48 }}>
+          <LcosActionArcMotionHost data-lcos-arc-inspector={inspector}
+            role="dialog" aria-label={inspector === 'size' ? '调整节点尺寸' : '选择节点强调色'}
+            className="pointer-events-auto flex flex-col gap-2"
+            style={{ ...lcosGlassStyle, width: inspector === 'accent' ? 208 : 226, padding: 8 }}>
+            <div className="flex items-center justify-between gap-2">
+              <strong className="text-xs" style={{ color: lcosTokens.color.text }}>{inspector === 'size' ? '尺寸' : '强调色'}</strong>
+              <button type="button" aria-label="返回更多命令" onClick={() => setInspector(null)}
+                className="min-h-8 rounded px-2 text-[11px]" style={{ color: lcosTokens.color.muted }}>返回</button>
+            </div>
+            {inspector === 'size' ? (
+              <div className="flex items-center gap-1">
+                <input data-lcos-size-width type="number" aria-label="宽度"
+                  value={sizeDraft?.width ?? Math.round(box.width)}
+                  onChange={(e) => setSizeDraft({ width: Number(e.target.value) || 0, height: sizeDraft?.height ?? Math.round(box.height) })}
+                  className="w-16 rounded px-2 text-xs" style={{ minHeight: 36, background: lcosTokens.color.raised, color: lcosTokens.color.text }} />
+                <span style={{ color: lcosTokens.color.muted }}>×</span>
+                <input data-lcos-size-height type="number" aria-label="高度"
+                  value={sizeDraft?.height ?? Math.round(box.height)}
+                  onChange={(e) => setSizeDraft({ width: sizeDraft?.width ?? Math.round(box.width), height: Number(e.target.value) || 0 })}
+                  className="w-16 rounded px-2 text-xs" style={{ minHeight: 36, background: lcosTokens.color.raised, color: lcosTokens.color.text }} />
+                <button type="button" data-lcos-size-apply disabled={sizeDraft === null} onClick={applySize}
+                  className="min-h-9 rounded px-2 text-[11px]" style={{ color: lcosTokens.color.text }}>应用</button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-5 gap-1">
+                {ACCENT_PALETTE.map((entry) => <button key={entry.token} type="button" data-lcos-accent={entry.token}
+                  aria-label={`强调色 ${entry.name}`} title={entry.name}
+                  onClick={() => useCanvasStore.getState().updateNodeData(nodeId, {
+                    style: { ...((node.data as { style?: object }).style ?? {}), accent: entry.token },
+                  })}
+                  className="grid h-9 w-9 place-items-center rounded-lg" style={{ background: lcosTokens.color.raised }}>
+                  <span className="h-4 w-4 rounded-full" style={{ background: entry.value, border: `1px solid ${lcosTokens.color.borderSubtle}` }} />
+                </button>)}
+                <button type="button" data-lcos-accent-clear aria-label="清除强调色"
+                  onClick={() => useCanvasStore.getState().updateNodeData(nodeId, {
+                    style: { ...((node.data as { style?: object }).style ?? {}), accent: null },
+                  })}
+                  className="h-9 rounded px-1 text-[10px]" style={{ color: lcosTokens.color.muted }}>清除</button>
+              </div>
+            )}
+          </LcosActionArcMotionHost>
+        </CanvasFloatingPopover>
       )}
     </AnimatePresence>
   );

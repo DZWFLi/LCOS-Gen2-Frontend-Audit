@@ -3,6 +3,7 @@
 
 import {
   CoreProjectClient,
+  CoreCollectionClient,
   CoreHealthClient,
   CoreRunClient,
   CoreConversationClient,
@@ -24,6 +25,7 @@ import { readLcosHostConfig } from '../lcosHost';
 export interface LcosCoreSession {
   readonly http: HttpClient;
   readonly projects: CoreProjectClient;
+  readonly collections: CoreCollectionClient;
   readonly health: CoreHealthClient;
   readonly runs: CoreRunClient;
   readonly conversations: CoreConversationClient;
@@ -60,6 +62,7 @@ export function createLcosCoreSession(
   return {
     http,
     projects: new CoreProjectClient(http),
+    collections: new CoreCollectionClient(http),
     health: new CoreHealthClient(http),
     runs: new CoreRunClient(http),
     conversations: new CoreConversationClient(http),

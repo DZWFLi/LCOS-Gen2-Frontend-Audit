@@ -112,6 +112,7 @@ import { handleConversationContinuationRoute } from './routes/conversation-conti
 import { handleWorkspaceStatesRoute } from './routes/workspace-states.js'
 import { handleNavigationMarkersRoute } from './routes/navigation-markers.js'
 import { handleColorPinsRoute } from './routes/color-pins.js'
+import { handleCollectionsRoute } from './routes/collections.js'
 import { handleVoiceTranscriptionRoute } from './routes/voice-transcription.js'
 import type { VoiceTranscriptionService } from './voice-transcription-service.js'
 import { createDefaultVoiceTranscriptionService } from './voice-transcription-defaults.js'
@@ -1295,6 +1296,9 @@ export function createLocalCoreServer(options: LocalCoreServerOptions = {}): Loc
       })) return
       if (await handleColorPinsRoute({
         method, pathname, url, request, response, controller, metadata, mutationSafety, helpers: routeHelpers,
+      })) return
+      if (await handleCollectionsRoute({
+        method, pathname, request, response, signal: controller.signal, metadata, mutationSafety, helpers: routeHelpers,
       })) return
       if (await handleNavigationMarkersRoute({
         method,

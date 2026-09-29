@@ -8,6 +8,7 @@ import { useTranslation } from 'react-i18next';
 import loadingAnimation from '@/assets/loading.json';
 
 import { cn } from './cn';
+import { SkeletonLoadingIndicator } from './SkeletonLoadingIndicator';
 
 type LoadingVariant = 'spinner' | 'skeleton' | 'brand';
 type LoadingLayout = 'inline' | 'block' | 'overlay' | 'bare';
@@ -85,21 +86,6 @@ function BrandLoadingIndicator({
   );
 }
 
-function SkeletonLoadingIndicator({
-  lines = 3,
-  className,
-}: {
-  lines?: number;
-  className?: string;
-}) {
-  return (
-    <div className={cn('skeleton-lines', className)}>
-      {Array.from({ length: lines }, (_, i) => (
-        <div key={i} className="skeleton-line" />
-      ))}
-    </div>
-  );
-}
 
 export function Loading({
   variant = 'spinner',

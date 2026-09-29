@@ -1,6 +1,6 @@
-import { Layers3 } from 'lucide-react';
 import { motion, useReducedMotion } from 'motion/react';
 
+import thingIcon from './assets/context-thing.svg';
 import { ContextCollectionFace } from './ContextCollectionFace';
 import { PRESENTATION_EXIT, PRESENTATION_SPRING, presentationPose } from '../spatial/presentationMotion';
 import { useDescendantFocus } from '../spatial/useDescendantFocus';
@@ -11,13 +11,22 @@ import './context-spatial.css';
 export type { ContextCollectionOrganization, ContextCollectionRendition } from './ContextCollectionFace';
 
 export interface ContextCollectionViewProps extends ContextCollectionFaceProps {
-  readonly active?: boolean;
   /** Transitional selector for the current production/e2e contract. */
   readonly legacyAtlasKind?: string;
+  /** Atlas keyboard/pointer focus, separate from the current worksite identity. */
+  readonly selected?: boolean;
+  readonly atlasVisualKind?: ContextCollectionFaceProps['atlasVisualKind'];
 }
 
 export function ContextCollectionView({
   title,
+  sourceLabel,
+  memberLabels,
+  members,
+  onRemoveMember,
+  spaceAction,
+  memberSummary,
+  hideEmptyPreviews,
   organization,
   rendition = '总览',
   previewUrl,
@@ -29,6 +38,8 @@ export function ContextCollectionView({
   active = false,
   action,
   legacyAtlasKind,
+  selected = false,
+  atlasVisualKind = 'collection',
   onActivate,
   activationLabel,
 }: ContextCollectionViewProps): React.JSX.Element {
@@ -39,7 +50,8 @@ export function ContextCollectionView({
       data-lcos-context-collection-slot
       data-active={active ? 'true' : undefined}
       data-disabled={disabled ? 'true' : undefined}
-      data-focused={focus.focused ? 'true' : undefined}
+      data-focused={selected || focus.focused ? 'true' : undefined}
+      aria-current={active ? 'location' : undefined}
       aria-disabled={disabled || undefined}
       onFocusCapture={focus.onFocusCapture}
       onBlurCapture={focus.onBlurCapture}
@@ -52,6 +64,8 @@ export function ContextCollectionView({
         data-lcos-variant={active ? 'selected' : rendition}
         {...(legacyAtlasKind === undefined ? {} : { 'data-lcos-atlas-card': legacyAtlasKind })}
         data-lcos-context-collection
+        data-atlas-kind={atlasVisualKind}
+        data-empty-preview-suppressed={hideEmptyPreviews || (!previewUrl && !secondaryPreviewUrl) ? 'true' : undefined}
         data-organization={organization}
         data-active={active ? 'true' : undefined}
         data-disabled={disabled ? 'true' : undefined}
@@ -63,7 +77,14 @@ export function ContextCollectionView({
         whileHover={reducedMotion || disabled ? undefined : { y: -8, scale: 1.025 }}
         transition={reducedMotion ? { duration: 0 } : PRESENTATION_SPRING}
       >
-        <ContextCollectionFace title={title} organization={organization} rendition={rendition}
+        <ContextCollectionFace title={title} active={active} organization={organization} atlasVisualKind={atlasVisualKind} rendition={rendition}
+          {...(sourceLabel === undefined ? {} : { sourceLabel })}
+          {...(memberLabels === undefined ? {} : { memberLabels })}
+          {...(members === undefined ? {} : { members })}
+          {...(onRemoveMember === undefined ? {} : { onRemoveMember })}
+          {...(spaceAction === undefined ? {} : { spaceAction })}
+          {...(memberSummary === undefined ? {} : { memberSummary })}
+          {...(hideEmptyPreviews === undefined ? {} : { hideEmptyPreviews })}
           {...(previewUrl === undefined ? {} : { previewUrl })}
           {...(secondaryPreviewUrl === undefined ? {} : { secondaryPreviewUrl })}
           {...(previewFit === undefined ? {} : { previewFit })}
@@ -73,7 +94,7 @@ export function ContextCollectionView({
           {...(action === undefined ? {} : { action })}
           {...(onActivate === undefined ? {} : { onActivate })}
           {...(activationLabel === undefined ? {} : { activationLabel })}
-          unspecifiedGlyph={<Layers3 aria-hidden size={21} strokeWidth={1.7} />} />
+          unspecifiedGlyph={<img src={thingIcon} alt="" draggable={false} />} />
       </motion.div>
     </div>
   );

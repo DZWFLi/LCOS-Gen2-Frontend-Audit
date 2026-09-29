@@ -132,6 +132,11 @@ export interface CollaborationSessionProjectionV1 {
     readonly workspaceId?: string
     /** 当前会话持有的对象引用（R1 canonical target / selected-context 的消费口）。 */
     readonly targetRefs: readonly string[]
+    /** Explicit durable bindings, kept separate from historical message references. */
+    readonly boundContext?: readonly {
+      readonly entityRef: import('./run-assembly.js').ConversationReachItemV0['entityRef']
+      readonly title: string
+    }[]
     readonly summary?: string
   }
 

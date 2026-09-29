@@ -63,6 +63,9 @@ export function resolveLcosNodeHostPresentation(
 export function resolveLcosInitialGeometryPreset(
   source: LcosGeometryPresentationSource,
 ): LcosInitialGeometryPreset | undefined {
+  if (source.entityType === 'collection') {
+    return { width: 248, height: 244, figmaNodeId: '5333:96' };
+  }
   const family = resolveVisualFamily(source);
   if (family === 'image' && source.displayMode === 'thumbnail') {
     return { width: 205, height: 127, figmaNodeId: '5388:111' };

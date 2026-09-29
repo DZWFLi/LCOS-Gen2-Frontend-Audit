@@ -1,6 +1,7 @@
 import type { PresentationEntityRefV0 } from './presentations.js'
 import type { SpatialMarkerIntentV0 } from './navigation-marker.js'
 import type { ColorPinDefinitionV0, ColorPinMembershipV0 } from './color-pin.js'
+import type { CollectionMembership } from '../../domain/src/index.js'
 
 /**
  * CurationPatch V0 — Phase E. A minimal batch write for the Curator skill:
@@ -261,6 +262,34 @@ export type MutationChangeItemV1 =
       readonly membership: ColorPinMembershipV0
       readonly inverse: { readonly type: 'color_pin_membership_add'; readonly membershipId: string }
       readonly forward?: { readonly type: 'color_pin_membership_remove'; readonly membershipId: string }
+      readonly appliedFingerprint: string
+    }
+  | {
+      readonly type: 'collection_identity_add'
+      readonly collection: import('@local-creative-os/domain').Collection
+      readonly inverse: { readonly type: 'collection_identity_remove'; readonly collectionId: string }
+      readonly forward: { readonly type: 'collection_identity_add'; readonly collection: import('@local-creative-os/domain').Collection }
+      readonly appliedFingerprint: string
+    }
+  | {
+      readonly type: 'collection_identity_remove'
+      readonly collection: import('@local-creative-os/domain').Collection
+      readonly inverse: { readonly type: 'collection_identity_add'; readonly collection: import('@local-creative-os/domain').Collection }
+      readonly forward: { readonly type: 'collection_identity_remove'; readonly collectionId: string }
+      readonly appliedFingerprint: string
+    }
+  | {
+      readonly type: 'collection_membership_add'
+      readonly membership: CollectionMembership
+      readonly inverse: { readonly type: 'collection_membership_remove'; readonly membership: CollectionMembership }
+      readonly forward: { readonly type: 'collection_membership_add'; readonly membership: CollectionMembership }
+      readonly appliedFingerprint: string
+    }
+  | {
+      readonly type: 'collection_membership_remove'
+      readonly membership: CollectionMembership
+      readonly inverse: { readonly type: 'collection_membership_add'; readonly membership: CollectionMembership }
+      readonly forward: { readonly type: 'collection_membership_remove'; readonly membership: CollectionMembership }
       readonly appliedFingerprint: string
     }
   | {

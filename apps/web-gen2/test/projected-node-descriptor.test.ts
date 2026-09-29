@@ -8,6 +8,7 @@ import { test } from 'node:test';
 
 import {
   buildNodeSecondaryLine,
+  buildContentPreview,
   describeProjectedEntity,
   resolveNodeSpeciesFromFacts,
 } from '../src/presentation/projectedNodeDescriptor.js';
@@ -38,6 +39,16 @@ test('R2 次级行：只写真实事实', () => {
   assert.equal(
     buildNodeSecondaryLine({ entityType: 'artifact', entityId: 'a3', title: 'X', currentRevisionId: 'abcdef1234567' }),
     'rev abcdef12',
+  );
+  assert.equal(
+    buildNodeSecondaryLine({
+      entityType: 'artifact',
+      entityId: 'a4',
+      title: 'Historical projection',
+      currentRevisionId: 'current-1234567',
+      presentedRevisionId: 'history-7654321',
+    }),
+    'rev history-',
   );
   // 没有任何事实 → 明确说没有，不编造内容
   assert.equal(buildNodeSecondaryLine({ entityType: 'artifact', entityId: 'a4', title: 'Y' }), '（无 Core 元数据）');
@@ -106,4 +117,15 @@ test('R2 节点卡片注册表：一个物种一个 owner，未注册返回 unde
   assert.equal(reg.resolveNodeCard('run'), undefined);
   assert.throws(() => reg.registerNodeCard('source', 'AnotherCard'), /已有 owner/);
   assert.deepEqual(reg.registeredSpecies(), ['source']);
+});
+
+test('lightweight text previews preserve source line and paragraph boundaries without changing document summaries', () => {
+  const lines = { preserveLineBreaks: true };
+  assert.equal(buildContentPreview('越过边界，\r\n看见下一座山。', 160, lines), '越过边界，\n看见下一座山。');
+  assert.equal(buildContentPreview(' 第一行\n\n\n\n第二行\t  内容\n ', 160, lines), '第一行\n\n第二行 内容');
+  assert.equal(buildContentPreview('A\nBCD', 3, lines), 'A\nB…');
+  assert.equal(buildContentPreview('AB\nCD', 3, lines), 'AB…');
+  assert.equal(buildContentPreview('AB\nCD', 5, lines), 'AB\nCD');
+  assert.equal(buildContentPreview(' \r\n\t ', 160, lines), '');
+  assert.equal(buildContentPreview('# 标题\n- 第一项\n- 第二项'), '第一项 第二项');
 });

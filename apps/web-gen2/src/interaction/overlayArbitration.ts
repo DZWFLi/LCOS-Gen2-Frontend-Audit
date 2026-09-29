@@ -87,18 +87,21 @@ export function compactRestingOverlays(
 
 /**
  * 仲裁主函数。互斥思想：
- *   - 拖拽中：只可能保留 drop-preview，其余全部让道（悬停指针下不应出现其他浮层）。
- *   - 缩放中：只有 resize-handles。
- *   - 打开会话窗口（Conversation Work View）：独占，归还整块画布。
+ *   - 拖拽中：保留已显式打开的 Composer 接收区和 drop-preview，Arc/tooltip 让道。
+ *   - 缩放中：保留 Composer 工作状态与 resize-handles。
+ *   - 会话窗口不自动删除 Composer；具体宿主由既有窗口归属仲裁。
  *   - 打开 composer：呈现 composer（reference badge 与其正交，不抵消）。
  *   - 打开 action-arc：呈现 action-arc（参考 badge 同样正交）。
  *   - 其余：休止态 —— 右上角的 selected handles / hover affordance，绝无工具串。
  * 任何路径都不会同时出现 resize-handles + node-toolbar + action-arc 三套。
  */
 export function visibleOverlays(input: OverlayInput): readonly OverlayKind[] {
-  if (input.dragging) return input.dropPreview ? ['drop-preview'] : [];
-  if (input.resizing) return ['resize-handles'];
-  if (input.workViewOpen) return ['work-view'];
+  // T3 C1-S3D §2.7–2.10: explicit local work survives unrelated chrome.
+  // Hiding an open Composer here also unregisters the user's drop destination.
+  const composer: OverlayKind[] = input.composerOpen ? ['composer'] : [];
+  if (input.dragging) return [...composer, ...(input.dropPreview ? ['drop-preview' as const] : [])];
+  if (input.resizing) return [...composer, 'resize-handles'];
+  if (input.workViewOpen) return ['work-view', ...composer];
   if (input.composerOpen) {
     const rest: OverlayKind[] = input.referenceBadge ? ['reference-badge'] : [];
     return ['composer', ...rest];

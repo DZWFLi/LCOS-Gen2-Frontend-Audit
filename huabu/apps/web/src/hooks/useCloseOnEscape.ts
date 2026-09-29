@@ -13,18 +13,46 @@
 
 import { useEffect, useRef } from 'react';
 
+interface EscapeDismissEntry {
+  readonly id: symbol;
+  close: () => void;
+}
+
+const dismissStack: EscapeDismissEntry[] = [];
+let listenerInstalled = false;
+
+function dispatchEscape(event: KeyboardEvent): void {
+  if (event.key !== 'Escape' || event.defaultPrevented) return;
+  const topmost = dismissStack.at(-1);
+  if (topmost === undefined) return;
+  event.preventDefault();
+  event.stopPropagation();
+  event.stopImmediatePropagation();
+  topmost.close();
+}
+
+function registerEscapeDismiss(entry: EscapeDismissEntry): () => void {
+  dismissStack.push(entry);
+  if (!listenerInstalled) {
+    document.addEventListener('keydown', dispatchEscape);
+    listenerInstalled = true;
+  }
+  return () => {
+    const index = dismissStack.findIndex((candidate) => candidate.id === entry.id);
+    if (index >= 0) dismissStack.splice(index, 1);
+    if (dismissStack.length === 0 && listenerInstalled) {
+      document.removeEventListener('keydown', dispatchEscape);
+      listenerInstalled = false;
+    }
+  };
+}
+
 export function useCloseOnEscape(isOpen: boolean, onClose: () => void) {
   const onCloseRef = useRef(onClose);
   onCloseRef.current = onClose;
 
   useEffect(() => {
     if (!isOpen) return;
-    const handler = (event: KeyboardEvent) => {
-      if (event.key !== 'Escape') return;
-      event.stopPropagation();
-      onCloseRef.current();
-    };
-    document.addEventListener('keydown', handler);
-    return () => document.removeEventListener('keydown', handler);
+    return registerEscapeDismiss({ id: Symbol('escape-dismiss'), close: () => onCloseRef.current() });
   }, [isOpen]);
 }

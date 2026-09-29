@@ -89,6 +89,8 @@ export interface ContinuationOperationJournalRowV1 {
   readonly promptReceipts?: readonly {
     readonly messageId: string
     readonly orderedReferences: readonly OrderedRunReferenceV2[]
+    /** Original request refs, separate from the combined durable context snapshot. Optional for old journal rows. */
+    readonly explicitReferences?: readonly OrderedRunReferenceV2[]
     /** Exact Core revision/hash pins; compact and safe to retain across restart. */
     readonly contextResolution?: readonly ProviderContextResolutionEvidenceV1[]
     /** Latest provider receipt for this message. Kept for compact diagnostics. */
@@ -181,6 +183,8 @@ export interface ContinuationRecoveryProjectionV1 {
   readonly promptReceipts?: readonly {
     readonly messageId: string
     readonly orderedReferences: readonly OrderedRunReferenceV2[]
+    /** Original request refs, separate from the combined durable context snapshot. Optional for old journal rows. */
+    readonly explicitReferences?: readonly OrderedRunReferenceV2[]
     readonly contextResolution?: readonly ProviderContextResolutionEvidenceV1[]
     readonly receipt: ProviderContinuationOperationResultV1
     readonly attachReceipt?: ProviderContinuationOperationResultV1

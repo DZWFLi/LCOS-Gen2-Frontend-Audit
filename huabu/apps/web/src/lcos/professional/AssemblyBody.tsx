@@ -732,8 +732,8 @@ export function AssemblyBody({
           <LcosSurfaceFeedback presentation="loading" message="正在读取材料…" />
           <div className="lcos-assembly-skeletons" aria-hidden><i /><i /><i /><i /></div>
         </div> : null}
-        {status === 'error' ? <div className="lcos-assembly-empty" data-lcos-assembly-error={tab}>
-          <LcosSurfaceFeedback presentation="error" message={`材料读取失败（${errorCode ?? 'read_error'}）`} onAction={reload} actionLabel="重新读取" /></div> : null}
+        {status === 'error' ? <div className="lcos-assembly-empty" data-lcos-assembly-error={tab} title={errorCode === undefined ? undefined : `读取诊断代码：${errorCode}`}>
+          <LcosSurfaceFeedback presentation="error" message="材料读取失败，请重试。" onAction={reload} actionLabel="重新读取" /></div> : null}
         {workspaceError && status === 'loaded' && tab === 'project' ? <div className="lcos-assembly-inline-notice">
           <span>现场信息读取失败，材料仍可使用。</span><LcosButton appearance="oreo" variant="ghost" data-lcos-assembly-workspace-retry onClick={reloadWorkspaces}>重试读取现场</LcosButton></div> : null}
         {status === 'loaded' && count === 0 ? <div className="lcos-assembly-empty"><LcosSurfaceFeedback presentation="empty"

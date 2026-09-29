@@ -32,6 +32,8 @@ import type {
   CollaborationTimelineItemV1,
   ConnectedConversationV1,
   ProjectEventEnvelope,
+  ProjectEventReconnectV1,
+  ProjectEventSnapshotV1,
 } from '@local-creative-os/contracts';
 import { collaborationProductErrorV1 } from '@local-creative-os/contracts';
 import type { ArtifactRevisionId } from '@local-creative-os/domain';
@@ -97,6 +99,104 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
 }
 
+class ProjectEventStreamProtocolError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'ProjectEventStreamProtocolError';
+  }
+}
+
+class ProjectEventStreamRecoveryRequired extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'ProjectEventStreamRecoveryRequired';
+  }
+}
+
+interface ParsedSseFrame {
+  readonly event: string;
+  readonly data: string;
+  readonly id?: string;
+}
+
+function takeSseFrame(buffer: string): { readonly frame: ParsedSseFrame; readonly rest: string } | undefined {
+  const boundary = /\r\n\r\n|\n\n|\r\r/.exec(buffer);
+  if (boundary === null || boundary.index === undefined) return undefined;
+  const block = buffer.slice(0, boundary.index);
+  const lines = block.split(/\r\n|\n|\r/);
+  let event = '';
+  let id: string | undefined;
+  const data: string[] = [];
+  for (const line of lines) {
+    if (line === '' || line.startsWith(':')) continue;
+    const colon = line.indexOf(':');
+    const field = colon < 0 ? line : line.slice(0, colon);
+    const rawValue = colon < 0 ? '' : line.slice(colon + 1);
+    const value = rawValue.startsWith(' ') ? rawValue.slice(1) : rawValue;
+    if (field === 'event') event = value;
+    else if (field === 'data') data.push(value);
+    else if (field === 'id' && !value.includes('\0')) id = value;
+  }
+  const frame: ParsedSseFrame = { event, data: data.join('\n'), ...(id === undefined ? {} : { id }) };
+  return { frame, rest: buffer.slice(boundary.index + boundary[0].length) };
+}
+
+function unwrapProjectEventFrame(data: string): unknown {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(data) as unknown;
+  } catch {
+    throw new ProjectEventStreamProtocolError('Project event frame contains invalid JSON.');
+  }
+  if (!isRecord(parsed) || parsed.ok !== true || !('value' in parsed)) {
+    throw new ProjectEventStreamProtocolError('Project event frame is not a successful Core envelope.');
+  }
+  return parsed.value;
+}
+
+function isProjectEventEnvelope(value: unknown, projectId: string): value is ProjectEventEnvelope {
+  return isRecord(value)
+    && value.projectId === projectId
+    && typeof value.runtimeId === 'string'
+    && value.runtimeId.length > 0
+    && Number.isSafeInteger(value.projectSeq)
+    && Number(value.projectSeq) > 0
+    && typeof value.type === 'string';
+}
+
+function parseProjectEventEnvelope(data: string, projectId: string): ProjectEventEnvelope {
+  const envelope = unwrapProjectEventFrame(data);
+  if (!isProjectEventEnvelope(envelope, projectId)) {
+    throw new ProjectEventStreamProtocolError('Project event identity or projectSeq is invalid.');
+  }
+  return envelope;
+}
+
+function isProjectEventSnapshot(value: unknown, projectId: string): value is ProjectEventSnapshotV1 {
+  return isRecord(value)
+    && value.projectId === projectId
+    && typeof value.runtimeId === 'string'
+    && value.runtimeId.length > 0
+    && Number.isSafeInteger(value.currentSeq)
+    && Number(value.currentSeq) >= 0;
+}
+
+function isProjectEventReplay(value: unknown): value is Extract<ProjectEventReconnectV1, { readonly kind: 'replay' }> {
+  return isRecord(value)
+    && value.kind === 'replay'
+    && typeof value.runtimeId === 'string'
+    && value.runtimeId.length > 0
+    && Number.isSafeInteger(value.currentSeq)
+    && Number(value.currentSeq) >= 0
+    && Array.isArray(value.events);
+}
+
+function projectEventRetryDelay(attempt: number): number {
+  const schedule = [500, 1_000, 2_000, 5_000, 10_000, 30_000] as const;
+  const base = schedule[Math.min(Math.max(attempt, 0), schedule.length - 1)] ?? 30_000;
+  return base + Math.floor(Math.random() * base * 0.2);
+}
+
 function isCollaborationCommandResult(value: unknown): value is CollaborationCommandResultV1 {
   if (!isRecord(value) || typeof value.ok !== 'boolean') return false;
   if (value.ok) return isRecord(value.receipt) && value.receipt.command === 'send';
@@ -104,13 +204,15 @@ function isCollaborationCommandResult(value: unknown): value is CollaborationCom
 }
 
 export interface CollaborationSubscribeOptions {
-  /** 断线重连续点（对应 SSE 路由的 lastSeenProjectSeq / runtimeId）。 */
+  /** 初始断线续点；只有 seq 与 runtimeId 同时提供时才可安全使用。 */
   readonly lastSeenProjectSeq?: number;
   readonly runtimeId?: string;
   /** 测试注入用；默认全局 EventSource。 */
   readonly eventSourceFactory?: (url: string) => EventSource;
   /** Shared project-event owner hook. Consumers may invalidate non-conversation projections without opening a second SSE. */
   readonly onProjectEvent?: (event: ProjectEventEnvelope) => void;
+  /** Called when a snapshot establishes a recovery boundary, so non-session projections can refetch too. */
+  readonly onProjectRecovery?: (snapshot: ProjectEventSnapshotV1) => void;
 }
 
 export class CoreCollaborationClient {
@@ -278,12 +380,6 @@ export class CoreCollaborationClient {
     listener: (event: CollaborationSessionEventV1) => void,
     options: CollaborationSubscribeOptions = {},
   ): (() => void) | undefined {
-    const params = new URLSearchParams();
-    if (options.lastSeenProjectSeq !== undefined) params.set('lastSeenProjectSeq', String(options.lastSeenProjectSeq));
-    if (options.runtimeId !== undefined) params.set('runtimeId', options.runtimeId);
-    const query = params.size > 0 ? `?${params.toString()}` : '';
-    const url = `${this.http.config.baseUrl}/projects/${encodeURIComponent(projectId)}/events${query}`;
-
     const emit = (kind: CollaborationSessionEventV1['kind']): void => {
       listener({
         schemaVersion: 1,
@@ -295,15 +391,7 @@ export class CoreCollaborationClient {
     };
 
     // §22 折算：内部 run/continuity/artifact/... → 产品三类信号。
-    const handleProjectEvent = (data: string): void => {
-      let envelope: ProjectEventEnvelope | undefined;
-      try {
-        const parsed = JSON.parse(data) as { ok?: boolean; value?: ProjectEventEnvelope };
-        envelope = parsed.value;
-      } catch {
-        return;
-      }
-      if (envelope === undefined) return;
+    const handleProjectEvent = (envelope: ProjectEventEnvelope): void => {
       options.onProjectEvent?.(envelope);
       if (envelope.type === 'run.changed') {
         emit('session.changed');
@@ -318,58 +406,257 @@ export class CoreCollaborationClient {
       }
     };
 
-    // 测试 seam：显式注入的 EventSource 保持原路径。
+    const baseUrl = this.http.config.baseUrl.replace(/\/$/, '');
+    const endpoint = `${baseUrl}/projects/${encodeURIComponent(projectId)}/events`;
+    const initialParams = new URLSearchParams();
+    if (options.runtimeId !== undefined && options.lastSeenProjectSeq !== undefined) {
+      initialParams.set('lastSeenProjectSeq', String(options.lastSeenProjectSeq));
+      initialParams.set('runtimeId', options.runtimeId);
+    }
+    const url = `${endpoint}${initialParams.size > 0 ? `?${initialParams.toString()}` : ''}`;
+
+    // Production uses bearer-authenticated fetch streaming. Keep the caller's
+    // shared project subscription as the sole owner; this method owns only its
+    // transport cursor, reconnect timer and abortable stream.
+    const fetcher = this.http.config.fetch ?? globalThis.fetch?.bind(globalThis);
+
+    let cursor: { runtimeId: string; seq: number } | undefined;
+    if (
+      options.runtimeId !== undefined
+      && options.runtimeId.length > 0
+      && options.lastSeenProjectSeq !== undefined
+      && Number.isSafeInteger(options.lastSeenProjectSeq)
+      && options.lastSeenProjectSeq >= 0
+    ) {
+      cursor = { runtimeId: options.runtimeId, seq: options.lastSeenProjectSeq };
+    }
+
+    let disposed = false;
+    let generation = 0;
+    let retryAttempt = 0;
+    let retryTimer: ReturnType<typeof setTimeout> | undefined;
+    let activeController: AbortController | undefined;
+    let activeReader: ReadableStreamDefaultReader<Uint8Array> | undefined;
+    let connect: () => Promise<void>;
+    let browserOffline = false;
+
+    const dispatchProjectEvent = (envelope: ProjectEventEnvelope): void => {
+      handleProjectEvent(envelope);
+    };
+
+    const currentUrl = (): string => {
+      if (cursor === undefined) return endpoint;
+      const params = new URLSearchParams({ lastSeenProjectSeq: String(cursor.seq), runtimeId: cursor.runtimeId });
+      return `${endpoint}?${params.toString()}`;
+    };
+
+    const scheduleReconnect = (forceSnapshot: boolean, terminal: boolean): void => {
+      if (disposed || browserOffline || terminal || retryTimer !== undefined) return;
+      if (forceSnapshot) cursor = undefined;
+      const delay = projectEventRetryDelay(retryAttempt);
+      retryAttempt += 1;
+      retryTimer = setTimeout(() => {
+        retryTimer = undefined;
+        void connect();
+      }, delay);
+    };
+
+    const processFrame = (frame: ParsedSseFrame): void => {
+      if (frame.event === '' && frame.data === '') return; // heartbeat/comment frame
+      if (frame.event === 'snapshot') {
+        const snapshot = unwrapProjectEventFrame(frame.data);
+        if (!isProjectEventSnapshot(snapshot, projectId)) {
+          throw new ProjectEventStreamProtocolError('Snapshot identity or currentSeq is invalid.');
+        }
+        if (cursor?.runtimeId === snapshot.runtimeId && snapshot.currentSeq < cursor.seq) {
+          throw new ProjectEventStreamProtocolError('Snapshot currentSeq moved backwards within the same runtime.');
+        }
+        // Dispatch invalidation synchronously; consumers start their authoritative refetch.
+        emit('session.changed');
+        options.onProjectRecovery?.(snapshot);
+        cursor = { runtimeId: snapshot.runtimeId, seq: snapshot.currentSeq };
+        return;
+      }
+
+      if (frame.event === 'replay') {
+        const replay = unwrapProjectEventFrame(frame.data);
+        if (!isProjectEventReplay(replay) || cursor === undefined || replay.runtimeId !== cursor.runtimeId) {
+          throw new ProjectEventStreamRecoveryRequired('Replay cannot continue the accepted runtime cursor.');
+        }
+        let expectedSeq = cursor.seq + 1;
+        let lastSeq = cursor.seq;
+        for (const candidate of replay.events) {
+          if (!isProjectEventEnvelope(candidate, projectId) || candidate.runtimeId !== replay.runtimeId) {
+            throw new ProjectEventStreamProtocolError('Replay contains an invalid project event identity.');
+          }
+          if (candidate.projectSeq <= lastSeq) continue; // duplicate replay entries are idempotent
+          if (candidate.projectSeq !== expectedSeq) {
+            throw new ProjectEventStreamRecoveryRequired('Replay has a projectSeq gap.');
+          }
+          if (frame.id !== undefined && replay.events.length === 1 && frame.id !== String(candidate.projectSeq)) {
+            throw new ProjectEventStreamProtocolError('Replay SSE id does not match its event sequence.');
+          }
+          dispatchProjectEvent(candidate);
+          lastSeq = candidate.projectSeq;
+          expectedSeq += 1;
+          cursor = { runtimeId: replay.runtimeId, seq: lastSeq };
+        }
+        if (replay.currentSeq !== lastSeq) {
+          throw new ProjectEventStreamRecoveryRequired('Replay does not cover the reconnect currentSeq.');
+        }
+        return;
+      }
+
+      if (frame.event === 'project-event') {
+        const envelope = parseProjectEventEnvelope(frame.data, projectId);
+        if (frame.id !== undefined && frame.id !== String(envelope.projectSeq)) {
+          throw new ProjectEventStreamProtocolError('Live SSE id does not match projectSeq.');
+        }
+        if (cursor === undefined || envelope.runtimeId !== cursor.runtimeId) {
+          throw new ProjectEventStreamRecoveryRequired('Live event runtime has no accepted snapshot cursor.');
+        }
+        if (envelope.projectSeq <= cursor.seq) return; // replay/live overlap
+        if (envelope.projectSeq !== cursor.seq + 1) {
+          throw new ProjectEventStreamRecoveryRequired('Live event projectSeq has a gap.');
+        }
+        dispatchProjectEvent(envelope);
+        cursor = { runtimeId: envelope.runtimeId, seq: envelope.projectSeq };
+        retryAttempt = 0;
+        return;
+      }
+
+      // The current Core route has only snapshot, replay and project-event
+      // frames. Unknown frame names require a fresh authoritative snapshot.
+      throw new ProjectEventStreamRecoveryRequired(`Unknown ProjectEvent SSE frame: ${frame.event}`);
+    };
+
+    // Optional EventSource seam follows the same protocol validation and dispatch path.
     if (options.eventSourceFactory) {
       const source = options.eventSourceFactory(url);
-      source.addEventListener('project-event', (message) => {
-        handleProjectEvent((message as MessageEvent<string>).data);
-      });
-      // snapshot/replay = 连接（重）建，投影需整体刷新。
-      source.addEventListener('snapshot', () => emit('session.changed'));
-      source.addEventListener('replay', () => emit('session.changed'));
+      for (const eventName of ['snapshot', 'replay', 'project-event']) {
+        source.addEventListener(eventName, (message) => {
+          try {
+            processFrame({ event: eventName, data: (message as MessageEvent<string>).data,
+              ...((message as MessageEvent<string>).lastEventId ? { id: (message as MessageEvent<string>).lastEventId } : {}) });
+          } catch {
+            // Ignore malformed seam frames, matching production's reconnect recovery behavior.
+          }
+        });
+      }
       return () => source.close();
     }
 
-    // 生产路径必须用 fetch 读 SSE 流：`EventSource` 无法携带 `Authorization` 头，而 Core 的
-    // `/projects/:id/events` 只认 `Bearer` 头（`apps/local-core/src/server.ts` 的
-    // `validBearerToken` 只看 header）—— 用 EventSource 会稳定 401，协作 invalidation 信号
-    // 永远收不到（实测 B2）。这里与 Huabu 客户端同一套做法：fetch + 流式读。
-    if (typeof fetch !== 'function' || typeof AbortController === 'undefined') return undefined;
-    const controller = new AbortController();
-    void (async () => {
+    if (fetcher === undefined || typeof AbortController === 'undefined') return undefined;
+
+    connect = async (): Promise<void> => {
+      if (disposed || browserOffline) return;
+      const ownGeneration = ++generation;
+      const controller = new AbortController();
+      activeController = controller;
+      let forceSnapshot = false;
+      let terminal = false;
       try {
         const headers: Record<string, string> = { Accept: 'text/event-stream' };
         if (this.http.config.token) headers['Authorization'] = `Bearer ${this.http.config.token}`;
-        const response = await fetch(url, { headers, signal: controller.signal });
-        if (!response.ok || response.body === null) return;
+        const response = await fetcher(currentUrl(), { headers, signal: controller.signal });
+        if (disposed || ownGeneration !== generation || controller.signal.aborted) return;
+        if (!response.ok) {
+          terminal = response.status === 401 || response.status === 403 || response.status === 404;
+          throw new Error(`ProjectEvent stream returned HTTP ${response.status}.`);
+        }
+        if (!response.headers.get('content-type')?.toLowerCase().includes('text/event-stream')) {
+          forceSnapshot = true;
+          throw new ProjectEventStreamProtocolError('ProjectEvent response is not text/event-stream.');
+        }
+        if (response.body === null) throw new Error('ProjectEvent response has no readable body.');
+
         const reader = response.body.getReader();
+        activeReader = reader;
         const decoder = new TextDecoder();
         let buffer = '';
         for (;;) {
           const { done, value } = await reader.read();
+          if (disposed || ownGeneration !== generation || controller.signal.aborted) return;
           if (done) break;
           buffer += decoder.decode(value, { stream: true });
-          let boundary = buffer.indexOf('\n\n');
-          while (boundary >= 0) {
-            const block = buffer.slice(0, boundary);
-            buffer = buffer.slice(boundary + 2);
-            let eventName = 'message';
-            const dataLines: string[] = [];
-            for (const line of block.split('\n')) {
-              if (line.startsWith(':')) continue;
-              if (line.startsWith('event:')) eventName = line.slice('event:'.length).trim();
-              else if (line.startsWith('data:')) dataLines.push(line.slice('data:'.length).trimStart());
-            }
-            if (eventName === 'project-event') handleProjectEvent(dataLines.join('\n'));
-            else if (eventName === 'snapshot' || eventName === 'replay') emit('session.changed');
-            boundary = buffer.indexOf('\n\n');
+          for (;;) {
+            const next = takeSseFrame(buffer);
+            if (next === undefined) break;
+            buffer = next.rest;
+            processFrame(next.frame);
           }
         }
-      } catch {
-        // 中止或断流：调用方退化为手动刷新（语义同 EventSource 缺席）。
+        buffer += decoder.decode();
+        // An unterminated tail is not a complete SSE event and cannot advance
+        // the cursor. EOF still reconnects from the last complete frame.
+      } catch (error: unknown) {
+        if (error instanceof ProjectEventStreamRecoveryRequired || error instanceof ProjectEventStreamProtocolError) {
+          forceSnapshot = true;
+        }
+        if (disposed || ownGeneration !== generation || controller.signal.aborted) return;
+      } finally {
+        if (activeReader !== undefined && ownGeneration === generation) {
+          try { await activeReader.cancel(); } catch { /* stream may already be closed */ }
+          activeReader = undefined;
+        }
+        if (activeController === controller) activeController = undefined;
       }
-    })();
-    return () => controller.abort();
+      if (disposed || ownGeneration !== generation) return;
+      scheduleReconnect(forceSnapshot, terminal);
+    };
+
+    const clearRetry = (): void => {
+      if (retryTimer !== undefined) clearTimeout(retryTimer);
+      retryTimer = undefined;
+    };
+    const stopCurrentConnection = async (): Promise<void> => {
+      generation += 1;
+      const controller = activeController;
+      const reader = activeReader;
+      activeController = undefined;
+      activeReader = undefined;
+      controller?.abort();
+      if (reader !== undefined) {
+        try { await reader.cancel(); } catch { /* stream may already be closed */ }
+      }
+    };
+    const onOffline = (): void => {
+      browserOffline = true;
+      clearRetry();
+      void stopCurrentConnection();
+    };
+    const onOnline = (): void => {
+      if (!browserOffline || disposed) return;
+      browserOffline = false;
+      cursor = undefined;
+      retryAttempt = 0;
+      clearRetry();
+      void (async () => {
+        await stopCurrentConnection();
+        if (!disposed) await connect();
+      })();
+    };
+    const connectivityTarget = globalThis as typeof globalThis & {
+      addEventListener?: (type: string, listener: EventListener) => void;
+      removeEventListener?: (type: string, listener: EventListener) => void;
+    };
+    connectivityTarget.addEventListener?.('offline', onOffline);
+    connectivityTarget.addEventListener?.('online', onOnline);
+
+    void connect();
+    return () => {
+      if (disposed) return;
+      disposed = true;
+      generation += 1;
+      clearRetry();
+      connectivityTarget.removeEventListener?.('offline', onOffline);
+      connectivityTarget.removeEventListener?.('online', onOnline);
+      activeController?.abort();
+      activeController = undefined;
+      const reader = activeReader;
+      activeReader = undefined;
+      if (reader !== undefined) void reader.cancel().catch(() => undefined);
+    };
   }
 
   // ------------------------------------------------------------------

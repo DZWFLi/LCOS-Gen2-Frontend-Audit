@@ -12,6 +12,7 @@ function sourceRefForObject(
 ): AssemblySourceRefV1 | undefined {
   switch (payload.entityType) {
     case 'artifact':
+      return payload.artifactViewId ? { kind: 'artifactView', id: payload.artifactViewId } : undefined;
     case 'artifactView':
       return { kind: 'artifactView', id: payload.entityId };
     case 'note':
@@ -67,6 +68,31 @@ export function resolveDropIntent(
     return ineligible(target, target.ineligibleReason ?? '此目标当前不可用');
   }
 
+  if (target.semantic.kind === 'drop-exclusion') {
+    return ineligible(target, target.semantic.reason);
+  }
+
+  if (target.semantic.kind === 'collection-membership') {
+    const ref = payload.kind === 'object'
+      ? { type: payload.entityType, id: payload.entityId }
+      : payload.kind === 'assembly'
+        ? { type: payload.sourceRef.kind, id: payload.sourceRef.id }
+        : undefined;
+    const supported = new Set(['artifact', 'note', 'collection', 'scope', 'workspace', 'conversation', 'run']);
+    if (ref === undefined || !supported.has(ref.type)) {
+      return ineligible(target, '此来源没有可验证的 canonical 实体身份，不能加入集合');
+    }
+    return {
+      status: 'ready',
+      intent: {
+        kind: 'collection-membership',
+        targetId: target.targetId,
+        collectionId: target.semantic.collectionId,
+        memberRef: { type: ref.type as 'artifact' | 'note' | 'collection' | 'scope' | 'workspace' | 'conversation' | 'run', id: ref.id },
+      },
+    };
+  }
+
   if (target.semantic.kind === 'composer-reference') {
     const reference = entityRefForPayload(payload);
     return reference === undefined
@@ -82,21 +108,19 @@ export function resolveDropIntent(
   }
 
   if (target.semantic.kind === 'collaboration-reference') {
-    const reference = entityRefForPayload(payload);
-    if (reference === undefined) {
-      return ineligible(target, '只有已有实体可以作为该会话的引用');
-    }
-    // collaboration target 只能接收已有对象引用；文件/文本不在此通道（fail-close）。
-    if (payload.kind !== 'object' && payload.kind !== 'assembly') {
-      return ineligible(target, '拖入会话只能使用已有实体');
+    // User ruling 2026-09-27 / original T3 §17: body = durable conversation context.
+    // Reuse the canonical Assembly owner; Composer alone receives temporary refs.
+    const sourceRef = assemblySourceRefForPayload(payload);
+    if (sourceRef === undefined) {
+      return ineligible(target, '此材料尚无可绑定的真实来源，请等待投影就绪');
     }
     return {
       status: 'ready',
       intent: {
-        kind: 'collaboration-reference',
+        kind: 'assembly-apply',
         targetId: target.targetId,
-        conversationId: target.semantic.conversationId,
-        reference,
+        targetRef: { kind: 'conversation', id: target.semantic.conversationId },
+        sourceRefs: [sourceRef],
       },
     };
   }
@@ -126,6 +150,21 @@ export function resolveDropIntent(
   }
 
   if (target.semantic.kind === 'canvas') {
+    return {
+      status: 'ready',
+      intent: {
+        kind: 'assembly-apply',
+        targetId: target.targetId,
+        targetRef: target.semantic.targetRef,
+        sourceRefs: [sourceRef],
+      },
+    };
+  }
+
+  if (target.semantic.kind === 'portal-receive') {
+    if (target.semantic.targetRef === undefined) {
+      return ineligible(target, '入口尚未解析到可接收的工作现场');
+    }
     return {
       status: 'ready',
       intent: {

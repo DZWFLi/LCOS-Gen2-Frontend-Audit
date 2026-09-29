@@ -22,7 +22,9 @@ describe('Arc presentation delegates commands', () => {
       for (const [index, button] of buttons.entries()) {
         expect(button.style.width).toBe('44px');
         expect(button.style.height).toBe('44px');
-        expect(Number.parseFloat(button.style.left) + 7).toBe(geometry.points[index]?.x);
+        const placement = button.closest<HTMLElement>('.lcos-action-orb-placement')!;
+        expect(Number.parseFloat(placement.style.left) + Number.parseFloat(button.style.left) + 7).toBe(geometry.points[index]?.x);
+        expect(Number.parseFloat(placement.style.top) + Number.parseFloat(button.style.top) + 7).toBe(geometry.points[index]?.y);
         expect(button.querySelector<HTMLElement>('[data-lcos-action-orb]')?.style.width).toBe('30px');
       }
     } finally { await act(async () => root.unmount()); host.remove(); }
@@ -38,7 +40,12 @@ describe('Arc presentation delegates commands', () => {
       ));
       const button = host.querySelector<HTMLButtonElement>('[data-lcos-arc-more]');
       expect(button?.tagName).toBe('BUTTON');
-      expect(button?.title).toBe('当前不可用');
+      expect(button?.disabled).toBe(true);
+      expect(button?.getAttribute('aria-label')).toBe('更多命令');
+      expect(button?.getAttribute('aria-description')).toBe('当前不可用');
+      const trigger = button?.closest('.lcos-action-orb-tooltip-host');
+      await act(async () => { trigger?.dispatchEvent(new MouseEvent('mouseenter')); await new Promise((resolve) => setTimeout(resolve, 170)); });
+      expect(document.querySelector('[role=tooltip]')?.textContent).toBe('当前不可用');
       await act(async () => button?.click());
       expect(invoke).not.toHaveBeenCalled();
     } finally { await act(async () => root.unmount()); host.remove(); }

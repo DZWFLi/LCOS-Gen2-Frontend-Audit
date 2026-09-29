@@ -13,6 +13,7 @@ export interface RailwayProjectionWorkspace {
   readonly id: string;
   readonly name: string;
   readonly scopeId: string;
+  readonly canvasId?: string;
 }
 
 export interface RailwayProjectionScope {
@@ -34,6 +35,7 @@ export interface RailwayDestinationProjection {
   readonly reason?: string;
   /** Exact workspace target when this destination resolves unambiguously. */
   readonly workspaceId?: string;
+  readonly canvasId?: string;
   /** Home Surface is metadata only; it is not permission to collapse a destination into a root switch. */
   readonly surface?: LcosSurfaceKey;
 }
@@ -66,6 +68,9 @@ export function projectRailwaySnapshot(
     destinations: projectRailwayDestinations({
       ...context,
       orderedRefs: order.orderedRefs,
+    }).map((destination) => {
+      const canvasId = context.workspaces.find((workspace) => workspace.id === destination.workspaceId)?.canvasId;
+      return canvasId === undefined ? destination : { ...destination, canvasId };
     }),
   };
 }

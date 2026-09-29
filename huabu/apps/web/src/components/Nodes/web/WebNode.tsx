@@ -12,6 +12,7 @@ import { getWebPreview } from '@/api/web';
 import { getNodeIcon } from '../../../config/nodeIcons.ts';
 import { useNodeLOD } from '../../../hooks/useNodeLOD.ts';
 import { useNodeScale } from '../../../hooks/useNodeScale.ts';
+import { useResolvedNodeBody } from '@/lcos-seam/nodeBodySlot';
 import useCanvasStore from '../../../store/canvasStore.ts';
 import { openPreviewNode } from '../../../store/previewWorkspace/actions.ts';
 import { FloatingToolbar } from '../../Common/FloatingToolbar.tsx';
@@ -64,6 +65,7 @@ export const WebNode = memo(
 
     const src = typeof data?.src === 'string' ? data.src : '';
     const missingFileKind = getMissingFileKind(data);
+    const BodyOverride = useResolvedNodeBody({ nodeId: id, nodeType: 'web', data: { ...data } });
     const isRemoteUrl = REMOTE_URL_RE.test(src);
 
     // URL surfaced as the "open externally" link in the floating toolbar.
@@ -77,6 +79,7 @@ export const WebNode = memo(
     );
 
     useEffect(() => {
+      if (BodyOverride) return;
       if (ingestion?.status === 'pending') {
         setPreview(null);
         setPreviewError(null);
@@ -131,7 +134,7 @@ export const WebNode = memo(
       return () => {
         cancelled = true;
       };
-    }, [src, canvasId, ingestion?.status, id, isMinimalLOD, webHydrated]);
+    }, [src, canvasId, ingestion?.status, id, isMinimalLOD, webHydrated, BodyOverride]);
 
     // Track image-load failures so we degrade cleanly. Without these the
     // browser would show its built-in "broken image" placeholder (the
@@ -220,7 +223,7 @@ export const WebNode = memo(
         resizable
         keepAspectRatio={false}
       >
-        {missingFileKind ? (
+        {BodyOverride ? <BodyOverride nodeId={id} nodeType="web" data={{ ...data }} /> : missingFileKind ? (
           <MissingFileBanner nodeId={id} />
         ) : (
           <div className="bg-surface relative flex h-full w-full flex-col overflow-hidden rounded-lg">

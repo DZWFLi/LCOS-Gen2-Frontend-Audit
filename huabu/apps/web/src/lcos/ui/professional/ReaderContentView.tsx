@@ -1,3 +1,7 @@
+import { lazy, Suspense } from 'react';
+
+import { PreviewHeaderSlotContext } from '@/components/Nodes/PreviewHeaderSlot';
+
 import { Gen1ImageZoomStage } from './donor/Gen1ImageZoomStage';
 import { Gen1TextDocument } from './donor/Gen1TextDocument';
 import './donor/gen1-reader.css';
@@ -5,11 +9,27 @@ import './professional-reading.css';
 
 import type { ReactNode, Ref, UIEventHandler } from 'react';
 
+const PdfReader = lazy(() => import('@/components/Nodes/pdf/PDFPreview').then((module) => ({ default: module.PDFPreview })));
+const AudioReader = lazy(() => import('../../nodes/source/AudioSourceMorphology').then((module) => ({ default: module.AudioSourceMorphology })));
+const VideoReader = lazy(() => import('@/components/Nodes/video/VideoPreview').then((module) => ({ default: module.VideoPreview })));
+const readOnlyHeader = { el: null };
+
 /** The owning Reader supplies revision bytes. No loading, URL or revision owner lives here. */
 export type ReaderVisibleContent =
   | { readonly kind: 'text'; readonly value: string }
-  | { readonly kind: 'image'; readonly url: string; readonly mimeType: string }
+  | { readonly kind: 'image' | 'pdf' | 'video' | 'audio'; readonly url: string; readonly mimeType: string; readonly viewKey?: string }
   | null;
+
+export function readerArtifactKindLabel(kind: string): string {
+  switch (kind) {
+    case 'markdown': return '文本文档';
+    case 'image': return '图片';
+    case 'presentation': return '演示文稿';
+    case 'pdf': return 'PDF 文档';
+    case 'other': return '其他文件';
+    default: return '其他材料';
+  }
+}
 
 export interface ReaderContentViewProps {
   readonly content: ReaderVisibleContent;
@@ -74,7 +94,7 @@ export function ReaderContentView({
       >
         <div className="lcos-reader-measure">
           {renderedText === undefined ? (
-            kind === 'markdown' ? <Gen1TextDocument text={content.value} /> :
+            kind === 'markdown' ? <div data-lcos-reader-text-scale style={{ zoom: zoom / 100 }}><Gen1TextDocument text={content.value} /></div> :
               <pre className="lcos-reader-plaintext" style={{ fontSize: `${0.875 * zoom / 100}rem` }}>{content.value}</pre>
           ) : (
             <div className="lcos-reader-richtext" style={{ zoom: zoom / 100 }}>{renderedText}</div>
@@ -83,6 +103,21 @@ export function ReaderContentView({
         {feedback}
       </div>
     );
+  }
+
+  if (content?.kind === 'pdf' || content?.kind === 'video' || content?.kind === 'audio') {
+    return <div ref={contentRef} onScroll={onScroll} className="lcos-reader-media-page lcos-reader-document-media" data-lcos-reader-content={content.kind}>
+      <Suspense fallback={<div role="status">正在载入预览…</div>}>
+        {content.kind === 'pdf'
+          ? <PreviewHeaderSlotContext.Provider value={readOnlyHeader}>
+              <PdfReader key={content.viewKey ?? content.url} data={{ src: content.url, name: fileName }} readOnly
+                {...(content.viewKey === undefined ? {} : { scrollViewKey: content.viewKey })} />
+            </PreviewHeaderSlotContext.Provider>
+          : content.kind === 'audio' ? <AudioReader key={content.url} family="audio" title={fileName} density="reading" mediaSrc={content.url} />
+          : <VideoReader key={content.url} data={{ src: content.url, name: fileName }} readOnly />}
+      </Suspense>
+      {feedback}
+    </div>;
   }
 
   if (content?.kind === 'image') {
@@ -108,7 +143,7 @@ export function ReaderContentView({
       {feedback === undefined ? (
         <>
           <span aria-hidden="true" className="lcos-reader-unavailable-glyph">{unavailableGlyph}</span>
-          <span>{fileName} · {kind} 暂无可用正文读取通道</span>
+          <span>{fileName} · {readerArtifactKindLabel(kind)} · 暂无可用正文读取通道</span>
         </>
       ) : feedback}
     </div>

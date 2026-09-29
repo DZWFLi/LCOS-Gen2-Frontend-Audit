@@ -117,7 +117,7 @@ describe('migration v53 continuation_operation_journal', () => {
     expect(metadata.getContinuationOperationJournal('project-unknown', 'op-migrate')).toBeUndefined()
   })
 
-  it('upgrades a legacy v52 database to v56 preserving existing project data', async () => {
+  it('upgrades a legacy v52 database to v57 preserving existing project data', async () => {
     const { root } = await setup()
     const dbPath = join(root, 'legacy-v52.sqlite')
     const legacy = new DatabaseSync(dbPath)
@@ -159,7 +159,7 @@ describe('migration v53 continuation_operation_journal', () => {
 
     const upgraded = new SqliteMetadataRepository(dbPath)
     repositories.push(upgraded)
-    expect(upgraded.schemaVersion).toBe(56)
+    expect(upgraded.schemaVersion).toBe(57)
     // 旧数据保留
     expect(upgraded.getProject('p-legacy')?.name).toBe('Legacy Project')
     // 新表可用，外键指向旧项目

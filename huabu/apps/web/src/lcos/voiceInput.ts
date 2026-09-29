@@ -1,99 +1,105 @@
-// Composer Voice 输入助手（T5 C06；T3 voice seam 的诚实落地）。
-//
-// 只做"语音 → 文本预览"，不绕过 selection/permission/canonical 事务：识别结果
-// 进入 Composer 草稿 prompt，用户审阅后仍走既有 ComposerController 提交流程。
-// 浏览器不支持 SpeechRecognition 时返回 null（调用方如实标注不可用），
-// 不伪造"正在识别"。
-
-/** 最小 SpeechRecognition 形状（浏览器私有 API 无标准 TS lib 类型）。 */
-interface SpeechRecognitionLike {
-  lang: string;
-  interimResults: boolean;
-  continuous: boolean;
-  maxAlternatives: number;
-  onresult: ((event: { results: readonly (readonly { transcript: string }[])[] }) => void) | null;
-  onend: (() => void) | null;
-  onerror: ((event: { error: string }) => void) | null;
-  start(): void;
-  stop(): void;
-  abort(): void;
-}
-
-type SpeechRecognitionCtor = new () => SpeechRecognitionLike;
-
-function recognitionCtor(): SpeechRecognitionCtor | undefined {
-  if (typeof window === 'undefined') return undefined;
-  const win = window as unknown as {
-    SpeechRecognition?: SpeechRecognitionCtor;
-    webkitSpeechRecognition?: SpeechRecognitionCtor;
-  };
-  return win.SpeechRecognition ?? win.webkitSpeechRecognition;
+export interface VoiceRecording {
+  readonly audio: Blob;
+  readonly durationMs: number;
 }
 
 export interface VoiceInputHandle {
-  /** 开始识别；同一句进行中重复调用忽略。 */
-  start(): void;
-  /** 手动停止并取当前结果（若无结果则 onEnd 正常结束）。 */
+  start(): Promise<void>;
   stop(): void;
+  cancel(): void;
 }
 
 export interface VoiceInputEvents {
-  onResult(text: string): void;
+  onStart(): void;
+  onResult(recording: VoiceRecording): void;
   onEnd(): void;
   onError(code: string): void;
 }
 
-/**
- * 创建浏览器语音识别句柄；不支持时返回 null。
- * `lang` 默认 zh-CN；识别为一次性（continuous=false），结果即时交回。
- */
-export function createVoiceInput(
-  events: VoiceInputEvents,
-  lang = 'zh-CN',
-): VoiceInputHandle | null {
-  const Ctor = recognitionCtor();
-  if (Ctor === undefined) return null;
-  const recognition = new Ctor();
-  recognition.lang = lang;
-  recognition.interimResults = false;
-  recognition.continuous = false;
-  recognition.maxAlternatives = 1;
-  let active = false;
+function supportedMimeType(): string | undefined {
+  if (typeof MediaRecorder === 'undefined') return undefined;
+  return ['audio/webm;codecs=opus', 'audio/mp4', 'audio/ogg;codecs=opus']
+    .find((type) => MediaRecorder.isTypeSupported(type));
+}
 
-  recognition.onresult = (event) => {
-    const result = event.results[0]?.[0];
-    if (result === undefined) return;
-    const text = result.transcript.trim();
-    if (text !== '') events.onResult(text);
-  };
-  recognition.onerror = (event) => {
-    active = false;
-    events.onError(event.error);
-  };
-  recognition.onend = () => {
-    active = false;
-    events.onEnd();
+export function isVoiceInputSupported(): boolean {
+  return typeof navigator !== 'undefined'
+    && navigator.mediaDevices?.getUserMedia !== undefined
+    && typeof MediaRecorder !== 'undefined'
+    && supportedMimeType() !== undefined;
+}
+
+/** Capture a short audio clip for the existing Core transcription endpoint. */
+export function createVoiceInput(events: VoiceInputEvents): VoiceInputHandle | null {
+  if (!isVoiceInputSupported()) return null;
+  let recorder: MediaRecorder | undefined;
+  let stream: MediaStream | undefined;
+  let chunks: BlobPart[] = [];
+  let startedAt = 0;
+  let cancelled = false;
+
+  const release = (): void => {
+    stream?.getTracks().forEach((track) => track.stop());
+    stream = undefined;
+    recorder = undefined;
   };
 
   return {
-    start: () => {
-      if (active) return;
-      active = true;
+    start: async () => {
+      if (recorder !== undefined) return;
+      cancelled = false;
       try {
-        recognition.start();
-      } catch {
-        active = false;
-        events.onError('not-allowed');
+        stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        if (cancelled) { release(); return; }
+        const mimeType = supportedMimeType();
+        if (mimeType === undefined) { release(); events.onError('unsupported'); return; }
+        recorder = new MediaRecorder(stream, { mimeType });
+        chunks = [];
+        recorder.ondataavailable = (event) => { if (event.data.size > 0) chunks.push(event.data); };
+        recorder.onerror = () => { release(); events.onError('recording-failed'); };
+        recorder.onstop = () => {
+          const audio = new Blob(chunks, { type: mimeType.split(';', 1)[0] });
+          const durationMs = Math.max(0, Math.round(performance.now() - startedAt));
+          release();
+          if (!cancelled && audio.size > 0) events.onResult({ audio, durationMs });
+          events.onEnd();
+        };
+        startedAt = performance.now();
+        recorder.start();
+        events.onStart();
+      } catch (error: unknown) {
+        release();
+        events.onError(error instanceof DOMException && error.name === 'NotAllowedError' ? 'not-allowed' : 'recording-failed');
       }
     },
-    stop: () => {
-      if (!active) return;
-      recognition.stop();
+    stop: () => { if (recorder?.state === 'recording') recorder.stop(); },
+    cancel: () => {
+      cancelled = true;
+      if (recorder?.state === 'recording') recorder.stop();
+      else release();
     },
   };
 }
 
-/** 浏览器语音可用性（供 UI 禁用/标注）。 */
-export function isVoiceInputSupported(): boolean {
-  return recognitionCtor() !== undefined;
+export interface VoiceInsertionPoint {
+  readonly start: number;
+  readonly end: number;
+}
+
+/** Replace an active selection, insert at its caret, or append after prior blur. */
+export function mergeVoiceText(
+  draft: string,
+  transcript: string,
+  insertion?: VoiceInsertionPoint,
+): { readonly text: string; readonly caret: number } {
+  const clean = transcript.trim();
+  if (insertion === undefined) {
+    const separator = draft.length > 0 && !/\s$/.test(draft) ? ' ' : '';
+    const text = `${draft}${separator}${clean}`;
+    return { text, caret: text.length };
+  }
+  const start = Math.max(0, Math.min(draft.length, insertion.start));
+  const end = Math.max(start, Math.min(draft.length, insertion.end));
+  const text = `${draft.slice(0, start)}${clean}${draft.slice(end)}`;
+  return { text, caret: start + clean.length };
 }

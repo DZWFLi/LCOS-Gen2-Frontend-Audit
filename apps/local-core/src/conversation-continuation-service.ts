@@ -1,3 +1,4 @@
+import { mergeBoundConversationContext } from './conversation-context.js'
 import { randomUUID } from 'node:crypto'
 import type {
   ContextPackItemV0,
@@ -359,32 +360,28 @@ export class ConversationContinuationService {
   ): Promise<ProviderContinuationOperationResultV1> {
     const row = this.metadata.getContinuationOperationJournal(projectId, operationId)
     if (row === undefined) throw new Error('Continuation operation not found.')
-    const orderedReferences = options.orderedReferences ?? []
+    const explicitReferences = options.orderedReferences ?? []
     const messageId = options.messageId
-    if (orderedReferences.length > 0 && messageId === undefined) {
-      return this.promptReceipt(
-        row,
-        adapter.adapterId,
-        undefined,
-        orderedReferences,
-        'failed',
-        'context_message_id_required',
-        'Message-scoped context requires a stable messageId.',
-      )
-    }
     const existingReceipt = messageId === undefined
       ? undefined
       : row.promptReceipts?.find((entry) => entry.messageId === messageId)
-    if (existingReceipt !== undefined && JSON.stringify(existingReceipt.orderedReferences) !== JSON.stringify(orderedReferences)) {
-      return this.promptReceipt(
-        row,
-        adapter.adapterId,
-        messageId,
-        orderedReferences,
-        'failed',
-        'prompt_reference_conflict',
-        'The same messageId was already used with a different context reference set.',
-      )
+    if (existingReceipt !== undefined && JSON.stringify(existingReceipt.explicitReferences ?? existingReceipt.orderedReferences) !== JSON.stringify(explicitReferences)) {
+      // A conflicting request must not overwrite the original message snapshot.
+      return this.promptReceipt(row, adapter.adapterId, undefined, explicitReferences, 'failed',
+        'prompt_reference_conflict', 'The same messageId was already used with a different context reference set.')
+    }
+    if (existingReceipt?.sendReceipt?.outcome === 'sent') return existingReceipt.sendReceipt
+    const merged = existingReceipt === undefined
+      ? mergeBoundConversationContext(this.metadata, projectId, row.connectedConversationId, explicitReferences)
+      : { references: existingReceipt.orderedReferences }
+    const orderedReferences = merged.references
+    if (merged.unsupported !== undefined) {
+      return this.promptReceipt(row, adapter.adapterId, undefined, orderedReferences, 'unsupported',
+        'persistent_context_unsupported', merged.unsupported)
+    }
+    if (orderedReferences.length > 0 && messageId === undefined) {
+      return this.promptReceipt(row, adapter.adapterId, undefined, orderedReferences, 'failed',
+        'context_message_id_required', 'Message-scoped context requires a stable messageId.')
     }
     const externalSessionId = row.externalEvidence?.externalSessionId
     if (externalSessionId === undefined) {
@@ -404,7 +401,7 @@ export class ConversationContinuationService {
         error: { code: 'no_external_identity', message: 'No external session identity to send to.', retryable: false, outcomeUnknown: true },
         observedAt: new Date().toISOString(),
       }
-      this.recordPromptReceipt(projectId, operationId, messageId, orderedReferences, unresolved, 'send', row.revision)
+      this.recordPromptReceipt(projectId, operationId, messageId, orderedReferences, unresolved, 'send', row.revision, undefined, explicitReferences)
       return unresolved
     }
 
@@ -417,6 +414,7 @@ export class ConversationContinuationService {
         'failed',
         'context_resolution_evidence_missing',
         'A confirmed attach receipt has no frozen Core revision evidence; refusing to change its content on retry.',
+        explicitReferences,
       )
     }
     const resolvedContext = orderedReferences.length === 0
@@ -435,6 +433,7 @@ export class ConversationContinuationService {
         'unsupported',
         resolvedContext.code,
         resolvedContext.message,
+        explicitReferences,
       )
     }
 
@@ -456,7 +455,7 @@ export class ConversationContinuationService {
         contextResolution: resolvedContext.evidence,
         bundle: continuationBundleForRowV1(row, orderedReferences),
       })
-      this.recordPromptReceipt(projectId, operationId, messageId, orderedReferences, attachReceipt, 'attach', row.revision, resolvedContext.evidence)
+      this.recordPromptReceipt(projectId, operationId, messageId, orderedReferences, attachReceipt, 'attach', row.revision, resolvedContext.evidence, explicitReferences)
       // An unsupported/failed/unknown attach must stop before prompt send. The
       // caller keeps the same messageId and the journal receipt exposes the
       // only safe recovery action; no provider prompt is silently sent.
@@ -486,7 +485,7 @@ export class ConversationContinuationService {
       ...(row.externalEvidence?.transportSessionId === undefined ? {} : { transportSessionId: row.externalEvidence.transportSessionId }),
       payload: payloadWithContext,
     })
-    this.recordPromptReceipt(projectId, operationId, messageId, orderedReferences, sent, 'send', undefined, resolvedContext.evidence)
+    this.recordPromptReceipt(projectId, operationId, messageId, orderedReferences, sent, 'send', undefined, resolvedContext.evidence, explicitReferences)
     return sent
   }
 
@@ -500,6 +499,7 @@ export class ConversationContinuationService {
     phase: 'attach' | 'send',
     expectedRevision?: number,
     contextResolution?: readonly ProviderContextResolutionEvidenceV1[],
+    explicitReferences?: readonly OrderedRunReferenceV2[],
   ): void {
     if (messageId === undefined) return
     const row = this.metadata.getContinuationOperationJournal(projectId, operationId)
@@ -515,6 +515,7 @@ export class ConversationContinuationService {
     const nextReceipt = {
       messageId,
       orderedReferences: [...orderedReferences],
+      ...((existing?.explicitReferences ?? explicitReferences) === undefined ? {} : { explicitReferences: [...(existing?.explicitReferences ?? explicitReferences)!] }),
       ...(retainedContextResolution === undefined
         ? {}
         : { contextResolution: [...retainedContextResolution] }),
@@ -553,6 +554,7 @@ export class ConversationContinuationService {
     outcome: 'failed' | 'unsupported',
     code: string,
     message: string,
+    explicitReferences?: readonly OrderedRunReferenceV2[],
   ): ProviderContinuationOperationResultV1 {
     const receipt: ProviderContinuationOperationResultV1 = {
       schemaVersion: 1,
@@ -570,7 +572,7 @@ export class ConversationContinuationService {
       error: { code, message, retryable: false, outcomeUnknown: false },
       observedAt: new Date().toISOString(),
     }
-    if (messageId !== undefined) this.recordPromptReceipt(row.projectId, row.operationId, messageId, orderedReferences, receipt, 'attach', row.revision)
+    if (messageId !== undefined) this.recordPromptReceipt(row.projectId, row.operationId, messageId, orderedReferences, receipt, 'attach', row.revision, undefined, explicitReferences)
     return receipt
   }
 

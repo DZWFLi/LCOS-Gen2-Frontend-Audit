@@ -87,11 +87,13 @@ export interface CanvasSpatialNavigatorControls {
   readonly zoom: number;
   readonly minimapEnabled: boolean;
   readonly gridEnabled: boolean;
+  readonly edgesVisible: boolean;
   readonly interactivityLocked: boolean;
   readonly miniMap: ReactNode;
   readonly toggleInteractivity: () => void;
   readonly toggleMinimap: () => void;
   readonly toggleGrid: () => void;
+  readonly toggleEdges: () => void;
 }
 
 export type CanvasSpatialNavigatorRenderer = (
@@ -128,6 +130,8 @@ export type CanvasHostRecognizer = PointerRecognizer<
  * All fields optional; an absent extension leaves Huabu 100% stock.
  */
 export interface CanvasHostExtension {
+  /** Optional host adapter for native multi-selection mechanics. */
+  readonly multiSelectionToolbar?: ReactNode;
   /** Host node renderers, merged OVER (never replacing) Huabu built-ins. */
   readonly nodeTypes?: Readonly<Record<string, ExternalNodeRenderer>>;
   /** Canvas-level overlays rendered above the canvas, keyed by `key`. */

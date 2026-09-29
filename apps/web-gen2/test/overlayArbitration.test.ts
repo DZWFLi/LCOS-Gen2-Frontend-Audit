@@ -30,10 +30,10 @@ test('idle resting state shows nothing (no node Christmas tree)', () => {
   assert.deepEqual(visibleOverlays(base), []);
 });
 
-test('dragging drops everything except drop-preview', () => {
+test('dragging retains the explicit Composer destination, with optional drop feedback', () => {
   assert.deepEqual(
     visibleOverlays({ ...base, dragging: true, selected: true, composerOpen: true }),
-    [],
+    ['composer'],
   );
   assert.deepEqual(
     visibleOverlays({ ...base, dragging: true, dropPreview: true }),
@@ -46,9 +46,9 @@ test('resizing shows only resize-handles, never toolbar/arc', () => {
   assert.deepEqual(out, ['resize-handles']);
 });
 
-test('work-view is exclusive, returns the whole canvas', () => {
+test('work-view does not erase explicit Composer state; the existing host chooses its placement', () => {
   const out = visibleOverlays({ ...base, workViewOpen: true, composerOpen: true, selected: true });
-  assert.deepEqual(out, ['work-view']);
+  assert.deepEqual(out, ['work-view', 'composer']);
 });
 
 test('composer shows with optional orthogonal reference badge', () => {
@@ -122,4 +122,11 @@ test('overlayZ maps every kind into overlayLayers contract, no stray constants',
       `${kind} z=${z} not part of overlayLayers contract (${allowed.join(',')})`,
     );
   }
+});
+
+
+test('explicit Composer stays reachable throughout semantic carry and resize without an Arc/tool stack', () => {
+  assert.deepEqual(visibleOverlays({ ...base, dragging: true, dropPreview: true, composerOpen: true, actionArcOpen: true, selected: true }), ['composer', 'drop-preview']);
+  assert.deepEqual(visibleOverlays({ ...base, resizing: true, composerOpen: true, actionArcOpen: true }), ['composer', 'resize-handles']);
+  assert.deepEqual(visibleOverlays({ ...base, dragging: true, composerOpen: false }), []);
 });

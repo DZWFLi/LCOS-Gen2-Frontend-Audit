@@ -17,9 +17,11 @@ const mocks = vi.hoisted(() => {
     const promise = new Promise<T>((next) => { resolve = next; });
     return { promise, resolve };
   };
+  const identityLists = new Map<string, Promise<unknown[]>>();
   const runtimes = new Map<string, {
     projectId: string;
     host: {
+      bindings: { list: ReturnType<typeof vi.fn> };
       reconcile: ReturnType<typeof vi.fn>;
       listNodeBindings: ReturnType<typeof vi.fn>;
       retarget: ReturnType<typeof vi.fn>;
@@ -35,6 +37,7 @@ const mocks = vi.hoisted(() => {
     const runtime = {
       projectId,
       host: {
+        bindings: { list: vi.fn(() => identityLists.get(projectId) ?? Promise.resolve([])) },
         reconcile: vi.fn(() => reconcile.promise),
         listNodeBindings: vi.fn(() => bindings.promise),
         retarget: vi.fn(),
@@ -54,7 +57,7 @@ const mocks = vi.hoisted(() => {
   ]) => 0);
   const connect = vi.fn();
   const disconnect = vi.fn();
-  return { Binding: undefined as unknown as Binding, canvas, runtimes, runtimeFor, stage, connect, disconnect };
+  return { deferred, identityLists, Binding: undefined as unknown as Binding, canvas, runtimes, runtimeFor, stage, connect, disconnect };
 });
 
 globalThis.IS_REACT_ACT_ENVIRONMENT = true;
@@ -141,6 +144,8 @@ describe('useLcosCanvasProps project async ownership', () => {
     useLcosReferenceStore.getState().reset();
     mocks.canvas.canvasId = 'canvas-a';
     mocks.runtimes.clear();
+    mocks.identityLists.clear();
+    mocks.canvas.isLoading = false;
     mocks.stage.mockClear();
     mocks.connect.mockClear();
     mocks.disconnect.mockClear();
@@ -191,4 +196,56 @@ describe('useLcosCanvasProps project async ownership', () => {
     expect(runtimeA.host.listNodeBindings).not.toHaveBeenCalled();
     expect(mocks.stage).not.toHaveBeenCalled();
   });
+  it('reads existing identities while canvas loads, then atomically replaces deleted/reprojected bindings', async () => {
+    useLcosReferenceStore.getState().setProject('project-a');
+    mocks.canvas.isLoading = true;
+    mocks.identityLists.set('project-a', Promise.resolve([
+      { projectId: 'project-a', canvasId: 'canvas-a', spatialKind: 'node', spatialId: 'old-node', entityType: 'artifact', entityId: 'a-old' },
+      { projectId: 'other', canvasId: 'canvas-a', spatialKind: 'node', spatialId: 'wrong-project', entityType: 'artifact', entityId: 'wrong' },
+      { projectId: 'project-a', canvasId: 'other', spatialKind: 'node', spatialId: 'wrong-canvas', entityType: 'artifact', entityId: 'wrong' },
+      { projectId: 'project-a', canvasId: 'canvas-a', spatialKind: 'edge', spatialId: 'edge', entityType: 'relation', entityId: 'edge' },
+    ]));
+    host = document.createElement('div'); root = createRoot(host);
+    await act(async () => root?.render(<Probe projectId="project-a" />)); await waitForMicrotasks();
+    const runtime = runtimeFor('project-a');
+    expect(runtime.host.reconcile).not.toHaveBeenCalled();
+    expect([...useLcosReferenceStore.getState().nodeEntityRefs.keys()]).toEqual(['old-node']);
+    expect(useLcosReferenceStore.getState().bindingReadStatus).toBe('loading');
+    mocks.canvas.isLoading = false; await act(async () => root?.render(<Probe projectId="project-a" />));
+    runtime.reconcile.resolve(); await waitForMicrotasks();
+    runtime.bindings.resolve([{ spatialId: 'new-node', entityType: 'artifact', entityId: 'a-new' }]); await waitForMicrotasks();
+    expect([...useLcosReferenceStore.getState().nodeEntityRefs.keys()]).toEqual(['new-node']);
+    expect(useLcosReferenceStore.getState().bindingReadStatus).toBe('ready');
+  });
+
+  it('late early-identity response cannot overwrite the new project/canvas', async () => {
+    const late = mocks.deferred<unknown[]>(); mocks.identityLists.set('project-a', late.promise);
+    useLcosReferenceStore.getState().setProject('project-a'); host = document.createElement('div'); root = createRoot(host);
+    await act(async () => root?.render(<Probe projectId="project-a" />));
+    const oldRuntime = runtimeFor('project-a');
+    useLcosReferenceStore.getState().setProject('project-b'); mocks.canvas.canvasId = 'canvas-b';
+    await act(async () => root?.render(<Probe projectId="project-b" />));
+    const newRuntime = runtimeFor('project-b'); newRuntime.reconcile.resolve(); await waitForMicrotasks();
+    newRuntime.bindings.resolve([{ spatialId: 'node-b', entityType: 'artifact', entityId: 'a-b' }]); await waitForMicrotasks();
+    late.resolve([{ projectId: 'project-a', canvasId: 'canvas-a', spatialKind: 'node', spatialId: 'late-a', entityType: 'artifact', entityId: 'a-a' }]);
+    await waitForMicrotasks();
+    expect(oldRuntime.host.reconcile).not.toHaveBeenCalled();
+    expect([...useLcosReferenceStore.getState().nodeEntityRefs.keys()]).toEqual(['node-b']);
+  });
+
+  it('retry reuses the same runtime and canonical read after a failed identity read', async () => {
+    mocks.identityLists.set('project-a', Promise.reject(new Error('offline')));
+    useLcosReferenceStore.getState().setProject('project-a'); mocks.canvas.isLoading = true;
+    host = document.createElement('div'); root = createRoot(host);
+    await act(async () => root?.render(<Probe projectId="project-a" />)); await waitForMicrotasks();
+    expect(useLcosReferenceStore.getState().bindingReadStatus).toBe('error');
+    const runtime = runtimeFor('project-a');
+    mocks.identityLists.set('project-a', Promise.resolve([{ projectId: 'project-a', canvasId: 'canvas-a', spatialKind: 'node', spatialId: 'real-node', entityType: 'artifact', entityId: 'real-artifact' }]));
+    await act(async () => useLcosReferenceStore.getState().requestNodeBindingRefresh()); await waitForMicrotasks();
+    expect(runtimeFor('project-a')).toBe(runtime);
+    expect(runtime.host.bindings.list).toHaveBeenCalledTimes(2);
+    expect(useLcosReferenceStore.getState().nodeEntityRefs.get('real-node')?.entityId).toBe('real-artifact');
+    expect(useLcosReferenceStore.getState().bindingReadStatus).toBe('loading');
+  });
+
 });

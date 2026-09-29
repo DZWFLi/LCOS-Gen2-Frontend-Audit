@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { buildAtlasGroups, canAtlasLocate, isAtlasItem } from './contextAtlasSemantics';
+import { buildAtlasGroups, canAtlasLocate, isAtlasItem, isCanonicalCollectionItem } from './contextAtlasSemantics';
 
 import type { WarehouseItemV1 } from '@local-creative-os/contracts';
 
@@ -17,13 +17,13 @@ function item(overrides: Partial<WarehouseItemV1> = {}): WarehouseItemV1 {
 }
 
 describe('Context Atlas UX semantics', () => {
-  it('does not turn kind or updatedAt into organization groups', () => {
+  it('does not turn kind or updatedAt into invented organization axes', () => {
     const groups = buildAtlasGroups([
       item(),
       item({ kind: 'conversation', entityRef: { type: 'conversation', id: 'c-1' }, updatedAt: '2026-01-01T00:00:00.000Z' }),
     ]);
     expect(groups).toHaveLength(1);
-    expect(groups[0]?.label).toBe('未指定组织');
+    expect(groups[0]?.label).toBe('上下文集合');
     expect(groups[0]?.list).toHaveLength(2);
   });
 
@@ -33,11 +33,19 @@ describe('Context Atlas UX semantics', () => {
     expect(canAtlasLocate(item({ entityRef: { type: 'artifact', id: 'missing' } }), projected)).toBe(false);
   });
 
-  it('only admits context/collection/scene to Atlas', () => {
+  it('only admits canonical Context collections to Context Atlas', () => {
     expect(isAtlasItem(item({ kind: 'context', entityRef: { type: 'context', id: 'ctx-1' } }))).toBe(true);
-    expect(isAtlasItem(item({ kind: 'collection', entityRef: { type: 'collection', id: 'col-1' } }))).toBe(true);
-    expect(isAtlasItem(item({ kind: 'scene', entityRef: { type: 'scene', id: 'scene-1' } }))).toBe(true);
+    expect(isAtlasItem(item({ kind: 'context', entityRef: { type: 'scene', id: 'wrong-scene-ref' } }))).toBe(false);
+    expect(isAtlasItem(item({ kind: 'collection', entityRef: { type: 'collection', id: 'col-1' } }))).toBe(false);
+    expect(isAtlasItem(item({ kind: 'scene', entityRef: { type: 'scene', id: 'scene-1' } }))).toBe(false);
     expect(isAtlasItem(item({ kind: 'conversation', entityRef: { type: 'conversation', id: 'conv-1' } }))).toBe(false);
     expect(isAtlasItem(item({ kind: 'workflow', entityRef: { type: 'workflow', id: 'wf-1' } }))).toBe(false);
+  });
+
+  it('admits only an exact canonical Collection to Main collection overview', () => {
+    expect(isCanonicalCollectionItem(item({ kind: 'collection', entityRef: { type: 'collection', id: 'col-1' } }))).toBe(true);
+    expect(isCanonicalCollectionItem(item({ kind: 'scene', entityRef: { type: 'scene', id: 'col-1' } }))).toBe(false);
+    expect(isCanonicalCollectionItem(item({ kind: 'collection', entityRef: { type: 'context', id: 'col-1' } }))).toBe(false);
+    expect(isCanonicalCollectionItem(item({ kind: 'collection', entityRef: { type: 'collection', id: '   ' } }))).toBe(false);
   });
 });

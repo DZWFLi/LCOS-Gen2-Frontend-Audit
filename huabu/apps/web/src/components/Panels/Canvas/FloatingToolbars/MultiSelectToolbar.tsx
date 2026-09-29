@@ -30,6 +30,8 @@ import { getEdgeIdsBetweenSelectedNodes } from '@/utils/selection';
 
 import type { CanvasNode } from '@/components/Nodes/types';
 import type { CanvasEdgeId, CanvasNodeId } from '@huabu/shared';
+import type { ReactNode } from 'react';
+import '@/lcos/ui/nearfield/fallbackCommandSurface.css';
 
 /** Sentinel token representing "no accent". */
 const ACCENT_NONE = ACCENT_NONE_TOKEN;
@@ -43,7 +45,15 @@ interface GeometryToolbarItem {
  * A floating toolbar that appears horizontally centred above the
  * multi-selection bounding box when two or more nodes are selected.
  */
-export const MultiSelectToolbar = () => {
+export interface MultiSelectToolbarProps {
+  readonly deleteDisabledReason?: string;
+  readonly moveDisabledReason?: string;
+  readonly selectionAction?: ReactNode;
+  /** LCOS uses the same geometry/format commands with its host presentation. */
+  readonly presentation?: 'huabu' | 'lcos';
+}
+
+export const MultiSelectToolbar = ({ deleteDisabledReason, moveDisabledReason, selectionAction, presentation = 'huabu' }: MultiSelectToolbarProps = {}) => {
   const { t } = useTranslation();
   const nodes = useCanvasStore((s) => s.nodes);
   const edges = useCanvasStore((s) => s.edges);
@@ -204,7 +214,7 @@ export const MultiSelectToolbar = () => {
       open={selectedNodes.length >= 2}
       offset={12}
       side="top"
-      className={FLOATING_TOOLBAR_CLASS}
+      className={presentation === 'lcos' ? `${FLOATING_TOOLBAR_CLASS} lcos-fallback-command-surface` : FLOATING_TOOLBAR_CLASS}
     >
       {/* Align & distribute — collapsed into a single popover trigger
           to keep the multi-select toolbar compact. Houses the 6 align
@@ -213,6 +223,8 @@ export const MultiSelectToolbar = () => {
         onAlign={(direction) => alignSelectedNodes(direction)}
         onSpread={() => spreadSelectedNodes()}
       />
+
+      {selectionAction}
 
       <FloatingToolbar.Divider />
 
@@ -337,8 +349,9 @@ export const MultiSelectToolbar = () => {
         <>
           <FloatingToolbar.Divider />
           <FloatingToolbar.ActionButton
-            title={t('moveSelection.action')}
-            onClick={() => setMoveSelectionDialogOpen(true)}
+            title={moveDisabledReason ?? t('moveSelection.action')}
+            disabled={moveDisabledReason !== undefined}
+            onClick={() => { if (moveDisabledReason === undefined) setMoveSelectionDialogOpen(true); }}
           >
             <MoveRight />
           </FloatingToolbar.ActionButton>
@@ -350,10 +363,11 @@ export const MultiSelectToolbar = () => {
         <>
           <FloatingToolbar.Divider />
           <FloatingToolbar.ActionButton
-            title={t('toolbar.deleteSelected')}
+            title={deleteDisabledReason ?? t('toolbar.deleteSelected')}
+            disabled={deleteDisabledReason !== undefined}
             tone="danger"
             onClick={() => {
-              if (selectedNodes.length === 0) return;
+              if (selectedNodes.length === 0 || deleteDisabledReason !== undefined) return;
               deleteNodes(selectedNodes.map((n) => n.id));
             }}
           >

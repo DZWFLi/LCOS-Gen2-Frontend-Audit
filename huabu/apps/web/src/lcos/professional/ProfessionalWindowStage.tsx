@@ -7,11 +7,11 @@ import {
   deriveProfessionalWindowEnvironmentV1,
   resizeProfessionalRectV1,
 } from '@local-creative-os/web-gen2';
-import { Columns2, Group, Pin, Ungroup, X } from 'lucide-react';
+import { X } from 'lucide-react';
 import { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
 
-import { DropdownMenu, DropdownMenuItem } from '@/components/Common/DropdownMenu';
 import { useCloseOnEscape } from '@/hooks/useCloseOnEscape';
+import { useCanvasAttentionStore } from '@/store/canvasAttentionStore';
 
 
 import { ArchiveBody } from './ArchiveBody';
@@ -25,12 +25,16 @@ import {
   PROFESSIONAL_STAGE_MIN_HEIGHT,
   PROFESSIONAL_STAGE_MIN_WIDTH,
 } from './professionalWindowStageLayout';
+import { resolveProfessionalWindowDropTarget, type ProfessionalWindowDropAction, type ProfessionalWindowDropRegionTarget } from './professionalWindowDropTarget';
+import { RuntimeDoctorBody } from './RuntimeDoctorBody';
+import { visibleWindowIdsForStage } from './professionalStageVisibility';
 import { useLcosReferenceStore } from '../lcosReferenceState';
-import { useLcosShellStore, type LcosWindow, type LcosWindowRegion } from '../shell/lcosShellStore';
+import { useLcosShellStore, type LcosWindow } from '../shell/lcosShellStore';
+import { activeWindowIdForRegion, createWindowRegion, normalizeWindowRegion, windowIdsForRegion } from '../shell/windowRegionTopology';
 import { LcosWindowChrome } from '../ui/families';
 import { lcosGlassStyle, lcosTokens } from '../ui/lcosTokens';
-import moreIcon from '../ui/nearfield/assets/more.svg';
 
+import type { LcosWindowRegion, WindowRegionInput } from '../shell/windowRegionTopology';
 import type { AssemblyTargetRefV1 } from '@local-creative-os/contracts';
 import type { ProfessionalRectV1, ProfessionalResizeHandleV1 } from '@local-creative-os/web-gen2';
 
@@ -63,6 +67,20 @@ interface ProfessionalRegionEntry {
   readonly preferredWidth: number;
 }
 
+interface WindowDropPreview {
+  readonly action: ProfessionalWindowDropAction | { readonly kind: 'float'; readonly rect: ProfessionalRectV1 };
+  readonly label: string;
+}
+
+interface WindowGestureStyle {
+  readonly left: string;
+  readonly top: string;
+  readonly right: string;
+  readonly bottom: string;
+  readonly width: string;
+  readonly height: string;
+}
+
 function preferredWidthFor(window: LcosWindow): number {
   return window.bodyKey === 'reader' ? 1120 : window.bodyKey === 'assembly' ? 640 : 520;
 }
@@ -79,34 +97,33 @@ function currentViewport(): ProfessionalRectV1 {
 
 function materializeRegionEntries(
   windows: readonly LcosWindow[],
-  windowRegions: readonly LcosWindowRegion[],
+  windowRegions: readonly WindowRegionInput[],
 ): readonly ProfessionalRegionEntry[] {
   const windowsById = new Map(windows.map((window) => [window.id, window]));
-  const assignedIds = new Set(windowRegions.flatMap((region) => region.windowIds));
+  const assignedIds = new Set(windowRegions.flatMap(windowIdsForRegion));
   const effectiveRegions: readonly LcosWindowRegion[] = [
-    ...windowRegions,
+    ...windowRegions.map(normalizeWindowRegion),
     ...windows
       .filter((window) => !assignedIds.has(window.id))
-      .map((window) => ({
-        id: `region-${window.id}`,
-        layout: 'floating' as const,
-        windowIds: [window.id],
-        activeWindowId: window.id,
-      })),
+      .map((window) => createWindowRegion(`region-${window.id}`, [window.id], window.id)),
   ];
 
   return effectiveRegions.flatMap((region) => {
-    const regionWindows = region.windowIds
+    const regionWindows = windowIdsForRegion(region)
       .map((windowId) => windowsById.get(windowId))
       .filter((window): window is LcosWindow => window !== undefined);
-    const activeWindow = windowsById.get(region.activeWindowId) ?? regionWindows[regionWindows.length - 1];
+    const firstGroup = region.groups[0];
+    const firstGroupWindows = firstGroup?.windowIds.map((id) => windowsById.get(id)).filter((window): window is LcosWindow => window !== undefined) ?? [];
+    const activeWindow = firstGroupWindows.find((window) => window.id === firstGroup?.activeWindowId) ?? firstGroupWindows.at(-1) ?? windowsById.get(activeWindowIdForRegion(region) ?? '') ?? regionWindows[regionWindows.length - 1];
     return activeWindow === undefined
       ? []
       : [{
           region,
           windows: regionWindows,
           activeWindow,
-          preferredWidth: preferredWidthFor(activeWindow),
+          preferredWidth: region.splitDirection === 'vertical'
+            ? Math.max(720, ...region.groups.map((group) => preferredWidthFor(windowsById.get(group.activeWindowId) ?? activeWindow)))
+            : preferredWidthFor(activeWindow),
         }];
   });
 }
@@ -122,15 +139,32 @@ export function ProfessionalWindowStage({ projectId, resolvePortalTarget, onOpen
   const composerOpen = useLcosShellStore((s) => s.composerOpen);
   const composerReceiver = useLcosShellStore((s) => s.composerTarget?.receiverConversationId);
   const [viewport, setViewport] = useState<ProfessionalRectV1>(currentViewport);
+  const [dropPreview, setDropPreview] = useState<WindowDropPreview | null>(null);
+  const suppressTabClickRef = useRef(false);
   const regionElements = useRef(new Map<string, HTMLDivElement>());
+  const splitterCleanupRef = useRef<(() => void) | null>(null);
+  const gestureCleanupRef = useRef<(() => void) | null>(null);
+  useLayoutEffect(() => () => {
+    splitterCleanupRef.current?.(); splitterCleanupRef.current = null;
+    gestureCleanupRef.current?.(); gestureCleanupRef.current = null;
+  }, []);
   const active = windows.find((window) => window.active) ?? windows[windows.length - 1];
+  useLayoutEffect(() => {
+    // Restored/opened windows own attention until the user returns to canvas.
+    // Preserve selection; only its floating chrome yields to the active surface.
+    if (active?.id) useCanvasAttentionStore.getState().setCanvasEngaged(false);
+  }, [active?.id]);
   const regionEntries = useMemo(
     () => materializeRegionEntries(windows, windowRegions),
     [windowRegions, windows],
   );
+  const visibility = useMemo(() => visibleWindowIdsForStage(windows, windowRegions, viewport), [windows, windowRegions, viewport]);
+  const compact = visibility.compact;
+  const visibleIds = new Set(visibility.windowIds);
+  const visibleEntries = useMemo(() => regionEntries.filter((entry) => windowIdsForRegion(entry.region).some((id) => visibleIds.has(id))), [regionEntries, visibility.windowIds]);
   const activeRegionId = active === undefined
     ? undefined
-    : regionEntries.find((entry) => entry.region.windowIds.includes(active.id))?.region.id;
+    : regionEntries.find((entry) => windowIdsForRegion(entry.region).includes(active.id))?.region.id;
   const inlineComposerOpen = composerOpen && active?.bodyKey === 'conversation'
     && active.target !== undefined && composerReceiver === active.target;
 
@@ -162,16 +196,19 @@ export function ProfessionalWindowStage({ projectId, resolvePortalTarget, onOpen
       : { reqId: `reader-return-${crypto.randomUUID()}`, surface, nodeId, status: 'projected' });
   }, [closeWindow, requestLocate]);
   const placements = useMemo(() => {
+    if (compact) return new Map(visibleEntries.map((entry) => [
+      entry.region.id, professionalFloatingBoundsV1(viewport),
+    ] as const));
     // 单区域且无用户几何/dock 时沿用既有 CSS 默认摆放（与 R2-A 行为逐字一致）。
-    const hasExplicitGeometry = regionEntries.some((entry) =>
+    const hasExplicitGeometry = visibleEntries.some((entry) =>
       entry.region.rect !== undefined
       || entry.region.dockWidth !== undefined
       || entry.region.layout === 'docked-right');
-    if (regionEntries.length <= 1 && !hasExplicitGeometry) return new Map<string, ProfessionalRectV1>();
+    if (visibleEntries.length <= 1 && !hasExplicitGeometry) return new Map<string, ProfessionalRectV1>();
     return new Map(
       deriveProfessionalStageRegionPlacementsV1({
         viewport,
-        regions: regionEntries.map((entry) => ({
+        regions: visibleEntries.map((entry) => ({
           regionId: entry.region.id,
           layout: entry.region.layout,
           preferredWidth: entry.preferredWidth,
@@ -180,7 +217,7 @@ export function ProfessionalWindowStage({ projectId, resolvePortalTarget, onOpen
         })),
       }).map((placement) => [placement.regionId, placement.rect] as const),
     );
-  }, [regionEntries, viewport]);
+  }, [compact, visibleEntries, viewport]);
 
   /** 当前实际生效的区域几何（显式 placement 优先，否则读 DOM 的 CSS 默认值）。 */
   const rectFor = useCallback((regionId: string): ProfessionalRectV1 | undefined => {
@@ -199,90 +236,190 @@ export function ProfessionalWindowStage({ projectId, resolvePortalTarget, onOpen
    * `windowRegions` —— 几何真相仍只有 store 一份，body 不保存 x/y/dock，
    * 全程不碰 Canvas camera / selection。
    */
+  const publishDuringGesture = useRef<(() => void) | null>(null);
+
   const beginWindowGesture = useCallback((
     event: React.PointerEvent<HTMLElement>,
     region: LcosWindowRegion,
-    kind: 'move' | 'resize',
+    kind: 'move' | 'resize' | 'tab',
     handle?: ProfessionalResizeHandleV1,
+    tabWindowId?: string,
   ): void => {
     if (event.button !== 0) return;
-    // chrome 上的按钮 / tab 不触发移动（它们有自己的点击语义）。
-    if (kind === 'move' && (event.target as HTMLElement).closest('button') !== null) return;
+    const targetElement = event.target as HTMLElement;
+    const tabId = kind === 'tab'
+      ? tabWindowId ?? targetElement.closest<HTMLElement>('[data-lcos-window-tab-value]')?.getAttribute('data-lcos-window-tab-value') ?? undefined
+      : undefined;
+    if (kind === 'tab' && tabId === undefined) return;
+    if (kind === 'move' && targetElement.closest('button') !== null) return;
     const element = regionElements.current.get(region.id);
     const startRect = rectFor(region.id);
     if (element === undefined || startRect === undefined) return;
     event.preventDefault();
     event.stopPropagation();
+    gestureCleanupRef.current?.();
     const viewportBounds = currentViewport();
-    // floating 用与派生摆放一致的边距包围盒；docked 固定满视口（只有左缘宽度可变）。
-    const bounds = region.layout === 'docked-right'
-      ? viewportBounds
-      : professionalFloatingBoundsV1(viewportBounds);
-    const gesture = {
-      startRect,
-      startX: event.clientX,
-      startY: event.clientY,
-      latest: startRect,
-      docked: region.layout === 'docked-right',
-      handle: handle ?? 'se' as ProfessionalResizeHandleV1,
-      kind,
+    const floatingBounds = professionalFloatingBoundsV1(viewportBounds);
+    const initialStyle: WindowGestureStyle = {
+      left: element.style.left, top: element.style.top, right: element.style.right,
+      bottom: element.style.bottom, width: element.style.width, height: element.style.height,
     };
+    const gesture: {
+      pointerId: number;
+      startRect: ProfessionalRectV1;
+      latest: ProfessionalRectV1;
+      startX: number;
+      startY: number;
+      moved: boolean;
+      docked: boolean;
+      handle: ProfessionalResizeHandleV1;
+      kind: 'move' | 'resize' | 'tab';
+      tabWindowId?: string;
+      target?: ProfessionalWindowDropAction;
+      floatRect?: ProfessionalRectV1;
+    } = {
+      pointerId: event.pointerId, startRect, startX: event.clientX, startY: event.clientY,
+      latest: startRect, moved: false, docked: region.layout === 'docked-right',
+      handle: handle ?? 'se', kind, ...(tabId === undefined ? {} : { tabWindowId: tabId }),
+    };
+
+    const restoreStyle = (): void => {
+      element.style.left = initialStyle.left; element.style.top = initialStyle.top;
+      element.style.right = initialStyle.right; element.style.bottom = initialStyle.bottom;
+      element.style.width = initialStyle.width; element.style.height = initialStyle.height;
+    };
+    const dropRegions = (): readonly ProfessionalWindowDropRegionTarget[] => regionEntries.flatMap((entry) => {
+      const host = regionElements.current.get(entry.region.id);
+      if (!host || getComputedStyle(host).display === 'none') return [];
+      const bounds = host.getBoundingClientRect();
+      if (bounds.width <= 0 || bounds.height <= 0) return [];
+      const panes = [...host.querySelectorAll<HTMLElement>('[data-lcos-window-pane]')].map((pane) => {
+        const paneBounds = pane.getBoundingClientRect();
+        const groupId = pane.getAttribute('data-lcos-window-pane');
+        return groupId === null || paneBounds.width <= 0 || paneBounds.height <= 0
+          ? undefined
+          : { groupId, rect: { x: paneBounds.x, y: paneBounds.y, width: paneBounds.width, height: paneBounds.height } };
+      }).filter((pane): pane is NonNullable<typeof pane> => pane !== undefined);
+      const groups = panes.length > 0 ? panes : entry.region.groups.map((group) => ({
+        groupId: group.id,
+        rect: { x: bounds.x, y: bounds.y, width: bounds.width, height: bounds.height },
+      }));
+      return [{
+        regionId: entry.region.id,
+        rect: { x: bounds.x, y: bounds.y, width: bounds.width, height: bounds.height },
+        groups,
+        canSplit: entry.region.groups.length === 1 && groups.length === 1,
+      }];
+    }).sort((a, b) => {
+      const aZ = Number.parseInt(getComputedStyle(regionElements.current.get(a.regionId) ?? element).zIndex, 10) || 0;
+      const bZ = Number.parseInt(getComputedStyle(regionElements.current.get(b.regionId) ?? element).zIndex, 10) || 0;
+      return bZ - aZ;
+    });
+
+    const showPreview = (action: ProfessionalWindowDropAction | { readonly kind: 'float'; readonly rect: ProfessionalRectV1 }): void => {
+      const label = action.kind === 'dock-right' ? '停靠到右侧'
+        : action.kind === 'group' ? '并入此窗口组'
+          : action.kind === 'split' ? action.direction === 'vertical'
+            ? action.sourceFirst ? '在左侧分屏' : '在右侧分屏'
+            : action.sourceFirst ? '在上方分屏' : '在下方分屏'
+            : '拆出为浮动窗口';
+      setDropPreview({ action, label });
+    };
+
     const onMove = (moveEvent: PointerEvent): void => {
+      if (moveEvent.pointerId !== gesture.pointerId) return;
       const delta = { x: moveEvent.clientX - gesture.startX, y: moveEvent.clientY - gesture.startY };
+      if (!gesture.moved && Math.hypot(delta.x, delta.y) < 4) return;
+      gesture.moved = true;
+      if (gesture.kind === 'tab') {
+        const action = resolveProfessionalWindowDropTarget({
+          x: moveEvent.clientX, y: moveEvent.clientY, sourceRegionId: region.id, allowSourceRegion: true,
+          viewport: viewportBounds, preferredDockWidth: startRect.width, regions: dropRegions(),
+        });
+        gesture.target = action;
+        const floatRect = clampProfessionalRectV1({
+          x: moveEvent.clientX - startRect.width / 2, y: moveEvent.clientY - 24,
+          width: startRect.width, height: startRect.height,
+        }, floatingBounds, PROFESSIONAL_STAGE_MIN_WIDTH, PROFESSIONAL_STAGE_MIN_HEIGHT);
+        gesture.floatRect = floatRect;
+        showPreview(action ?? { kind: 'float', rect: floatRect });
+        return;
+      }
+      const bounds = gesture.kind === 'move' ? floatingBounds : gesture.docked ? viewportBounds : floatingBounds;
       const next = gesture.kind === 'move'
         ? clampProfessionalRectV1(
             { ...startRect, x: startRect.x + delta.x, y: startRect.y + delta.y },
-            bounds,
-            PROFESSIONAL_STAGE_MIN_WIDTH,
-            PROFESSIONAL_STAGE_MIN_HEIGHT,
+            bounds, PROFESSIONAL_STAGE_MIN_WIDTH, PROFESSIONAL_STAGE_MIN_HEIGHT,
           )
         : resizeProfessionalRectV1(
-            startRect,
-            gesture.handle,
-            delta,
-            bounds,
-            PROFESSIONAL_STAGE_MIN_WIDTH,
-            PROFESSIONAL_STAGE_MIN_HEIGHT,
+            startRect, gesture.handle, delta, bounds,
+            PROFESSIONAL_STAGE_MIN_WIDTH, PROFESSIONAL_STAGE_MIN_HEIGHT,
           );
-      if (gesture.docked) {
-        // 停靠区固定贴右缘并满高：只有左缘 resize 有意义，宽度由左缘推出。
-        const width = Math.min(
-          bounds.width,
-          Math.max(PROFESSIONAL_STAGE_MIN_WIDTH, bounds.x + bounds.width - next.x),
-        );
+      if (gesture.docked && gesture.kind === 'resize') {
+        const width = Math.min(bounds.width, Math.max(PROFESSIONAL_STAGE_MIN_WIDTH, bounds.x + bounds.width - next.x));
         gesture.latest = { x: bounds.x + bounds.width - width, y: bounds.y, width, height: bounds.height };
-      } else {
-        gesture.latest = next;
+      } else gesture.latest = next;
+      if (gesture.kind === 'move' || gesture.kind === 'resize') {
+        element.style.left = `${gesture.latest.x}px`; element.style.top = `${gesture.latest.y}px`;
+        element.style.right = ''; element.style.bottom = '';
+        element.style.width = `${gesture.latest.width}px`; element.style.height = `${gesture.latest.height}px`;
       }
-      element.style.left = `${gesture.latest.x}px`;
-      element.style.top = `${gesture.latest.y}px`;
-      element.style.width = `${gesture.latest.width}px`;
-      element.style.height = `${gesture.latest.height}px`;
+      if (gesture.kind === 'move') {
+        const action = resolveProfessionalWindowDropTarget({
+          x: moveEvent.clientX, y: moveEvent.clientY, sourceRegionId: region.id,
+          viewport: viewportBounds, preferredDockWidth: gesture.latest.width, regions: dropRegions(),
+        });
+        gesture.target = action;
+        if (action !== undefined) showPreview(action);
+        else setDropPreview(null);
+      }
+      publishDuringGesture.current?.();
     };
-    const onUp = (): void => {
+
+    const cleanup = (): void => {
       window.removeEventListener('pointermove', onMove);
       window.removeEventListener('pointerup', onUp);
-      window.removeEventListener('pointercancel', onUp);
-      const store = useLcosShellStore.getState();
-      if (gesture.docked) store.setWindowRegionDockWidth(region.id, gesture.latest.width);
-      else store.setWindowRegionRect(region.id, gesture.latest);
+      window.removeEventListener('pointercancel', onCancel);
+      if (gestureCleanupRef.current === cleanup) gestureCleanupRef.current = null;
     };
+    const onUp = (upEvent: PointerEvent): void => {
+      if (upEvent.pointerId !== gesture.pointerId) return;
+      cleanup(); setDropPreview(null);
+      if (!gesture.moved) { restoreStyle(); return; }
+      const store = useLcosShellStore.getState();
+      if (gesture.kind === 'resize') {
+        if (gesture.docked) store.setWindowRegionDockWidth(region.id, gesture.latest.width);
+        else store.setWindowRegionRect(region.id, gesture.latest);
+        return;
+      }
+      if (gesture.kind === 'move') {
+        const action = gesture.target;
+        if (action?.kind === 'dock-right') store.dockWindowRegionRight(region.id, action.rect.width);
+        else if (action?.kind === 'group') store.groupWindowRegionInto(region.id, action.regionId, action.groupId);
+        else if (action?.kind === 'split') store.splitWindowRegionInto(region.id, action.regionId, action.groupId, action.direction, action.sourceFirst);
+        else store.floatWindowRegionAt(region.id, gesture.latest);
+        return;
+      }
+      const draggedWindowId = gesture.tabWindowId;
+      if (draggedWindowId === undefined) return;
+      suppressTabClickRef.current = true;
+      window.setTimeout(() => { suppressTabClickRef.current = false; }, 0);
+      const action = gesture.target;
+      if (action?.kind === 'dock-right') store.detachWindowToDockRight(draggedWindowId, action.rect.width);
+      else if (action?.kind === 'group') store.moveWindowToGroup(draggedWindowId, action.regionId, action.groupId);
+      else if (action?.kind === 'split') store.splitWindowToGroup(draggedWindowId, action.regionId, action.groupId, action.direction, action.sourceFirst);
+      else store.detachWindowToRegion(draggedWindowId, gesture.floatRect ?? gesture.latest);
+      store.activateWindow(draggedWindowId);
+    };
+    const onCancel = (cancelEvent: PointerEvent): void => {
+      if (cancelEvent.pointerId !== gesture.pointerId) return;
+      cleanup(); restoreStyle(); setDropPreview(null); publishDuringGesture.current?.();
+    };
+    gestureCleanupRef.current = cleanup;
     window.addEventListener('pointermove', onMove);
     window.addEventListener('pointerup', onUp);
-    window.addEventListener('pointercancel', onUp);
-  }, [rectFor]);
-
-  /** 显式停靠 / 取消停靠（取消停靠时把当前几何留作 floating 几何，窗口不跳走）。 */
-  const toggleRegionDock = useCallback((region: LcosWindowRegion): void => {
-    const store = useLcosShellStore.getState();
-    if (region.layout === 'docked-right') {
-      const current = rectFor(region.id);
-      if (current !== undefined) store.setWindowRegionRect(region.id, current);
-      store.setWindowRegionLayout(region.id, 'floating');
-      return;
-    }
-    store.setWindowRegionLayout(region.id, 'docked-right');
-  }, [rectFor]);
+    window.addEventListener('pointercancel', onCancel);
+  }, [rectFor, regionEntries]);
 
   useLayoutEffect(() => {
     const updateViewport = (): void => {
@@ -297,13 +434,13 @@ export function ProfessionalWindowStage({ projectId, resolvePortalTarget, onOpen
   }, []);
 
   useLayoutEffect(() => {
-    if (windows.length === 0 || regionEntries.length === 0) {
+    if (windows.length === 0 || visibleEntries.length === 0) {
       clearWindowEnvironment();
       return undefined;
     }
 
     const publish = (): void => {
-      const regions = regionEntries.flatMap((entry) => {
+      const regions = visibleEntries.flatMap((entry) => {
         const element = regionElements.current.get(entry.region.id);
         if (element === undefined) return [];
         const rect = element.getBoundingClientRect();
@@ -324,18 +461,26 @@ export function ProfessionalWindowStage({ projectId, resolvePortalTarget, onOpen
       }));
     };
 
+    let publishFrame: number | undefined;
+    const schedulePublish = (): void => {
+      if (publishFrame !== undefined) return;
+      publishFrame = window.requestAnimationFrame(() => { publishFrame = undefined; publish(); });
+    };
+    publishDuringGesture.current = schedulePublish;
     publish();
     const observer = typeof ResizeObserver === 'undefined' ? undefined : new ResizeObserver(publish);
-    for (const entry of regionEntries) {
+    for (const entry of visibleEntries) {
       const element = regionElements.current.get(entry.region.id);
       if (element !== undefined) observer?.observe(element);
     }
     window.addEventListener('scroll', publish, true);
     return () => {
+      if (publishDuringGesture.current === schedulePublish) publishDuringGesture.current = null;
+      if (publishFrame !== undefined) window.cancelAnimationFrame(publishFrame);
       observer?.disconnect();
       window.removeEventListener('scroll', publish, true);
     };
-  }, [activeRegionId, clearWindowEnvironment, publishWindowEnvironment, regionEntries, viewport, windows.length]);
+  }, [activeRegionId, clearWindowEnvironment, publishWindowEnvironment, visibleEntries, viewport, windows.length]);
 
   // Esc 栈：Professional Stage 只关闭全局前景窗口；inline Composer 仍先消费一次 Esc。
   useCloseOnEscape(windows.length > 0 && !inlineComposerOpen, () => {
@@ -347,14 +492,20 @@ export function ProfessionalWindowStage({ projectId, resolvePortalTarget, onOpen
   if (windows.length === 0) return <div data-lcos-professional-stage data-empty="true" className="hidden" aria-hidden />;
 
   return (
-    <div data-lcos-professional-stage className="pointer-events-none fixed inset-0 z-40">
-      {regionEntries.map((entry, regionIndex) => {
-        const { region, windows: regionWindows, activeWindow, preferredWidth } = entry;
+    <div data-lcos-professional-stage data-compact={compact ? 'true' : undefined} className="pointer-events-none fixed inset-0 z-40">
+      {regionEntries.map((entry) => {
+        const { region, windows: regionWindows, preferredWidth } = entry;
+        const activeGroup = compact
+          ? region.groups.find((group) => group.windowIds.includes(active?.id ?? '')) ?? region.groups[0]
+          : region.groups[0];
+        const activeWindow = windows.find((window) => window.id === activeGroup?.activeWindowId) ?? entry.activeWindow;
+        const peerGroup = compact ? undefined : region.groups[1];
+        const peerWindows = peerGroup?.windowIds.flatMap((id) => { const window = windows.find((item) => item.id === id); return window ? [window] : []; }) ?? [];
+        const peerWindow = peerWindows.find((window) => window.id === peerGroup?.activeWindowId) ?? peerWindows.at(-1);
+        const activeGroupWindows = activeGroup?.windowIds.flatMap((id) => { const window = windows.find((item) => item.id === id); return window ? [window] : []; }) ?? regionWindows;
         const placement = placements.get(region.id);
         const isGlobalActive = active?.id === activeWindow.id;
         const multiRegion = regionEntries.length > 1;
-        // 显式分组的目标：前一个区域（2 个区域时即“另一个”）；不存在则按钮 disabled。
-        const groupTarget = regionIndex > 0 ? regionEntries[regionIndex - 1] : undefined;
         const docked = region.layout === 'docked-right';
         const isAssembly = activeWindow.bodyKey === 'assembly';
         const portalTargetResolution = resolvePortalTarget === undefined || activeWindow.bodyKey !== 'portal-preview'
@@ -372,17 +523,25 @@ export function ProfessionalWindowStage({ projectId, resolvePortalTarget, onOpen
             data-lcos-window-region-id={region.id}
             data-lcos-window-layout={region.layout}
             data-lcos-window-active-body={activeWindow.bodyKey}
-            className="pointer-events-auto absolute flex flex-col rounded-2xl"
+            inert={compact && !isGlobalActive || undefined}
+            aria-hidden={compact && !isGlobalActive || undefined}
+            className="pointer-events-auto absolute flex rounded-2xl"
             onPointerDownCapture={() => {
+              useCanvasAttentionStore.getState().setCanvasEngaged(false);
+              if (!isGlobalActive) activateWindow(activeWindow.id);
+            }}
+            onFocusCapture={() => {
+              useCanvasAttentionStore.getState().setCanvasEngaged(false);
               if (!isGlobalActive) activateWindow(activeWindow.id);
             }}
             style={{
               boxSizing: 'border-box',
+              ...(compact && !isGlobalActive ? { display: 'none' } : {}),
               ...(placement === undefined
                 ? {
                     right: region.layout === 'docked-right' ? 0 : isAssembly ? (viewport.width >= 1280 ? 96 : viewport.width < 600 ? 12 : 24) : 24,
                     top: region.layout === 'docked-right' ? 0 : isAssembly ? (viewport.width >= 1280 ? 120 : viewport.width < 600 ? 76 : 88) : 88,
-                    ...(isAssembly ? { height: 648 } : {}),
+                    ...(isAssembly ? { height: 648 } : region.splitDirection === 'horizontal' ? { height: 560, minHeight: 560 } : {}),
                     width: `min(${preferredWidth}px, calc(100vw - ${isAssembly && viewport.width < 600 ? 24 : 48}px))`,
                   }
                 : {
@@ -393,92 +552,51 @@ export function ProfessionalWindowStage({ projectId, resolvePortalTarget, onOpen
                   }),
               maxWidth: isAssembly && viewport.width < 600 ? 'calc(100vw - 24px)' : 'calc(100vw - 48px)',
               maxHeight: region.layout === 'docked-right' ? '100vh' : isAssembly && viewport.width < 600 ? 'calc(100vh - 100px)' : 'calc(100vh - 140px)',
+              ...(region.splitDirection === 'horizontal' ? { minHeight: 560 } : {}),
               border: '1px solid var(--lcos-window-border)',
               boxShadow: 'var(--lcos-window-shadow)',
               background: lcosTokens.color.surface,
               borderRadius: region.layout === 'docked-right' ? 0 : isAssembly ? 18 : 16,
               overflow: 'hidden',
+              flexDirection: region.splitDirection === undefined || region.splitDirection === 'horizontal' ? 'column' : 'row',
               zIndex: isGlobalActive ? 2 : 1,
             }}
           >
+            <div data-lcos-window-pane={activeGroup?.id} onFocusCapture={() => { if (useLcosShellStore.getState().windows.find((item) => item.active)?.id !== activeWindow.id) activateWindow(activeWindow.id); }} onPointerDownCapture={() => { if (activeWindow) activateWindow(activeWindow.id); }} style={{ display: 'flex', flexDirection: 'column', flex: peerWindow === undefined ? 1 : `${(region.splitRatio ?? 0.5) * 100}%`, minWidth: 0, minHeight: 0, overflow: 'hidden' }}>
             {/* R2-B：标题栏是移动手势的抓手（chrome 上的按钮/tab 不触发移动）。 */}
             <div
-              data-lcos-window-drag-handle={docked ? 'disabled' : 'enabled'}
-              onPointerDown={(event) => {
-                if (docked) return;
+              className="cursor-grab active:cursor-grabbing"
+              data-lcos-window-drag-handle="enabled"
+            onPointerDown={(event) => {
+                const tab = (event.target as HTMLElement).closest<HTMLElement>('[data-lcos-window-tab-value]');
+                if (tab !== null) {
+                  beginWindowGesture(event, region, 'tab', undefined, tab.getAttribute('data-lcos-window-tab-value') ?? undefined);
+                  return;
+                }
                 beginWindowGesture(event, region, 'move');
+              }}
+              onClickCapture={(event) => {
+                if (!suppressTabClickRef.current || (event.target as HTMLElement).closest('[data-lcos-window-tab-value]') === null) return;
+                suppressTabClickRef.current = false;
+                event.preventDefault(); event.stopPropagation();
               }}
             >
               <LcosWindowChrome
-                layout={regionWindows.length > 1 ? '分组' : docked ? '停靠' : '浮动'}
+                layout={compact || activeGroupWindows.length > 1 ? '分组' : docked ? '停靠' : '浮动'}
                 title={activeWindow.title}
-                tabs={regionWindows.length > 1
-                  ? regionWindows.map((window) => ({
+                tabs={compact || activeGroupWindows.length > 1
+                  ? (compact ? windows : activeGroupWindows).map((window) => ({
                       key: window.bodyKey,
                       value: window.id,
                       label: window.title,
-                      selected: window.id === region.activeWindowId,
+                      selected: compact ? window.id === active?.id : window.id === activeWindow.id,
                     }))
                   : undefined}
                 onSelectTab={(id) => activateWindow(id)}
-                primaryActions={isAssembly ? <button type="button" data-lcos-window-icon-button aria-label="关闭窗口"
-                  onClick={() => closeWindow(activeWindow.id)}><X className="h-4 w-4" /></button> : undefined}
-                overflowTrigger={isAssembly ? <AssemblyWindowActions
-                  docked={docked} canGroup={groupTarget !== undefined} canUngroup={regionWindows.length > 1}
-                  onDock={() => toggleRegionDock(region)}
-                  onGroup={() => { if (groupTarget) { useLcosShellStore.getState().groupWindowRegions(region.id, groupTarget.region.id); } }}
-                  onUngroup={() => useLcosShellStore.getState().ungroupWindowRegion(region.id)}
-                /> : undefined}
-                actions={isAssembly ? undefined :
-                  <>
-                    <button
-                      type="button"
-                      data-lcos-window-icon-button
-                      data-lcos-window-dock-toggle
-                      aria-label={docked ? '取消停靠' : '停靠到右侧'}
-                      title={docked ? '取消停靠（回到浮动）' : '停靠到右侧'}
-                      onClick={() => toggleRegionDock(region)}
-                    >
-                      {docked ? <Columns2 className="h-4 w-4" /> : <Pin className="h-4 w-4" />}
-                    </button>
-                    <button
-                      type="button"
-                      data-lcos-window-icon-button
-                      data-lcos-window-group
-                      aria-label="并入上一个区域"
-                      title={groupTarget === undefined ? '没有可并入的相邻区域' : '并入上一个区域（显式分组为 tab）'}
-                      disabled={groupTarget === undefined}
-                      onClick={() => {
-                        if (groupTarget === undefined) return;
-                        useLcosShellStore.getState().groupWindowRegions(region.id, groupTarget.region.id);
-                      }}
-                    >
-                      <Group className="h-4 w-4" />
-                    </button>
-                    <button
-                      type="button"
-                      data-lcos-window-icon-button
-                      data-lcos-window-ungroup
-                      aria-label="取消分组"
-                      title={regionWindows.length > 1 ? '取消分组（拆出当前窗口）' : '当前区域只有一个窗口'}
-                      disabled={regionWindows.length < 2}
-                      onClick={() => useLcosShellStore.getState().ungroupWindowRegion(region.id)}
-                    >
-                      <Ungroup className="h-4 w-4" />
-                    </button>
-                    <button
-                      type="button"
-                      data-lcos-window-icon-button
-                      aria-label="关闭窗口"
-                      onClick={() => {
-                        if (activeWindow.bodyKey === 'reader') returnReaderToSource(activeWindow);
-                        else closeWindow(activeWindow.id);
-                      }}
-                    >
-                      <X className="h-4 w-4" />
-                    </button>
-                  </>
-                }
+                primaryActions={<button type="button" data-lcos-window-icon-button aria-label="关闭窗口"
+                  onClick={() => { if (activeWindow.bodyKey === 'reader') returnReaderToSource(activeWindow); else closeWindow(activeWindow.id); }}><X className="h-4 w-4" /></button>}
+                actions={undefined}
+                overflowTrigger={undefined}
               />
             </div>
 
@@ -502,8 +620,10 @@ export function ProfessionalWindowStage({ projectId, resolvePortalTarget, onOpen
               style={{ background: lcosTokens.color.canvas }}
             >
               <ProfessionalBody
+                key={`${projectId}:${activeWindow.id}`}
                 projectId={projectId}
                 bodyKey={activeWindow.bodyKey}
+                onClose={() => closeWindow(activeWindow.id)}
                 {...(activeWindow.target === undefined ? {} : { target: activeWindow.target })}
                 {...(activeWindow.targetKind === undefined ? {} : { targetKind: activeWindow.targetKind })}
                 {...(activeWindow.assemblyTargetRef === undefined
@@ -519,44 +639,85 @@ export function ProfessionalWindowStage({ projectId, resolvePortalTarget, onOpen
                   : { onReturnReaderSource: () => returnReaderToSource(activeWindow) })}
               />
             </div>
+            </div>
+            {peerWindow !== undefined && peerGroup !== undefined && !compact && <>
+              <div role="separator" aria-orientation={region.splitDirection === 'horizontal' ? 'horizontal' : 'vertical'} aria-label="调整分屏比例" tabIndex={0}
+                data-lcos-window-splitter
+                aria-valuemin={20} aria-valuemax={80} aria-valuenow={Math.round((region.splitRatio ?? 0.5) * 100)}
+                onKeyDown={(event) => {
+                  const step = event.shiftKey ? 0.1 : 0.05;
+                  const decrement = region.splitDirection === 'horizontal' ? event.key === 'ArrowUp' : event.key === 'ArrowLeft';
+                  const increment = region.splitDirection === 'horizontal' ? event.key === 'ArrowDown' : event.key === 'ArrowRight';
+                  const next = event.key === 'Home' ? 0.2 : event.key === 'End' ? 0.8 : decrement ? (region.splitRatio ?? 0.5) - step : increment ? (region.splitRatio ?? 0.5) + step : undefined;
+                  if (next === undefined) return;
+                  event.preventDefault();
+                  useLcosShellStore.getState().setWindowRegionSplitRatio(region.id, next);
+                }}
+                onPointerDown={(event) => {
+                  event.preventDefault();
+                  splitterCleanupRef.current?.();
+                  const element = event.currentTarget.parentElement;
+                  if (!element) return;
+                  const bounds = element.getBoundingClientRect();
+                  const panes = [...element.querySelectorAll<HTMLElement>('[data-lcos-window-pane]')];
+                  const originalBases = panes.map((pane) => pane.style.flexBasis);
+                  let ratio = region.splitRatio ?? 0.5;
+                  const update = (move: PointerEvent): void => {
+                    ratio = region.splitDirection === 'horizontal'
+                      ? (move.clientY - bounds.top) / bounds.height
+                      : (move.clientX - bounds.left) / bounds.width;
+                    const clamped = Math.min(0.8, Math.max(0.2, ratio));
+                    if (panes[0]) panes[0].style.flexBasis = `${clamped * 100}%`;
+                    if (panes[1]) panes[1].style.flexBasis = `${(1 - clamped) * 100}%`;
+                  };
+                  const cleanup = (): void => { window.removeEventListener('pointermove', update); window.removeEventListener('pointerup', finish); window.removeEventListener('pointercancel', cancel); };
+                  const finish = (): void => { cleanup(); splitterCleanupRef.current = null; useLcosShellStore.getState().setWindowRegionSplitRatio(region.id, ratio); };
+                  const cancel = (): void => { cleanup(); splitterCleanupRef.current = null; panes.forEach((pane, index) => { pane.style.flexBasis = originalBases[index] ?? ''; }); };
+                  splitterCleanupRef.current = cleanup;
+                  window.addEventListener('pointermove', update); window.addEventListener('pointerup', finish, { once: true }); window.addEventListener('pointercancel', cancel, { once: true });
+                }}
+                style={{ flex: '0 0 5px', background: 'var(--lcos-window-border)', cursor: region.splitDirection === 'horizontal' ? 'row-resize' : 'col-resize', touchAction: 'none' }} />
+              <div data-lcos-window-pane={peerGroup.id} onFocusCapture={() => { if (useLcosShellStore.getState().windows.find((item) => item.active)?.id !== peerWindow.id) activateWindow(peerWindow.id); }} onPointerDownCapture={() => activateWindow(peerWindow.id)} style={{ display: 'flex', flexDirection: 'column', flex: `${((1 - (region.splitRatio ?? 0.5)) * 100)}%`, minWidth: 0, minHeight: 0, overflow: 'hidden' }}>
+                <div className="cursor-grab active:cursor-grabbing" data-lcos-window-drag-handle="enabled" onPointerDown={(event) => {
+                  const tab = (event.target as HTMLElement).closest<HTMLElement>('[data-lcos-window-tab-value]');
+                  if (tab !== null) beginWindowGesture(event, region, 'tab', undefined, tab.getAttribute('data-lcos-window-tab-value') ?? undefined);
+                  else beginWindowGesture(event, region, 'move');
+                }} onClickCapture={(event) => {
+                  if (!suppressTabClickRef.current || (event.target as HTMLElement).closest('[data-lcos-window-tab-value]') === null) return;
+                  suppressTabClickRef.current = false; event.preventDefault(); event.stopPropagation();
+                }}>
+                <LcosWindowChrome layout={peerGroup.windowIds.length > 1 ? '分组' : '浮动'} title={peerWindow.title}
+                  tabs={peerGroup.windowIds.length > 1 ? peerGroup.windowIds.flatMap((id) => { const window = windows.find((item) => item.id === id); return window ? [{ key: window.bodyKey, value: window.id, label: window.title, selected: window.id === peerWindow.id }] : []; }) : undefined}
+                  onSelectTab={(id) => activateWindow(id)}
+                  primaryActions={<button type="button" data-lcos-window-icon-button aria-label="关闭窗口" onClick={() => { if (peerWindow.bodyKey === 'reader') returnReaderToSource(peerWindow); else closeWindow(peerWindow.id); }}><X className="h-4 w-4" /></button>} />
+                </div>
+                <div data-lcos-window-body={peerWindow.bodyKey} data-lcos-window-target={peerWindow.target} className="min-h-0 flex-1 overflow-y-auto" style={{ background: lcosTokens.color.canvas }}>
+                  <ProfessionalBody key={`${projectId}:${peerWindow.id}`} projectId={projectId} bodyKey={peerWindow.bodyKey} onClose={() => closeWindow(peerWindow.id)}
+                    {...(peerWindow.target === undefined ? {} : { target: peerWindow.target })}
+                    {...(peerWindow.targetKind === undefined ? {} : { targetKind: peerWindow.targetKind })}
+                    {...(peerWindow.assemblyTargetRef === undefined ? {} : { assemblyTargetRef: peerWindow.assemblyTargetRef })}
+                    {...(peerWindow.bodyKey !== 'portal-preview' ? {} : { portalTargetResolution: resolvePortalTarget === undefined || peerWindow.targetKind !== 'canvas' || peerWindow.target === undefined ? null : resolvePortalTarget(peerWindow.target) ?? null })}
+                    {...(onOpenPortalTarget === undefined ? {} : { onOpenPortalTarget })}
+                    {...(peerWindow.readerRevisionId === undefined ? {} : { readerRevisionId: peerWindow.readerRevisionId })}
+                    {...(peerWindow.bodyKey !== 'reader' ? {} : { onReturnReaderSource: () => returnReaderToSource(peerWindow) })} />
+                </div>
+              </div>
+            </>}
           </div>
         );
       })}
+      {dropPreview !== null && (() => {
+        const rect = dropPreview.action.kind === 'float' ? dropPreview.action.rect : dropPreview.action.previewRect;
+        return <div data-lcos-window-drop-preview aria-live="polite" className="pointer-events-none fixed rounded-xl border border-slate-500/70 bg-slate-500/[0.04]" style={{ left: rect.x, top: rect.y, width: rect.width, height: rect.height, zIndex: 60 }}>
+        <span className="absolute top-2 whitespace-nowrap rounded-md bg-slate-900/80 px-2 py-1 text-xs text-white" style={dropPreview.action.kind === 'dock-right' ? { right: 36, top: '50%', transform: 'translateY(-50%)' } : { left: 8 }}>{dropPreview.label}</span>
+      </div>;
+      })()}
     </div>
   );
 }
 
-/** Assembly keeps its high-frequency content controls out of the title bar. */
-function AssemblyWindowActions({ docked, canGroup, canUngroup, onDock, onGroup, onUngroup }: {
-  readonly docked: boolean;
-  readonly canGroup: boolean;
-  readonly canUngroup: boolean;
-  readonly onDock: () => void;
-  readonly onGroup: () => void;
-  readonly onUngroup: () => void;
-}): React.JSX.Element {
-  const [open, setOpen] = useState(false);
-  const trigger = useRef<HTMLButtonElement>(null);
-  const close = (): void => {
-    setOpen(false);
-    requestAnimationFrame(() => trigger.current?.focus({ preventScroll: true }));
-  };
-  const invoke = (action: () => void): void => { close(); action(); };
-  return <div onKeyDownCapture={(event) => {
-    if (open && event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); close(); }
-  }}>
-    <DropdownMenu open={open} onOpenChange={setOpen} align="bottom-right"
-      trigger={<button ref={trigger} type="button" data-lcos-window-icon-button aria-label="更多窗口操作" aria-haspopup="menu">
-        <img src={moreIcon} width={18} height={18} alt="" />
-      </button>}>
-      <DropdownMenuItem data-lcos-window-dock-toggle onClick={() => invoke(onDock)}>{docked ? '取消停靠' : '停靠到右侧'}</DropdownMenuItem>
-      <DropdownMenuItem data-lcos-window-group disabled={!canGroup} onClick={() => invoke(onGroup)}>并入上一个区域</DropdownMenuItem>
-      <DropdownMenuItem data-lcos-window-ungroup disabled={!canUngroup} onClick={() => invoke(onUngroup)}>取消分组</DropdownMenuItem>
-    </DropdownMenu>
-  </div>;
-}
-
 function ProfessionalBody({
+  onClose,
   projectId,
   bodyKey,
   target,
@@ -569,6 +730,7 @@ function ProfessionalBody({
 }: {
   projectId: string;
   bodyKey: string;
+  onClose: () => void;
   target?: string;
   targetKind?: 'canvas';
   assemblyTargetRef?: AssemblyTargetRefV1;
@@ -609,6 +771,7 @@ function ProfessionalBody({
         />
       );
     case 'runtime-doctor':
+      return <RuntimeDoctorBody onClose={onClose} />;
     case 'capture-inbox':
     case 'connector-source':
       // 尚无生产 caller；若由旧状态恢复，只给用户可理解的不可用状态。

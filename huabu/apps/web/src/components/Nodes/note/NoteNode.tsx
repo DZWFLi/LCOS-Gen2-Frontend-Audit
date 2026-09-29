@@ -14,6 +14,7 @@ import { Loading } from '@/components/Common/Loading';
 import { MilkdownPreview } from '@/components/Milkdown';
 import { useNodeLOD } from '@/hooks/useNodeLOD';
 import { useNodeScale } from '@/hooks/useNodeScale';
+import { useCanvasChromeMode } from '@/lcos-seam/chromeModeSlot';
 import { useResolvedNodeBody } from '@/lcos-seam/nodeBodySlot';
 import useCanvasStore from '@/store/canvasStore';
 import { openPreviewNode } from '@/store/previewWorkspace/actions';
@@ -69,6 +70,7 @@ function appendMarkdownBlock(existing: string, snippet: string): string {
 export const NoteNode = memo(
   ({ id, data, selected }: NodeProps<NoteNodeType>) => {
     const { t } = useTranslation();
+    const chromeMode = useCanvasChromeMode();
     const updateNodeData = useCanvasStore((s) => s.updateNodeData);
     const moveNoteBlockIntoNote = useCanvasStore(
       (s) => s.moveNoteBlockIntoNote,
@@ -475,7 +477,9 @@ export const NoteNode = memo(
                   // could rename out from under it.
                   data-note-content-host=""
                   className={clsx(
-                    NOTE_CONTENT_HOST_CLASS,
+                    BodyOverride !== undefined && chromeMode === 'lcos'
+                      ? 'flex flex-col'
+                      : NOTE_CONTENT_HOST_CLASS,
                     'h-full',
                     BodyOverride === undefined &&
                       !hasAccent &&

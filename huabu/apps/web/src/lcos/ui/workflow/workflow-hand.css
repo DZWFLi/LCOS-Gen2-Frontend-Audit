@@ -102,7 +102,7 @@
 .lcos-workflow-hand-search { position:absolute; left:18px; right:18px; top:12px; display:flex; align-items:center; gap:8px; max-width:320px; min-height:40px; padding:8px 12px; border:1px solid var(--lcos-color-border-subtle); border-radius:12px; background:rgba(255,255,255,.7); color:var(--gen2-muted); }
 .lcos-workflow-hand-search input { min-width:0; width:100%; border:0; outline:none; background:transparent; color:var(--gen2-text); font:400 13px/20px 'Noto Sans SC',sans-serif; }
 .lcos-workflow-hand-search:focus-within { outline:2px solid var(--gen2-accent); outline-offset:2px; }
-.lcos-workflow-hand-pool[data-has-search='true'] { padding-top:64px; }
+.lcos-workflow-hand-pool[data-has-search='true'] { padding-top:20px; }
 /* Six or more cards use the pool layout instead of repeating a five-card fan forever.
    This is a presentation threshold, not a limit on workflows or stored identities. */
 .lcos-workflow-hand-pool:has(.lcos-workflow-task-slot:nth-child(6)) { overflow:auto; }
@@ -167,3 +167,94 @@
   .lcos-workflow-card-lane-grid--task { min-height:324px; display:grid; grid-template-columns:repeat(auto-fit,224px); justify-content:center; padding:0; gap:22px; overflow:visible; }
   .lcos-workflow-card-lane-grid--task > .lcos-workflow-task-slot:nth-child(n) { height:324px; margin:0; transform:none; transition:none; }
 }
+
+.lcos-workflow-hand-stage > .lcos-atlas-dismiss-plane { pointer-events: auto; }
+.lcos-workflow-load-more { position: absolute; z-index: 2; bottom: 6px; left: 50%; transform: translateX(-50%); padding: 8px 16px; border-radius: 999px; background: var(--gen2-surface); color: var(--gen2-text); }
+
+/* B03 is a near-card preview, not a second window or a synthetic conversation. */
+.lcos-workflow-card-preview { position:absolute; z-index:4; inset:48px 12px auto; display:flex; flex-direction:column; gap:5px; padding:32px 10px 10px; border-radius:14px; background:var(--lcos-surface-base); box-shadow:var(--lcos-glass-shadow); color:var(--lcos-text-primary); }
+.lcos-workflow-card-preview > button { min-height:38px; display:flex; align-items:center; gap:8px; padding:6px 8px; border:0; border-radius:8px; background:transparent; font:inherit; font-size:11px; text-align:left; }
+.lcos-workflow-card-preview > button:disabled { opacity:.45; }
+.lcos-workflow-card-preview > button:not(:disabled):hover { background:var(--gen2-raised); }
+.lcos-workflow-card-preview > button:focus-visible { outline:2px solid var(--gen2-accent); outline-offset:1px; }
+.lcos-workflow-card-preview > .lcos-workflow-preview-close { position:absolute; right:5px; top:3px; min-height:28px; padding:6px; }
+.lcos-workflow-card-preview > span { padding-inline:8px; font-size:10px; color:var(--gen2-muted); }
+.lcos-workflow-card-preview > .lcos-workflow-preview-title { padding:0 8px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:13px; }
+
+.lcos-workflow-preview-action { width:100%; min-height:38px; display:flex; align-items:center; gap:8px; padding:6px 8px; border:0; border-radius:8px; background:transparent; font:inherit; font-size:11px; text-align:left; }
+.lcos-workflow-preview-action:hover { background:var(--gen2-raised); }
+.lcos-workflow-preview-action:focus-visible { outline:2px solid var(--gen2-accent); outline-offset:1px; }
+
+/* The production cards live inside semantic lanes. Large/search results use
+   the same Card Pool, with no duplicated cards or second selection state. */
+.lcos-workflow-card-lane-grid--task[data-card-layout='pool'] {
+  display:grid;
+  grid-template-columns:repeat(auto-fit,224px);
+  align-items:start;
+  justify-content:center;
+  min-height:324px;
+  gap:22px;
+  padding:8px 0 24px;
+  overflow:visible;
+}
+.lcos-workflow-card-lane-grid--task[data-card-layout='pool'] > .lcos-workflow-task-slot:nth-child(n) {
+  height:324px;
+  margin:0;
+  transform:none;
+}
+
+/* Page 13 B03 (5344:752): the near card keeps its cover visible; actions sit
+   beside it. The same preview state temporarily focuses the hand, not a window. */
+.lcos-workflow-card-lane-grid--task:has(> [data-card-state='预览']) {
+  display:flex;
+  justify-content:center;
+  min-height:380px;
+  padding:18px 12px 38px;
+  overflow:visible;
+}
+.lcos-workflow-card-lane-grid--task:has(> [data-card-state='预览']) > .lcos-workflow-task-slot:not([data-card-state='预览']) { display:none; }
+.lcos-workflow-card-lane-grid--task > .lcos-workflow-task-slot[data-card-state='预览']:nth-child(n) {
+  flex:0 1 488px;
+  width:488px;
+  height:324px;
+  margin:0;
+  transform:none;
+  opacity:1;
+  filter:none;
+}
+.lcos-workflow-task-card[data-preview='true'] .lcos-workflow-card-preview {
+  inset:34px auto auto 260px;
+  width:216px;
+  padding:34px 0 0;
+  gap:10px;
+  background:transparent;
+  box-shadow:none;
+}
+.lcos-workflow-card-preview > button,
+.lcos-workflow-card-preview .lcos-workflow-preview-action {
+  min-height:44px;
+  padding:10px 12px;
+  border:1px solid var(--lcos-color-border-subtle);
+  border-radius:12px;
+  background:var(--lcos-surface-base);
+  font-size:12px;
+}
+.lcos-workflow-card-preview > .lcos-workflow-preview-close {
+  top:0;
+  right:0;
+  min-height:28px;
+  padding:5px;
+  border:0;
+  background:transparent;
+}
+@media (max-width:600px) {
+  .lcos-workflow-card-lane-grid--task > .lcos-workflow-task-slot[data-card-state='预览']:nth-child(n) { flex-basis:224px; width:224px; height:566px; }
+  .lcos-workflow-task-card[data-preview='true'] .lcos-workflow-card-preview { inset:324px auto auto 0; width:224px; }
+}
+
+.lcos-workflow-hand-stage .lcos-workflow-task-card[data-preview='true'] { overflow:visible; }
+
+/* Keep the B03 near-card actions legible over live workflow edges. The base
+   light hand stays subtle; only the existing preview presentation raises fog. */
+.lcos-workflow-hand-stage:has(.lcos-workflow-task-card[data-preview='true'])
+  .lcos-light-curtain-backdrop[data-curtain-kind='hand'] .lcos-light-curtain-fog { opacity:.30; }

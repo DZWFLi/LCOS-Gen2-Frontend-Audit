@@ -8,7 +8,7 @@ import { LcosSurfaceFeedbackView } from '../LcosSurfaceFeedbackView';
 import { lcosTokens } from '../lcosTokens';
 import { LcosIconButton } from '../primitives/LcosIconButton';
 
-import type { RefObject } from 'react';
+import { useEffect, useRef, useState, type KeyboardEventHandler, type RefObject } from 'react';
 
 /** Figma `状态` 轴的 11 个取值，命名与 Figma 完全一致。 */
 export type LcosNavigatorIslandState =
@@ -53,14 +53,27 @@ export interface LcosNavigatorIslandViewProps {
   /** loading / error / degraded 的短态文案（Figma 这些状态与静息共用壳）。 */
   readonly message?: string;
   readonly inputRef?: RefObject<HTMLInputElement | null>;
+  readonly availableWidth?: number;
+  readonly inputAriaControls?: string;
+  readonly activeDescendant?: string;
+  readonly onInputKeyDown?: KeyboardEventHandler<HTMLInputElement>;
 }
 
 export function LcosNavigatorIslandView({
   state, expanded: expandedProp, pins = [], query = '', onQueryChange,
   onToggleSearch, onActivatePin, onCreatePin, createPinDisabled = false,
-  message, inputRef,
+  message, inputRef, availableWidth = 900, inputAriaControls, activeDescendant, onInputKeyDown,
 }: LcosNavigatorIslandViewProps): React.JSX.Element {
+  const [overflowOpen, setOverflowOpen] = useState(false);
+  const overflowButton = useRef<HTMLButtonElement>(null);
+  useEffect(() => setOverflowOpen(false), [expandedProp]);
   const expanded = expandedProp ?? state === '搜索';
+  // Reserve the input before allocating Pin slots. Overflow is an explicit control.
+  const pinSlots = Math.max(0, Math.min(3, Math.floor((availableWidth - (expanded ? 174 : 52)) / 44)));
+  const overflowNeeded = pins.length > pinSlots;
+  const visible = pins.slice(0, overflowNeeded ? Math.max(0, pinSlots - 1) : pinSlots);
+  const hiddenPins = pins.slice(visible.length);
+  const width = Math.min(availableWidth, 52 + (expanded ? 218 : 0) + (visible.length + (overflowNeeded ? 1 : 0)) * 44);
   const disabled = state === 'disabled';
   const feedback = state === 'loading' ? 'loading' : state === 'error' ? 'error'
     : state === 'degraded' ? 'recovery' : undefined;
@@ -68,9 +81,13 @@ export function LcosNavigatorIslandView({
     violet: lcosTokens.color.pinViolet, teal: lcosTokens.color.pinTeal, amber: lcosTokens.color.pinAmber,
   };
   return (
-    <div data-lcos-nav-view>
+    <div data-lcos-nav-view onKeyDown={(event) => {
+      if (event.key === 'Escape' && overflowOpen) {
+        event.preventDefault(); event.stopPropagation(); setOverflowOpen(false); overflowButton.current?.focus();
+      }
+    }}>
       <div data-lcos-family="navigator-island" data-lcos-variant={state}
-        data-lcos-expanded={expanded ? 'true' : 'false'} aria-busy={state === 'loading'}>
+        style={{ width }} data-lcos-expanded={expanded ? 'true' : 'false'} aria-busy={state === 'loading'}>
         <LcosIconButton type="button" data-lcos-nav-part="search"
           aria-label={expanded ? '收起搜索（Esc）' : '搜索项目中的内容（Ctrl/Cmd+F）'}
           aria-expanded={expanded} disabled={disabled} onClick={onToggleSearch}>
@@ -78,8 +95,10 @@ export function LcosNavigatorIslandView({
         </LcosIconButton>
         {expanded && <input ref={inputRef} data-lcos-nav-part="input" value={query}
           disabled={disabled} onChange={(event) => onQueryChange?.(event.target.value)}
-          placeholder="搜索项目中的内容" aria-label="项目搜索" />}
-        {pins.map((pin) => (
+          placeholder="搜索项目中的内容" aria-label="项目搜索" role="combobox"
+          aria-controls={inputAriaControls} aria-expanded={expanded} aria-activedescendant={activeDescendant}
+          onKeyDown={onInputKeyDown} />}
+        {visible.map((pin) => (
           <LcosIconButton key={pin.id} type="button" data-lcos-nav-part="pin"
             data-lcos-pin-tone={pin.tone} data-lcos-pin-color={pin.color ?? ''}
             data-lcos-pin-count={pin.count ?? 0} aria-label={pin.label}
@@ -90,13 +109,18 @@ export function LcosNavigatorIslandView({
               <span data-lcos-pin-count-mark>{pin.count}</span>}
           </LcosIconButton>
         ))}
-        {onCreatePin !== undefined && <LcosIconButton type="button" data-lcos-nav-part="pin-add"
-          aria-label="新建颜色组" title="把当前现场标为颜色组"
-          disabled={disabled || createPinDisabled} onClick={onCreatePin}>
-          <FigmaShellGlyph name="plus" size={16} />
-        </LcosIconButton>}
+        {overflowNeeded && <LcosIconButton ref={overflowButton} type="button" data-lcos-nav-part="overflow"
+          aria-label={`其余 ${hiddenPins.length} 个颜色组`} aria-expanded={overflowOpen}
+          onClick={() => setOverflowOpen((value) => !value)}>+{hiddenPins.length}</LcosIconButton>}
       </div>
-      {feedback !== undefined && <div data-lcos-nav-feedback>
+      {overflowOpen && <div data-lcos-pin-overflow role="group" aria-label="其余颜色组">
+        {hiddenPins.map((pin) => <button key={pin.id} type="button" onClick={() => { setOverflowOpen(false); onActivatePin?.(pin); }}>
+          <FigmaPinMark color={pin.color ?? tones[pin.tone]} /><span>{pin.label}</span><small>{pin.count ?? 0}</small>
+        </button>)}
+        {onCreatePin && <button type="button" disabled={createPinDisabled} onClick={() => { setOverflowOpen(false); onCreatePin(); }}>
+          <FigmaShellGlyph name="plus" size={18} /><span>新建颜色组</span></button>}
+      </div>}
+      {feedback !== undefined && message !== undefined && <div data-lcos-nav-feedback>
         <LcosSurfaceFeedbackView presentation={feedback}
           message={message ?? (state === 'loading' ? '正在读取…' : state === 'error' ? '搜索失败 · 请重试' : '降级读取')} />
       </div>}

@@ -30,7 +30,7 @@ export interface DropBounds {
  * What is being dropped. Closed four-shape union — never a taxonomy generator.
  */
 export type DropPayload =
-  | { readonly kind: 'object'; readonly entityType: string; readonly entityId: string }
+  | { readonly kind: 'object'; readonly entityType: string; readonly entityId: string; readonly artifactViewId?: string }
   | { readonly kind: 'file'; readonly name: string; readonly size?: number; readonly mime?: string }
   | { readonly kind: 'text' | 'url'; readonly value: string }
   /** Assembly rows carry the canonical source ref; itemId alone is not an identity. */

@@ -4,16 +4,22 @@
 // 目标身份取真实 Huabu 节点字段：canvasRef 节点的 data.targetCanvasId（见 CanvasRefNode）。
 // 没有可解析目标时不假装可预览——窗口 body 会明确显示「目标缺失」。
 
-import { useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 
 import { isEditableTarget } from '@/hooks/shortcuts/isEditableTarget';
 import useCanvasStore from '@/store/canvasStore';
 
 import { LcosSpeciesBodyContent, SPECIES_ACCENT } from './LcosSpeciesBodies';
 import { useLcosDensity } from './useLcosDensity';
+import { NodeColorPinMarkers } from './NodeColorPinMarkers';
+import { NodeReferenceMarker } from './NodeReferenceMarker';
 import { useLcosShellStore } from '../shell/lcosShellStore';
+import { useLcosDropStore } from '../lcosDropState';
+import { rectFromDomRect } from '../drop/dropTargetRegistry';
+import { portalDropTargetForCanvas, usePortalDropWorkspaceContext } from '../drop/PortalDropWorkspaceContext';
 import { lcosTokens } from '../ui/lcosTokens';
 
+import type { DropTargetRegistration } from '../drop/dropTypes';
 import type { CanvasNodeBodySlotInput } from '@/lcos-seam/types';
 import type { JSX } from 'react';
 
@@ -23,11 +29,16 @@ function readTarget(data: Readonly<Record<string, unknown>> | undefined): string
 }
 
 export function PortalNodeBody(input: CanvasNodeBodySlotInput): JSX.Element {
+  const bodyRef = useRef<HTMLDivElement>(null);
   const density = useLcosDensity();
   const data = input.data as Readonly<Record<string, unknown>> | undefined;
   const rawTitle = data?.label ?? data?.title;
   const title = typeof rawTitle === 'string' && rawTitle.trim() !== '' ? rawTitle.trim() : '入口';
   const target = readTarget(data);
+  const workspaceContext = usePortalDropWorkspaceContext();
+  const resolvedTarget = useMemo(() => portalDropTargetForCanvas(workspaceContext, target), [workspaceContext, target]);
+  const registerTarget = useLcosDropStore((state) => state.registerTarget);
+  const unregisterTarget = useLcosDropStore((state) => state.unregisterTarget);
 
   const isOnlySelected = useCanvasStore((state) => {
     const selected = state.nodes.filter((node) => node.selected);
@@ -36,6 +47,41 @@ export function PortalNodeBody(input: CanvasNodeBodySlotInput): JSX.Element {
   const openPreview = useCallback((): void => {
     useLcosShellStore.getState().openWindow('portal-preview', `入口 · ${title}`, target, 'canvas');
   }, [title, target]);
+
+  useEffect(() => {
+    if (bodyRef.current === null) return;
+    const targetId = `portal:${input.nodeId}`;
+    const targetRegistration: Omit<DropTargetRegistration, 'rect'> = {
+      targetId,
+      kind: 'portal-receive',
+      label: `入口 · ${title}${resolvedTarget === undefined ? '' : ` → ${resolvedTarget.label}`}`,
+      priority: 25,
+      enabled: resolvedTarget !== undefined,
+      ...(resolvedTarget === undefined ? { ineligibleReason: target === undefined
+        ? '这个入口还没有目标现场'
+        : '入口尚未唯一解析到目标工作现场' } : {}),
+      semantic: { kind: 'portal-receive', ...(resolvedTarget === undefined ? {} : { targetRef: resolvedTarget.targetRef }) },
+      readRect: () => {
+        const body = bodyRef.current;
+        return body?.isConnected ? rectFromDomRect(body.getBoundingClientRect()) : undefined;
+      },
+    };
+    const publish = (): void => {
+      const body = bodyRef.current;
+      if (body !== null) registerTarget({ ...targetRegistration, rect: rectFromDomRect(body.getBoundingClientRect()) });
+    };
+    publish();
+    const observer = typeof ResizeObserver === 'function' ? new ResizeObserver(publish) : null;
+    observer?.observe(bodyRef.current);
+    window.addEventListener('resize', publish);
+    window.addEventListener('scroll', publish, true);
+    return () => {
+      observer?.disconnect();
+      window.removeEventListener('resize', publish);
+      window.removeEventListener('scroll', publish, true);
+      unregisterTarget(targetId);
+    };
+  }, [input.nodeId, registerTarget, resolvedTarget, target, title, unregisterTarget]);
 
   useEffect(() => {
     if (!isOnlySelected) return;
@@ -55,8 +101,10 @@ export function PortalNodeBody(input: CanvasNodeBodySlotInput): JSX.Element {
 
   return (
     <div
+      ref={bodyRef}
       data-lcos-species-body
       data-lcos-portal-body
+      data-lcos-drop-target={resolvedTarget === undefined ? 'unavailable' : 'portal'}
       data-lcos-density={density}
       onDoubleClick={(event) => {
         event.stopPropagation();
@@ -72,7 +120,7 @@ export function PortalNodeBody(input: CanvasNodeBodySlotInput): JSX.Element {
       role="button"
       tabIndex={0}
       aria-label={`${title} · 双击查看入口目标`}
-      className="flex h-full w-full flex-col overflow-hidden"
+      className="relative flex h-full w-full flex-col overflow-visible"
       style={{
         background: lcosTokens.color.surface,
         border: `1px solid ${SPECIES_ACCENT.portal}2E`,
@@ -82,6 +130,8 @@ export function PortalNodeBody(input: CanvasNodeBodySlotInput): JSX.Element {
       }}
     >
       <LcosSpeciesBodyContent species="portal" title={title} density={density} />
+      <NodeColorPinMarkers nodeId={input.nodeId} />
+      <NodeReferenceMarker nodeId={input.nodeId} />
       {density === 'reading' && (
         <span className="mt-1 truncate text-[10px]" style={{ color: lcosTokens.color.muted }}>
           {target ? `目标 ${target}` : '目标未绑定 · 打开后显示「目标缺失」'}

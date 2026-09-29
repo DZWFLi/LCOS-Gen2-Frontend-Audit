@@ -18,12 +18,11 @@
 //   - 本模块只读 Core 字节、只写 Huabu 节点 `data.src`，**不做任何 Core 写操作**，
 //     也不新建 store / 不改 ProjectionBinding。
 //
-// 覆盖范围：image + audio。两者都有现成 Huabu asset API / native node consumer。
-// pdf / video / office 仍保持 GAP，不把未接 producer 写成成功。
+// 覆盖范围：image/audio/video/pdf，共用既有 Huabu asset API 与内容CAS；office仍为GAP。
 
 import { HttpClient } from '@local-creative-os/web-gen2';
 
-import { uploadAudio, uploadImage } from '@/api/artifact';
+import { uploadAudio, uploadImage, uploadPdf, uploadVideo } from '@/api/artifact';
 import { getNodeContent } from '@/api/canvas';
 import { readLcosHostConfig } from '@/lcos/lcosHost';
 import useCanvasStore from '@/store/canvasStore';
@@ -74,25 +73,29 @@ const AUDIO_EXT_BY_MIME: Readonly<Record<string, string>> = {
   'audio/mp4': '.m4a',
 };
 
-type StageKind = 'image' | 'audio';
+type StageKind = 'image' | 'audio' | 'video' | 'pdf';
 
 function stageKindOf(binding: ProjectedSourceBinding): StageKind | undefined {
   const mime = (binding.descriptor?.mimeType ?? '').toLowerCase().split(';', 1)[0].trim();
   if (mime.startsWith('image/')) return 'image';
   if (mime.startsWith('audio/')) return 'audio';
+  if (mime.startsWith('video/')) return 'video';
+  if (mime === 'application/pdf' || binding.descriptor?.artifactKind === 'pdf') return 'pdf';
   if (binding.descriptor?.artifactKind === 'image') return 'image';
   return undefined;
 }
 
-function nativeHostTypeForStage(kind: StageKind): 'image' | 'note' {
-  // Audio morphology is hosted by the agent-creatable neutral note node. The
-  // Huabu audio renderer remains available for user-created native audio, but
-  // CREATE_NODES cannot create it for Core projection.
-  return kind === 'image' ? 'image' : 'note';
+function acceptsStageHost(kind: StageKind, nodeType: string | undefined): boolean {
+  // Generated artifacts can intentionally use the neutral note host. Their
+  // content family still comes from real MIME and never from the host name.
+  if (nodeType === 'note') return true;
+  return nodeType === kind;
 }
 
 function extensionFor(kind: StageKind, mimeType: string): string {
   const bare = mimeType.toLowerCase().split(';')[0].trim();
+  if (kind === 'pdf') return '.pdf';
+  if (kind === 'video') return bare === 'video/webm' ? '.webm' : bare === 'video/ogg' ? '.ogv' : bare === 'video/quicktime' ? '.mov' : '.mp4';
   return kind === 'image' ? IMAGE_EXT_BY_MIME[bare] ?? '.png' : AUDIO_EXT_BY_MIME[bare] ?? '.webm';
 }
 
@@ -130,9 +133,9 @@ async function waitForNodesInStore(ids: readonly string[], timeoutMs: number, is
 }
 
 /**
- * 为绑定的 image/audio artifact 落成画布内容，返回本次**真正落成**的节点数。
+ * 为绑定的 image/audio/video/pdf artifact 落成画布内容，返回本次**真正落成**的节点数。
  *
- * 只处理真实 MIME 能确定为 image/audio 且带 `descriptor.fileRecordId` 的 artifact。
+ * 只处理真实 MIME 能确定为 image/audio/video/pdf 且带 `descriptor.fileRecordId` 的 artifact。
  * 节点侧还要求 native node type 与 MIME 家族一致，且 `data.src` 为空。
  *
  * 绝不抛出：每个绑定独立 try/catch，失败只 warn 并继续下一个。
@@ -184,7 +187,7 @@ export async function stageProjectedSources(
     if (
       !node ||
       stageKind === undefined ||
-      node.type !== nativeHostTypeForStage(stageKind) ||
+      !acceptsStageHost(stageKind, node.type) ||
       !isEmptySource(node.data?.src)
     ) continue;
 
@@ -210,7 +213,7 @@ export async function stageProjectedSources(
       );
       if (!ownsCanvas()) { release(); break; }
       // 字节的 MIME 以 Core 响应头为准，其次用投影描述里的真实 mimeType。
-      const mimeType = (blob.type || binding.descriptor?.mimeType || (stageKind === 'image' ? 'image/png' : 'audio/webm'))
+      const mimeType = (blob.type || binding.descriptor?.mimeType || ({ image: 'image/png', audio: 'audio/webm', video: 'video/mp4', pdf: 'application/pdf' }[stageKind]))
         .toLowerCase()
         .split(';', 1)[0]
         .trim();
@@ -219,12 +222,11 @@ export async function stageProjectedSources(
         `${fileRecordId}${extensionFor(stageKind, mimeType)}`,
         { type: mimeType },
       );
-      const artifactKey = stageKind === 'image'
-        ? await uploadImage(file, canvasId)
-        : await uploadAudio(file, canvasId);
+      const upload = { image: uploadImage, audio: uploadAudio, video: uploadVideo, pdf: uploadPdf }[stageKind];
+      const artifactKey = await upload(file, canvasId);
       if (!ownsCanvas()) { release(); break; }
       const currentNode = useCanvasStore.getState().nodes.find((candidate) => candidate.id === node.id);
-      if (!currentNode || currentNode.type !== nativeHostTypeForStage(stageKind) || !isEmptySource(currentNode.data?.src)) {
+      if (!currentNode || !acceptsStageHost(stageKind, currentNode.type) || !isEmptySource(currentNode.data?.src)) {
         release();
         continue;
       }
