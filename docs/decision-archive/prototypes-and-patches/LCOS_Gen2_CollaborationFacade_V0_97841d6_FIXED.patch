@@ -1,0 +1,167 @@
+diff --git a/apps/web-gen2/src/backend/collaboration.ts b/apps/web-gen2/src/backend/collaboration.ts
+new file mode 100644
+index 0000000..3a66f16
+--- /dev/null
++++ b/apps/web-gen2/src/backend/collaboration.ts
+@@ -0,0 +1,44 @@
++// Collaboration facade V0.
++//
++// This is intentionally a thin, behavior-preserving client seam. It does not
++// own Conversation, Run, Continuation, provider-session, or recovery truth.
++// Those remain with their existing Core owners. The purpose is to stop UI
++// callers from assembling multiple backend clients themselves while we test
++// whether the collaboration-facing surface can stay small.
++//
++// V0 only exposes `delegate()` as a product-level action because canonical Run
++// dispatch already exists. Do NOT add `collaborate()` until a real prompt/send
++// owner exists (Huabu prompt transport is currently unsupported).
++
++import { CoreContinuationClient } from './continuation.js';
++import { CoreConversationClient } from './conversations.js';
++import { HttpClient } from './client.js';
++import { CoreRunClient } from './runs.js';
++
++import type { CreateRunInputV1 } from './runs.js';
++
++export class CoreCollaborationClient {
++  readonly conversations: CoreConversationClient;
++  readonly runs: CoreRunClient;
++  readonly continuations: CoreContinuationClient;
++
++  constructor(http: HttpClient) {
++    this.conversations = new CoreConversationClient(http);
++    this.runs = new CoreRunClient(http);
++    this.continuations = new CoreContinuationClient(http);
++  }
++
++  /**
++   * Delegate work to the canonical Run path.
++   *
++   * V0 deliberately preserves the existing Core contract:
++   * POST /projects/:pid/runs. This facade does not invent another task truth.
++   */
++  delegate(
++    projectId: string,
++    input: CreateRunInputV1,
++    signal?: AbortSignal,
++  ): Promise<unknown> {
++    return this.runs.createRun(projectId, input, signal);
++  }
++}
+diff --git a/apps/web-gen2/src/index.ts b/apps/web-gen2/src/index.ts
+index 21242b5..aee1066 100644
+--- a/apps/web-gen2/src/index.ts
++++ b/apps/web-gen2/src/index.ts
+@@ -156,4 +156,5 @@ export type { RendererFamily, PresentationSpecies, PresentationDescriptor, NodeC
+ 
+ export { CoreConversationClient } from './backend/conversations.js';
++export { CoreCollaborationClient } from './backend/collaboration.js';
+ export { CoreAssemblyClient } from './backend/assembly.js';
+ export { CoreRailwayClient } from './backend/railway.js';
+diff --git a/apps/web-gen2/test/collaboration-client.test.ts b/apps/web-gen2/test/collaboration-client.test.ts
+new file mode 100644
+index 0000000..335c3f6
+--- /dev/null
++++ b/apps/web-gen2/test/collaboration-client.test.ts
+@@ -0,0 +1,47 @@
++import { test } from 'node:test';
++import assert from 'node:assert/strict';
++
++import { CoreCollaborationClient } from '../src/backend/collaboration.js';
++import { HttpClient } from '../src/backend/client.js';
++
++const BASE = 'http://core.test';
++
++test('collaboration.delegate preserves canonical Run creation route', async () => {
++  const captured: Array<{
++    readonly url: string;
++    readonly method: string;
++    readonly body?: unknown;
++  }> = [];
++
++  const http = new HttpClient({
++    baseUrl: BASE,
++    fetch: async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
++      const url = typeof input === 'string' ? input : input.url;
++      const method = init?.method ?? 'GET';
++      const text = init?.body?.toString() ?? '';
++      const body = text ? JSON.parse(text) : undefined;
++      captured.push({ url, method, body });
++      return new Response(
++        JSON.stringify({ ok: true, value: { id: 'run-1' } }),
++        { status: 200, headers: { 'content-type': 'application/json' } },
++      );
++    },
++  });
++
++  const collaboration = new CoreCollaborationClient(http);
++  const result = await collaboration.delegate('project-1', {
++    instruction: 'Inspect the current selection.',
++    outputIntent: 'analyze',
++    workspaceId: 'workspace-1',
++  });
++
++  assert.deepEqual(result, { id: 'run-1' });
++  assert.equal(captured.length, 1);
++  assert.equal(captured[0]?.url, `${BASE}/projects/project-1/runs`);
++  assert.equal(captured[0]?.method, 'POST');
++  assert.deepEqual(captured[0]?.body, {
++    instruction: 'Inspect the current selection.',
++    outputIntent: 'analyze',
++    workspaceId: 'workspace-1',
++  });
++});
+diff --git a/huabu/apps/web/src/lcos/composer/LcosComposerHost.tsx b/huabu/apps/web/src/lcos/composer/LcosComposerHost.tsx
+index d07d60f..fb6a5bf 100644
+--- a/huabu/apps/web/src/lcos/composer/LcosComposerHost.tsx
++++ b/huabu/apps/web/src/lcos/composer/LcosComposerHost.tsx
+@@ -5,5 +5,5 @@
+ // 写死 'main' 会被 Core 外键拒绝（FOREIGN KEY constraint failed → 409）。
+ 
+-import { CoreRunClient, HttpError } from '@local-creative-os/web-gen2';
++import { CoreCollaborationClient, HttpError } from '@local-creative-os/web-gen2';
+ import { ArrowUp, Paperclip, X } from 'lucide-react';
+ import { useMemo, useRef, useState } from 'react';
+@@ -55,5 +55,5 @@ import { useMemo, useRef, useState } from 'react';
+ }: LcosComposerHostProps): React.JSX.Element | null {
+   const session = useMemo(() => createLcosCoreSession(), []);
+-  const runs = useMemo(() => new CoreRunClient(session.http), [session]);
++  const collaboration = useMemo(() => new CoreCollaborationClient(session.http), [session]);
+   const draftRefs = useLcosReferenceStore((s) => s.draft.orderedEntityRefs);
+   const text = useLcosShellStore((s) => s.composerPrompt);
+@@ -79,6 +79,6 @@ import { useMemo, useRef, useState } from 'react';
+     setReceipt(null);
+     const refs: readonly CoreEntityRefLike[] = draftRefs;
+-    void runs
+-      .createRun(projectId, buildComposerRunInput({
++    void collaboration
++      .delegate(projectId, buildComposerRunInput({
+         projectId,
+         instruction: text.trim(),
+diff --git a/huabu/apps/web/src/lcos/professional/ConversationWorkViewBody.tsx b/huabu/apps/web/src/lcos/professional/ConversationWorkViewBody.tsx
+index 98a4942..584a602 100644
+--- a/huabu/apps/web/src/lcos/professional/ConversationWorkViewBody.tsx
++++ b/huabu/apps/web/src/lcos/professional/ConversationWorkViewBody.tsx
+@@ -4,5 +4,5 @@
+ 
+ 
+-import { CoreContinuationClient, CoreConversationClient, CoreRunClient } from '@local-creative-os/web-gen2';
++import { CoreCollaborationClient } from '@local-creative-os/web-gen2';
+ import { ConversationWorkViewController } from '@local-creative-os/web-gen2';
+ import { CircleDot, Radio, User } from 'lucide-react';
+@@ -26,10 +26,11 @@ import { useEffect, useMemo, useState, useSyncExternalStore } from 'react';
+ }: ConversationWorkViewBodyProps): React.JSX.Element {
+   const session = useMemo(() => createLcosCoreSession(), []);
++  const collaboration = useMemo(() => new CoreCollaborationClient(session.http), [session]);
+   const controller = useMemo(
+-    () => new ConversationWorkViewController(new CoreConversationClient(session.http)),
+-    [session],
++    () => new ConversationWorkViewController(collaboration.conversations),
++    [collaboration],
+   );
+-  const runs = useMemo(() => new CoreRunClient(session.http), [session]);
+-  const continuations = useMemo(() => new CoreContinuationClient(session.http), [session]);
++  const runs = collaboration.runs;
++  const continuations = collaboration.continuations;
+   const [localOperations, setLocalOperations] = useState<readonly ContinuationRecoveryProjectionV1[] | null>(null);
+   const composerOpen = useLcosShellStore((s) => s.composerOpen);

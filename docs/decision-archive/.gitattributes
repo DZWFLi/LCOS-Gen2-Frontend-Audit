@@ -1,0 +1,3 @@
+*.md whitespace=-blank-at-eof,-trailing-space
+*.patch whitespace=-blank-at-eof,-trailing-space
+*.html whitespace=-blank-at-eof,-trailing-space

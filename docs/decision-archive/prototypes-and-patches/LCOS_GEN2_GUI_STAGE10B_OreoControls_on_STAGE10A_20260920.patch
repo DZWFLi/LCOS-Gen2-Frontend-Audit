@@ -1,0 +1,493 @@
+diff --git a/huabu/apps/web/src/lcos/ui/nearfield/LcosComposerView.tsx b/huabu/apps/web/src/lcos/ui/nearfield/LcosComposerView.tsx
+index c8a511c512a73d680044580ae37539581fa7b4c7..5f14545dad6dccb61fc1d19bab90f3630f223222 100644
+--- a/huabu/apps/web/src/lcos/ui/nearfield/LcosComposerView.tsx
++++ b/huabu/apps/web/src/lcos/ui/nearfield/LcosComposerView.tsx
+@@ -94,33 +94,35 @@ export function LcosComposerView(props: LcosComposerViewProps): JSX.Element {
+         <div className="lcos-composer-tools">
+           <div className="lcos-composer-tools-start">
+             {props.attachAction && (
+-              <LcosIconButton type="button" className="lcos-composer-tool-hit"
++              <LcosIconButton type="button" appearance="oreo" variant="secondary" className="lcos-composer-tool-hit"
+                 disabled={props.attachAction.disabled}
+                 title={props.attachAction.disabledReason ?? props.attachAction.label}
+                 aria-label={props.attachAction.label}
+                 onClick={props.attachAction.onClick}>
+-                <span className="lcos-composer-tool-face"><LcosNearfieldGlyph name="attach" /></span>
++                <LcosNearfieldGlyph name="attach" />
+               </LcosIconButton>
+             )}
+             {props.referencePickAction && (
+-              <LcosIconButton type="button" className="lcos-composer-tool-hit"
++              <LcosIconButton type="button" appearance="oreo" variant="secondary" className="lcos-composer-tool-hit"
+                 disabled={props.referencePickAction.disabled}
+                 title={props.referencePickAction.disabledReason ?? props.referencePickAction.label}
+                 aria-label={props.referencePickAction.label}
+                 onClick={props.referencePickAction.onClick}>
+-                <span className="lcos-composer-tool-face"><LcosNearfieldGlyph name="at" /></span>
++                <LcosNearfieldGlyph name="at" />
+               </LcosIconButton>
+             )}
+           </div>
+           <LcosIconButton
+             type="button"
++            appearance="oreo"
++            variant="primary"
+             className="lcos-composer-tool-hit lcos-composer-submit"
+             disabled={!props.canSubmit}
+             aria-label="提交"
+             title={props.submitTitle}
+             onClick={props.onSubmit}
+           >
+-            <span className="lcos-composer-tool-face"><LcosNearfieldGlyph name="send" /></span>
++            <LcosNearfieldGlyph name="send" />
+           </LcosIconButton>
+         </div>
+       </div>
+@@ -128,7 +130,7 @@ export function LcosComposerView(props: LcosComposerViewProps): JSX.Element {
+         <div className="lcos-composer-feedback" aria-live="polite">
+           {props.feedback}
+           {props.feedbackAction && (
+-            <LcosButton type="button" className="lcos-composer-recovery-action"
++            <LcosButton type="button" appearance="oreo" variant="secondary" className="lcos-composer-recovery-action"
+               aria-label={props.feedbackAction.label}
+               disabled={props.feedbackAction.disabled}
+               title={props.feedbackAction.disabledReason ?? props.feedbackAction.label}
+diff --git a/huabu/apps/web/src/lcos/ui/nearfield/nearfield.css b/huabu/apps/web/src/lcos/ui/nearfield/nearfield.css
+index eb7b52f302a1919985366b6213be79d4d6eeb817..637a19ea746717b6fcfdfec926182014d4b24ca2 100644
+--- a/huabu/apps/web/src/lcos/ui/nearfield/nearfield.css
++++ b/huabu/apps/web/src/lcos/ui/nearfield/nearfield.css
+@@ -172,16 +172,8 @@
+  * only at transparent 2px edges; browser hit testing dispatches to one button. */
+ .lcos-composer-tools-start .lcos-composer-tool-hit + .lcos-composer-tool-hit { margin-left: -4px; }
+ .lcos-composer-submit { margin-right: -6px; }
+-.lcos-composer-tool-face {
+-  display: grid; place-items: center; width: 32px; height: 32px; border-radius: 50%;
+-  box-shadow: inset 0 0 0 .5px var(--lcos-color-border-subtle);
+-  background: var(--lcos-surface-base); transition: background 120ms ease, opacity 120ms ease;
+-}
+-.lcos-composer-submit .lcos-composer-tool-face {
+-  background: var(--lcos-color-bg-inverse); color: var(--lcos-color-text-on-inverse);
+-}
+-.lcos-composer-tool-hit:hover:not(:disabled) .lcos-composer-tool-face { box-shadow: inset 0 0 0 1px var(--gen2-accent); }
+-.lcos-composer-view button:disabled { cursor: not-allowed; opacity: .45; }
++/* Tool faces come from Oreo Icon Button. Keep only the existing row placement. */
++.lcos-composer-view button:not([data-lcos-control-skin='oreo']):disabled { cursor: not-allowed; opacity: .45; }
+ .lcos-composer-view button:not(:disabled) { cursor: pointer; }
+ .lcos-composer-view button:focus-visible { outline: 2px solid var(--lcos-pin-violet); outline-offset: 2px; }
+ .lcos-composer-feedback { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; font-size: 12px; line-height: 18px; overflow-wrap: anywhere; }
+@@ -269,7 +261,6 @@
+ .lcos-composer-view[data-presentation='inline'] .lcos-composer-editor { border-radius: 0; box-shadow: none; }
+ .lcos-composer-view[data-presentation='inline'] .lcos-composer-reference-label { font-size: 12px; }
+ .lcos-composer-view[data-presentation='inline'] .lcos-composer-feedback { gap: 12px; }
+-.lcos-composer-recovery-action,
+ .lcos-composer-view[data-presentation='inline'] .lcos-composer-receiver {
+   align-self: flex-start; display: inline-flex; align-items: center; width: fit-content;
+   min-height: 44px; padding: 6px 12px;
+@@ -284,3 +275,13 @@
+ .lcos-action-orb-placement { pointer-events: auto; }
+ 
+ .lcos-composer-identity { position: relative; }
++
++/* Only this instance's typography/height overrides its Oreo mother. */
++.lcos-composer-recovery-action[data-lcos-control-skin='oreo'] {
++  --lcos-control-face-height: 44px;
++  --lcos-control-font: 'Noto Sans SC';
++  --lcos-control-font-size: 12px;
++  --lcos-control-font-weight: 400;
++  align-self: flex-start;
++  inline-size: fit-content;
++}
+diff --git a/huabu/apps/web/src/lcos/ui/primitives/LcosButton.tsx b/huabu/apps/web/src/lcos/ui/primitives/LcosButton.tsx
+index 7c16abaa4056e313e4eb761e676325356b5f7265..35bed7782b67e40912c0f6b4c6b6d9130c349cb5 100644
+--- a/huabu/apps/web/src/lcos/ui/primitives/LcosButton.tsx
++++ b/huabu/apps/web/src/lcos/ui/primitives/LcosButton.tsx
+@@ -1,21 +1,42 @@
+-// GEN1 features/ui/LcosButton.tsx: actual class/prop forwarding implementation.
+-// Thin adaptation: forwardRef supports the existing host refs and Motion; CSS uses current Figma tokens.
++// GEN1 LcosButton prop/ref forwarding is retained; Oreo is an explicit visual skin.
+ import { forwardRef } from 'react';
+-import type { ComponentPropsWithRef } from 'react';
++import type { ComponentPropsWithRef, ReactNode } from 'react';
++
+ import './donor-controls.css';
+ 
+ export interface LcosButtonProps extends ComponentPropsWithRef<'button'> {
+-  /** primary=accent 蓝底白字 · secondary=label-primary 文字+fill-secondary 底 · ghost=纯 accent 文字 · destructive=红字 */
+-  variant?: 'primary' | 'secondary' | 'ghost' | 'destructive'
+-  /** sm 最小高 32px · md 最小高 36px（默认 md） */
+-  size?: 'sm' | 'md'
++  /** Existing bespoke families remain custom until their Figma instance is mapped. */
++  appearance?: 'custom' | 'oreo';
++  /** Oreo Button 23:11448. destructive maps only to its Primary + Danger variant. */
++  variant?: 'primary' | 'secondary' | 'ghost' | 'destructive';
++  /** Legacy sizing is retained for custom callers; Oreo's face defaults to 32px. */
++  size?: 'sm' | 'md';
++  leadingIcon?: ReactNode;
++  trailingIcon?: ReactNode;
+ }
+ 
+-
+ export const LcosButton = forwardRef<HTMLButtonElement, LcosButtonProps>(
+-  ({ variant = 'primary', size = 'md', type = 'button', className, ...rest }, ref) => {
+-    const classes = ['lcos-btn', `lcos-btn--${variant}`, `lcos-btn--${size}`, className].filter(Boolean).join(' ');
+-    return <button ref={ref} type={type} className={classes} {...rest} />;
++  ({ appearance = 'custom', variant = 'primary', size = 'md', type = 'button',
++    className, children, leadingIcon, trailingIcon, ...rest }, ref) => {
++    const classes = ['lcos-btn', `lcos-btn--${variant}`, `lcos-btn--${size}`, className]
++      .filter(Boolean).join(' ');
++    const content = appearance === 'oreo' ? (
++      <span className="lcos-oreo-face">
++        <span className="lcos-oreo-content">
++          {leadingIcon != null && <span className="lcos-oreo-label-icon" aria-hidden="true">{leadingIcon}</span>}
++          <span className="lcos-oreo-label">{children}</span>
++          {trailingIcon != null && <span className="lcos-oreo-label-icon" aria-hidden="true">{trailingIcon}</span>}
++        </span>
++      </span>
++    ) : children;
++    return (
++      <button {...rest} ref={ref} type={type} className={classes}
++        data-lcos-control-skin={appearance === 'oreo' ? 'oreo' : undefined}
++        data-lcos-control-type={appearance === 'oreo' ? variant : undefined}
++        data-lcos-control-kind={appearance === 'oreo' ? 'button' : undefined}>
++        {content}
++      </button>
++    );
+   },
+ );
+ LcosButton.displayName = 'LcosButton';
+diff --git a/huabu/apps/web/src/lcos/ui/primitives/LcosControls.test.tsx b/huabu/apps/web/src/lcos/ui/primitives/LcosControls.test.tsx
+new file mode 100644
+index 0000000000000000000000000000000000000000..8597b55edce399faa4725ac41e14ee7378771d96
+--- /dev/null
++++ b/huabu/apps/web/src/lcos/ui/primitives/LcosControls.test.tsx
+@@ -0,0 +1,94 @@
++// @vitest-environment happy-dom
++import { act, createRef } from 'react';
++import { createRoot } from 'react-dom/client';
++import { afterEach, describe, expect, it, vi } from 'vitest';
++
++import { LcosButton } from './LcosButton';
++import { LcosIconButton } from './LcosIconButton';
++
++import type { ReactNode } from 'react';
++import type { Root } from 'react-dom/client';
++
++let root: Root | undefined;
++let host: HTMLDivElement | undefined;
++
++async function render(node: ReactNode) {
++  host = document.createElement('div');
++  document.body.append(host);
++  root = createRoot(host);
++  await act(async () => root?.render(node));
++  return host;
++}
++
++afterEach(async () => {
++  if (root) await act(async () => root?.unmount());
++  host?.remove();
++  root = undefined;
++  host = undefined;
++});
++
++describe('Oreo skin on the existing LCOS native controls', () => {
++  it('leaves unmapped custom families unchanged', async () => {
++    const element = await render(<LcosButton className="existing-hud">定位</LcosButton>);
++    expect(element.querySelector('.existing-hud')).not.toBeNull();
++    expect(element.querySelector('[data-lcos-control-skin]')).toBeNull();
++    expect(element.querySelector('.lcos-oreo-face')).toBeNull();
++  });
++
++  it('keeps one action-owning native element and one visual face', async () => {
++    const element = await render(<LcosButton appearance="oreo" variant="secondary">确认</LcosButton>);
++    expect(element.querySelectorAll('button')).toHaveLength(1);
++    expect(element.querySelectorAll('.lcos-oreo-face')).toHaveLength(1);
++    expect(element.querySelector('button')?.getAttribute('data-lcos-control-type')).toBe('secondary');
++    expect(element.querySelector('button')?.hasAttribute('appearance')).toBe(false);
++  });
++
++  it('forwards its ref, native attributes, and enabled callback', async () => {
++    const ref = createRef<HTMLButtonElement>();
++    const onClick = vi.fn();
++    const element = await render(<LcosButton ref={ref} appearance="oreo" aria-label="取用" onClick={onClick}>取用</LcosButton>);
++    expect(ref.current).toBe(element.querySelector('button'));
++    expect(ref.current?.type).toBe('button');
++    await act(async () => ref.current?.click());
++    expect(onClick).toHaveBeenCalledTimes(1);
++  });
++
++  it('does not create a disabled-action success path', async () => {
++    const onClick = vi.fn();
++    const element = await render(<LcosIconButton appearance="oreo" variant="primary" disabled aria-label="提交" onClick={onClick}>↑</LcosIconButton>);
++    const button = element.querySelector('button');
++    expect(button?.disabled).toBe(true);
++    await act(async () => button?.click());
++    expect(onClick).not.toHaveBeenCalled();
++  });
++
++  it('defaults to type=button but preserves explicit submit', async () => {
++    const element = await render(<><LcosButton appearance="oreo">普通操作</LcosButton><LcosButton appearance="oreo" type="submit">提交</LcosButton></>);
++    expect([...element.querySelectorAll('button')].map((button) => button.type)).toEqual(['button', 'submit']);
++  });
++
++  it('uses explicit leading and trailing slots without replacing their assets', async () => {
++    const element = await render(<LcosButton appearance="oreo" leadingIcon={<span data-leading />} trailingIcon={<span data-trailing />}>取用</LcosButton>);
++    expect(element.querySelectorAll('.lcos-oreo-label-icon')).toHaveLength(2);
++    expect(element.querySelector('[data-leading]')).not.toBeNull();
++    expect(element.querySelector('[data-trailing]')).not.toBeNull();
++    expect(element.querySelector('.lcos-oreo-label')?.textContent).toBe('取用');
++  });
++
++  it('maps destructive to the explicit Figma danger skin', async () => {
++    const element = await render(<LcosButton appearance="oreo" variant="destructive">删除</LcosButton>);
++    expect(element.querySelector('button')?.getAttribute('data-lcos-control-type')).toBe('destructive');
++  });
++
++  it('only activates the floating variant actually present in the kit', async () => {
++    const element = await render(<><LcosIconButton appearance="oreo" variant="secondary" floating aria-label="次要浮动">+</LcosIconButton><LcosIconButton appearance="oreo" variant="primary" floating aria-label="主操作">+</LcosIconButton></>);
++    expect(element.querySelectorAll('[data-lcos-control-floating="true"]')).toHaveLength(1);
++  });
++
++  it('keeps forwarded icon refs and explicit rectangle presentation', async () => {
++    const ref = createRef<HTMLButtonElement>();
++    const element = await render(<LcosIconButton appearance="oreo" shape="rectangle" ref={ref} aria-label="操作">+</LcosIconButton>);
++    expect(ref.current).toBe(element.querySelector('button'));
++    expect(ref.current?.getAttribute('data-lcos-control-shape')).toBe('rectangle');
++  });
++});
+diff --git a/huabu/apps/web/src/lcos/ui/primitives/LcosIconButton.tsx b/huabu/apps/web/src/lcos/ui/primitives/LcosIconButton.tsx
+index a3e6b19b96d76d963e9783b9c7782903734411f4..9354429fdd957e811535a7601438f3169348bdf7 100644
+--- a/huabu/apps/web/src/lcos/ui/primitives/LcosIconButton.tsx
++++ b/huabu/apps/web/src/lcos/ui/primitives/LcosIconButton.tsx
+@@ -1,21 +1,35 @@
+-// GEN1 features/ui/LcosIconButton.tsx: actual class/prop forwarding implementation.
+-// Thin adaptation: forwardRef supports the existing host refs and Motion; CSS uses current Figma tokens.
++// GEN1 LcosIconButton keeps the native button, forwarding and host ref.
+ import { forwardRef } from 'react';
+ import type { ComponentPropsWithRef } from 'react';
++
+ import './donor-controls.css';
+ 
+ export interface LcosIconButtonProps extends ComponentPropsWithRef<'button'> {
+-  /** 容器形状：circle=正圆（默认）· capsule=胶囊（图标+文字组合时用） */
+-  shape?: 'circle' | 'capsule'
+-  /** sm 视觉 32×32（点击区扩到 40×40）· md 40×40（默认） */
+-  size?: 'sm' | 'md'
++  appearance?: 'custom' | 'oreo';
++  /** Oreo Rounded is a circle; Rectangle is r8. capsule is a retained legacy alias. */
++  shape?: 'circle' | 'capsule' | 'rectangle';
++  size?: 'sm' | 'md';
++  variant?: 'primary' | 'secondary' | 'ghost';
++  /** Figma supplies floating variants only for Secondary + Rounded. */
++  floating?: boolean;
+ }
+ 
+-
+ export const LcosIconButton = forwardRef<HTMLButtonElement, LcosIconButtonProps>(
+-  ({ shape = 'circle', size = 'md', type = 'button', className, ...rest }, ref) => {
+-    const classes = ['lcos-icon-btn', `lcos-icon-btn--${shape}`, `lcos-icon-btn--${size}`, className].filter(Boolean).join(' ');
+-    return <button ref={ref} type={type} className={classes} {...rest} />;
++  ({ appearance = 'custom', shape = 'circle', size = 'md', variant = 'ghost',
++    floating = false, type = 'button', className, children, ...rest }, ref) => {
++    const classes = ['lcos-icon-btn', `lcos-icon-btn--${shape}`, `lcos-icon-btn--${size}`, className]
++      .filter(Boolean).join(' ');
++    return (
++      <button {...rest} ref={ref} type={type} className={classes}
++        data-lcos-control-skin={appearance === 'oreo' ? 'oreo' : undefined}
++        data-lcos-control-type={appearance === 'oreo' ? variant : undefined}
++        data-lcos-control-kind={appearance === 'oreo' ? 'icon' : undefined}
++        data-lcos-control-shape={appearance === 'oreo' ? shape : undefined}
++        data-lcos-control-floating={appearance === 'oreo' && floating
++          && variant === 'secondary' && shape === 'circle' ? 'true' : undefined}>
++        {appearance === 'oreo' ? <span className="lcos-oreo-face">{children}</span> : children}
++      </button>
++    );
+   },
+ );
+ LcosIconButton.displayName = 'LcosIconButton';
+diff --git a/huabu/apps/web/src/lcos/ui/primitives/donor-controls.css b/huabu/apps/web/src/lcos/ui/primitives/donor-controls.css
+index 7c11db518789e6dedfad1bddea4486dc1b4c3c5b..1839d9c5635176510a3e9cf1bc0d6227ae9f33f6 100644
+--- a/huabu/apps/web/src/lcos/ui/primitives/donor-controls.css
++++ b/huabu/apps/web/src/lcos/ui/primitives/donor-controls.css
+@@ -1,3 +1,5 @@
++@import './oreo-controls.css';
++
+ /* Shared interaction affordance only; each Figma family still owns face/size/material. */
+ :where(.lcos-btn, .lcos-icon-btn) { font: inherit; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+ :where(.lcos-btn, .lcos-icon-btn):disabled { cursor: not-allowed; }
+diff --git a/huabu/apps/web/src/lcos/ui/primitives/oreo-control-tokens.css b/huabu/apps/web/src/lcos/ui/primitives/oreo-control-tokens.css
+new file mode 100644
+index 0000000000000000000000000000000000000000..c1f62db3a155192aafcdee03ed66d18fd6efe958
+--- /dev/null
++++ b/huabu/apps/web/src/lcos/ui/primitives/oreo-control-tokens.css
+@@ -0,0 +1,20 @@
++/* Supplement only: current generated lcos-tokens.css stays untouched.
++ * Live Figma nFUdroLvI5qJZuYTW8h2rF variable values, 2026-09-20.
++ * 2:28589 / 2:28588 / 23:11520 / 23:11521 / 23:12848 / 5:7913.
++ * Mode selector follows the existing generated foundation (.dark). */
++:root {
++  --lcos-color-interaction-hover: rgb(0 0 0 / 2%);
++  --lcos-color-interaction-press: rgb(0 0 0 / 5%);
++  --lcos-color-interaction-hover-inverse: rgb(255 255 255 / 6%);
++  --lcos-color-interaction-press-inverse: rgb(255 255 255 / 10%);
++  --lcos-color-text-disabled: #BBBBBB;
++  --lcos-color-status-error: #DC3E42;
++}
++.dark {
++  --lcos-color-interaction-hover: rgb(255 255 255 / 6%);
++  --lcos-color-interaction-press: rgb(255 255 255 / 10%);
++  --lcos-color-interaction-hover-inverse: rgb(0 0 0 / 2%);
++  --lcos-color-interaction-press-inverse: rgb(0 0 0 / 5%);
++  --lcos-color-text-disabled: #606060;
++  --lcos-color-status-error: #DC3E42;
++}
+diff --git a/huabu/apps/web/src/lcos/ui/primitives/oreo-controls.css b/huabu/apps/web/src/lcos/ui/primitives/oreo-controls.css
+new file mode 100644
+index 0000000000000000000000000000000000000000..47738aba9b4418902cbbccb7986801abb36a38b8
+--- /dev/null
++++ b/huabu/apps/web/src/lcos/ui/primitives/oreo-controls.css
+@@ -0,0 +1,124 @@
++@import './oreo-control-tokens.css';
++
++/* Oreo Button 23:11448 (16 actual variants), Icon Button 23:11978 (28).
++ * Paint belongs to the face. The original native button is the sole action owner.
++ * Never apply this skin to Arc, pin tiles or navigation capsules implicitly. */
++[data-lcos-control-skin='oreo'] {
++  --oreo-fill: var(--lcos-surface-base);
++  --oreo-ink: var(--lcos-text-primary);
++  --oreo-border: transparent;
++  --oreo-wash: transparent;
++  --oreo-hover: var(--lcos-color-interaction-hover);
++  --oreo-press: var(--lcos-color-interaction-press);
++  display: inline-flex;
++  align-items: center;
++  justify-content: center;
++  box-sizing: border-box;
++  min-block-size: 44px;
++  min-inline-size: 44px;
++  padding: 0;
++  border: 0;
++  background: transparent;
++  color: var(--oreo-ink);
++  vertical-align: middle;
++  font: inherit;
++  appearance: none;
++  cursor: pointer;
++}
++[data-lcos-control-skin='oreo'] > .lcos-oreo-face {
++  display: inline-flex;
++  align-items: center;
++  justify-content: center;
++  box-sizing: border-box;
++  flex: 1 1 auto;
++  min-inline-size: 0;
++  min-block-size: var(--lcos-control-face-height, 32px);
++  padding: var(--lcos-space-x3, 6px) var(--lcos-space-12, 12px);
++  border: 0;
++  border-radius: var(--lcos-radius-control, 8px);
++  background-color: var(--oreo-fill);
++  background-image: linear-gradient(var(--oreo-wash), var(--oreo-wash));
++  color: var(--oreo-ink);
++  /* Figma inside strokes do not change content size or move its baseline. */
++  box-shadow: inset 0 0 0 .5px var(--oreo-border);
++  font-family: var(--lcos-control-font, 'Inter'), 'Noto Sans SC', 'Noto Sans CJK SC', sans-serif;
++  font-size: var(--lcos-control-font-size, 14px);
++  font-weight: var(--lcos-control-font-weight, 500);
++  line-height: var(--lcos-control-line-height, 20px);
++}
++.lcos-oreo-content { display: inline-flex; align-items: center; justify-content: center; gap: var(--lcos-space-x2, 4px); min-inline-size: 0; }
++.lcos-oreo-label { min-inline-size: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
++.lcos-oreo-label-icon { display: inline-flex; flex: 0 0 16px; inline-size: 16px; block-size: 16px; }
++.lcos-oreo-label-icon > :is(img, svg) { inline-size: 16px; block-size: 16px; display: block; }
++[data-lcos-control-skin='oreo'][data-lcos-control-type='primary'],
++[data-lcos-control-skin='oreo'][data-lcos-control-type='destructive'] {
++  --oreo-fill: var(--lcos-color-bg-inverse);
++  --oreo-ink: var(--lcos-color-text-on-inverse);
++  --oreo-hover: var(--lcos-color-interaction-hover-inverse);
++  --oreo-press: var(--lcos-color-interaction-press-inverse);
++}
++[data-lcos-control-skin='oreo'][data-lcos-control-type='destructive'] { --oreo-fill: var(--lcos-color-status-error); }
++[data-lcos-control-skin='oreo'][data-lcos-control-type='secondary'] { --oreo-border: var(--lcos-color-border-default); }
++[data-lcos-control-skin='oreo'][data-lcos-control-type='ghost'] { --oreo-fill: transparent; }
++@media (hover: hover) {
++  [data-lcos-control-skin='oreo']:hover:not(:disabled) { --oreo-wash: var(--oreo-hover); }
++}
++[data-lcos-control-skin='oreo']:active:not(:disabled) { --oreo-wash: var(--oreo-press); }
++[data-lcos-control-skin='oreo']:disabled { cursor: not-allowed; }
++[data-lcos-control-skin='oreo']:disabled > .lcos-oreo-face { opacity: .3; }
++/* Primary disabled is a different paint, not a faded black button. */
++[data-lcos-control-skin='oreo'][data-lcos-control-type='primary']:disabled {
++  --oreo-fill: var(--lcos-surface-elevated);
++  --oreo-ink: var(--lcos-color-text-disabled);
++  --oreo-border: var(--lcos-color-border-default);
++}
++[data-lcos-control-skin='oreo'][data-lcos-control-type='primary']:disabled > .lcos-oreo-face { opacity: 1; }
++[data-lcos-control-skin='oreo'][data-lcos-control-kind='icon'] { inline-size: 44px; block-size: 44px; flex: 0 0 auto; }
++[data-lcos-control-skin='oreo'][data-lcos-control-kind='icon'] > .lcos-oreo-face {
++  flex: 0 0 32px;
++  inline-size: 32px;
++  block-size: 32px;
++  min-block-size: 32px;
++  padding: 0;
++  border-radius: var(--lcos-radius-capsule, 999px);
++}
++[data-lcos-control-skin='oreo'][data-lcos-control-kind='icon'] > .lcos-oreo-face > :is(img, svg) { display: block; inline-size: 20px; block-size: 20px; }
++[data-lcos-control-skin='oreo'][data-lcos-control-kind='icon'][data-lcos-control-shape='rectangle'] > .lcos-oreo-face { border-radius: var(--lcos-radius-control, 8px); }
++[data-lcos-control-skin='oreo'][data-lcos-control-kind='icon'][data-lcos-control-type='secondary'] { --oreo-border: var(--lcos-color-border-subtle); }
++/* The only floating family in this kit is Secondary + Rounded. */
++[data-lcos-control-skin='oreo'][data-lcos-control-floating='true'] > .lcos-oreo-face {
++  box-shadow: inset 0 0 0 .5px var(--oreo-border), 0 0 1px rgb(0 0 0 / 24%), 0 4px 16px rgb(0 0 0 / 4%);
++}
++@media (hover: hover) {
++  [data-lcos-control-skin='oreo'][data-lcos-control-floating='true']:hover:not(:disabled) { --oreo-wash: transparent; }
++  [data-lcos-control-skin='oreo'][data-lcos-control-floating='true']:hover:not(:disabled) > .lcos-oreo-face {
++    box-shadow: inset 0 0 0 .5px var(--oreo-border), 0 6px 12px rgb(0 0 0 / 6%);
++  }
++}
++[data-lcos-control-skin='oreo'][data-lcos-control-floating='true']:active:not(:disabled) { --oreo-wash: var(--oreo-press); }
++[data-lcos-control-skin='oreo'][data-lcos-control-floating='true']:active:not(:disabled) > .lcos-oreo-face {
++  box-shadow: inset 0 0 0 .5px var(--oreo-border), 0 0 1px rgb(0 0 0 / 24%), 0 4px 16px rgb(0 0 0 / 4%);
++}
++/* Keep the existing keyboard affordance: this kit does not define a focus variant. */
++[data-lcos-control-skin='oreo']:focus-visible { outline: 2px solid var(--gen2-accent); outline-offset: 2px; }
++@media (forced-colors: active) {
++  [data-lcos-control-skin='oreo'] > .lcos-oreo-face { border: 1px solid ButtonText; }
++  [data-lcos-control-skin='oreo']:disabled > .lcos-oreo-face { color: GrayText; opacity: 1; }
++}
++
++/* 5346:1609 is an overridden Button/Secondary instance, NOT an Input component.
++ * This is only its face on the existing native field. Value/IME/search stay native. */
++:where(.lcos-oreo-field, .lcos-assembly-body [data-lcos-assembly-search]) {
++  box-sizing: border-box;
++  min-inline-size: 0;
++  inline-size: min(300px, 100%);
++  block-size: 44px;
++  padding: 6px 12px;
++  border: 0;
++  border-radius: var(--lcos-radius-control, 8px);
++  box-shadow: inset 0 0 0 .5px var(--lcos-color-border-default);
++  color: var(--lcos-text-primary);
++  background-color: var(--lcos-surface-base);
++  font: 500 14px/20px 'Inter', 'Noto Sans SC', 'Noto Sans CJK SC', sans-serif;
++}
++:where(.lcos-oreo-field, .lcos-assembly-body [data-lcos-assembly-search]):focus-visible { outline: 2px solid var(--gen2-accent); outline-offset: 2px; }
+diff --git a/huabu/apps/web/src/lcos/ui/professional/professional-assembly.css b/huabu/apps/web/src/lcos/ui/professional/professional-assembly.css
+index eded7694df1cb27ed89860a21506e83931d49b2e..d8a4255e43eaff6916be6ffb07ed5b11961143c5 100644
+--- a/huabu/apps/web/src/lcos/ui/professional/professional-assembly.css
++++ b/huabu/apps/web/src/lcos/ui/professional/professional-assembly.css
+@@ -1,3 +1,5 @@
++@import '../primitives/oreo-controls.css';
++
+ /* Figma C01 5346:1416. Current Source Bay + CSS columns retained; Lovart is behavior-only evidence. */
+ .lcos-assembly-body {
+   container-type: inline-size;
+@@ -35,8 +37,7 @@
+ .lcos-assembly-body [data-lcos-assembly-source-panel] { min-inline-size: 0; }
+ .lcos-assembly-body form { flex-wrap: wrap; }
+ .lcos-assembly-body form label { min-inline-size: 120px; }
+-/* 5346:1609 is a 300×44 control. Keep the existing input and submit owner. */
+-.lcos-assembly-body [data-lcos-assembly-search] { box-sizing: border-box; min-inline-size: 0; inline-size: min(300px, 100%); block-size: 44px; padding: 6px 12px; border: 0; border-radius: 8px; box-shadow: inset 0 0 0 .5px var(--lcos-color-border-default); background: var(--lcos-surface-base); color: var(--lcos-text-primary); font-size: 14px; line-height: 20px; }
++/* 5346:1609 field face is supplied by the shared Oreo control stylesheet. */
+ .lcos-assembly-masonry { column-width: 216px; column-gap: 24px; inline-size: 100%; }
+ .lcos-assembly-item {
+   display: flex;

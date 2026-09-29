@@ -1,0 +1,471 @@
+{
+  "states": [
+    {
+      "name": "continuation-collapsed-1440",
+      "url": "http://127.0.0.1:5286/projects/lcos-gen2-dev/workflow",
+      "tree": "- application:\n  - img:\n    - group \"Edge from node-a2a0b5d9-ded7-4a87-8940-f54503ddffe0 to node-302ef86a-5250-426d-bef3-925a504c183b\"\n  - img:\n    - group \"Edge from node-302ef86a-5250-426d-bef3-925a504c183b to node-a2a0b5d9-ded7-4a87-8940-f54503ddffe0\"\n  - img:\n    - group \"Edge from node-9973bac7-43fd-4800-918b-098c9e32e9d9 to node-302ef86a-5250-426d-bef3-925a504c183b\"\n  - img:\n    - group \"Edge from node-2425cf3d-47ee-441e-953f-9f88e1062e61 to node-3258b3d9-b3cd-43b1-bbd8-be1c2310ce85\"\n  - img:\n    - group \"Edge from node-4dd761e6-5411-4ff2-a99d-734f65ebf2ba to node-2425cf3d-47ee-441e-953f-9f88e1062e61\"\n  - text: references references decision governs references\n  - group: 项目定位\n  - group: 施工纪律\n  - group: 当前里程碑\n  - group: 决策记录（e2e fixture）\n  - group:\n    - img \"参考图（e2e fixture）\"\n    - text: 参考图（e2e fixture）\n  - group:\n    - img \"参考图 B（e2e fixture）\"\n  - group: 越过边界， 看见下一座山。\n  - group:\n    - button \"播放 山野环境声\"\n  - group:\n    - button \"承接会话（e2e fixture） · 正在思考 · 双击或按回车打开会话窗口\"\n  - group:\n    - text: 暂无预览\n    - strong: 真实工作流导入验收\n    - button \"管理 真实工作流导入验收 的彩色标：#CE824C\"\n  - img\n  - region \"空间导航\":\n    - button \"打开空间导航\"\n  - link \"React Flow attribution\":\n    - /url: https://reactflow.dev/attribution\n    - text: React Flow\n- button \"打开工作流手牌\"\n- link \"LCOS Gen2 开发工作台（e2e fixture）\":\n  - /url: /projects\n- button \"Assembly\"\n- button \"搜索项目中的内容（Ctrl/Cmd+F）\"\n- 'button \"颜色组 #CE824C\"': \"1\"\n- button \"Main\"\n- button \"Context\"\n- button \"Workflow\" [pressed]\n- text: 会话 · 承接会话（e2e fixture）\n- group \"窗口操作\":\n  - button \"更多窗口操作\"\n  - button \"关闭窗口\"\n- button \"调整窗口 · n\"\n- button \"调整窗口 · ne\"\n- button \"调整窗口 · e\"\n- button \"调整窗口 · se\"\n- button \"调整窗口 · s\"\n- button \"调整窗口 · sw\"\n- button \"调整窗口 · w\"\n- button \"调整窗口 · nw\"\n- heading \"承接会话（e2e fixture）\" [level=3]\n- text: 正在理解\n- button \"打开 Assembly\"\n- text: 当前会话没有已绑定且可发送的续工 owner 开始执行 Wave7 real Run receipt probe 开始执行 Wave7 real Run receipt probe\n- heading \"会话输入\" [level=4]\n- paragraph: 继续发送到当前协作者；也可以选择新建会话或委托独立任务\n- text: 继续「承接会话（e2e fixture）」\n- button \"关闭 Composer\"\n- textbox \"Composer 输入\":\n  - /placeholder: 想一起完成什么？\n- button \"打开素材装配\"\n- button \"引用画布对象\"\n- button \"提交\" [disabled]\n- region \"会话选项\":\n  - button \"会话选项\"\n- text: 当前会话没有已绑定且可发送的续工 owner\n- button \"诊断（工程细节）\"",
+      "controls": [
+        {
+          "width": 454,
+          "height": 36,
+          "scrollWidth": 454,
+          "clientWidth": 454,
+          "text": "会话选项"
+        }
+      ]
+    },
+    {
+      "name": "continuation-expanded-1440",
+      "url": "http://127.0.0.1:5286/projects/lcos-gen2-dev/workflow",
+      "tree": "- application:\n  - img:\n    - group \"Edge from node-a2a0b5d9-ded7-4a87-8940-f54503ddffe0 to node-302ef86a-5250-426d-bef3-925a504c183b\"\n  - img:\n    - group \"Edge from node-302ef86a-5250-426d-bef3-925a504c183b to node-a2a0b5d9-ded7-4a87-8940-f54503ddffe0\"\n  - img:\n    - group \"Edge from node-9973bac7-43fd-4800-918b-098c9e32e9d9 to node-302ef86a-5250-426d-bef3-925a504c183b\"\n  - img:\n    - group \"Edge from node-2425cf3d-47ee-441e-953f-9f88e1062e61 to node-3258b3d9-b3cd-43b1-bbd8-be1c2310ce85\"\n  - img:\n    - group \"Edge from node-4dd761e6-5411-4ff2-a99d-734f65ebf2ba to node-2425cf3d-47ee-441e-953f-9f88e1062e61\"\n  - text: references references decision governs references\n  - group: 项目定位\n  - group: 施工纪律\n  - group: 当前里程碑\n  - group: 决策记录（e2e fixture）\n  - group:\n    - img \"参考图（e2e fixture）\"\n    - text: 参考图（e2e fixture）\n  - group:\n    - img \"参考图 B（e2e fixture）\"\n  - group: 越过边界， 看见下一座山。\n  - group:\n    - button \"播放 山野环境声\"\n  - group:\n    - button \"承接会话（e2e fixture） · 正在思考 · 双击或按回车打开会话窗口\"\n  - group:\n    - text: 暂无预览\n    - strong: 真实工作流导入验收\n    - button \"管理 真实工作流导入验收 的彩色标：#CE824C\"\n  - img\n  - region \"空间导航\":\n    - button \"打开空间导航\"\n  - link \"React Flow attribution\":\n    - /url: https://reactflow.dev/attribution\n    - text: React Flow\n- button \"打开工作流手牌\"\n- link \"LCOS Gen2 开发工作台（e2e fixture）\":\n  - /url: /projects\n- button \"Assembly\"\n- button \"搜索项目中的内容（Ctrl/Cmd+F）\"\n- 'button \"颜色组 #CE824C\"': \"1\"\n- button \"Main\"\n- button \"Context\"\n- button \"Workflow\" [pressed]\n- text: 会话 · 承接会话（e2e fixture）\n- group \"窗口操作\":\n  - button \"更多窗口操作\"\n  - button \"关闭窗口\"\n- button \"调整窗口 · n\"\n- button \"调整窗口 · ne\"\n- button \"调整窗口 · e\"\n- button \"调整窗口 · se\"\n- button \"调整窗口 · s\"\n- button \"调整窗口 · sw\"\n- button \"调整窗口 · w\"\n- button \"调整窗口 · nw\"\n- heading \"承接会话（e2e fixture）\" [level=3]\n- text: 正在理解\n- button \"打开 Assembly\"\n- text: 当前会话没有已绑定且可发送的续工 owner 开始执行 Wave7 real Run receipt probe 开始执行 Wave7 real Run receipt probe\n- heading \"会话输入\" [level=4]\n- paragraph: 继续发送到当前协作者；也可以选择新建会话或委托独立任务\n- text: 继续「承接会话（e2e fixture）」\n- button \"关闭 Composer\"\n- textbox \"Composer 输入\":\n  - /placeholder: 想一起完成什么？\n- button \"打开素材装配\"\n- button \"引用画布对象\"\n- button \"提交\" [disabled]\n- region \"会话选项\":\n  - button \"会话选项\" [expanded]\n  - text: 续工方式\n  - combobox \"续工方式\":\n    - option \"继续现有会话\" [selected]\n    - option \"精选上下文新建\"\n    - option \"空白新建\"\n    - option \"完整历史分支\"\n  - term: 历史\n  - definition: 保留当前会话历史\n  - term: 引用\n  - definition: 沿用原上下文；不追加当前草稿引用\n  - term: 工作目录\n  - definition: 当前目录 · 隔离目录尚未确认可用\n  - paragraph: 「继续原会话」未完成能力探测，暂时不可用\n  - button \"确认并提交\" [disabled]\n- text: 当前会话没有已绑定且可发送的续工 owner\n- button \"诊断（工程细节）\"",
+      "controls": [
+        {
+          "width": 454,
+          "height": 238,
+          "scrollWidth": 454,
+          "clientWidth": 454,
+          "text": "会话选项续工方式继续现有会话精选上下文新建空白新建完整历史分支历史保留当前会话历史引用沿用原上下文；不追加当前草稿引用工作目录当前目录 · 隔离目录尚未确认可用「继续原会话」未完成能力探测，暂时不可用确认并提交"
+        }
+      ]
+    },
+    {
+      "name": "continuation-selected_context",
+      "url": "http://127.0.0.1:5286/projects/lcos-gen2-dev/workflow",
+      "tree": "- application:\n  - img:\n    - group \"Edge from node-a2a0b5d9-ded7-4a87-8940-f54503ddffe0 to node-302ef86a-5250-426d-bef3-925a504c183b\"\n  - img:\n    - group \"Edge from node-302ef86a-5250-426d-bef3-925a504c183b to node-a2a0b5d9-ded7-4a87-8940-f54503ddffe0\"\n  - img:\n    - group \"Edge from node-9973bac7-43fd-4800-918b-098c9e32e9d9 to node-302ef86a-5250-426d-bef3-925a504c183b\"\n  - img:\n    - group \"Edge from node-2425cf3d-47ee-441e-953f-9f88e1062e61 to node-3258b3d9-b3cd-43b1-bbd8-be1c2310ce85\"\n  - img:\n    - group \"Edge from node-4dd761e6-5411-4ff2-a99d-734f65ebf2ba to node-2425cf3d-47ee-441e-953f-9f88e1062e61\"\n  - text: references references decision governs references\n  - group: 项目定位\n  - group: 施工纪律\n  - group: 当前里程碑\n  - group: 决策记录（e2e fixture）\n  - group:\n    - img \"参考图（e2e fixture）\"\n    - text: 参考图（e2e fixture）\n  - group:\n    - img \"参考图 B（e2e fixture）\"\n  - group: 越过边界， 看见下一座山。\n  - group:\n    - button \"播放 山野环境声\"\n  - group:\n    - button \"承接会话（e2e fixture） · 正在思考 · 双击或按回车打开会话窗口\"\n  - group:\n    - text: 暂无预览\n    - strong: 真实工作流导入验收\n    - button \"管理 真实工作流导入验收 的彩色标：#CE824C\"\n  - img\n  - region \"空间导航\":\n    - button \"打开空间导航\"\n  - link \"React Flow attribution\":\n    - /url: https://reactflow.dev/attribution\n    - text: React Flow\n- button \"打开工作流手牌\"\n- link \"LCOS Gen2 开发工作台（e2e fixture）\":\n  - /url: /projects\n- button \"Assembly\"\n- button \"搜索项目中的内容（Ctrl/Cmd+F）\"\n- 'button \"颜色组 #CE824C\"': \"1\"\n- button \"Main\"\n- button \"Context\"\n- button \"Workflow\" [pressed]\n- text: 会话 · 承接会话（e2e fixture）\n- group \"窗口操作\":\n  - button \"更多窗口操作\"\n  - button \"关闭窗口\"\n- button \"调整窗口 · n\"\n- button \"调整窗口 · ne\"\n- button \"调整窗口 · e\"\n- button \"调整窗口 · se\"\n- button \"调整窗口 · s\"\n- button \"调整窗口 · sw\"\n- button \"调整窗口 · w\"\n- button \"调整窗口 · nw\"\n- heading \"承接会话（e2e fixture）\" [level=3]\n- text: 正在理解\n- button \"打开 Assembly\"\n- text: 当前会话没有已绑定且可发送的续工 owner 开始执行 Wave7 real Run receipt probe 开始执行 Wave7 real Run receipt probe\n- heading \"会话输入\" [level=4]\n- paragraph: 继续发送到当前协作者；也可以选择新建会话或委托独立任务\n- text: 继续「承接会话（e2e fixture）」\n- button \"关闭 Composer\"\n- textbox \"Composer 输入\":\n  - /placeholder: 想一起完成什么？\n- button \"打开素材装配\"\n- button \"引用画布对象\"\n- button \"提交\" [disabled]\n- region \"会话选项\":\n  - button \"会话选项\" [expanded]\n  - text: 续工方式\n  - combobox \"续工方式\":\n    - option \"继续现有会话\"\n    - option \"精选上下文新建\" [selected]\n    - option \"空白新建\"\n    - option \"完整历史分支\"\n  - term: 历史\n  - definition: 不继承原会话历史\n  - term: 引用\n  - definition: 仅携带下方确认的引用\n  - term: 工作目录\n  - definition: 当前目录 · 隔离目录尚未确认可用\n  - text: 待确认引用\n  - paragraph: 「新建会话」未完成能力探测，暂时不可用\n  - button \"确认并提交\" [disabled]\n- text: 当前会话没有已绑定且可发送的续工 owner\n- button \"诊断（工程细节）\"",
+      "controls": [
+        {
+          "width": 454,
+          "height": 264.5,
+          "scrollWidth": 454,
+          "clientWidth": 454,
+          "text": "会话选项续工方式继续现有会话精选上下文新建空白新建完整历史分支历史不继承原会话历史引用仅携带下方确认的引用工作目录当前目录 · 隔离目录尚未确认可用待确认引用「新建会话」未完成能力探测，暂时不可用确认并提交"
+        }
+      ]
+    },
+    {
+      "name": "continuation-blank_new",
+      "url": "http://127.0.0.1:5286/projects/lcos-gen2-dev/workflow",
+      "tree": "- application:\n  - img:\n    - group \"Edge from node-a2a0b5d9-ded7-4a87-8940-f54503ddffe0 to node-302ef86a-5250-426d-bef3-925a504c183b\"\n  - img:\n    - group \"Edge from node-302ef86a-5250-426d-bef3-925a504c183b to node-a2a0b5d9-ded7-4a87-8940-f54503ddffe0\"\n  - img:\n    - group \"Edge from node-9973bac7-43fd-4800-918b-098c9e32e9d9 to node-302ef86a-5250-426d-bef3-925a504c183b\"\n  - img:\n    - group \"Edge from node-2425cf3d-47ee-441e-953f-9f88e1062e61 to node-3258b3d9-b3cd-43b1-bbd8-be1c2310ce85\"\n  - img:\n    - group \"Edge from node-4dd761e6-5411-4ff2-a99d-734f65ebf2ba to node-2425cf3d-47ee-441e-953f-9f88e1062e61\"\n  - text: references references decision governs references\n  - group: 项目定位\n  - group: 施工纪律\n  - group: 当前里程碑\n  - group: 决策记录（e2e fixture）\n  - group:\n    - img \"参考图（e2e fixture）\"\n    - text: 参考图（e2e fixture）\n  - group:\n    - img \"参考图 B（e2e fixture）\"\n  - group: 越过边界， 看见下一座山。\n  - group:\n    - button \"播放 山野环境声\"\n  - group:\n    - button \"承接会话（e2e fixture） · 正在思考 · 双击或按回车打开会话窗口\"\n  - group:\n    - text: 暂无预览\n    - strong: 真实工作流导入验收\n    - button \"管理 真实工作流导入验收 的彩色标：#CE824C\"\n  - img\n  - region \"空间导航\":\n    - button \"打开空间导航\"\n  - link \"React Flow attribution\":\n    - /url: https://reactflow.dev/attribution\n    - text: React Flow\n- button \"打开工作流手牌\"\n- link \"LCOS Gen2 开发工作台（e2e fixture）\":\n  - /url: /projects\n- button \"Assembly\"\n- button \"搜索项目中的内容（Ctrl/Cmd+F）\"\n- 'button \"颜色组 #CE824C\"': \"1\"\n- button \"Main\"\n- button \"Context\"\n- button \"Workflow\" [pressed]\n- text: 会话 · 承接会话（e2e fixture）\n- group \"窗口操作\":\n  - button \"更多窗口操作\"\n  - button \"关闭窗口\"\n- button \"调整窗口 · n\"\n- button \"调整窗口 · ne\"\n- button \"调整窗口 · e\"\n- button \"调整窗口 · se\"\n- button \"调整窗口 · s\"\n- button \"调整窗口 · sw\"\n- button \"调整窗口 · w\"\n- button \"调整窗口 · nw\"\n- heading \"承接会话（e2e fixture）\" [level=3]\n- text: 正在理解\n- button \"打开 Assembly\"\n- text: 当前会话没有已绑定且可发送的续工 owner 开始执行 Wave7 real Run receipt probe 开始执行 Wave7 real Run receipt probe\n- heading \"会话输入\" [level=4]\n- paragraph: 继续发送到当前协作者；也可以选择新建会话或委托独立任务\n- text: 继续「承接会话（e2e fixture）」\n- button \"关闭 Composer\"\n- textbox \"Composer 输入\":\n  - /placeholder: 想一起完成什么？\n- button \"打开素材装配\"\n- button \"引用画布对象\"\n- button \"提交\" [disabled]\n- region \"会话选项\":\n  - button \"会话选项\" [expanded]\n  - text: 续工方式\n  - combobox \"续工方式\":\n    - option \"继续现有会话\"\n    - option \"精选上下文新建\"\n    - option \"空白新建\" [selected]\n    - option \"完整历史分支\"\n  - term: 历史\n  - definition: 不继承原会话历史\n  - term: 引用\n  - definition: 不携带当前引用\n  - term: 工作目录\n  - definition: 当前目录 · 隔离目录尚未确认可用\n  - paragraph: 「新建会话」未完成能力探测，暂时不可用\n  - button \"确认并提交\" [disabled]\n- text: 当前会话没有已绑定且可发送的续工 owner\n- button \"诊断（工程细节）\"",
+      "controls": [
+        {
+          "width": 454,
+          "height": 238,
+          "scrollWidth": 454,
+          "clientWidth": 454,
+          "text": "会话选项续工方式继续现有会话精选上下文新建空白新建完整历史分支历史不继承原会话历史引用不携带当前引用工作目录当前目录 · 隔离目录尚未确认可用「新建会话」未完成能力探测，暂时不可用确认并提交"
+        }
+      ]
+    },
+    {
+      "name": "continuation-native_full_fork",
+      "url": "http://127.0.0.1:5286/projects/lcos-gen2-dev/workflow",
+      "tree": "- application:\n  - img:\n    - group \"Edge from node-a2a0b5d9-ded7-4a87-8940-f54503ddffe0 to node-302ef86a-5250-426d-bef3-925a504c183b\"\n  - img:\n    - group \"Edge from node-302ef86a-5250-426d-bef3-925a504c183b to node-a2a0b5d9-ded7-4a87-8940-f54503ddffe0\"\n  - img:\n    - group \"Edge from node-9973bac7-43fd-4800-918b-098c9e32e9d9 to node-302ef86a-5250-426d-bef3-925a504c183b\"\n  - img:\n    - group \"Edge from node-2425cf3d-47ee-441e-953f-9f88e1062e61 to node-3258b3d9-b3cd-43b1-bbd8-be1c2310ce85\"\n  - img:\n    - group \"Edge from node-4dd761e6-5411-4ff2-a99d-734f65ebf2ba to node-2425cf3d-47ee-441e-953f-9f88e1062e61\"\n  - text: references references decision governs references\n  - group: 项目定位\n  - group: 施工纪律\n  - group: 当前里程碑\n  - group: 决策记录（e2e fixture）\n  - group:\n    - img \"参考图（e2e fixture）\"\n    - text: 参考图（e2e fixture）\n  - group:\n    - img \"参考图 B（e2e fixture）\"\n  - group: 越过边界， 看见下一座山。\n  - group:\n    - button \"播放 山野环境声\"\n  - group:\n    - button \"承接会话（e2e fixture） · 正在思考 · 双击或按回车打开会话窗口\"\n  - group:\n    - text: 暂无预览\n    - strong: 真实工作流导入验收\n    - button \"管理 真实工作流导入验收 的彩色标：#CE824C\"\n  - img\n  - region \"空间导航\":\n    - button \"打开空间导航\"\n  - link \"React Flow attribution\":\n    - /url: https://reactflow.dev/attribution\n    - text: React Flow\n- button \"打开工作流手牌\"\n- link \"LCOS Gen2 开发工作台（e2e fixture）\":\n  - /url: /projects\n- button \"Assembly\"\n- button \"搜索项目中的内容（Ctrl/Cmd+F）\"\n- 'button \"颜色组 #CE824C\"': \"1\"\n- button \"Main\"\n- button \"Context\"\n- button \"Workflow\" [pressed]\n- text: 会话 · 承接会话（e2e fixture）\n- group \"窗口操作\":\n  - button \"更多窗口操作\"\n  - button \"关闭窗口\"\n- button \"调整窗口 · n\"\n- button \"调整窗口 · ne\"\n- button \"调整窗口 · e\"\n- button \"调整窗口 · se\"\n- button \"调整窗口 · s\"\n- button \"调整窗口 · sw\"\n- button \"调整窗口 · w\"\n- button \"调整窗口 · nw\"\n- heading \"承接会话（e2e fixture）\" [level=3]\n- text: 正在理解\n- button \"打开 Assembly\"\n- text: 当前会话没有已绑定且可发送的续工 owner 开始执行 Wave7 real Run receipt probe 开始执行 Wave7 real Run receipt probe\n- heading \"会话输入\" [level=4]\n- paragraph: 继续发送到当前协作者；也可以选择新建会话或委托独立任务\n- text: 继续「承接会话（e2e fixture）」\n- button \"关闭 Composer\"\n- textbox \"Composer 输入\":\n  - /placeholder: 想一起完成什么？\n- button \"打开素材装配\"\n- button \"引用画布对象\"\n- button \"提交\" [disabled]\n- region \"会话选项\":\n  - button \"会话选项\" [expanded]\n  - text: 续工方式\n  - combobox \"续工方式\":\n    - option \"继续现有会话\"\n    - option \"精选上下文新建\"\n    - option \"空白新建\"\n    - option \"完整历史分支\" [selected]\n  - term: 历史\n  - definition: 仅继承协作者支持分支的已完成历史\n  - term: 引用\n  - definition: 不将当前草稿自动追加为引用\n  - term: 工作目录\n  - definition: 当前目录 · 隔离目录尚未确认可用\n  - paragraph: 「分叉」未完成能力探测，暂时不可用\n  - button \"确认并提交\" [disabled]\n- text: 当前会话没有已绑定且可发送的续工 owner\n- button \"诊断（工程细节）\"",
+      "controls": [
+        {
+          "width": 454,
+          "height": 238,
+          "scrollWidth": 454,
+          "clientWidth": 454,
+          "text": "会话选项续工方式继续现有会话精选上下文新建空白新建完整历史分支历史仅继承协作者支持分支的已完成历史引用不将当前草稿自动追加为引用工作目录当前目录 · 隔离目录尚未确认可用「分叉」未完成能力探测，暂时不可用确认并提交"
+        }
+      ]
+    },
+    {
+      "name": "continuation-390",
+      "url": "http://127.0.0.1:5286/projects/lcos-gen2-dev/workflow",
+      "tree": "- application:\n  - img:\n    - group \"Edge from node-a2a0b5d9-ded7-4a87-8940-f54503ddffe0 to node-302ef86a-5250-426d-bef3-925a504c183b\"\n  - img:\n    - group \"Edge from node-302ef86a-5250-426d-bef3-925a504c183b to node-a2a0b5d9-ded7-4a87-8940-f54503ddffe0\"\n  - img:\n    - group \"Edge from node-2425cf3d-47ee-441e-953f-9f88e1062e61 to node-3258b3d9-b3cd-43b1-bbd8-be1c2310ce85\"\n  - img:\n    - group \"Edge from node-4dd761e6-5411-4ff2-a99d-734f65ebf2ba to node-2425cf3d-47ee-441e-953f-9f88e1062e61\"\n  - text: references decision governs references\n  - group: 决策记录（e2e fixture）\n  - group:\n    - img \"参考图（e2e fixture）\"\n    - text: 参考图（e2e fixture）\n  - group:\n    - img \"参考图 B（e2e fixture）\"\n  - group:\n    - button \"承接会话（e2e fixture） · 正在思考 · 双击或按回车打开会话窗口\"\n  - group:\n    - text: 暂无预览\n    - strong: 真实工作流导入验收\n    - button \"管理 真实工作流导入验收 的彩色标：#CE824C\"\n  - img\n  - region \"空间导航\":\n    - button \"打开空间导航\"\n  - link \"React Flow attribution\":\n    - /url: https://reactflow.dev/attribution\n    - text: React Flow\n- button \"打开工作流手牌\"\n- link \"LCOS Gen2 开发工作台（e2e fixture）\":\n  - /url: /projects\n- button \"Assembly\"\n- button \"搜索项目中的内容（Ctrl/Cmd+F）\"\n- 'button \"颜色组 #CE824C\"': \"1\"\n- button \"Main\"\n- button \"Context\"\n- button \"Workflow\" [pressed]\n- text: 会话 · 承接会话（e2e fixture）\n- group \"窗口操作\":\n  - button \"更多窗口操作\"\n  - button \"关闭窗口\"\n- button \"调整窗口 · n\"\n- button \"调整窗口 · ne\"\n- button \"调整窗口 · e\"\n- button \"调整窗口 · se\"\n- button \"调整窗口 · s\"\n- button \"调整窗口 · sw\"\n- button \"调整窗口 · w\"\n- button \"调整窗口 · nw\"\n- heading \"承接会话（e2e fixture）\" [level=3]\n- text: 正在理解\n- button \"打开 Assembly\"\n- text: 当前会话没有已绑定且可发送的续工 owner 开始执行 Wave7 real Run receipt probe 开始执行 Wave7 real Run receipt probe\n- heading \"会话输入\" [level=4]\n- paragraph: 继续发送到当前协作者；也可以选择新建会话或委托独立任务\n- text: 继续「承接会话（e2e fixture）」\n- button \"关闭 Composer\"\n- textbox \"Composer 输入\":\n  - /placeholder: 想一起完成什么？\n- button \"打开素材装配\"\n- button \"引用画布对象\"\n- button \"提交\" [disabled]\n- region \"会话选项\":\n  - button \"会话选项\" [expanded]\n  - text: 续工方式\n  - combobox \"续工方式\":\n    - option \"继续现有会话\"\n    - option \"精选上下文新建\" [selected]\n    - option \"空白新建\"\n    - option \"完整历史分支\"\n  - term: 历史\n  - definition: 不继承原会话历史\n  - term: 引用\n  - definition: 仅携带下方确认的引用\n  - term: 工作目录\n  - definition: 当前目录 · 隔离目录尚未确认可用\n  - text: 待确认引用\n  - paragraph: 「新建会话」未完成能力探测，暂时不可用\n  - button \"确认并提交\" [disabled]\n- text: 当前会话没有已绑定且可发送的续工 owner\n- button \"诊断（工程细节）\"",
+      "controls": [
+        {
+          "width": 276,
+          "height": 264.5,
+          "scrollWidth": 276,
+          "clientWidth": 276,
+          "text": "会话选项续工方式继续现有会话精选上下文新建空白新建完整历史分支历史不继承原会话历史引用仅携带下方确认的引用工作目录当前目录 · 隔离目录尚未确认可用待确认引用「新建会话」未完成能力探测，暂时不可用确认并提交"
+        }
+      ]
+    },
+    {
+      "name": "continuation-escape-390",
+      "url": "http://127.0.0.1:5286/projects/lcos-gen2-dev/workflow",
+      "tree": "- application:\n  - img:\n    - group \"Edge from node-a2a0b5d9-ded7-4a87-8940-f54503ddffe0 to node-302ef86a-5250-426d-bef3-925a504c183b\"\n  - img:\n    - group \"Edge from node-302ef86a-5250-426d-bef3-925a504c183b to node-a2a0b5d9-ded7-4a87-8940-f54503ddffe0\"\n  - img:\n    - group \"Edge from node-2425cf3d-47ee-441e-953f-9f88e1062e61 to node-3258b3d9-b3cd-43b1-bbd8-be1c2310ce85\"\n  - img:\n    - group \"Edge from node-4dd761e6-5411-4ff2-a99d-734f65ebf2ba to node-2425cf3d-47ee-441e-953f-9f88e1062e61\"\n  - text: references decision governs references\n  - group: 决策记录（e2e fixture）\n  - group:\n    - img \"参考图（e2e fixture）\"\n    - text: 参考图（e2e fixture）\n  - group:\n    - img \"参考图 B（e2e fixture）\"\n  - group:\n    - button \"承接会话（e2e fixture） · 正在思考 · 双击或按回车打开会话窗口\"\n  - group:\n    - text: 暂无预览\n    - strong: 真实工作流导入验收\n    - button \"管理 真实工作流导入验收 的彩色标：#CE824C\"\n  - img\n  - region \"空间导航\":\n    - button \"打开空间导航\"\n  - link \"React Flow attribution\":\n    - /url: https://reactflow.dev/attribution\n    - text: React Flow\n- button \"打开工作流手牌\"\n- link \"LCOS Gen2 开发工作台（e2e fixture）\":\n  - /url: /projects\n- button \"Assembly\"\n- button \"搜索项目中的内容（Ctrl/Cmd+F）\"\n- 'button \"颜色组 #CE824C\"': \"1\"\n- button \"Main\"\n- button \"Context\"\n- button \"Workflow\" [pressed]\n- text: 会话 · 承接会话（e2e fixture）\n- group \"窗口操作\":\n  - button \"更多窗口操作\"\n  - button \"关闭窗口\"\n- button \"调整窗口 · n\"\n- button \"调整窗口 · ne\"\n- button \"调整窗口 · e\"\n- button \"调整窗口 · se\"\n- button \"调整窗口 · s\"\n- button \"调整窗口 · sw\"\n- button \"调整窗口 · w\"\n- button \"调整窗口 · nw\"\n- heading \"承接会话（e2e fixture）\" [level=3]\n- text: 正在理解\n- button \"打开 Assembly\"\n- text: 当前会话没有已绑定且可发送的续工 owner 开始执行 Wave7 real Run receipt probe 开始执行 Wave7 real Run receipt probe\n- heading \"会话输入\" [level=4]\n- paragraph: 继续发送到当前协作者；也可以选择新建会话或委托独立任务\n- text: 继续「承接会话（e2e fixture）」\n- button \"关闭 Composer\"\n- textbox \"Composer 输入\":\n  - /placeholder: 想一起完成什么？\n- button \"打开素材装配\"\n- button \"引用画布对象\"\n- button \"提交\" [disabled]\n- region \"会话选项\":\n  - button \"会话选项\"\n- text: 当前会话没有已绑定且可发送的续工 owner\n- button \"诊断（工程细节）\"",
+      "controls": [
+        {
+          "width": 276,
+          "height": 36,
+          "scrollWidth": 276,
+          "clientWidth": 276,
+          "text": "会话选项"
+        }
+      ]
+    },
+    {
+      "name": "context-root-corrected",
+      "url": "http://127.0.0.1:5286/projects/lcos-gen2-dev/context",
+      "tree": "- application:\n  - img:\n    - group \"Edge from node-fa1be403-b286-489d-a0c5-4e871f8d0a1c to node-fd6dc0e5-61dc-4a93-a3d3-2a29fd776e10\"\n  - group:\n    - textbox \"只读内容\":\n      - paragraph: source\n    - img\n    - img\n  - group:\n    - textbox \"只读内容\":\n      - paragraph\n    - img\n    - img\n  - group:\n    - textbox \"只读内容\":\n      - paragraph: Fixture source for Context → child worksite → return.\n    - img\n    - img\n  - group:\n    - textbox \"Ask a question…\": Question 1\n    - button \"创建连接节点\"\n    - button \"创建连接节点\"\n    - button \"创建连接节点\"\n    - button \"创建连接节点\"\n  - img\n  - button \"前往 真实工作流导入验收\"\n  - button \"前往 所选对象\"\n  - region \"空间导航\":\n    - button \"打开空间导航\"\n  - link \"React Flow attribution\":\n    - /url: https://reactflow.dev/attribution\n    - text: React Flow\n- button \"打开集合总览\"\n- link \"LCOS Gen2 开发工作台（e2e fixture）\":\n  - /url: /projects\n- button \"Assembly\"\n- button \"搜索项目中的内容（Ctrl/Cmd+F）\"\n- 'button \"颜色组 #CE824C\"': \"1\"\n- button \"Main\"\n- button \"Context\" [pressed]\n- button \"Workflow\"",
+      "controls": []
+    }
+  ],
+  "errors": [],
+  "requests": [
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:5286/api/rfs/canvas-5e26c422-466e-4994-9b57-34b8ec5cfcd2/query"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:5286/api/rfs/canvas-5e26c422-466e-4994-9b57-34b8ec5cfcd2/query"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:5286/api/rfs/canvas-5e26c422-466e-4994-9b57-34b8ec5cfcd2/query"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:5286/api/rfs/canvas-5e26c422-466e-4994-9b57-34b8ec5cfcd2/query"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:5286/api/rfs/canvas-5e26c422-466e-4994-9b57-34b8ec5cfcd2/query"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:5286/api/rfs/canvas-6f5e9fe7-4716-4fdf-bf10-49306e514e74/query"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:5286/api/rfs/canvas-5e26c422-466e-4994-9b57-34b8ec5cfcd2/query"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:5286/api/rfs/canvas-6f5e9fe7-4716-4fdf-bf10-49306e514e74/query"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:5286/api/rfs/canvas-5e26c422-466e-4994-9b57-34b8ec5cfcd2/query"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:5286/api/rfs/canvas-6f5e9fe7-4716-4fdf-bf10-49306e514e74/query"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:5286/api/rfs/canvas-5e26c422-466e-4994-9b57-34b8ec5cfcd2/query"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:5286/api/rfs/canvas-6f5e9fe7-4716-4fdf-bf10-49306e514e74/query"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:5286/api/rfs/canvas-5e26c422-466e-4994-9b57-34b8ec5cfcd2/query"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:5286/api/rfs/canvas-6f5e9fe7-4716-4fdf-bf10-49306e514e74/query"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:5286/api/rfs/canvas-5e26c422-466e-4994-9b57-34b8ec5cfcd2/query"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:5286/api/rfs/canvas-6f5e9fe7-4716-4fdf-bf10-49306e514e74/query"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:5286/api/rfs/canvas-5e26c422-466e-4994-9b57-34b8ec5cfcd2/query"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:5286/api/rfs/canvas-6f5e9fe7-4716-4fdf-bf10-49306e514e74/query"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:5286/api/rfs/canvas-5e26c422-466e-4994-9b57-34b8ec5cfcd2/query"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:5286/api/rfs/canvas-6f5e9fe7-4716-4fdf-bf10-49306e514e74/query"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:5286/api/rfs/canvas-5e26c422-466e-4994-9b57-34b8ec5cfcd2/query"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:5286/api/rfs/canvas-6f5e9fe7-4716-4fdf-bf10-49306e514e74/query"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:5286/api/rfs/canvas-5e26c422-466e-4994-9b57-34b8ec5cfcd2/query"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:5286/api/rfs/canvas-6f5e9fe7-4716-4fdf-bf10-49306e514e74/query"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:5286/api/rfs/canvas-5e26c422-466e-4994-9b57-34b8ec5cfcd2/query"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:5286/api/rfs/canvas-6f5e9fe7-4716-4fdf-bf10-49306e514e74/query"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:5286/api/rfs/canvas-5e26c422-466e-4994-9b57-34b8ec5cfcd2/query"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:5286/api/rfs/canvas-6f5e9fe7-4716-4fdf-bf10-49306e514e74/query"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:5286/api/rfs/canvas-5e26c422-466e-4994-9b57-34b8ec5cfcd2/query"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:5286/api/rfs/canvas-6f5e9fe7-4716-4fdf-bf10-49306e514e74/query"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:5286/api/rfs/canvas-5e26c422-466e-4994-9b57-34b8ec5cfcd2/query"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:5286/api/rfs/canvas-6f5e9fe7-4716-4fdf-bf10-49306e514e74/query"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:5286/api/rfs/canvas-5e26c422-466e-4994-9b57-34b8ec5cfcd2/query"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:5286/api/rfs/canvas-6f5e9fe7-4716-4fdf-bf10-49306e514e74/query"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:5286/api/rfs/canvas-5e26c422-466e-4994-9b57-34b8ec5cfcd2/query"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:5286/api/rfs/canvas-5e26c422-466e-4994-9b57-34b8ec5cfcd2/query"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:5286/api/rfs/canvas-6f5e9fe7-4716-4fdf-bf10-49306e514e74/query"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:5286/api/rfs/canvas-5e26c422-466e-4994-9b57-34b8ec5cfcd2/query"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:5286/api/rfs/canvas-5e26c422-466e-4994-9b57-34b8ec5cfcd2/query"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:5286/api/rfs/canvas-5e26c422-466e-4994-9b57-34b8ec5cfcd2/query"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:5286/api/rfs/canvas-6f5e9fe7-4716-4fdf-bf10-49306e514e74/query"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:5286/api/rfs/canvas-5e26c422-466e-4994-9b57-34b8ec5cfcd2/query"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:5286/api/rfs/canvas-5e26c422-466e-4994-9b57-34b8ec5cfcd2/query"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:5286/api/rfs/canvas-6f5e9fe7-4716-4fdf-bf10-49306e514e74/query"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:5286/api/rfs/canvas-5e26c422-466e-4994-9b57-34b8ec5cfcd2/query"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:5286/api/rfs/canvas-5e26c422-466e-4994-9b57-34b8ec5cfcd2/query"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:5286/api/rfs/canvas-6f5e9fe7-4716-4fdf-bf10-49306e514e74/query"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:5286/api/rfs/canvas-5e26c422-466e-4994-9b57-34b8ec5cfcd2/query"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:5286/api/rfs/canvas-5e26c422-466e-4994-9b57-34b8ec5cfcd2/query"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:5286/api/rfs/canvas-6f5e9fe7-4716-4fdf-bf10-49306e514e74/query"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:5286/api/rfs/canvas-6f5e9fe7-4716-4fdf-bf10-49306e514e74/query"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:5286/api/rfs/canvas-6f5e9fe7-4716-4fdf-bf10-49306e514e74/query"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:5286/api/rfs/canvas-6f5e9fe7-4716-4fdf-bf10-49306e514e74/query"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:5286/api/rfs/canvas-6f5e9fe7-4716-4fdf-bf10-49306e514e74/query"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:5286/api/rfs/canvas-6f5e9fe7-4716-4fdf-bf10-49306e514e74/query"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:5286/api/rfs/canvas-6f5e9fe7-4716-4fdf-bf10-49306e514e74/query"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:5286/api/rfs/canvas-6f5e9fe7-4716-4fdf-bf10-49306e514e74/query"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:5286/api/rfs/canvas-6f5e9fe7-4716-4fdf-bf10-49306e514e74/query"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:5286/api/rfs/canvas-6f5e9fe7-4716-4fdf-bf10-49306e514e74/query"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:5286/api/rfs/canvas-6f5e9fe7-4716-4fdf-bf10-49306e514e74/query"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:5286/api/rfs/canvas-7fa2a998-c59e-4ce0-8e00-4b1aa171f53b/query"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:5286/api/rfs/canvas-7fa2a998-c59e-4ce0-8e00-4b1aa171f53b/query"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:5286/api/rfs/canvas-7fa2a998-c59e-4ce0-8e00-4b1aa171f53b/query"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:5286/api/rfs/canvas-7fa2a998-c59e-4ce0-8e00-4b1aa171f53b/query"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:5286/api/rfs/canvas-7fa2a998-c59e-4ce0-8e00-4b1aa171f53b/query"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:5286/api/rfs/canvas-7fa2a998-c59e-4ce0-8e00-4b1aa171f53b/query"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:5286/api/rfs/canvas-7fa2a998-c59e-4ce0-8e00-4b1aa171f53b/query"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:5286/api/rfs/canvas-7fa2a998-c59e-4ce0-8e00-4b1aa171f53b/query"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:5286/api/rfs/canvas-7fa2a998-c59e-4ce0-8e00-4b1aa171f53b/query"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:5286/api/rfs/canvas-7fa2a998-c59e-4ce0-8e00-4b1aa171f53b/query"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:5286/api/rfs/canvas-7fa2a998-c59e-4ce0-8e00-4b1aa171f53b/query"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:5286/api/rfs/canvas-7fa2a998-c59e-4ce0-8e00-4b1aa171f53b/query"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:5286/api/rfs/canvas-7fa2a998-c59e-4ce0-8e00-4b1aa171f53b/query"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:5286/api/rfs/canvas-7fa2a998-c59e-4ce0-8e00-4b1aa171f53b/query"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:5286/api/rfs/canvas-7fa2a998-c59e-4ce0-8e00-4b1aa171f53b/query"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:5286/api/rfs/canvas-7fa2a998-c59e-4ce0-8e00-4b1aa171f53b/query"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:5286/api/rfs/canvas-7fa2a998-c59e-4ce0-8e00-4b1aa171f53b/query"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:5286/api/rfs/canvas-7fa2a998-c59e-4ce0-8e00-4b1aa171f53b/query"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:5286/api/rfs/canvas-7fa2a998-c59e-4ce0-8e00-4b1aa171f53b/query"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:5286/api/rfs/canvas-7fa2a998-c59e-4ce0-8e00-4b1aa171f53b/query"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:5286/api/rfs/canvas-7fa2a998-c59e-4ce0-8e00-4b1aa171f53b/query"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:5286/api/rfs/canvas-7fa2a998-c59e-4ce0-8e00-4b1aa171f53b/query"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:5286/api/rfs/canvas-7fa2a998-c59e-4ce0-8e00-4b1aa171f53b/query"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:5286/api/rfs/canvas-7fa2a998-c59e-4ce0-8e00-4b1aa171f53b/query"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:5286/api/rfs/canvas-7fa2a998-c59e-4ce0-8e00-4b1aa171f53b/query"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:5286/api/rfs/canvas-7fa2a998-c59e-4ce0-8e00-4b1aa171f53b/query"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:5286/api/rfs/canvas-7fa2a998-c59e-4ce0-8e00-4b1aa171f53b/query"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:5286/api/rfs/canvas-7fa2a998-c59e-4ce0-8e00-4b1aa171f53b/query"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:5286/api/rfs/canvas-7fa2a998-c59e-4ce0-8e00-4b1aa171f53b/query"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:5286/api/rfs/canvas-7fa2a998-c59e-4ce0-8e00-4b1aa171f53b/query"
+    }
+  ]
+}

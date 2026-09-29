@@ -1,0 +1,7369 @@
+[
+  {
+    "Page": "00 / 先读 · 设计版本与采用说明",
+    "NodeId": "5321:50",
+    "Name": "00 · 当前状态与阅读方式",
+    "Type": "FRAME",
+    "Width": 1280,
+    "Height": 1187,
+    "Visible": true,
+    "Role": "说明 / 裁决 / 注释",
+    "Checks": [],
+    "Coverage": "采用说明，需约束相关功能"
+  },
+  {
+    "Page": "00 / 先读 · 设计版本与采用说明",
+    "NodeId": "5322:49",
+    "Name": "01 · 各阶段采用索引 / 点击标题查看页内说明",
+    "Type": "FRAME",
+    "Width": 1280,
+    "Height": 1435,
+    "Visible": true,
+    "Role": "说明 / 裁决 / 注释",
+    "Checks": [],
+    "Coverage": "采用说明，需约束相关功能"
+  },
+  {
+    "Page": "00 / 先读 · 设计版本与采用说明",
+    "NodeId": "5363:2197",
+    "Name": "新增第 13 页｜集合跨视图与工作流取用 局部增量：集合形态、工作流取用、装配同身份表达、Portal 承接。 不覆盖整套上下文／工作流特殊视图；其余区域继续按原采用说明。 请进入第 13 页的「交互导览」与「本轮采用说明」。",
+    "Type": "TEXT",
+    "Width": 1300,
+    "Height": 116,
+    "Visible": true,
+    "Role": "说明 / 裁决 / 注释",
+    "Checks": [],
+    "Coverage": "采用说明，需约束相关功能"
+  },
+  {
+    "Page": "00 / 先读 · 设计版本与采用说明",
+    "NodeId": "5409:2",
+    "Name": "20260913 / 九面统一采用与剩余项",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 1472,
+    "Visible": true,
+    "Role": "说明：全局采用与合并说明，约束所有功能",
+    "Checks": [],
+    "Coverage": "采用说明，需约束相关功能"
+  },
+  {
+    "Page": "01 / LCOS · Nine visual studies",
+    "NodeId": "5007:110",
+    "Name": "A1 / NOIR STUDIO / 创作现场",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 820,
+    "Visible": true,
+    "Role": "历史功能 / 来源参考",
+    "Checks": [],
+    "Coverage": "保留为历史与来源，不独立施工"
+  },
+  {
+    "Page": "01 / LCOS · Nine visual studies",
+    "NodeId": "5007:111",
+    "Name": "A2 / NOIR STUDIO / 局部深工作",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 820,
+    "Visible": true,
+    "Role": "历史功能 / 来源参考",
+    "Checks": [],
+    "Coverage": "保留为历史与来源，不独立施工"
+  },
+  {
+    "Page": "01 / LCOS · Nine visual studies",
+    "NodeId": "5007:112",
+    "Name": "A3 / NOIR STUDIO / 结果与装配",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 820,
+    "Visible": true,
+    "Role": "历史功能 / 来源参考",
+    "Checks": [],
+    "Coverage": "保留为历史与来源，不独立施工"
+  },
+  {
+    "Page": "01 / LCOS · Nine visual studies",
+    "NodeId": "5007:113",
+    "Name": "B1 / OPEN ATELIER / 创作现场",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 820,
+    "Visible": true,
+    "Role": "历史功能 / 来源参考",
+    "Checks": [],
+    "Coverage": "保留为历史与来源，不独立施工"
+  },
+  {
+    "Page": "01 / LCOS · Nine visual studies",
+    "NodeId": "5007:114",
+    "Name": "B2 / OPEN ATELIER / 局部深工作",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 820,
+    "Visible": true,
+    "Role": "历史功能 / 来源参考",
+    "Checks": [],
+    "Coverage": "保留为历史与来源，不独立施工"
+  },
+  {
+    "Page": "01 / LCOS · Nine visual studies",
+    "NodeId": "5007:115",
+    "Name": "B3 / OPEN ATELIER / 结果与装配",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 820,
+    "Visible": true,
+    "Role": "历史功能 / 来源参考",
+    "Checks": [],
+    "Coverage": "保留为历史与来源，不独立施工"
+  },
+  {
+    "Page": "01 / LCOS · Nine visual studies",
+    "NodeId": "5007:116",
+    "Name": "C1 / FIELD SYSTEM / 创作现场",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 820,
+    "Visible": true,
+    "Role": "历史功能 / 来源参考",
+    "Checks": [],
+    "Coverage": "保留为历史与来源，不独立施工"
+  },
+  {
+    "Page": "01 / LCOS · Nine visual studies",
+    "NodeId": "5007:117",
+    "Name": "C2 / FIELD SYSTEM / 局部深工作",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 820,
+    "Visible": true,
+    "Role": "历史功能 / 来源参考",
+    "Checks": [],
+    "Coverage": "保留为历史与来源，不独立施工"
+  },
+  {
+    "Page": "01 / LCOS · Nine visual studies",
+    "NodeId": "5007:118",
+    "Name": "C3 / FIELD SYSTEM / 结果与装配",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 820,
+    "Visible": true,
+    "Role": "历史功能 / 来源参考",
+    "Checks": [],
+    "Coverage": "保留为历史与来源，不独立施工"
+  },
+  {
+    "Page": "01 / LCOS · Nine visual studies",
+    "NodeId": "5015:374",
+    "Name": "A / NOIR STUDIO",
+    "Type": "TEXT",
+    "Width": 1200,
+    "Height": 55,
+    "Visible": true,
+    "Role": "历史功能 / 来源参考",
+    "Checks": [],
+    "Coverage": "保留为历史与来源，不独立施工"
+  },
+  {
+    "Page": "01 / LCOS · Nine visual studies",
+    "NodeId": "5015:375",
+    "Name": "影像先行 · TapNow 深黑表面 · Oreo 原版组件",
+    "Type": "TEXT",
+    "Width": 1500,
+    "Height": 26,
+    "Visible": true,
+    "Role": "历史功能 / 来源参考",
+    "Checks": [],
+    "Coverage": "保留为历史与来源，不独立施工"
+  },
+  {
+    "Page": "01 / LCOS · Nine visual studies",
+    "NodeId": "5015:376",
+    "Name": "B / OPEN ATELIER",
+    "Type": "TEXT",
+    "Width": 1200,
+    "Height": 55,
+    "Visible": true,
+    "Role": "历史功能 / 来源参考",
+    "Checks": [],
+    "Coverage": "保留为历史与来源，不独立施工"
+  },
+  {
+    "Page": "01 / LCOS · Nine visual studies",
+    "NodeId": "5015:377",
+    "Name": "纸张与编辑排版 · Lovart 浅色层次 · Oreo 原版组件",
+    "Type": "TEXT",
+    "Width": 1500,
+    "Height": 26,
+    "Visible": true,
+    "Role": "历史功能 / 来源参考",
+    "Checks": [],
+    "Coverage": "保留为历史与来源，不独立施工"
+  },
+  {
+    "Page": "01 / LCOS · Nine visual studies",
+    "NodeId": "5015:378",
+    "Name": "C / FIELD SYSTEM",
+    "Type": "TEXT",
+    "Width": 1200,
+    "Height": 55,
+    "Visible": true,
+    "Role": "历史功能 / 来源参考",
+    "Checks": [],
+    "Coverage": "保留为历史与来源，不独立施工"
+  },
+  {
+    "Page": "01 / LCOS · Nine visual studies",
+    "NodeId": "5015:379",
+    "Name": "银灰工作面 · 精确对象分区 · Oreo 原版组件",
+    "Type": "TEXT",
+    "Width": 1500,
+    "Height": 26,
+    "Visible": true,
+    "Role": "历史功能 / 来源参考",
+    "Checks": [],
+    "Coverage": "保留为历史与来源，不独立施工"
+  },
+  {
+    "Page": "01 / LCOS · Nine visual studies",
+    "NodeId": "5017:346",
+    "Name": "A / Collection expanded / Spatial study",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 820,
+    "Visible": true,
+    "Role": "历史功能 / 来源参考",
+    "Checks": [],
+    "Coverage": "保留为历史与来源，不独立施工"
+  },
+  {
+    "Page": "01 / LCOS · Nine visual studies",
+    "NodeId": "5017:532",
+    "Name": "B / Collection expanded / Spatial study",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 820,
+    "Visible": true,
+    "Role": "历史功能 / 来源参考",
+    "Checks": [],
+    "Coverage": "保留为历史与来源，不独立施工"
+  },
+  {
+    "Page": "01 / LCOS · Nine visual studies",
+    "NodeId": "5017:683",
+    "Name": "C / Collection expanded / Spatial study",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 820,
+    "Visible": true,
+    "Role": "历史功能 / 来源参考",
+    "Checks": [],
+    "Coverage": "保留为历史与来源，不独立施工"
+  },
+  {
+    "Page": "01 / LCOS · Nine visual studies",
+    "NodeId": "5017:832",
+    "Name": "MOTION / KEEP THE OBJECT",
+    "Type": "TEXT",
+    "Width": 1600,
+    "Height": 52,
+    "Visible": true,
+    "Role": "历史功能 / 来源参考",
+    "Checks": [],
+    "Coverage": "保留为历史与来源，不独立施工"
+  },
+  {
+    "Page": "01 / LCOS · Nine visual studies",
+    "NodeId": "5017:833",
+    "Name": "点击主画板中的参考集展开；再次点击收回。弹簧参数来自素材包 Amicro，表现参考 Spatial 录屏。",
+    "Type": "TEXT",
+    "Width": 3200,
+    "Height": 26,
+    "Visible": true,
+    "Role": "历史功能 / 来源参考",
+    "Checks": [],
+    "Coverage": "保留为历史与来源，不独立施工"
+  },
+  {
+    "Page": "01 / LCOS · Nine visual studies",
+    "NodeId": "5321:8817",
+    "Name": "阅读说明 / 01 · 早期三方向探索",
+    "Type": "FRAME",
+    "Width": 1200,
+    "Height": 264,
+    "Visible": true,
+    "Role": "说明 / 裁决 / 注释",
+    "Checks": [],
+    "Coverage": "采用说明，需约束相关功能"
+  },
+  {
+    "Page": "02 / Components & materials",
+    "NodeId": "5009:49",
+    "Name": "LCOS / Media / a",
+    "Type": "COMPONENT",
+    "Width": 240,
+    "Height": 160,
+    "Visible": true,
+    "Role": "历史功能 / 来源参考",
+    "Checks": [],
+    "Coverage": "保留为历史与来源，不独立施工"
+  },
+  {
+    "Page": "02 / Components & materials",
+    "NodeId": "5009:50",
+    "Name": "LCOS / Media / b",
+    "Type": "COMPONENT",
+    "Width": 240,
+    "Height": 160,
+    "Visible": true,
+    "Role": "历史功能 / 来源参考",
+    "Checks": [],
+    "Coverage": "保留为历史与来源，不独立施工"
+  },
+  {
+    "Page": "02 / Components & materials",
+    "NodeId": "5009:51",
+    "Name": "LCOS / Media / c",
+    "Type": "COMPONENT",
+    "Width": 240,
+    "Height": 160,
+    "Visible": true,
+    "Role": "历史功能 / 来源参考",
+    "Checks": [],
+    "Coverage": "保留为历史与来源，不独立施工"
+  },
+  {
+    "Page": "02 / Components & materials",
+    "NodeId": "5009:52",
+    "Name": "Oreo original / Has Header=False, Had Footer=False",
+    "Type": "INSTANCE",
+    "Width": 581,
+    "Height": 132,
+    "Visible": true,
+    "Role": "历史功能 / 来源参考",
+    "Checks": [],
+    "Coverage": "保留为历史与来源，不独立施工"
+  },
+  {
+    "Page": "02 / Components & materials",
+    "NodeId": "5009:142",
+    "Name": "Oreo original / Type=Primary, Status=Default, Disabled=False, Danger=False",
+    "Type": "INSTANCE",
+    "Width": 109,
+    "Height": 32,
+    "Visible": true,
+    "Role": "历史功能 / 来源参考",
+    "Checks": [],
+    "Coverage": "保留为历史与来源，不独立施工"
+  },
+  {
+    "Page": "02 / Components & materials",
+    "NodeId": "5009:149",
+    "Name": "Oreo original / Type=Secondary, Status=Default, Disabled=False, Danger=False",
+    "Type": "INSTANCE",
+    "Width": 109,
+    "Height": 32,
+    "Visible": true,
+    "Role": "历史功能 / 来源参考",
+    "Checks": [],
+    "Coverage": "保留为历史与来源，不独立施工"
+  },
+  {
+    "Page": "02 / Components & materials",
+    "NodeId": "5321:8868",
+    "Name": "阅读说明 / 02 · 早期组件与材质来源",
+    "Type": "FRAME",
+    "Width": 1200,
+    "Height": 264,
+    "Visible": true,
+    "Role": "说明 / 裁决 / 注释",
+    "Checks": [],
+    "Coverage": "采用说明，需约束相关功能"
+  },
+  {
+    "Page": "03 / Gen2 · 第一稿全稿",
+    "NodeId": "5046:49",
+    "Name": "01 / 首次打开",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "历史功能 / 来源参考",
+    "Checks": [
+      "NAV-01",
+      "NAV-02"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "03 / Gen2 · 第一稿全稿",
+    "NodeId": "5046:50",
+    "Name": "02 / 项目库与归档",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "历史功能 / 来源参考",
+    "Checks": [
+      "NAV-01"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "03 / Gen2 · 第一稿全稿",
+    "NodeId": "5046:51",
+    "Name": "03 / 混合主画布",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "历史功能 / 来源参考",
+    "Checks": [],
+    "Coverage": "保留为历史与来源，不独立施工"
+  },
+  {
+    "Page": "03 / Gen2 · 第一稿全稿",
+    "NodeId": "5046:52",
+    "Name": "04 / 就地文本与生成输入",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "历史功能 / 来源参考",
+    "Checks": [
+      "N03"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "03 / Gen2 · 第一稿全稿",
+    "NodeId": "5046:53",
+    "Name": "05 / 多步骤运行",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "历史功能 / 来源参考",
+    "Checks": [],
+    "Coverage": "保留为历史与来源，不独立施工"
+  },
+  {
+    "Page": "03 / Gen2 · 第一稿全稿",
+    "NodeId": "5046:54",
+    "Name": "06 / 多结果审阅",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "历史功能 / 来源参考",
+    "Checks": [],
+    "Coverage": "保留为历史与来源，不独立施工"
+  },
+  {
+    "Page": "03 / Gen2 · 第一稿全稿",
+    "NodeId": "5046:55",
+    "Name": "07 / 收纳展开",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "历史功能 / 来源参考",
+    "Checks": [],
+    "Coverage": "保留为历史与来源，不独立施工"
+  },
+  {
+    "Page": "03 / Gen2 · 第一稿全稿",
+    "NodeId": "5046:56",
+    "Name": "08 / 全局目的地导航",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "历史功能 / 来源参考",
+    "Checks": [],
+    "Coverage": "保留为历史与来源，不独立施工"
+  },
+  {
+    "Page": "03 / Gen2 · 第一稿全稿",
+    "NodeId": "5046:57",
+    "Name": "09 / 搜索与定位",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "历史功能 / 来源参考",
+    "Checks": [
+      "NAV-07"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "03 / Gen2 · 第一稿全稿",
+    "NodeId": "5046:58",
+    "Name": "10 / 上下文主工作区",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "历史功能 / 来源参考",
+    "Checks": [],
+    "Coverage": "保留为历史与来源，不独立施工"
+  },
+  {
+    "Page": "03 / Gen2 · 第一稿全稿",
+    "NodeId": "5046:59",
+    "Name": "11 / 集合空间总览",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "历史功能 / 来源参考",
+    "Checks": [],
+    "Coverage": "保留为历史与来源，不独立施工"
+  },
+  {
+    "Page": "03 / Gen2 · 第一稿全稿",
+    "NodeId": "5046:60",
+    "Name": "12 / 子现场与时间轨道",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "历史功能 / 来源参考",
+    "Checks": [],
+    "Coverage": "保留为历史与来源，不独立施工"
+  },
+  {
+    "Page": "03 / Gen2 · 第一稿全稿",
+    "NodeId": "5046:61",
+    "Name": "13 / 工作流主工作区",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "历史功能 / 来源参考",
+    "Checks": [],
+    "Coverage": "保留为历史与来源，不独立施工"
+  },
+  {
+    "Page": "03 / Gen2 · 第一稿全稿",
+    "NodeId": "5046:62",
+    "Name": "14 / 流程手牌与卡片池",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "历史功能 / 来源参考",
+    "Checks": [],
+    "Coverage": "保留为历史与来源，不独立施工"
+  },
+  {
+    "Page": "03 / Gen2 · 第一稿全稿",
+    "NodeId": "5046:63",
+    "Name": "15 / 流程内部步骤与分支",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "历史功能 / 来源参考",
+    "Checks": [],
+    "Coverage": "保留为历史与来源，不独立施工"
+  },
+  {
+    "Page": "03 / Gen2 · 第一稿全稿",
+    "NodeId": "5046:64",
+    "Name": "16 / 自由装配窗口",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "历史功能 / 来源参考",
+    "Checks": [
+      "S01"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "03 / Gen2 · 第一稿全稿",
+    "NodeId": "5046:65",
+    "Name": "17 / 双组文件阅读",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "说明 / 裁决 / 注释",
+    "Checks": [
+      "S09"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "03 / Gen2 · 第一稿全稿",
+    "NodeId": "5046:66",
+    "Name": "18 / 沉浸取材",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "历史功能 / 来源参考",
+    "Checks": [
+      "S09"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "03 / Gen2 · 第一稿全稿",
+    "NodeId": "5046:67",
+    "Name": "19 / 能力编辑与装备",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "历史功能 / 来源参考",
+    "Checks": [],
+    "Coverage": "保留为历史与来源，不独立施工"
+  },
+  {
+    "Page": "03 / Gen2 · 第一稿全稿",
+    "NodeId": "5046:68",
+    "Name": "20 / 对话工作现场",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "历史功能 / 来源参考",
+    "Checks": [],
+    "Coverage": "保留为历史与来源，不独立施工"
+  },
+  {
+    "Page": "03 / Gen2 · 第一稿全稿",
+    "NodeId": "5046:69",
+    "Name": "21 / 上下文演进",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "历史功能 / 来源参考",
+    "Checks": [],
+    "Coverage": "保留为历史与来源，不独立施工"
+  },
+  {
+    "Page": "03 / Gen2 · 第一稿全稿",
+    "NodeId": "5046:70",
+    "Name": "22 / 关系与来源",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "历史功能 / 来源参考",
+    "Checks": [],
+    "Coverage": "保留为历史与来源，不独立施工"
+  },
+  {
+    "Page": "03 / Gen2 · 第一稿全稿",
+    "NodeId": "5046:71",
+    "Name": "23 / 专业媒体与网页预览",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "历史功能 / 来源参考",
+    "Checks": [
+      "N08"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "03 / Gen2 · 第一稿全稿",
+    "NodeId": "5046:72",
+    "Name": "24 / 空态与失败恢复",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "历史功能 / 来源参考",
+    "Checks": [
+      "NAV-02"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "03 / Gen2 · 第一稿全稿",
+    "NodeId": "5051:3062",
+    "Name": "25 / 收纳原位收起",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "历史功能 / 来源参考",
+    "Checks": [],
+    "Coverage": "保留为历史与来源，不独立施工"
+  },
+  {
+    "Page": "03 / Gen2 · 第一稿全稿",
+    "NodeId": "5051:3315",
+    "Name": "27 / 导航引用已送达",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "历史功能 / 来源参考",
+    "Checks": [],
+    "Coverage": "保留为历史与来源，不独立施工"
+  },
+  {
+    "Page": "03 / Gen2 · 第一稿全稿",
+    "NodeId": "5051:3467",
+    "Name": "26 / 收纳原位聚焦",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "历史功能 / 来源参考",
+    "Checks": [],
+    "Coverage": "保留为历史与来源，不独立施工"
+  },
+  {
+    "Page": "03 / Gen2 · 第一稿全稿",
+    "NodeId": "5051:3599",
+    "Name": "28 / 多窗口与画布拾取",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "历史功能 / 来源参考",
+    "Checks": [
+      "NAV-04"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "03 / Gen2 · 第一稿全稿",
+    "NodeId": "5051:3776",
+    "Name": "29 / 窗口停靠与恢复",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "历史功能 / 来源参考",
+    "Checks": [
+      "NAV-04"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "03 / Gen2 · 第一稿全稿",
+    "NodeId": "5051:3952",
+    "Name": "30 / 流程池高密度",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "历史功能 / 来源参考",
+    "Checks": [],
+    "Coverage": "保留为历史与来源，不独立施工"
+  },
+  {
+    "Page": "03 / Gen2 · 第一稿全稿",
+    "NodeId": "5051:4199",
+    "Name": "31 / 正文大纲与导图",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "历史功能 / 来源参考",
+    "Checks": [],
+    "Coverage": "保留为历史与来源，不独立施工"
+  },
+  {
+    "Page": "03 / Gen2 · 第一稿全稿",
+    "NodeId": "5051:4365",
+    "Name": "32 / 音频专业预览",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "历史功能 / 来源参考",
+    "Checks": [
+      "S13"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "03 / Gen2 · 第一稿全稿",
+    "NodeId": "5051:4623",
+    "Name": "33 / 网页阅读与摘录",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "说明 / 裁决 / 注释",
+    "Checks": [
+      "N09",
+      "S13"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "03 / Gen2 · 第一稿全稿",
+    "NodeId": "5051:4770",
+    "Name": "34 / HTML 交互预览",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "历史功能 / 来源参考",
+    "Checks": [
+      "S13"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "03 / Gen2 · 第一稿全稿",
+    "NodeId": "5051:4924",
+    "Name": "35 / 结果确认与部分失败",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "历史功能 / 来源参考",
+    "Checks": [],
+    "Coverage": "保留为历史与来源，不独立施工"
+  },
+  {
+    "Page": "03 / Gen2 · 第一稿全稿",
+    "NodeId": "5056:4742",
+    "Name": "00 / Gen2 首稿导览",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 1170,
+    "Visible": true,
+    "Role": "说明 / 裁决 / 注释",
+    "Checks": [],
+    "Coverage": "采用说明，需约束相关功能"
+  },
+  {
+    "Page": "03 / Gen2 · 第一稿全稿",
+    "NodeId": "5321:7769",
+    "Name": "阅读说明 / 03 · 第一稿功能全览",
+    "Type": "FRAME",
+    "Width": 1200,
+    "Height": 264,
+    "Visible": true,
+    "Role": "说明 / 裁决 / 注释",
+    "Checks": [],
+    "Coverage": "采用说明，需约束相关功能"
+  },
+  {
+    "Page": "04 / Gen2 · 公共构件",
+    "NodeId": "5038:49",
+    "Name": "共用 / 全局 HUD",
+    "Type": "COMPONENT",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "NAV-03",
+      "NAV-04",
+      "NAV-05",
+      "NAV-06",
+      "NAV-14"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "04 / Gen2 · 公共构件",
+    "NodeId": "5039:93",
+    "Name": "节点 / 影像本体",
+    "Type": "COMPONENT",
+    "Width": 320,
+    "Height": 262,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "N06",
+      "N08",
+      "N41"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "04 / Gen2 · 公共构件",
+    "NodeId": "5039:98",
+    "Name": "未采用候选 / 自制窗口标题",
+    "Type": "COMPONENT",
+    "Width": 960,
+    "Height": 54,
+    "Visible": false,
+    "Role": "不采用 / 历史留档",
+    "Checks": [],
+    "Coverage": "保留为历史与来源，不独立施工"
+  },
+  {
+    "Page": "04 / Gen2 · 公共构件",
+    "NodeId": "5043:102",
+    "Name": "输入 / Oreo 就地生成",
+    "Type": "COMPONENT",
+    "Width": 581,
+    "Height": 210,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "NAV-18"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "04 / Gen2 · 公共构件",
+    "NodeId": "5054:319",
+    "Name": "Gen2 / 文档物件",
+    "Type": "COMPONENT",
+    "Width": 220,
+    "Height": 290,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "N05",
+      "N10",
+      "N40"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "04 / Gen2 · 公共构件",
+    "NodeId": "5054:4560",
+    "Name": "Gen2 / 判断与摘录",
+    "Type": "COMPONENT",
+    "Width": 324,
+    "Height": 148,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "N13",
+      "N15",
+      "N27"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "04 / Gen2 · 公共构件",
+    "NodeId": "5054:4617",
+    "Name": "Gen2 / 执行步骤",
+    "Type": "COMPONENT",
+    "Width": 360,
+    "Height": 246,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "N11",
+      "N27"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "04 / Gen2 · 公共构件",
+    "NodeId": "5054:4622",
+    "Name": "Gen2 / 小精灵状态",
+    "Type": "COMPONENT",
+    "Width": 168,
+    "Height": 46,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "N29",
+      "N35",
+      "N37"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "04 / Gen2 · 公共构件",
+    "NodeId": "5054:4639",
+    "Name": "Gen2 / 外壳与内容规范",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 1520,
+    "Visible": true,
+    "Role": "说明 / 裁决 / 注释",
+    "Checks": [],
+    "Coverage": "采用说明，需约束相关功能"
+  },
+  {
+    "Page": "04 / Gen2 · 公共构件",
+    "NodeId": "5060:256",
+    "Name": "Gen2 / Oreo Header · 自适应宽度",
+    "Type": "COMPONENT",
+    "Width": 960,
+    "Height": 48,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "NAV-03",
+      "NAV-23"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "04 / Gen2 · 公共构件",
+    "NodeId": "5321:8932",
+    "Name": "阅读说明 / 04 · 第一稿公共构件",
+    "Type": "FRAME",
+    "Width": 1200,
+    "Height": 264,
+    "Visible": true,
+    "Role": "说明 / 裁决 / 注释",
+    "Checks": [],
+    "Coverage": "采用说明，需约束相关功能"
+  },
+  {
+    "Page": "04 / Gen2 · 公共构件",
+    "NodeId": "5384:367",
+    "Name": "统一 / NavigatorIsland",
+    "Type": "COMPONENT_SET",
+    "Width": 650,
+    "Height": 610,
+    "Visible": true,
+    "Role": "最终主稿 / 公共构件",
+    "Checks": [
+      "NAV-06",
+      "NAV-08",
+      "NAV-10",
+      "NAV-11"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "04 / Gen2 · 公共构件",
+    "NodeId": "5385:283",
+    "Name": "统一 / Railway",
+    "Type": "COMPONENT_SET",
+    "Width": 360,
+    "Height": 300,
+    "Visible": true,
+    "Role": "最终主稿 / 公共构件",
+    "Checks": [
+      "NAV-14"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "04 / Gen2 · 公共构件",
+    "NodeId": "5386:436",
+    "Name": "统一 / ProjectShell",
+    "Type": "COMPONENT_SET",
+    "Width": 4548,
+    "Height": 980,
+    "Visible": true,
+    "Role": "最终主稿 / 公共构件",
+    "Checks": [
+      "NAV-03",
+      "NAV-04",
+      "NAV-05",
+      "NAV-13"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "04 / Gen2 · 公共构件",
+    "NodeId": "5387:331",
+    "Name": "统一 / ProfessionalWindowChrome",
+    "Type": "COMPONENT_SET",
+    "Width": 700,
+    "Height": 340,
+    "Visible": true,
+    "Role": "最终主稿 / 公共构件",
+    "Checks": [
+      "S06"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "04 / Gen2 · 公共构件",
+    "NodeId": "5391:357",
+    "Name": "统一 / SurfaceFeedback",
+    "Type": "COMPONENT_SET",
+    "Width": 460,
+    "Height": 600,
+    "Visible": true,
+    "Role": "最终主稿 / 公共构件",
+    "Checks": [
+      "NAV-22"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "05 / Gen2 · 第二轮空间与角色",
+    "NodeId": "5095:50",
+    "Name": "Grok donor / idle",
+    "Type": "RECTANGLE",
+    "Width": 256,
+    "Height": 256,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [],
+    "Coverage": "组成元素，随父功能核对；无独立完成声明"
+  },
+  {
+    "Page": "05 / Gen2 · 第二轮空间与角色",
+    "NodeId": "5095:51",
+    "Name": "Grok donor / listening",
+    "Type": "RECTANGLE",
+    "Width": 256,
+    "Height": 256,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [],
+    "Coverage": "组成元素，随父功能核对；无独立完成声明"
+  },
+  {
+    "Page": "05 / Gen2 · 第二轮空间与角色",
+    "NodeId": "5095:52",
+    "Name": "Grok donor / thinking",
+    "Type": "RECTANGLE",
+    "Width": 256,
+    "Height": 256,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [],
+    "Coverage": "组成元素，随父功能核对；无独立完成声明"
+  },
+  {
+    "Page": "05 / Gen2 · 第二轮空间与角色",
+    "NodeId": "5095:53",
+    "Name": "Grok donor / searching",
+    "Type": "RECTANGLE",
+    "Width": 256,
+    "Height": 256,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [],
+    "Coverage": "组成元素，随父功能核对；无独立完成声明"
+  },
+  {
+    "Page": "05 / Gen2 · 第二轮空间与角色",
+    "NodeId": "5095:54",
+    "Name": "Grok donor / working",
+    "Type": "RECTANGLE",
+    "Width": 256,
+    "Height": 256,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [],
+    "Coverage": "组成元素，随父功能核对；无独立完成声明"
+  },
+  {
+    "Page": "05 / Gen2 · 第二轮空间与角色",
+    "NodeId": "5095:55",
+    "Name": "Grok donor / receiving",
+    "Type": "RECTANGLE",
+    "Width": 256,
+    "Height": 256,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [],
+    "Coverage": "组成元素，随父功能核对；无独立完成声明"
+  },
+  {
+    "Page": "05 / Gen2 · 第二轮空间与角色",
+    "NodeId": "5095:56",
+    "Name": "Grok donor / sending",
+    "Type": "RECTANGLE",
+    "Width": 256,
+    "Height": 256,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [],
+    "Coverage": "组成元素，随父功能核对；无独立完成声明"
+  },
+  {
+    "Page": "05 / Gen2 · 第二轮空间与角色",
+    "NodeId": "5095:57",
+    "Name": "Grok donor / notifying",
+    "Type": "RECTANGLE",
+    "Width": 256,
+    "Height": 256,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [],
+    "Coverage": "组成元素，随父功能核对；无独立完成声明"
+  },
+  {
+    "Page": "05 / Gen2 · 第二轮空间与角色",
+    "NodeId": "5095:58",
+    "Name": "Grok donor / happy",
+    "Type": "RECTANGLE",
+    "Width": 256,
+    "Height": 256,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [],
+    "Coverage": "组成元素，随父功能核对；无独立完成声明"
+  },
+  {
+    "Page": "05 / Gen2 · 第二轮空间与角色",
+    "NodeId": "5096:49",
+    "Name": "Gen2 第二轮 / 全局外壳",
+    "Type": "COMPONENT",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "NAV-03",
+      "NAV-04",
+      "NAV-05",
+      "NAV-06",
+      "NAV-14"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "05 / Gen2 · 第二轮空间与角色",
+    "NodeId": "5100:85",
+    "Name": "01 / 主画布 · 对象各有形体",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "N25"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "05 / Gen2 · 第二轮空间与角色",
+    "NodeId": "5101:189",
+    "Name": "02 / 现场轨道 · 悬停窥视",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "NAV-14",
+      "NAV-15"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "05 / Gen2 · 第二轮空间与角色",
+    "NodeId": "5101:322",
+    "Name": "03 / 现场轨道 · 拖拽接收",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "NAV-16"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "05 / Gen2 · 第二轮空间与角色",
+    "NodeId": "5101:456",
+    "Name": "04 / 颜色组 · 同体导航",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "NAV-11"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "05 / Gen2 · 第二轮空间与角色",
+    "NodeId": "5101:590",
+    "Name": "05 / 搜索 · 同体展开",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "NAV-07"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "05 / Gen2 · 第二轮空间与角色",
+    "NodeId": "5101:724",
+    "Name": "06 / 定位 · 屏边指路",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "NAV-09",
+      "NAV-12"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "05 / Gen2 · 第二轮空间与角色",
+    "NodeId": "5101:853",
+    "Name": "07 / 文本 · 大纲读法",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "N04"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "05 / Gen2 · 第二轮空间与角色",
+    "NodeId": "5101:1048",
+    "Name": "08 / 文本 · 导图读法",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "N04"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "05 / Gen2 · 第二轮空间与角色",
+    "NodeId": "5101:1243",
+    "Name": "09 / Glyth · 接收材料",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "N31"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "05 / Gen2 · 第二轮空间与角色",
+    "NodeId": "5101:1371",
+    "Name": "10 / Glyth · 持续工作",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "N30"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "05 / Gen2 · 第二轮空间与角色",
+    "NodeId": "5102:1151",
+    "Name": "11 / 装配 · 自由浮动",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "S01"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "05 / Gen2 · 第二轮空间与角色",
+    "NodeId": "5103:1275",
+    "Name": "Gen2 第二轮 / 停靠外壳",
+    "Type": "COMPONENT",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "S06",
+      "S08"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "05 / Gen2 · 第二轮空间与角色",
+    "NodeId": "5103:1331",
+    "Name": "12 / 装配 · 停靠共存",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "S06"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "05 / Gen2 · 第二轮空间与角色",
+    "NodeId": "5103:1526",
+    "Name": "13 / 文件 · 阅读展开",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "说明 / 裁决 / 注释",
+    "Checks": [
+      "N05",
+      "N40"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "05 / Gen2 · 第二轮空间与角色",
+    "NodeId": "5103:1662",
+    "Name": "14 / 上下文 · 关系现场",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "S15",
+      "S32"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "05 / Gen2 · 第二轮空间与角色",
+    "NodeId": "5103:1798",
+    "Name": "15 / 工作流 · 行动路径",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "N13"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "05 / Gen2 · 第二轮空间与角色",
+    "NodeId": "5103:1932",
+    "Name": "16 / Glyth · 状态与空间表达",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "N29"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "05 / Gen2 · 第二轮空间与角色",
+    "NodeId": "5106:1715",
+    "Name": "Gen2 第二轮 / 现场轨道",
+    "Type": "COMPONENT_SET",
+    "Width": 1200,
+    "Height": 410,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "NAV-14",
+      "NAV-16"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "05 / Gen2 · 第二轮空间与角色",
+    "NodeId": "5106:1716",
+    "Name": "Gen2 第二轮 / 同体导航",
+    "Type": "COMPONENT_SET",
+    "Width": 1880,
+    "Height": 300,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "NAV-06",
+      "NAV-07",
+      "NAV-09",
+      "NAV-10",
+      "NAV-11",
+      "NAV-12"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "05 / Gen2 · 第二轮空间与角色",
+    "NodeId": "5108:1715",
+    "Name": "00 / 第二轮 · 空间与角色导览",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 1760,
+    "Visible": true,
+    "Role": "说明 / 裁决 / 注释",
+    "Checks": [],
+    "Coverage": "采用说明，需约束相关功能"
+  },
+  {
+    "Page": "05 / Gen2 · 第二轮空间与角色",
+    "NodeId": "5110:1715",
+    "Name": "当前现场缩略 / 1",
+    "Type": "RECTANGLE",
+    "Width": 240,
+    "Height": 136,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [],
+    "Coverage": "组成元素，随父功能核对；无独立完成声明"
+  },
+  {
+    "Page": "05 / Gen2 · 第二轮空间与角色",
+    "NodeId": "5110:1716",
+    "Name": "当前现场缩略 / 14",
+    "Type": "RECTANGLE",
+    "Width": 240,
+    "Height": 136,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [],
+    "Coverage": "组成元素，随父功能核对；无独立完成声明"
+  },
+  {
+    "Page": "05 / Gen2 · 第二轮空间与角色",
+    "NodeId": "5110:1717",
+    "Name": "当前现场缩略 / 15",
+    "Type": "RECTANGLE",
+    "Width": 240,
+    "Height": 136,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [],
+    "Coverage": "组成元素，随父功能核对；无独立完成声明"
+  },
+  {
+    "Page": "05 / Gen2 · 第二轮空间与角色",
+    "NodeId": "5115:1417",
+    "Name": "17 / 装配 · 显式聚焦画布",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "S03",
+      "S04",
+      "S07"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "05 / Gen2 · 第二轮空间与角色",
+    "NodeId": "5121:1522",
+    "Name": "21 / 阅读 · 两组并行",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "说明 / 裁决 / 注释",
+    "Checks": [
+      "S11"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "05 / Gen2 · 第二轮空间与角色",
+    "NodeId": "5121:1679",
+    "Name": "24 / Glyth · 对话工作现场",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "N32",
+      "N33",
+      "N34",
+      "N39"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "05 / Gen2 · 第二轮空间与角色",
+    "NodeId": "5121:1817",
+    "Name": "35 / 集合 · 呼出与抽取",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "S05",
+      "S20"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "05 / Gen2 · 第二轮空间与角色",
+    "NodeId": "5122:1806",
+    "Name": "18 / 项目 · 最近现场",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "NAV-01"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "05 / Gen2 · 第二轮空间与角色",
+    "NodeId": "5122:1944",
+    "Name": "19 / 项目 · 创建与导入",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "NAV-01",
+      "NAV-02"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "05 / Gen2 · 第二轮空间与角色",
+    "NodeId": "5122:2068",
+    "Name": "20 / 目的地 · 去那里或拿来用",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "NAV-03",
+      "NAV-04",
+      "NAV-10",
+      "NAV-17",
+      "NAV-19"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "05 / Gen2 · 第二轮空间与角色",
+    "NodeId": "5122:2219",
+    "Name": "22 / 装配 · 从画布挑选参考",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "S03",
+      "S04",
+      "S07"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "05 / Gen2 · 第二轮空间与角色",
+    "NodeId": "5122:2365",
+    "Name": "23 / 能力 · 编辑与装备",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "N13"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "05 / Gen2 · 第二轮空间与角色",
+    "NodeId": "5122:2539",
+    "Name": "25 / 上下文 · 演进与回到现场",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "S15",
+      "S32"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "05 / Gen2 · 第二轮空间与角色",
+    "NodeId": "5122:2664",
+    "Name": "26 / 上下文 · 关系与来源",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "N16"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "05 / Gen2 · 第二轮空间与角色",
+    "NodeId": "5122:2803",
+    "Name": "27 / 工作流 · 分支与步骤",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "S23",
+      "S26",
+      "S32"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "05 / Gen2 · 第二轮空间与角色",
+    "NodeId": "5122:2949",
+    "Name": "28 / 结果 · 对照与采用",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "N12",
+      "S31"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "05 / Gen2 · 第二轮空间与角色",
+    "NodeId": "5122:3070",
+    "Name": "29 / 音频 · 阅读与摘取",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "说明 / 裁决 / 注释",
+    "Checks": [
+      "N07",
+      "S13"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "05 / Gen2 · 第二轮空间与角色",
+    "NodeId": "5122:3305",
+    "Name": "30 / 视频 · 帧与片段",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "N08",
+      "S13"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "05 / Gen2 · 第二轮空间与角色",
+    "NodeId": "5122:3442",
+    "Name": "31 / 网页 · 阅读与引用",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "说明 / 裁决 / 注释",
+    "Checks": [
+      "N09",
+      "S13"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "05 / Gen2 · 第二轮空间与角色",
+    "NodeId": "5122:3582",
+    "Name": "32 / HTML · 运行预览",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "S13"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "05 / Gen2 · 第二轮空间与角色",
+    "NodeId": "5122:3718",
+    "Name": "33 / 归档 · 找回与恢复",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "S31"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "05 / Gen2 · 第二轮空间与角色",
+    "NodeId": "5122:3876",
+    "Name": "34 / 恢复 · 部分失败",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "S31"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "05 / Gen2 · 第二轮空间与角色",
+    "NodeId": "5122:4001",
+    "Name": "36 / 工作流 · 手牌",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "S23",
+      "S24",
+      "S28"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "05 / Gen2 · 第二轮空间与角色",
+    "NodeId": "5321:3229",
+    "Name": "阅读说明 / 05 · 第二轮空间与角色",
+    "Type": "FRAME",
+    "Width": 1200,
+    "Height": 264,
+    "Visible": true,
+    "Role": "说明 / 裁决 / 注释",
+    "Checks": [],
+    "Coverage": "采用说明，需约束相关功能"
+  },
+  {
+    "Page": "05 / Gen2 · 第二轮空间与角色",
+    "NodeId": "5388:3652",
+    "Name": "统一主稿 / 项目启动",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "最终主稿 / 公共构件",
+    "Checks": [
+      "NAV-01",
+      "NAV-02"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "05 / Gen2 · 第二轮空间与角色",
+    "NodeId": "5388:27165",
+    "Name": "统一主稿 / 专业窗口",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "最终主稿 / 公共构件",
+    "Checks": [
+      "S06",
+      "S07",
+      "S08"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "05 / Gen2 · 第二轮空间与角色",
+    "NodeId": "5388:27411",
+    "Name": "统一主稿 / 阅读器",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "最终主稿 / 公共构件",
+    "Checks": [
+      "N40",
+      "S09",
+      "S10",
+      "S12",
+      "S14"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "05 / Gen2 · 第二轮空间与角色",
+    "NodeId": "5392:3427",
+    "Name": "施工说明 / 项目启动 / 统一采用",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 558,
+    "Visible": true,
+    "Role": "说明 / 裁决 / 注释",
+    "Checks": [],
+    "Coverage": "采用说明，需约束相关功能"
+  },
+  {
+    "Page": "05 / Gen2 · 第二轮空间与角色",
+    "NodeId": "5392:6085",
+    "Name": "施工说明 / 专业窗口 / 统一采用",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 558,
+    "Visible": true,
+    "Role": "说明 / 裁决 / 注释",
+    "Checks": [],
+    "Coverage": "采用说明，需约束相关功能"
+  },
+  {
+    "Page": "05 / Gen2 · 第二轮空间与角色",
+    "NodeId": "5392:6127",
+    "Name": "施工说明 / 阅读器 / 统一采用",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 558,
+    "Visible": true,
+    "Role": "说明 / 裁决 / 注释",
+    "Checks": [],
+    "Coverage": "采用说明，需约束相关功能"
+  },
+  {
+    "Page": "06 / Gen2 · 图标与光幕空间",
+    "NodeId": "5137:61",
+    "Name": "图标控制 / 主画布",
+    "Type": "COMPONENT_SET",
+    "Width": 44,
+    "Height": 124,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "NAV-05"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "06 / Gen2 · 图标与光幕空间",
+    "NodeId": "5137:81",
+    "Name": "图标控制 / 上下文",
+    "Type": "COMPONENT_SET",
+    "Width": 44,
+    "Height": 124,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "NAV-05"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "06 / Gen2 · 图标与光幕空间",
+    "NodeId": "5137:99",
+    "Name": "图标控制 / 工作流",
+    "Type": "COMPONENT_SET",
+    "Width": 44,
+    "Height": 124,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "NAV-05"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "06 / Gen2 · 图标与光幕空间",
+    "NodeId": "5137:113",
+    "Name": "图标控制 / 集合",
+    "Type": "COMPONENT_SET",
+    "Width": 44,
+    "Height": 124,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "NAV-14",
+      "NAV-23"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "06 / Gen2 · 图标与光幕空间",
+    "NodeId": "5137:127",
+    "Name": "图标控制 / 归档",
+    "Type": "COMPONENT_SET",
+    "Width": 44,
+    "Height": 124,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "NAV-01",
+      "NAV-23"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "06 / Gen2 · 图标与光幕空间",
+    "NodeId": "5137:139",
+    "Name": "图标控制 / 装配",
+    "Type": "COMPONENT_SET",
+    "Width": 44,
+    "Height": 124,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "NAV-03",
+      "NAV-23"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "06 / Gen2 · 图标与光幕空间",
+    "NodeId": "5137:153",
+    "Name": "图标控制 / 添加材料",
+    "Type": "COMPONENT_SET",
+    "Width": 44,
+    "Height": 124,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "NAV-18",
+      "NAV-20",
+      "NAV-23"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "06 / Gen2 · 图标与光幕空间",
+    "NodeId": "5137:167",
+    "Name": "图标控制 / 收回",
+    "Type": "COMPONENT_SET",
+    "Width": 44,
+    "Height": 124,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "NAV-06",
+      "NAV-13",
+      "NAV-14"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "06 / Gen2 · 图标与光幕空间",
+    "NodeId": "5137:169",
+    "Name": "01 · 主画布 / 图标外壳",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "NAV-03",
+      "NAV-04",
+      "NAV-05",
+      "NAV-06",
+      "NAV-14"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "06 / Gen2 · 图标与光幕空间",
+    "NodeId": "5139:182",
+    "Name": "05 · 上下文 / 光幕集合地景",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "S16"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "06 / Gen2 · 图标与光幕空间",
+    "NodeId": "5139:1571",
+    "Name": "02 · 同体导航 / 搜索与彩色标",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "NAV-06",
+      "NAV-07",
+      "NAV-10"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "06 / Gen2 · 图标与光幕空间",
+    "NodeId": "5139:2885",
+    "Name": "03 · 上下文 / 真实工作画布",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "S15"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "06 / Gen2 · 图标与光幕空间",
+    "NodeId": "5139:4194",
+    "Name": "04 · 上下文 / 光幕升起",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "S16"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "06 / Gen2 · 图标与光幕空间",
+    "NodeId": "5140:376",
+    "Name": "06 · 集合 / 选中抬升",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "S16"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "06 / Gen2 · 图标与光幕空间",
+    "NodeId": "5140:1765",
+    "Name": "07 · 工作流 / 真实工作画布",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "S23"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "06 / Gen2 · 图标与光幕空间",
+    "NodeId": "5140:3012",
+    "Name": "08 · 工作流 / 手牌升起",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "S23",
+      "S24",
+      "S25",
+      "S28"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "06 / Gen2 · 图标与光幕空间",
+    "NodeId": "5140:4300",
+    "Name": "09 · 工作流 / 材料封面手牌",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "S23"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "06 / Gen2 · 图标与光幕空间",
+    "NodeId": "5144:675",
+    "Name": "10 · 进入集合 / 独立上下文画布",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "N22",
+      "S15"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "06 / Gen2 · 图标与光幕空间",
+    "NodeId": "5321:8473",
+    "Name": "阅读说明 / 06 · 图标与光幕空间",
+    "Type": "FRAME",
+    "Width": 1200,
+    "Height": 264,
+    "Visible": true,
+    "Role": "说明 / 裁决 / 注释",
+    "Checks": [],
+    "Coverage": "采用说明，需约束相关功能"
+  },
+  {
+    "Page": "06 / Gen2 · 图标与光幕空间",
+    "NodeId": "5388:21602",
+    "Name": "统一主稿 / 上下文现场",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "最终主稿 / 公共构件",
+    "Checks": [
+      "S15"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "06 / Gen2 · 图标与光幕空间",
+    "NodeId": "5388:22998",
+    "Name": "统一主稿 / 工作流现场",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "最终主稿 / 公共构件",
+    "Checks": [
+      "N11",
+      "S23"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "06 / Gen2 · 图标与光幕空间",
+    "NodeId": "5388:24294",
+    "Name": "统一主稿 / 集合总览Atlas",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "最终主稿 / 公共构件",
+    "Checks": [
+      "S16",
+      "S17",
+      "S19"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "06 / Gen2 · 图标与光幕空间",
+    "NodeId": "5392:4840",
+    "Name": "施工说明 / 上下文现场 / 统一采用",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 558,
+    "Visible": true,
+    "Role": "说明 / 裁决 / 注释",
+    "Checks": [],
+    "Coverage": "采用说明，需约束相关功能"
+  },
+  {
+    "Page": "06 / Gen2 · 图标与光幕空间",
+    "NodeId": "5392:4882",
+    "Name": "施工说明 / 工作流现场 / 统一采用",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 558,
+    "Visible": true,
+    "Role": "说明 / 裁决 / 注释",
+    "Checks": [],
+    "Coverage": "采用说明，需约束相关功能"
+  },
+  {
+    "Page": "06 / Gen2 · 图标与光幕空间",
+    "NodeId": "5392:4924",
+    "Name": "施工说明 / 集合总览Atlas / 统一采用",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 558,
+    "Visible": true,
+    "Role": "说明 / 裁决 / 注释",
+    "Checks": [],
+    "Coverage": "采用说明，需约束相关功能"
+  },
+  {
+    "Page": "07 / Gen2 · 信息层级与细节",
+    "NodeId": "5152:49",
+    "Name": "02 · 中距离 / 内容与关系",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "N16",
+      "N26",
+      "N30"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "07 / Gen2 · 信息层级与细节",
+    "NodeId": "5152:272",
+    "Name": "01 · 远距离 / 形体与方向",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "N26",
+      "N30"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "07 / Gen2 · 信息层级与细节",
+    "NodeId": "5152:503",
+    "Name": "03 · 近距离 / 文字原位阅读",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "说明 / 裁决 / 注释",
+    "Checks": [
+      "N02",
+      "N26"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "07 / Gen2 · 信息层级与细节",
+    "NodeId": "5152:753",
+    "Name": "04 · 近距离 / 图像原位操作",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "N06",
+      "N26"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "07 / Gen2 · 信息层级与细节",
+    "NodeId": "5153:309",
+    "Name": "05 · 图标轨道 / 悬停辨认",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "NAV-15"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "07 / Gen2 · 信息层级与细节",
+    "NodeId": "5153:540",
+    "Name": "06 · 彩色标 / 对象对应",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "N14",
+      "NAV-11"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "07 / Gen2 · 信息层级与细节",
+    "NodeId": "5153:774",
+    "Name": "07 · 定位 / 屏边目标",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "NAV-09",
+      "NAV-12"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "07 / Gen2 · 信息层级与细节",
+    "NodeId": "5156:504",
+    "Name": "08 · 时间轨 / 静息索引",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "S21"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "07 / Gen2 · 信息层级与细节",
+    "NodeId": "5156:1871",
+    "Name": "09 · 时间轨 / 局部鱼眼",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "S21"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "07 / Gen2 · 信息层级与细节",
+    "NodeId": "5156:3249",
+    "Name": "10 · 时间轨 / 定位一组对象",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "S21"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "07 / Gen2 · 信息层级与细节",
+    "NodeId": "5161:687",
+    "Name": "11 · 光幕 / 材料表面与角标",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "S18"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "07 / Gen2 · 信息层级与细节",
+    "NodeId": "5161:2133",
+    "Name": "12 · 光幕 / 选中与邻域回落",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "S18"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "07 / Gen2 · 信息层级与细节",
+    "NodeId": "5163:843",
+    "Name": "Railway / 右侧提示 / RootGlyph",
+    "Type": "COMPONENT_SET",
+    "Width": 44,
+    "Height": 139,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "NAV-14",
+      "NAV-15"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "07 / Gen2 · 信息层级与细节",
+    "NodeId": "5163:863",
+    "Name": "Railway / 右侧提示 / ContextGlyph",
+    "Type": "COMPONENT_SET",
+    "Width": 44,
+    "Height": 139,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "NAV-14"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "07 / Gen2 · 信息层级与细节",
+    "NodeId": "5163:881",
+    "Name": "Railway / 右侧提示 / WorkflowGlyph",
+    "Type": "COMPONENT_SET",
+    "Width": 44,
+    "Height": 139,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "NAV-14"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "07 / Gen2 · 信息层级与细节",
+    "NodeId": "5163:895",
+    "Name": "Railway / 右侧提示 / CollectionGlyph",
+    "Type": "COMPONENT_SET",
+    "Width": 44,
+    "Height": 139,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "NAV-14"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "07 / Gen2 · 信息层级与细节",
+    "NodeId": "5163:909",
+    "Name": "Railway / 右侧提示 / ArchiveGlyph",
+    "Type": "COMPONENT_SET",
+    "Width": 44,
+    "Height": 139,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "NAV-14"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "07 / Gen2 · 信息层级与细节",
+    "NodeId": "5164:831",
+    "Name": "13 · 定位完成 / 同一候选对象",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "NAV-09",
+      "NAV-12"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "07 / Gen2 · 信息层级与细节",
+    "NodeId": "5170:896",
+    "Name": "14 · 工作流现场 / 接续",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "S27"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "07 / Gen2 · 信息层级与细节",
+    "NodeId": "5170:2235",
+    "Name": "15 · 工作流手牌 / 接续",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "S27"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "07 / Gen2 · 信息层级与细节",
+    "NodeId": "5321:10889",
+    "Name": "阅读说明 / 07 · 信息层级与细节",
+    "Type": "FRAME",
+    "Width": 1200,
+    "Height": 264,
+    "Visible": true,
+    "Role": "说明 / 裁决 / 注释",
+    "Checks": [],
+    "Coverage": "采用说明，需约束相关功能"
+  },
+  {
+    "Page": "07 / Gen2 · 信息层级与细节",
+    "NodeId": "5388:25701",
+    "Name": "统一主稿 / 局部时间轨",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "最终主稿 / 公共构件",
+    "Checks": [
+      "S21",
+      "S22"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "07 / Gen2 · 信息层级与细节",
+    "NodeId": "5392:6043",
+    "Name": "施工说明 / 局部时间轨 / 统一采用",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 558,
+    "Visible": true,
+    "Role": "说明 / 裁决 / 注释",
+    "Checks": [],
+    "Coverage": "采用说明，需约束相关功能"
+  },
+  {
+    "Page": "08 / Gen2 · 第二轮基础操作",
+    "NodeId": "5186:49",
+    "Name": "01 · 单选与对象工具",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "N27",
+      "NAV-17"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "08 / Gen2 · 第二轮基础操作",
+    "NodeId": "5186:312",
+    "Name": "02 · 框选与多选作用范围",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "N27",
+      "N39",
+      "NAV-17"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "08 / Gen2 · 第二轮基础操作",
+    "NodeId": "5187:179",
+    "Name": "03 · 拖动、对齐与取消",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "N27",
+      "N28",
+      "NAV-16",
+      "NAV-20"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "08 / Gen2 · 第二轮基础操作",
+    "NodeId": "5187:431",
+    "Name": "04 · 引用落点与原位保留",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "N15",
+      "NAV-20",
+      "NAV-21"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "08 / Gen2 · 第二轮基础操作",
+    "NodeId": "5187:683",
+    "Name": "05 · 对象菜单与键盘退出",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "NAV-10",
+      "NAV-17"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "08 / Gen2 · 第二轮基础操作",
+    "NodeId": "5188:374",
+    "Name": "06 · 重命名与输入校验",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "N39"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "08 / Gen2 · 第二轮基础操作",
+    "NodeId": "5188:635",
+    "Name": "07 · 原位编辑与焦点",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "N03",
+      "N28"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "08 / Gen2 · 第二轮基础操作",
+    "NodeId": "5188:889",
+    "Name": "08 · 移除与撤销恢复",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "N39"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "08 / Gen2 · 第二轮基础操作",
+    "NodeId": "5188:1132",
+    "Name": "09 · 装配窗口与引用",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "NAV-20",
+      "NAV-21"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "08 / Gen2 · 第二轮基础操作",
+    "NodeId": "5188:1395",
+    "Name": "10 · 部分导入失败",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "N10"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "08 / Gen2 · 第二轮基础操作",
+    "NodeId": "5188:1658",
+    "Name": "11 · 空画布与继续工作",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "N39"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "08 / Gen2 · 第二轮基础操作",
+    "NodeId": "5191:789",
+    "Name": "12 · 只读与可用范围",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "N03",
+      "N10"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "08 / Gen2 · 第二轮基础操作",
+    "NodeId": "5191:1036",
+    "Name": "13 · 任务失败与重试",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "N11"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "08 / Gen2 · 第二轮基础操作",
+    "NodeId": "5191:1292",
+    "Name": "14 · 地图与视口定位",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "NAV-13"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "08 / Gen2 · 第二轮基础操作",
+    "NodeId": "5321:9881",
+    "Name": "阅读说明 / 08 · 第二轮基础操作",
+    "Type": "FRAME",
+    "Width": 1200,
+    "Height": 264,
+    "Visible": true,
+    "Role": "说明 / 裁决 / 注释",
+    "Checks": [],
+    "Coverage": "采用说明，需约束相关功能"
+  },
+  {
+    "Page": "09 / Gen2 · 色彩层级与近场交互",
+    "NodeId": "5201:1051",
+    "Name": "01 · 白画布与烟灰导航",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "NAV-03",
+      "NAV-22"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "09 / Gen2 · 色彩层级与近场交互",
+    "NodeId": "5202:58",
+    "Name": "02 · 节点动作与紧凑输入",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "NAV-17"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "09 / Gen2 · 色彩层级与近场交互",
+    "NodeId": "5202:369",
+    "Name": "03 · 浅色装配 · 材料瀑布流",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "S02"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "09 / Gen2 · 色彩层级与近场交互",
+    "NodeId": "5202:678",
+    "Name": "04 · 深色装配 · 材料瀑布流",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "S02"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "09 / Gen2 · 色彩层级与近场交互",
+    "NodeId": "5203:93",
+    "Name": "05 · 集合收起 · 内容入袋",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "N17",
+      "N18",
+      "N20",
+      "N26"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "09 / Gen2 · 色彩层级与近场交互",
+    "NodeId": "5203:13424",
+    "Name": "06 · 集合展开 · 六份混合材料",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "N18"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "09 / Gen2 · 色彩层级与近场交互",
+    "NodeId": "5204:107",
+    "Name": "08 · 集合展开 · 十二份材料自动排布",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "N18"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "09 / Gen2 · 色彩层级与近场交互",
+    "NodeId": "5204:13457",
+    "Name": "07 · 集合身份 · 图标颜色与外形",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "N20",
+      "NAV-11"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "09 / Gen2 · 色彩层级与近场交互",
+    "NodeId": "5204:13842",
+    "Name": "09 · 节点执行 · 局部反馈",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "N11",
+      "N12",
+      "N27"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "09 / Gen2 · 色彩层级与近场交互",
+    "NodeId": "5204:14182",
+    "Name": "10 · 导航岛 · 搜索与定位连续态",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "NAV-12"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "09 / Gen2 · 色彩层级与近场交互",
+    "NodeId": "5208:247",
+    "Name": "共享控制层 · 烟灰玻璃与珍珠薄面",
+    "Type": "COMPONENT",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "NAV-03",
+      "NAV-22"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "09 / Gen2 · 色彩层级与近场交互",
+    "NodeId": "5226:1128",
+    "Name": "11 · 贴角动作弧 / 更多操作",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "NAV-17"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "09 / Gen2 · 色彩层级与近场交互",
+    "NodeId": "5229:1246",
+    "Name": "12 · 材料预览 / 保留画布方位",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "N06",
+      "N08",
+      "N40"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "09 / Gen2 · 色彩层级与近场交互",
+    "NodeId": "5229:1489",
+    "Name": "13 · 引用选择 / 缩略预览与就近操作",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "N15",
+      "NAV-18"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "09 / Gen2 · 色彩层级与近场交互",
+    "NodeId": "5229:1753",
+    "Name": "14 · 移除一份引用 / 保留输入",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "N15",
+      "NAV-18"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "09 / Gen2 · 色彩层级与近场交互",
+    "NodeId": "5321:12447",
+    "Name": "阅读说明 / 09 · 色彩层级与近场交互",
+    "Type": "FRAME",
+    "Width": 1200,
+    "Height": 264,
+    "Visible": true,
+    "Role": "说明 / 裁决 / 注释",
+    "Checks": [],
+    "Coverage": "采用说明，需约束相关功能"
+  },
+  {
+    "Page": "09 / Gen2 · 色彩层级与近场交互",
+    "NodeId": "5388:27696",
+    "Name": "统一主稿 / 全局导航与画外定位",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "最终主稿 / 公共构件",
+    "Checks": [
+      "NAV-03",
+      "NAV-04",
+      "NAV-10",
+      "NAV-13",
+      "NAV-23"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "09 / Gen2 · 色彩层级与近场交互",
+    "NodeId": "5392:7799",
+    "Name": "施工说明 / 全局导航与画外定位 / 统一采用",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 558,
+    "Visible": true,
+    "Role": "说明 / 裁决 / 注释",
+    "Checks": [],
+    "Coverage": "采用说明，需约束相关功能"
+  },
+  {
+    "Page": "10 / Gen2 · 通透玻璃与铝材对照",
+    "NodeId": "5235:50",
+    "Name": "A · 通透液态玻璃",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "NAV-03"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "10 / Gen2 · 通透玻璃与铝材对照",
+    "NodeId": "5237:102",
+    "Name": "B · CNC 阳极氧化铝",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "NAV-03",
+      "NAV-22"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "10 / Gen2 · 通透玻璃与铝材对照",
+    "NodeId": "5321:12535",
+    "Name": "阅读说明 / 10 · 通透玻璃与铝材对照",
+    "Type": "FRAME",
+    "Width": 1200,
+    "Height": 264,
+    "Visible": true,
+    "Role": "说明 / 裁决 / 注释",
+    "Checks": [],
+    "Coverage": "采用说明，需约束相关功能"
+  },
+  {
+    "Page": "10 / Gen2 · 通透玻璃与铝材对照",
+    "NodeId": "5388:96",
+    "Name": "统一主稿 / 主画布",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "最终主稿 / 公共构件",
+    "Checks": [
+      "N01",
+      "N02",
+      "N05",
+      "N06",
+      "N07",
+      "N14",
+      "N17",
+      "N29",
+      "N41",
+      "NAV-03"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "10 / Gen2 · 通透玻璃与铝材对照",
+    "NodeId": "5392:3695",
+    "Name": "施工说明 / 主画布 / 统一采用",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 558,
+    "Visible": true,
+    "Role": "说明 / 裁决 / 注释",
+    "Checks": [],
+    "Coverage": "采用说明，需约束相关功能"
+  },
+  {
+    "Page": "11 / Gen2 · Glyth 续工与分支对话",
+    "NodeId": "5243:50",
+    "Name": "01 · Glyth 原位续工",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "N32"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "11 / Gen2 · Glyth 续工与分支对话",
+    "NodeId": "5246:59",
+    "Name": "02 · 续工在 Composer 内展开",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "N32",
+      "NAV-19"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "11 / Gen2 · Glyth 续工与分支对话",
+    "NodeId": "5249:104",
+    "Name": "03 · 继续当前，不生出第二只",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "N32"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "11 / Gen2 · Glyth 续工与分支对话",
+    "NodeId": "5249:413",
+    "Name": "03 · 继续当前，不生出第二只 / 视觉状态样本 · 未连接真实服务",
+    "Type": "TEXT",
+    "Width": 1440,
+    "Height": 27,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [],
+    "Coverage": "组成元素，随父功能核对；无独立完成声明"
+  },
+  {
+    "Page": "11 / Gen2 · Glyth 续工与分支对话",
+    "NodeId": "5249:414",
+    "Name": "仍在这段对话里继续工作。 事实由 T6/T7 提供；交互由 T3，定位由 T1/T2，视觉由 T5 消费。",
+    "Type": "TEXT",
+    "Width": 1350,
+    "Height": 36,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [],
+    "Coverage": "组成元素，随父功能核对；无独立完成声明"
+  },
+  {
+    "Page": "11 / Gen2 · Glyth 续工与分支对话",
+    "NodeId": "5249:415",
+    "Name": "04 · 完整历史分支，可用能力样本",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "N33"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "11 / Gen2 · Glyth 续工与分支对话",
+    "NodeId": "5249:724",
+    "Name": "04 · 完整历史分支，可用能力样本 / 原生分支能力可用时的视觉样本",
+    "Type": "TEXT",
+    "Width": 1440,
+    "Height": 27,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [],
+    "Coverage": "组成元素，随父功能核对；无独立完成声明"
+  },
+  {
+    "Page": "11 / Gen2 · Glyth 续工与分支对话",
+    "NodeId": "5249:725",
+    "Name": "新建对话，继承 Agent 确认可分支的历史。 事实由 T6/T7 提供；交互由 T3，定位由 T1/T2，视觉由 T5 消费。",
+    "Type": "TEXT",
+    "Width": 1350,
+    "Height": 36,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [],
+    "Coverage": "组成元素，随父功能核对；无独立完成声明"
+  },
+  {
+    "Page": "11 / Gen2 · Glyth 续工与分支对话",
+    "NodeId": "5249:726",
+    "Name": "05 · 不支持原生分支，显式改选",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "N33"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "11 / Gen2 · Glyth 续工与分支对话",
+    "NodeId": "5249:1042",
+    "Name": "05 · 不支持原生分支，显式改选 / 视觉状态样本 · 未连接真实服务",
+    "Type": "TEXT",
+    "Width": 1440,
+    "Height": 27,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [],
+    "Coverage": "组成元素，随父功能核对；无独立完成声明"
+  },
+  {
+    "Page": "11 / Gen2 · Glyth 续工与分支对话",
+    "NodeId": "5249:1043",
+    "Name": "当前 Agent 尚不支持原生完整分支。 事实由 T6/T7 提供；交互由 T3，定位由 T1/T2，视觉由 T5 消费。",
+    "Type": "TEXT",
+    "Width": 1350,
+    "Height": 36,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [],
+    "Coverage": "组成元素，随父功能核对；无独立完成声明"
+  },
+  {
+    "Page": "11 / Gen2 · Glyth 续工与分支对话",
+    "NodeId": "5249:1044",
+    "Name": "06 · 空白新建，没有隐含继承",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "N33"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "11 / Gen2 · Glyth 续工与分支对话",
+    "NodeId": "5249:1353",
+    "Name": "06 · 空白新建，没有隐含继承 / 视觉状态样本 · 未连接真实服务",
+    "Type": "TEXT",
+    "Width": 1440,
+    "Height": 27,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [],
+    "Coverage": "组成元素，随父功能核对；无独立完成声明"
+  },
+  {
+    "Page": "11 / Gen2 · Glyth 续工与分支对话",
+    "NodeId": "5249:1354",
+    "Name": "新建空对话，不携带当前历史和引用。 事实由 T6/T7 提供；交互由 T3，定位由 T1/T2，视觉由 T5 消费。",
+    "Type": "TEXT",
+    "Width": 1350,
+    "Height": 36,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [],
+    "Coverage": "组成元素，随父功能核对；无独立完成声明"
+  },
+  {
+    "Page": "11 / Gen2 · Glyth 续工与分支对话",
+    "NodeId": "5249:1355",
+    "Name": "07 · 精选继承与隔离目录分开",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "N33"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "11 / Gen2 · Glyth 续工与分支对话",
+    "NodeId": "5249:1663",
+    "Name": "07 · 精选继承与隔离目录分开 / 隔离能力可用时的视觉样本",
+    "Type": "TEXT",
+    "Width": 1440,
+    "Height": 27,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [],
+    "Coverage": "组成元素，随父功能核对；无独立完成声明"
+  },
+  {
+    "Page": "11 / Gen2 · Glyth 续工与分支对话",
+    "NodeId": "5249:1664",
+    "Name": "只带确认内容；目录方式独立选择。 事实由 T6/T7 提供；交互由 T3，定位由 T1/T2，视觉由 T5 消费。",
+    "Type": "TEXT",
+    "Width": 1350,
+    "Height": 36,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [],
+    "Coverage": "组成元素，随父功能核对；无独立完成声明"
+  },
+  {
+    "Page": "11 / Gen2 · Glyth 续工与分支对话",
+    "NodeId": "5249:1665",
+    "Name": "08 · 检查来源与确认内容",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "N34"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "11 / Gen2 · Glyth 续工与分支对话",
+    "NodeId": "5249:1973",
+    "Name": "08 · 检查来源与确认内容 / 视觉状态样本 · 未连接真实服务",
+    "Type": "TEXT",
+    "Width": 1440,
+    "Height": 27,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [],
+    "Coverage": "组成元素，随父功能核对；无独立完成声明"
+  },
+  {
+    "Page": "11 / Gen2 · Glyth 续工与分支对话",
+    "NodeId": "5249:1974",
+    "Name": "事实由 T6/T7 提供；交互由 T3，定位由 T1/T2，视觉由 T5 消费。",
+    "Type": "TEXT",
+    "Width": 1350,
+    "Height": 36,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [],
+    "Coverage": "组成元素，随父功能核对；无独立完成声明"
+  },
+  {
+    "Page": "11 / Gen2 · Glyth 续工与分支对话",
+    "NodeId": "5249:1975",
+    "Name": "09 · 已提交快照，草稿另存",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "N34"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "11 / Gen2 · Glyth 续工与分支对话",
+    "NodeId": "5249:2284",
+    "Name": "09 · 已提交快照，草稿另存 / 视觉状态样本 · 未连接真实服务",
+    "Type": "TEXT",
+    "Width": 1440,
+    "Height": 27,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [],
+    "Coverage": "组成元素，随父功能核对；无独立完成声明"
+  },
+  {
+    "Page": "11 / Gen2 · Glyth 续工与分支对话",
+    "NodeId": "5249:2285",
+    "Name": "事实由 T6/T7 提供；交互由 T3，定位由 T1/T2，视觉由 T5 消费。",
+    "Type": "TEXT",
+    "Width": 1350,
+    "Height": 36,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [],
+    "Coverage": "组成元素，随父功能核对；无独立完成声明"
+  },
+  {
+    "Page": "11 / Gen2 · Glyth 续工与分支对话",
+    "NodeId": "5250:319",
+    "Name": "10 · 正在创建，只有伴身种子",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "N35"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "11 / Gen2 · Glyth 续工与分支对话",
+    "NodeId": "5250:581",
+    "Name": "10 · 正在创建，只有伴身种子 / 视觉状态样本 · 未连接真实服务",
+    "Type": "TEXT",
+    "Width": 1440,
+    "Height": 27,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [],
+    "Coverage": "组成元素，随父功能核对；无独立完成声明"
+  },
+  {
+    "Page": "11 / Gen2 · Glyth 续工与分支对话",
+    "NodeId": "5250:582",
+    "Name": "已提交确认内容，等待 Agent 回执。 事实由 T6/T7 提供；交互由 T3，定位由 T1/T2，视觉由 T5 消费。",
+    "Type": "TEXT",
+    "Width": 1350,
+    "Height": 36,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [],
+    "Coverage": "组成元素，随父功能核对；无独立完成声明"
+  },
+  {
+    "Page": "11 / Gen2 · Glyth 续工与分支对话",
+    "NodeId": "5250:593",
+    "Name": "11 · 外部已创建，正在关联项目",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "N35"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "11 / Gen2 · Glyth 续工与分支对话",
+    "NodeId": "5250:848",
+    "Name": "11 · 外部已创建，正在关联项目 / 视觉状态样本 · 未连接真实服务",
+    "Type": "TEXT",
+    "Width": 1440,
+    "Height": 27,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [],
+    "Coverage": "组成元素，随父功能核对；无独立完成声明"
+  },
+  {
+    "Page": "11 / Gen2 · Glyth 续工与分支对话",
+    "NodeId": "5250:849",
+    "Name": "仍在处理同一次续工，不再新建对话。 事实由 T6/T7 提供；交互由 T3，定位由 T1/T2，视觉由 T5 消费。",
+    "Type": "TEXT",
+    "Width": 1350,
+    "Height": 36,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [],
+    "Coverage": "组成元素，随父功能核对；无独立完成声明"
+  },
+  {
+    "Page": "11 / Gen2 · Glyth 续工与分支对话",
+    "NodeId": "5250:860",
+    "Name": "12 · 投影已存在，历史仍待同步",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "N35"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "11 / Gen2 · Glyth 续工与分支对话",
+    "NodeId": "5250:1118",
+    "Name": "12 · 身份已成立，历史仍待同步 / 视觉状态样本 · 未连接真实服务",
+    "Type": "TEXT",
+    "Width": 1440,
+    "Height": 27,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [],
+    "Coverage": "组成元素，随父功能核对；无独立完成声明"
+  },
+  {
+    "Page": "11 / Gen2 · Glyth 续工与分支对话",
+    "NodeId": "5250:1119",
+    "Name": "可以打开会话详情；暂不展示未取得的历史。 事实由 T6/T7 提供；交互由 T3，定位由 T1/T2，视觉由 T5 消费。",
+    "Type": "TEXT",
+    "Width": 1350,
+    "Height": 36,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [],
+    "Coverage": "组成元素，随父功能核对；无独立完成声明"
+  },
+  {
+    "Page": "11 / Gen2 · Glyth 续工与分支对话",
+    "NodeId": "5250:1130",
+    "Name": "13 · 正在放入现场，暂不可定位",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "N35"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "11 / Gen2 · Glyth 续工与分支对话",
+    "NodeId": "5250:1385",
+    "Name": "13 · 正在放入现场，暂不可定位 / 视觉状态样本 · 未连接真实服务",
+    "Type": "TEXT",
+    "Width": 1440,
+    "Height": 27,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [],
+    "Coverage": "组成元素，随父功能核对；无独立完成声明"
+  },
+  {
+    "Page": "11 / Gen2 · Glyth 续工与分支对话",
+    "NodeId": "5250:1386",
+    "Name": "对话已经存在；画布位置尚未就绪。 事实由 T6/T7 提供；交互由 T3，定位由 T1/T2，视觉由 T5 消费。",
+    "Type": "TEXT",
+    "Width": 1350,
+    "Height": 36,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [],
+    "Coverage": "组成元素，随父功能核对；无独立完成声明"
+  },
+  {
+    "Page": "11 / Gen2 · Glyth 续工与分支对话",
+    "NodeId": "5250:1397",
+    "Name": "14 · 原生分支完成，轻量来源",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "N36"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "11 / Gen2 · Glyth 续工与分支对话",
+    "NodeId": "5250:1658",
+    "Name": "14 · 原生分支完成，轻量来源 / 视觉状态样本 · 未连接真实服务",
+    "Type": "TEXT",
+    "Width": 1440,
+    "Height": 27,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [],
+    "Coverage": "组成元素，随父功能核对；无独立完成声明"
+  },
+  {
+    "Page": "11 / Gen2 · Glyth 续工与分支对话",
+    "NodeId": "5250:1659",
+    "Name": "继承 Agent 确认的已完成历史。 事实由 T6/T7 提供；交互由 T3，定位由 T1/T2，视觉由 T5 消费。",
+    "Type": "TEXT",
+    "Width": 1350,
+    "Height": 36,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [],
+    "Coverage": "组成元素，随父功能核对；无独立完成声明"
+  },
+  {
+    "Page": "11 / Gen2 · Glyth 续工与分支对话",
+    "NodeId": "5250:1670",
+    "Name": "15 · 精选上下文完成，独立来源",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "N36"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "11 / Gen2 · Glyth 续工与分支对话",
+    "NodeId": "5250:1931",
+    "Name": "15 · 精选上下文完成，独立来源 / 视觉状态样本 · 未连接真实服务",
+    "Type": "TEXT",
+    "Width": 1440,
+    "Height": 27,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [],
+    "Coverage": "组成元素，随父功能核对；无独立完成声明"
+  },
+  {
+    "Page": "11 / Gen2 · Glyth 续工与分支对话",
+    "NodeId": "5250:1932",
+    "Name": "仅携带确认过的摘要、上下文与引用。 事实由 T6/T7 提供；交互由 T3，定位由 T1/T2，视觉由 T5 消费。",
+    "Type": "TEXT",
+    "Width": 1350,
+    "Height": 36,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [],
+    "Coverage": "组成元素，随父功能核对；无独立完成声明"
+  },
+  {
+    "Page": "11 / Gen2 · Glyth 续工与分支对话",
+    "NodeId": "5251:407",
+    "Name": "16 · 确认未创建，保留草稿",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "N37"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "11 / Gen2 · Glyth 续工与分支对话",
+    "NodeId": "5251:662",
+    "Name": "16 · 确认未创建，保留草稿 / 视觉状态样本 · 未连接真实服务",
+    "Type": "TEXT",
+    "Width": 1440,
+    "Height": 27,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [],
+    "Coverage": "组成元素，随父功能核对；无独立完成声明"
+  },
+  {
+    "Page": "11 / Gen2 · Glyth 续工与分支对话",
+    "NodeId": "5251:663",
+    "Name": "已确认没有新对话；草稿与来源仍然保留。 事实由 T6/T7 提供；交互由 T3，定位由 T1/T2，视觉由 T5 消费。",
+    "Type": "TEXT",
+    "Width": 1350,
+    "Height": 36,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [],
+    "Coverage": "组成元素，随父功能核对；无独立完成声明"
+  },
+  {
+    "Page": "11 / Gen2 · Glyth 续工与分支对话",
+    "NodeId": "5251:674",
+    "Name": "17 · 外部已创建，项目关联失败",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "N37"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "11 / Gen2 · Glyth 续工与分支对话",
+    "NodeId": "5251:929",
+    "Name": "17 · 外部已创建，项目关联失败 / 视觉状态样本 · 未连接真实服务",
+    "Type": "TEXT",
+    "Width": 1440,
+    "Height": 27,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [],
+    "Coverage": "组成元素，随父功能核对；无独立完成声明"
+  },
+  {
+    "Page": "11 / Gen2 · Glyth 续工与分支对话",
+    "NodeId": "5251:930",
+    "Name": "恢复同一段对话，不再创建第二段。 事实由 T6/T7 提供；交互由 T3，定位由 T1/T2，视觉由 T5 消费。",
+    "Type": "TEXT",
+    "Width": 1350,
+    "Height": 36,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [],
+    "Coverage": "组成元素，随父功能核对；无独立完成声明"
+  },
+  {
+    "Page": "11 / Gen2 · Glyth 续工与分支对话",
+    "NodeId": "5251:941",
+    "Name": "18 · 已有对话，仅画布位置失败",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "N37"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "11 / Gen2 · Glyth 续工与分支对话",
+    "NodeId": "5251:1203",
+    "Name": "18 · 已有对话，仅画布位置失败 / 视觉状态样本 · 未连接真实服务",
+    "Type": "TEXT",
+    "Width": 1440,
+    "Height": 27,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [],
+    "Coverage": "组成元素，随父功能核对；无独立完成声明"
+  },
+  {
+    "Page": "11 / Gen2 · Glyth 续工与分支对话",
+    "NodeId": "5251:1204",
+    "Name": "修复画布投影即可；不会删除对话。 事实由 T6/T7 提供；交互由 T3，定位由 T1/T2，视觉由 T5 消费。",
+    "Type": "TEXT",
+    "Width": 1350,
+    "Height": 36,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [],
+    "Coverage": "组成元素，随父功能核对；无独立完成声明"
+  },
+  {
+    "Page": "11 / Gen2 · Glyth 续工与分支对话",
+    "NodeId": "5252:453",
+    "Name": "22 · 取消结果未知",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "N37"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "11 / Gen2 · Glyth 续工与分支对话",
+    "NodeId": "5252:708",
+    "Name": "22 · 取消结果未知 / 视觉状态样本 · 未连接真实服务",
+    "Type": "TEXT",
+    "Width": 1440,
+    "Height": 27,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [],
+    "Coverage": "组成元素，随父功能核对；无独立完成声明"
+  },
+  {
+    "Page": "11 / Gen2 · Glyth 续工与分支对话",
+    "NodeId": "5252:709",
+    "Name": "不能确认已取消，也不会自动重新创建。 事实由 T6/T7 提供；交互由 T3，定位由 T1/T2，视觉由 T5 消费。",
+    "Type": "TEXT",
+    "Width": 1350,
+    "Height": 36,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [],
+    "Coverage": "组成元素，随父功能核对；无独立完成声明"
+  },
+  {
+    "Page": "11 / Gen2 · Glyth 续工与分支对话",
+    "NodeId": "5252:720",
+    "Name": "23 · 重启恢复，不重播出生",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "N37"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "11 / Gen2 · Glyth 续工与分支对话",
+    "NodeId": "5252:981",
+    "Name": "23 · 重启恢复，不重播出生 / 视觉状态样本 · 未连接真实服务",
+    "Type": "TEXT",
+    "Width": 1440,
+    "Height": 27,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [],
+    "Coverage": "组成元素，随父功能核对；无独立完成声明"
+  },
+  {
+    "Page": "11 / Gen2 · Glyth 续工与分支对话",
+    "NodeId": "5252:982",
+    "Name": "沿用同一对话与提交记录；不重播出生动画。 事实由 T6/T7 提供；交互由 T3，定位由 T1/T2，视觉由 T5 消费。",
+    "Type": "TEXT",
+    "Width": 1350,
+    "Height": 36,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [],
+    "Coverage": "组成元素，随父功能核对；无独立完成声明"
+  },
+  {
+    "Page": "11 / Gen2 · Glyth 续工与分支对话",
+    "NodeId": "5252:993",
+    "Name": "24 · 能力变化，重新检查",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "N37"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "11 / Gen2 · Glyth 续工与分支对话",
+    "NodeId": "5252:1248",
+    "Name": "24 · 能力变化，重新检查 / 视觉状态样本 · 未连接真实服务",
+    "Type": "TEXT",
+    "Width": 1440,
+    "Height": 27,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [],
+    "Coverage": "组成元素，随父功能核对；无独立完成声明"
+  },
+  {
+    "Page": "11 / Gen2 · Glyth 续工与分支对话",
+    "NodeId": "5252:1249",
+    "Name": "原先选择暂不能执行，请检查可用方式。 事实由 T6/T7 提供；交互由 T3，定位由 T1/T2，视觉由 T5 消费。",
+    "Type": "TEXT",
+    "Width": 1350,
+    "Height": 36,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [],
+    "Coverage": "组成元素，随父功能核对；无独立完成声明"
+  },
+  {
+    "Page": "11 / Gen2 · Glyth 续工与分支对话",
+    "NodeId": "5252:1260",
+    "Name": "25 · 原对话不可继续",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "N37"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "11 / Gen2 · Glyth 续工与分支对话",
+    "NodeId": "5252:1515",
+    "Name": "25 · 原对话不可继续 / 视觉状态样本 · 未连接真实服务",
+    "Type": "TEXT",
+    "Width": 1440,
+    "Height": 27,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [],
+    "Coverage": "组成元素，随父功能核对；无独立完成声明"
+  },
+  {
+    "Page": "11 / Gen2 · Glyth 续工与分支对话",
+    "NodeId": "5252:1516",
+    "Name": "可检查精选上下文后新建；不会静默替换原对话。 事实由 T6/T7 提供；交互由 T3，定位由 T1/T2，视觉由 T5 消费。",
+    "Type": "TEXT",
+    "Width": 1350,
+    "Height": 36,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [],
+    "Coverage": "组成元素，随父功能核对；无独立完成声明"
+  },
+  {
+    "Page": "11 / Gen2 · Glyth 续工与分支对话",
+    "NodeId": "5253:509",
+    "Name": "19 · 结果未知，查验原操作",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "N37"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "11 / Gen2 · Glyth 续工与分支对话",
+    "NodeId": "5253:764",
+    "Name": "19 · 结果未知，查验原操作 / 视觉状态样本 · 未连接真实服务",
+    "Type": "TEXT",
+    "Width": 1440,
+    "Height": 27,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [],
+    "Coverage": "组成元素，随父功能核对；无独立完成声明"
+  },
+  {
+    "Page": "11 / Gen2 · Glyth 续工与分支对话",
+    "NodeId": "5253:765",
+    "Name": "外部可能已经创建；先核对同一次操作。 事实由 T6/T7 提供；交互由 T3，定位由 T1/T2，视觉由 T5 消费。",
+    "Type": "TEXT",
+    "Width": 1350,
+    "Height": 36,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [],
+    "Coverage": "组成元素，随父功能核对；无独立完成声明"
+  },
+  {
+    "Page": "11 / Gen2 · Glyth 续工与分支对话",
+    "NodeId": "5253:776",
+    "Name": "20 · 请求取消，不提前收回",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "N37"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "11 / Gen2 · Glyth 续工与分支对话",
+    "NodeId": "5253:1031",
+    "Name": "20 · 请求取消，不提前收回 / 视觉状态样本 · 未连接真实服务",
+    "Type": "TEXT",
+    "Width": 1440,
+    "Height": 27,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [],
+    "Coverage": "组成元素，随父功能核对；无独立完成声明"
+  },
+  {
+    "Page": "11 / Gen2 · Glyth 续工与分支对话",
+    "NodeId": "5253:1032",
+    "Name": "尚未收到确认，关闭面板也会保留进度。 事实由 T6/T7 提供；交互由 T3，定位由 T1/T2，视觉由 T5 消费。",
+    "Type": "TEXT",
+    "Width": 1350,
+    "Height": 36,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [],
+    "Coverage": "组成元素，随父功能核对；无独立完成声明"
+  },
+  {
+    "Page": "11 / Gen2 · Glyth 续工与分支对话",
+    "NodeId": "5253:1043",
+    "Name": "21 · 取消已确认",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "N37"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "11 / Gen2 · Glyth 续工与分支对话",
+    "NodeId": "5253:1298",
+    "Name": "21 · 取消已确认 / 视觉状态样本 · 未连接真实服务",
+    "Type": "TEXT",
+    "Width": 1440,
+    "Height": 27,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [],
+    "Coverage": "组成元素，随父功能核对；无独立完成声明"
+  },
+  {
+    "Page": "11 / Gen2 · Glyth 续工与分支对话",
+    "NodeId": "5253:1299",
+    "Name": "保留原 Glyth；后续处理按实际回执展示。 事实由 T6/T7 提供；交互由 T3，定位由 T1/T2，视觉由 T5 消费。",
+    "Type": "TEXT",
+    "Width": 1350,
+    "Height": 36,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [],
+    "Coverage": "组成元素，随父功能核对；无独立完成声明"
+  },
+  {
+    "Page": "11 / Gen2 · Glyth 续工与分支对话",
+    "NodeId": "5262:551",
+    "Name": "26 · 焦点 · 薄光边，不常驻发光",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "N27",
+      "N38",
+      "NAV-21",
+      "NAV-22"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "11 / Gen2 · Glyth 续工与分支对话",
+    "NodeId": "5262:795",
+    "Name": "26 · 焦点 · 薄光边，不常驻发光 / 光学状态样本",
+    "Type": "TEXT",
+    "Width": 394,
+    "Height": 22,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [],
+    "Coverage": "组成元素，随父功能核对；无独立完成声明"
+  },
+  {
+    "Page": "11 / Gen2 · Glyth 续工与分支对话",
+    "NodeId": "5262:796",
+    "Name": "焦点保留清晰轮廓。虹彩仅补材质，不能替代键盘焦点与状态文字。",
+    "Type": "TEXT",
+    "Width": 360,
+    "Height": 14,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [],
+    "Coverage": "组成元素，随父功能核对；无独立完成声明"
+  },
+  {
+    "Page": "11 / Gen2 · Glyth 续工与分支对话",
+    "NodeId": "5262:807",
+    "Name": "27 · 处理中 · 色散沿种子边缘流动",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "N38",
+      "NAV-21",
+      "NAV-22"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "11 / Gen2 · Glyth 续工与分支对话",
+    "NodeId": "5262:1068",
+    "Name": "27 · 处理中 · 色散沿种子边缘流动 / 光学状态样本",
+    "Type": "TEXT",
+    "Width": 412,
+    "Height": 22,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [],
+    "Coverage": "组成元素，随父功能核对；无独立完成声明"
+  },
+  {
+    "Page": "11 / Gen2 · Glyth 续工与分支对话",
+    "NodeId": "5262:1069",
+    "Name": "低幅缓慢环流，不表达百分比。未知／失败不播放成功辉光。",
+    "Type": "TEXT",
+    "Width": 324,
+    "Height": 14,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [],
+    "Coverage": "组成元素，随父功能核对；无独立完成声明"
+  },
+  {
+    "Page": "11 / Gen2 · Glyth 续工与分支对话",
+    "NodeId": "5262:1078",
+    "Name": "28 · 创建完成 · 辉光扩散后收回",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "N36",
+      "N38",
+      "NAV-21",
+      "NAV-22"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "11 / Gen2 · Glyth 续工与分支对话",
+    "NodeId": "5262:1334",
+    "Name": "28 · 创建完成 · 辉光扩散后收回 / 光学状态样本",
+    "Type": "TEXT",
+    "Width": 394,
+    "Height": 22,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [],
+    "Coverage": "组成元素，随父功能核对；无独立完成声明"
+  },
+  {
+    "Page": "11 / Gen2 · Glyth 续工与分支对话",
+    "NodeId": "5262:1335",
+    "Name": "仅确认创建成功后触发一次；恢复页面不重播。动效手感见 HTML。",
+    "Type": "TEXT",
+    "Width": 359,
+    "Height": 14,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [],
+    "Coverage": "组成元素，随父功能核对；无独立完成声明"
+  },
+  {
+    "Page": "11 / Gen2 · Glyth 续工与分支对话",
+    "NodeId": "5321:13084",
+    "Name": "阅读说明 / 11 · Glyth 续工与分支对话",
+    "Type": "FRAME",
+    "Width": 1200,
+    "Height": 264,
+    "Visible": true,
+    "Role": "说明 / 裁决 / 注释",
+    "Checks": [],
+    "Coverage": "采用说明，需约束相关功能"
+  },
+  {
+    "Page": "12 / Gen2 · 外部入口与桌面呈现",
+    "NodeId": "5278:229",
+    "Name": "P0-01 / CurrentReceiverBody",
+    "Type": "COMPONENT_SET",
+    "Width": 1448,
+    "Height": 1087,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "S29"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "12 / Gen2 · 外部入口与桌面呈现",
+    "NodeId": "5279:281",
+    "Name": "P0-02 / CapabilityLauncherBody",
+    "Type": "COMPONENT_SET",
+    "Width": 1448,
+    "Height": 1019,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "S29"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "12 / Gen2 · 外部入口与桌面呈现",
+    "NodeId": "5280:669",
+    "Name": "P0-03 / ReceiverComposerBody",
+    "Type": "COMPONENT_SET",
+    "Width": 1448,
+    "Height": 1936,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "NAV-19",
+      "S29"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "12 / Gen2 · 外部入口与桌面呈现",
+    "NodeId": "5281:1172",
+    "Name": "P0-04 / CaptureInboxBody",
+    "Type": "COMPONENT_SET",
+    "Width": 2048,
+    "Height": 3555.4931640625,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "S32"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "12 / Gen2 · 外部入口与桌面呈现",
+    "NodeId": "5282:1079",
+    "Name": "P0-05 / ConnectorSourceBody",
+    "Type": "COMPONENT_SET",
+    "Width": 1448,
+    "Height": 1744,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "S32"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "12 / Gen2 · 外部入口与桌面呈现",
+    "NodeId": "5283:890",
+    "Name": "A01 / 主画布 · 当前接收与输入",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "NAV-18"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "12 / Gen2 · 外部入口与桌面呈现",
+    "NodeId": "5283:1261",
+    "Name": "A01  主画布  /  同一接收会话 · Oreo 输入和引用 · 设计原型，尚未",
+    "Type": "TEXT",
+    "Width": 1300,
+    "Height": 24,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [],
+    "Coverage": "组成元素，随父功能核对；无独立完成声明"
+  },
+  {
+    "Page": "12 / Gen2 · 外部入口与桌面呈现",
+    "NodeId": "5285:1160",
+    "Name": "P0-06 / BrowserCaptureBody",
+    "Type": "COMPONENT_SET",
+    "Width": 1208,
+    "Height": 1789,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "S04",
+      "S32"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "12 / Gen2 · 外部入口与桌面呈现",
+    "NodeId": "5286:1139",
+    "Name": "P0-07a / PermissionRequestBody",
+    "Type": "COMPONENT_SET",
+    "Width": 1448,
+    "Height": 973,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "S29",
+      "S32"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "12 / Gen2 · 外部入口与桌面呈现",
+    "NodeId": "5286:1259",
+    "Name": "P0-07b / WaitingInputBody",
+    "Type": "COMPONENT_SET",
+    "Width": 1448,
+    "Height": 728,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "S29"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "12 / Gen2 · 外部入口与桌面呈现",
+    "NodeId": "5287:1539",
+    "Name": "P0-08 / RecoverySectionBody",
+    "Type": "COMPONENT_SET",
+    "Width": 1448,
+    "Height": 1277,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "S30",
+      "S31"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "12 / Gen2 · 外部入口与桌面呈现",
+    "NodeId": "5287:1838",
+    "Name": "P0-09 / RuntimeDoctorBody",
+    "Type": "COMPONENT_SET",
+    "Width": 1448,
+    "Height": 1822,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "S32"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "12 / Gen2 · 外部入口与桌面呈现",
+    "NodeId": "5289:1327",
+    "Name": "A02 / 当前接收会话列表",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "S27",
+      "S29"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "12 / Gen2 · 外部入口与桌面呈现",
+    "NodeId": "5289:1638",
+    "Name": "A02 / 当前接收会话列表  ·  可点击设计样本 / 服务未接通",
+    "Type": "TEXT",
+    "Width": 1380,
+    "Height": 24,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [],
+    "Coverage": "组成元素，随父功能核对；无独立完成声明"
+  },
+  {
+    "Page": "12 / Gen2 · 外部入口与桌面呈现",
+    "NodeId": "5289:1639",
+    "Name": "A03 / 当前对象的可用动作",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "S29",
+      "S32"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "12 / Gen2 · 外部入口与桌面呈现",
+    "NodeId": "5289:1959",
+    "Name": "A03 / 当前对象的可用动作  ·  可点击设计样本 / 服务未接通",
+    "Type": "TEXT",
+    "Width": 1380,
+    "Height": 24,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [],
+    "Coverage": "组成元素，随父功能核对；无独立完成声明"
+  },
+  {
+    "Page": "12 / Gen2 · 外部入口与桌面呈现",
+    "NodeId": "5289:1960",
+    "Name": "A04 / 装配 · 收件与应用",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "S03"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "12 / Gen2 · 外部入口与桌面呈现",
+    "NodeId": "5289:2306",
+    "Name": "A04 / 装配 · 收件与应用  ·  可点击设计样本 / 服务未接通",
+    "Type": "TEXT",
+    "Width": 1380,
+    "Height": 24,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [],
+    "Coverage": "组成元素，随父功能核对；无独立完成声明"
+  },
+  {
+    "Page": "12 / Gen2 · 外部入口与桌面呈现",
+    "NodeId": "5289:2307",
+    "Name": "A05 / 装配 · 目标待确认",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "S03"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "12 / Gen2 · 外部入口与桌面呈现",
+    "NodeId": "5289:2658",
+    "Name": "A05 / 装配 · 目标待确认  ·  可点击设计样本 / 服务未接通",
+    "Type": "TEXT",
+    "Width": 1380,
+    "Height": 24,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [],
+    "Coverage": "组成元素，随父功能核对；无独立完成声明"
+  },
+  {
+    "Page": "12 / Gen2 · 外部入口与桌面呈现",
+    "NodeId": "5289:2659",
+    "Name": "A06 / 装配 · 部分完成",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "S04"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "12 / Gen2 · 外部入口与桌面呈现",
+    "NodeId": "5289:3007",
+    "Name": "A06 / 装配 · 部分完成  ·  可点击设计样本 / 服务未接通",
+    "Type": "TEXT",
+    "Width": 1380,
+    "Height": 24,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [],
+    "Coverage": "组成元素，随父功能核对；无独立完成声明"
+  },
+  {
+    "Page": "12 / Gen2 · 外部入口与桌面呈现",
+    "NodeId": "5289:3008",
+    "Name": "A07 / 来源 · 身份与范围",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "S09",
+      "S32"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "12 / Gen2 · 外部入口与桌面呈现",
+    "NodeId": "5289:3329",
+    "Name": "A07 / 来源 · 身份与范围  ·  可点击设计样本 / 服务未接通",
+    "Type": "TEXT",
+    "Width": 1380,
+    "Height": 24,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [],
+    "Coverage": "组成元素，随父功能核对；无独立完成声明"
+  },
+  {
+    "Page": "12 / Gen2 · 外部入口与桌面呈现",
+    "NodeId": "5289:3330",
+    "Name": "A08 / 上下文 · 仅入口示例，特殊视图待核清",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "S15",
+      "S16",
+      "S32"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "12 / Gen2 · 外部入口与桌面呈现",
+    "NodeId": "5289:4928",
+    "Name": "A08 / 上下文 · 同一 Composer  ·  可点击设计样本 / 服务未接",
+    "Type": "TEXT",
+    "Width": 1380,
+    "Height": 24,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [],
+    "Coverage": "组成元素，随父功能核对；无独立完成声明"
+  },
+  {
+    "Page": "12 / Gen2 · 外部入口与桌面呈现",
+    "NodeId": "5289:4929",
+    "Name": "A09 / 工作流 · 仅入口示例，特殊视图待核清",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "S23",
+      "S26",
+      "S32"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "12 / Gen2 · 外部入口与桌面呈现",
+    "NodeId": "5289:6377",
+    "Name": "A09 / 工作流 · 同一 Composer  ·  可点击设计样本 / 服务未接",
+    "Type": "TEXT",
+    "Width": 1380,
+    "Height": 24,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [],
+    "Coverage": "组成元素，随父功能核对；无独立完成声明"
+  },
+  {
+    "Page": "12 / Gen2 · 外部入口与桌面呈现",
+    "NodeId": "5289:6378",
+    "Name": "A10 / 对话工作视图 · 同一 Composer",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "NAV-18",
+      "S29",
+      "S30"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "12 / Gen2 · 外部入口与桌面呈现",
+    "NodeId": "5289:6672",
+    "Name": "A10 / 对话工作视图 · 同一 Composer  ·  可点击设计样本 / 服",
+    "Type": "TEXT",
+    "Width": 1380,
+    "Height": 24,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [],
+    "Coverage": "组成元素，随父功能核对；无独立完成声明"
+  },
+  {
+    "Page": "12 / Gen2 · 外部入口与桌面呈现",
+    "NodeId": "5290:1800",
+    "Name": "B01 / 权限 · 仅本次来源访问",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "S29",
+      "S32"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "12 / Gen2 · 外部入口与桌面呈现",
+    "NodeId": "5290:2115",
+    "Name": "B01 / 权限 · 仅本次来源访问  ·  可点击设计样本 / 服务未接通",
+    "Type": "TEXT",
+    "Width": 1380,
+    "Height": 24,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [],
+    "Coverage": "组成元素，随父功能核对；无独立完成声明"
+  },
+  {
+    "Page": "12 / Gen2 · 外部入口与桌面呈现",
+    "NodeId": "5290:2116",
+    "Name": "B02 / 等待输入 · 回答问题",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "S29",
+      "S30"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "12 / Gen2 · 外部入口与桌面呈现",
+    "NodeId": "5290:2436",
+    "Name": "B02 / 等待输入 · 回答问题  ·  可点击设计样本 / 服务未接通",
+    "Type": "TEXT",
+    "Width": 1380,
+    "Height": 24,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [],
+    "Coverage": "组成元素，随父功能核对；无独立完成声明"
+  },
+  {
+    "Page": "12 / Gen2 · 外部入口与桌面呈现",
+    "NodeId": "5290:2437",
+    "Name": "B03 / 恢复 · 外部已创建",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "S30",
+      "S31"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "12 / Gen2 · 外部入口与桌面呈现",
+    "NodeId": "5290:2773",
+    "Name": "B03 / 恢复 · 外部已创建  ·  可点击设计样本 / 服务未接通",
+    "Type": "TEXT",
+    "Width": 1380,
+    "Height": 24,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [],
+    "Coverage": "组成元素，随父功能核对；无独立完成声明"
+  },
+  {
+    "Page": "12 / Gen2 · 外部入口与桌面呈现",
+    "NodeId": "5290:2774",
+    "Name": "B04 / 恢复 · 位置未就绪",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "S30",
+      "S31"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "12 / Gen2 · 外部入口与桌面呈现",
+    "NodeId": "5290:3110",
+    "Name": "B04 / 恢复 · 位置未就绪  ·  可点击设计样本 / 服务未接通",
+    "Type": "TEXT",
+    "Width": 1380,
+    "Height": 24,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [],
+    "Coverage": "组成元素，随父功能核对；无独立完成声明"
+  },
+  {
+    "Page": "12 / Gen2 · 外部入口与桌面呈现",
+    "NodeId": "5290:3111",
+    "Name": "B05 / 恢复 · 附加未完成",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "S30",
+      "S31"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "12 / Gen2 · 外部入口与桌面呈现",
+    "NodeId": "5290:3447",
+    "Name": "B05 / 恢复 · 附加未完成  ·  可点击设计样本 / 服务未接通",
+    "Type": "TEXT",
+    "Width": 1380,
+    "Height": 24,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [],
+    "Coverage": "组成元素，随父功能核对；无独立完成声明"
+  },
+  {
+    "Page": "12 / Gen2 · 外部入口与桌面呈现",
+    "NodeId": "5291:2038",
+    "Name": "B06 / 尚未确认 · 核对原操作",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "S30",
+      "S31"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "12 / Gen2 · 外部入口与桌面呈现",
+    "NodeId": "5291:2374",
+    "Name": "B06 / 尚未确认 · 核对原操作  ·  可点击设计样本 / 服务未接通",
+    "Type": "TEXT",
+    "Width": 1380,
+    "Height": 24,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [],
+    "Coverage": "组成元素，随父功能核对；无独立完成声明"
+  },
+  {
+    "Page": "12 / Gen2 · 外部入口与桌面呈现",
+    "NodeId": "5291:2375",
+    "Name": "B07 / 已请求取消 · 等待确认",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "S30",
+      "S31"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "12 / Gen2 · 外部入口与桌面呈现",
+    "NodeId": "5291:2711",
+    "Name": "B07 / 已请求取消 · 等待确认  ·  可点击设计样本 / 服务未接通",
+    "Type": "TEXT",
+    "Width": 1380,
+    "Height": 24,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [],
+    "Coverage": "组成元素，随父功能核对；无独立完成声明"
+  },
+  {
+    "Page": "12 / Gen2 · 外部入口与桌面呈现",
+    "NodeId": "5291:2712",
+    "Name": "B08 / 取消已确认",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "S30",
+      "S31"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "12 / Gen2 · 外部入口与桌面呈现",
+    "NodeId": "5291:3048",
+    "Name": "B08 / 取消已确认  ·  可点击设计样本 / 服务未接通",
+    "Type": "TEXT",
+    "Width": 1380,
+    "Height": 24,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [],
+    "Coverage": "组成元素，随父功能核对；无独立完成声明"
+  },
+  {
+    "Page": "12 / Gen2 · 外部入口与桌面呈现",
+    "NodeId": "5291:3049",
+    "Name": "B09 / 取消结果未知",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "S30",
+      "S31"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "12 / Gen2 · 外部入口与桌面呈现",
+    "NodeId": "5291:3385",
+    "Name": "B09 / 取消结果未知  ·  可点击设计样本 / 服务未接通",
+    "Type": "TEXT",
+    "Width": 1380,
+    "Height": 24,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [],
+    "Coverage": "组成元素，随父功能核对；无独立完成声明"
+  },
+  {
+    "Page": "12 / Gen2 · 外部入口与桌面呈现",
+    "NodeId": "5291:3386",
+    "Name": "B10 / 重启后核对",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "S30",
+      "S31"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "12 / Gen2 · 外部入口与桌面呈现",
+    "NodeId": "5291:3722",
+    "Name": "B10 / 重启后核对  ·  可点击设计样本 / 服务未接通",
+    "Type": "TEXT",
+    "Width": 1380,
+    "Height": 24,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [],
+    "Coverage": "组成元素，随父功能核对；无独立完成声明"
+  },
+  {
+    "Page": "12 / Gen2 · 外部入口与桌面呈现",
+    "NodeId": "5291:3723",
+    "Name": "B11 / 运行诊断 · 摘要",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "S30",
+      "S32"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "12 / Gen2 · 外部入口与桌面呈现",
+    "NodeId": "5291:4046",
+    "Name": "B11 / 运行诊断 · 摘要  ·  可点击设计样本 / 服务未接通",
+    "Type": "TEXT",
+    "Width": 1380,
+    "Height": 24,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [],
+    "Coverage": "组成元素，随父功能核对；无独立完成声明"
+  },
+  {
+    "Page": "12 / Gen2 · 外部入口与桌面呈现",
+    "NodeId": "5291:4140",
+    "Name": "P1-01 / Tray · 原生菜单规格预留",
+    "Type": "COMPONENT_SET",
+    "Width": 1088,
+    "Height": 858,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "S32"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "12 / Gen2 · 外部入口与桌面呈现",
+    "NodeId": "5292:2479",
+    "Name": "P1-02 / CompanionBody · 桌面预留",
+    "Type": "COMPONENT_SET",
+    "Width": 1208,
+    "Height": 1232,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "S32"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "12 / Gen2 · 外部入口与桌面呈现",
+    "NodeId": "5292:2794",
+    "Name": "P1-03 / QuickCaptureBody · 桌面预留",
+    "Type": "COMPONENT_SET",
+    "Width": 1208,
+    "Height": 1256,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "S32"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "12 / Gen2 · 外部入口与桌面呈现",
+    "NodeId": "5292:2964",
+    "Name": "P1-04 / CurrentAppCaptureBody · 能力预留",
+    "Type": "COMPONENT_SET",
+    "Width": 1448,
+    "Height": 1106,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "S32"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "12 / Gen2 · 外部入口与桌面呈现",
+    "NodeId": "5292:3077",
+    "Name": "P1-05 / DesktopNotification · 模板预留",
+    "Type": "COMPONENT_SET",
+    "Width": 1208,
+    "Height": 764,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "S32"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "12 / Gen2 · 外部入口与桌面呈现",
+    "NodeId": "5292:3296",
+    "Name": "P1-06 / ConnectorDetailBody · 管理预留",
+    "Type": "COMPONENT_SET",
+    "Width": 1448,
+    "Height": 1267,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "S32"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "12 / Gen2 · 外部入口与桌面呈现",
+    "NodeId": "5295:2814",
+    "Name": "B12 / 浏览器 · 主动收件",
+    "Type": "FRAME",
+    "Width": 1024,
+    "Height": 768,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "S04",
+      "S32"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "12 / Gen2 · 外部入口与桌面呈现",
+    "NodeId": "5295:2840",
+    "Name": "B12 / 浏览器 · 主动收件  ·  设计原型 / 未接真实服务",
+    "Type": "TEXT",
+    "Width": 1100,
+    "Height": 24,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [],
+    "Coverage": "组成元素，随父功能核对；无独立完成声明"
+  },
+  {
+    "Page": "12 / Gen2 · 外部入口与桌面呈现",
+    "NodeId": "5295:2841",
+    "Name": "C01 / 托盘 · 原生菜单布局预留",
+    "Type": "FRAME",
+    "Width": 1024,
+    "Height": 768,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "S32"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "12 / Gen2 · 外部入口与桌面呈现",
+    "NodeId": "5295:2859",
+    "Name": "C01 / 托盘 · 原生菜单布局预留  ·  PLANNED / 桌面宿主与权限接",
+    "Type": "TEXT",
+    "Width": 1100,
+    "Height": 24,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [],
+    "Coverage": "组成元素，随父功能核对；无独立完成声明"
+  },
+  {
+    "Page": "12 / Gen2 · 外部入口与桌面呈现",
+    "NodeId": "5295:2860",
+    "Name": "C02 / 桌面 Glyth · 待审结果",
+    "Type": "FRAME",
+    "Width": 1024,
+    "Height": 768,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "S32"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "12 / Gen2 · 外部入口与桌面呈现",
+    "NodeId": "5295:2877",
+    "Name": "C02 / 桌面 Glyth · 待审结果  ·  PLANNED / 桌面宿主与权",
+    "Type": "TEXT",
+    "Width": 1100,
+    "Height": 24,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [],
+    "Coverage": "组成元素，随父功能核对；无独立完成声明"
+  },
+  {
+    "Page": "12 / Gen2 · 外部入口与桌面呈现",
+    "NodeId": "5295:2878",
+    "Name": "C03 / 快速收下 · 非拖拽入口",
+    "Type": "FRAME",
+    "Width": 1024,
+    "Height": 768,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "S32"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "12 / Gen2 · 外部入口与桌面呈现",
+    "NodeId": "5295:2909",
+    "Name": "C03 / 快速收下 · 非拖拽入口  ·  PLANNED / 桌面宿主与权限接口",
+    "Type": "TEXT",
+    "Width": 1100,
+    "Height": 24,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [],
+    "Coverage": "组成元素，随父功能核对；无独立完成声明"
+  },
+  {
+    "Page": "12 / Gen2 · 外部入口与桌面呈现",
+    "NodeId": "5295:2910",
+    "Name": "C04 / 当前应用 · 显式选择范围",
+    "Type": "FRAME",
+    "Width": 1024,
+    "Height": 768,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "S32"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "12 / Gen2 · 外部入口与桌面呈现",
+    "NodeId": "5295:2941",
+    "Name": "C04 / 当前应用 · 显式选择范围  ·  PLANNED / 桌面宿主与权限接",
+    "Type": "TEXT",
+    "Width": 1100,
+    "Height": 24,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [],
+    "Coverage": "组成元素，随父功能核对；无独立完成声明"
+  },
+  {
+    "Page": "12 / Gen2 · 外部入口与桌面呈现",
+    "NodeId": "5295:2942",
+    "Name": "C05 / 桌面提醒 · 点击重新读取",
+    "Type": "FRAME",
+    "Width": 1024,
+    "Height": 768,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "S32"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "12 / Gen2 · 外部入口与桌面呈现",
+    "NodeId": "5295:2954",
+    "Name": "C05 / 桌面提醒 · 点击重新读取  ·  PLANNED / 桌面宿主与权限接",
+    "Type": "TEXT",
+    "Width": 1100,
+    "Height": 24,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [],
+    "Coverage": "组成元素，随父功能核对；无独立完成声明"
+  },
+  {
+    "Page": "12 / Gen2 · 外部入口与桌面呈现",
+    "NodeId": "5295:2955",
+    "Name": "C06 / 来源详情 · 能力预留",
+    "Type": "FRAME",
+    "Width": 1024,
+    "Height": 768,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "S32"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "12 / Gen2 · 外部入口与桌面呈现",
+    "NodeId": "5295:2981",
+    "Name": "C06 / 来源详情 · 能力预留  ·  PLANNED / 桌面宿主与权限接口待",
+    "Type": "TEXT",
+    "Width": 1100,
+    "Height": 24,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [],
+    "Coverage": "组成元素，随父功能核对；无独立完成声明"
+  },
+  {
+    "Page": "12 / Gen2 · 外部入口与桌面呈现",
+    "NodeId": "5295:2982",
+    "Name": "N01 / 窄屏 · Composer",
+    "Type": "FRAME",
+    "Width": 390,
+    "Height": 844,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "NAV-08",
+      "NAV-18",
+      "NAV-19"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "12 / Gen2 · 外部入口与桌面呈现",
+    "NodeId": "5295:3031",
+    "Name": "N01 / 窄屏 · Composer  ·  设计原型 / 未接真实服务",
+    "Type": "TEXT",
+    "Width": 1100,
+    "Height": 24,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [],
+    "Coverage": "组成元素，随父功能核对；无独立完成声明"
+  },
+  {
+    "Page": "12 / Gen2 · 外部入口与桌面呈现",
+    "NodeId": "5295:3032",
+    "Name": "N02 / 窄屏 · 装配收件",
+    "Type": "FRAME",
+    "Width": 390,
+    "Height": 844,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "S01",
+      "S02",
+      "S04",
+      "S32"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "12 / Gen2 · 外部入口与桌面呈现",
+    "NodeId": "5295:3096",
+    "Name": "N02 / 窄屏 · 装配收件  ·  设计原型 / 未接真实服务",
+    "Type": "TEXT",
+    "Width": 1100,
+    "Height": 24,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [],
+    "Coverage": "组成元素，随父功能核对；无独立完成声明"
+  },
+  {
+    "Page": "12 / Gen2 · 外部入口与桌面呈现",
+    "NodeId": "5295:3097",
+    "Name": "N03 / 窄屏 · 恢复",
+    "Type": "FRAME",
+    "Width": 390,
+    "Height": 844,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "S30",
+      "S31"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "12 / Gen2 · 外部入口与桌面呈现",
+    "NodeId": "5295:3148",
+    "Name": "N03 / 窄屏 · 恢复  ·  设计原型 / 未接真实服务",
+    "Type": "TEXT",
+    "Width": 1100,
+    "Height": 24,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [],
+    "Coverage": "组成元素，随父功能核对；无独立完成声明"
+  },
+  {
+    "Page": "12 / Gen2 · 外部入口与桌面呈现",
+    "NodeId": "5295:3149",
+    "Name": "N04 / 窄屏 · 权限范围",
+    "Type": "FRAME",
+    "Width": 390,
+    "Height": 844,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "S29",
+      "S32"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "12 / Gen2 · 外部入口与桌面呈现",
+    "NodeId": "5295:3179",
+    "Name": "N04 / 窄屏 · 权限范围  ·  设计原型 / 未接真实服务",
+    "Type": "TEXT",
+    "Width": 1100,
+    "Height": 24,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [],
+    "Coverage": "组成元素，随父功能核对；无独立完成声明"
+  },
+  {
+    "Page": "12 / Gen2 · 外部入口与桌面呈现",
+    "NodeId": "5295:3180",
+    "Name": "N05 / 窄屏 · 当前接收列表",
+    "Type": "FRAME",
+    "Width": 390,
+    "Height": 844,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "S27",
+      "S29"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "12 / Gen2 · 外部入口与桌面呈现",
+    "NodeId": "5295:3206",
+    "Name": "N05 / 窄屏 · 当前接收列表  ·  设计原型 / 未接真实服务",
+    "Type": "TEXT",
+    "Width": 1100,
+    "Height": 24,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [],
+    "Coverage": "组成元素，随父功能核对；无独立完成声明"
+  },
+  {
+    "Page": "12 / Gen2 · 外部入口与桌面呈现",
+    "NodeId": "5295:3207",
+    "Name": "N06 / 窄屏 · 诊断详情",
+    "Type": "FRAME",
+    "Width": 390,
+    "Height": 844,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "S30",
+      "S32"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "12 / Gen2 · 外部入口与桌面呈现",
+    "NodeId": "5295:3246",
+    "Name": "N06 / 窄屏 · 诊断详情  ·  设计原型 / 未接真实服务",
+    "Type": "TEXT",
+    "Width": 1100,
+    "Height": 24,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [],
+    "Coverage": "组成元素，随父功能核对；无独立完成声明"
+  },
+  {
+    "Page": "12 / Gen2 · 外部入口与桌面呈现",
+    "NodeId": "5295:3247",
+    "Name": "A11 / 收件已放入 · 回到材料",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "S01",
+      "S02",
+      "S04",
+      "S32"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "12 / Gen2 · 外部入口与桌面呈现",
+    "NodeId": "5295:3597",
+    "Name": "A11 / 收件已放入 · 回到材料  ·  可点击设计样本 / 服务未接通",
+    "Type": "TEXT",
+    "Width": 1380,
+    "Height": 24,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [],
+    "Coverage": "组成元素，随父功能核对；无独立完成声明"
+  },
+  {
+    "Page": "12 / Gen2 · 外部入口与桌面呈现",
+    "NodeId": "5300:3344",
+    "Name": "00 / 外部入口与桌面呈现 · 交互导览",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 1203,
+    "Visible": true,
+    "Role": "说明 / 裁决 / 注释",
+    "Checks": [
+      "S32"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "12 / Gen2 · 外部入口与桌面呈现",
+    "NodeId": "5300:3632",
+    "Name": "R01 / 减少动态效果 · 输入",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "NAV-19"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "12 / Gen2 · 外部入口与桌面呈现",
+    "NodeId": "5300:3967",
+    "Name": "R01 / 减少动态效果 · 输入  ·  可点击设计样本 / 服务未接通",
+    "Type": "TEXT",
+    "Width": 1380,
+    "Height": 24,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [],
+    "Coverage": "组成元素，随父功能核对；无独立完成声明"
+  },
+  {
+    "Page": "12 / Gen2 · 外部入口与桌面呈现",
+    "NodeId": "5300:3968",
+    "Name": "R02 / 减少动态效果 · 接收列表",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "S27",
+      "S29"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "12 / Gen2 · 外部入口与桌面呈现",
+    "NodeId": "5300:4280",
+    "Name": "R02 / 减少动态效果 · 接收列表  ·  可点击设计样本 / 服务未接通",
+    "Type": "TEXT",
+    "Width": 1380,
+    "Height": 24,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [],
+    "Coverage": "组成元素，随父功能核对；无独立完成声明"
+  },
+  {
+    "Page": "12 / Gen2 · 外部入口与桌面呈现",
+    "NodeId": "5304:3611",
+    "Name": "B13 / 浏览器 · 已接收回执",
+    "Type": "FRAME",
+    "Width": 1024,
+    "Height": 768,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "S04",
+      "S32"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "12 / Gen2 · 外部入口与桌面呈现",
+    "NodeId": "5304:3633",
+    "Name": "B14 / 浏览器 · 结果未知",
+    "Type": "FRAME",
+    "Width": 1024,
+    "Height": 768,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "S04",
+      "S32"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "12 / Gen2 · 外部入口与桌面呈现",
+    "NodeId": "5304:3646",
+    "Name": "N07 / 键盘焦点 · 发送",
+    "Type": "FRAME",
+    "Width": 390,
+    "Height": 844,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "NAV-08",
+      "NAV-18"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "12 / Gen2 · 外部入口与桌面呈现",
+    "NodeId": "5306:4074",
+    "Name": "A12 / 项目菜单 · 系统入口",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "NAV-23"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "12 / Gen2 · 外部入口与桌面呈现",
+    "NodeId": "5306:4369",
+    "Name": "A12 / 项目菜单 · 系统入口  ·  可点击设计样本 / 服务未接通",
+    "Type": "TEXT",
+    "Width": 1380,
+    "Height": 24,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [],
+    "Coverage": "组成元素，随父功能核对；无独立完成声明"
+  },
+  {
+    "Page": "12 / Gen2 · 外部入口与桌面呈现",
+    "NodeId": "5306:4393",
+    "Name": "C07 / 桌面 Glyth · 静息与展开",
+    "Type": "FRAME",
+    "Width": 1024,
+    "Height": 768,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "S32"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "12 / Gen2 · 外部入口与桌面呈现",
+    "NodeId": "5307:3749",
+    "Name": "特殊视图形态未完成：T5 → 总审计方案负责 → 原 HTML Demo 会话，核清",
+    "Type": "TEXT",
+    "Width": 1380,
+    "Height": 24,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [],
+    "Coverage": "组成元素，随父功能核对；无独立完成声明"
+  },
+  {
+    "Page": "12 / Gen2 · 外部入口与桌面呈现",
+    "NodeId": "5307:3750",
+    "Name": "特殊视图形态未完成：T5 → 总审计方案负责 → 原 HTML Demo 会话，核清",
+    "Type": "TEXT",
+    "Width": 1380,
+    "Height": 24,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [],
+    "Coverage": "组成元素，随父功能核对；无独立完成声明"
+  },
+  {
+    "Page": "12 / Gen2 · 外部入口与桌面呈现",
+    "NodeId": "5321:16809",
+    "Name": "阅读说明 / 12 · 外部入口与桌面呈现",
+    "Type": "FRAME",
+    "Width": 1200,
+    "Height": 264,
+    "Visible": true,
+    "Role": "说明 / 裁决 / 注释",
+    "Checks": [],
+    "Coverage": "采用说明，需约束相关功能"
+  },
+  {
+    "Page": "13 / Gen2 · 集合跨视图与工作流取用",
+    "NodeId": "5333:96",
+    "Name": "集合 / 上下文跨视图",
+    "Type": "COMPONENT_SET",
+    "Width": 920,
+    "Height": 640,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "N17",
+      "N18",
+      "N20",
+      "S05",
+      "S18",
+      "S19"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "13 / Gen2 · 集合跨视图与工作流取用",
+    "NodeId": "5334:46",
+    "Name": "集合 / 工作流跨视图",
+    "Type": "COMPONENT_SET",
+    "Width": 920,
+    "Height": 350,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "N21",
+      "S05"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "13 / Gen2 · 集合跨视图与工作流取用",
+    "NodeId": "5335:110",
+    "Name": "工作流 / 取用卡",
+    "Type": "COMPONENT_SET",
+    "Width": 1130,
+    "Height": 810,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "S25",
+      "S26"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "13 / Gen2 · 集合跨视图与工作流取用",
+    "NodeId": "5338:24",
+    "Name": "00 / 同对象跨视图 · 形态对照",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 1320,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "N17",
+      "N21"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "13 / Gen2 · 集合跨视图与工作流取用",
+    "NodeId": "5340:146",
+    "Name": "A01 / Main 呼出上下文集合",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "N17",
+      "N18",
+      "N26",
+      "S23"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "13 / Gen2 · 集合跨视图与工作流取用",
+    "NodeId": "5340:397",
+    "Name": "设计说明 / A01 / Main 呼出上下文集合",
+    "Type": "TEXT",
+    "Width": 1440,
+    "Height": 20,
+    "Visible": true,
+    "Role": "说明 / 裁决 / 注释",
+    "Checks": [],
+    "Coverage": "采用说明，需约束相关功能"
+  },
+  {
+    "Page": "13 / Gen2 · 集合跨视图与工作流取用",
+    "NodeId": "5340:398",
+    "Name": "A02 / 拿起与建议落点",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "N19"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "13 / Gen2 · 集合跨视图与工作流取用",
+    "NodeId": "5340:576",
+    "Name": "设计说明 / A02 / 拿起与建议落点",
+    "Type": "TEXT",
+    "Width": 1440,
+    "Height": 20,
+    "Visible": true,
+    "Role": "说明 / 裁决 / 注释",
+    "Checks": [],
+    "Coverage": "采用说明，需约束相关功能"
+  },
+  {
+    "Page": "13 / Gen2 · 集合跨视图与工作流取用",
+    "NodeId": "5341:279",
+    "Name": "A03 / 等待放入回执",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "N19"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "13 / Gen2 · 集合跨视图与工作流取用",
+    "NodeId": "5341:495",
+    "Name": "设计说明 / A03 / 等待放入回执",
+    "Type": "TEXT",
+    "Width": 1440,
+    "Height": 20,
+    "Visible": true,
+    "Role": "说明 / 裁决 / 注释",
+    "Checks": [],
+    "Coverage": "采用说明，需约束相关功能"
+  },
+  {
+    "Page": "13 / Gen2 · 集合跨视图与工作流取用",
+    "NodeId": "5341:496",
+    "Name": "A04 / 已有集合投影",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "N17"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "13 / Gen2 · 集合跨视图与工作流取用",
+    "NodeId": "5341:674",
+    "Name": "设计说明 / A04 / 已有集合投影",
+    "Type": "TEXT",
+    "Width": 1440,
+    "Height": 20,
+    "Visible": true,
+    "Role": "说明 / 裁决 / 注释",
+    "Checks": [],
+    "Coverage": "采用说明，需约束相关功能"
+  },
+  {
+    "Page": "13 / Gen2 · 集合跨视图与工作流取用",
+    "NodeId": "5341:675",
+    "Name": "A05 / 放入失败",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "N35",
+      "N37",
+      "S20"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "13 / Gen2 · 集合跨视图与工作流取用",
+    "NodeId": "5341:853",
+    "Name": "设计说明 / A05 / 放入失败",
+    "Type": "TEXT",
+    "Width": 1440,
+    "Height": 20,
+    "Visible": true,
+    "Role": "说明 / 裁决 / 注释",
+    "Checks": [],
+    "Coverage": "采用说明，需约束相关功能"
+  },
+  {
+    "Page": "13 / Gen2 · 集合跨视图与工作流取用",
+    "NodeId": "5341:854",
+    "Name": "A06 / 结果未知",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "N35",
+      "N37",
+      "S20"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "13 / Gen2 · 集合跨视图与工作流取用",
+    "NodeId": "5341:1032",
+    "Name": "设计说明 / A06 / 结果未知",
+    "Type": "TEXT",
+    "Width": 1440,
+    "Height": 20,
+    "Visible": true,
+    "Role": "说明 / 裁决 / 注释",
+    "Checks": [],
+    "Coverage": "采用说明，需约束相关功能"
+  },
+  {
+    "Page": "13 / Gen2 · 集合跨视图与工作流取用",
+    "NodeId": "5341:1033",
+    "Name": "A07 / 已加入 · 位置待恢复",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "N19"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "13 / Gen2 · 集合跨视图与工作流取用",
+    "NodeId": "5341:1211",
+    "Name": "设计说明 / A07 / 已加入 · 位置待恢复",
+    "Type": "TEXT",
+    "Width": 1440,
+    "Height": 20,
+    "Visible": true,
+    "Role": "说明 / 裁决 / 注释",
+    "Checks": [],
+    "Coverage": "采用说明，需约束相关功能"
+  },
+  {
+    "Page": "13 / Gen2 · 集合跨视图与工作流取用",
+    "NodeId": "5341:1212",
+    "Name": "A08 / 放入已确认",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "N19"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "13 / Gen2 · 集合跨视图与工作流取用",
+    "NodeId": "5341:1390",
+    "Name": "设计说明 / A08 / 放入已确认",
+    "Type": "TEXT",
+    "Width": 1440,
+    "Height": 20,
+    "Visible": true,
+    "Role": "说明 / 裁决 / 注释",
+    "Checks": [],
+    "Coverage": "采用说明，需约束相关功能"
+  },
+  {
+    "Page": "13 / Gen2 · 集合跨视图与工作流取用",
+    "NodeId": "5341:1391",
+    "Name": "A09 / 返回集合来源",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "N22",
+      "N36",
+      "N39",
+      "S20"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "13 / Gen2 · 集合跨视图与工作流取用",
+    "NodeId": "5341:1570",
+    "Name": "设计说明 / A09 / 返回集合来源",
+    "Type": "TEXT",
+    "Width": 1440,
+    "Height": 20,
+    "Visible": true,
+    "Role": "说明 / 裁决 / 注释",
+    "Checks": [],
+    "Coverage": "采用说明，需约束相关功能"
+  },
+  {
+    "Page": "13 / Gen2 · 集合跨视图与工作流取用",
+    "NodeId": "5343:630",
+    "Name": "B01 / Main · 直接呼出工作流",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "S28"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "13 / Gen2 · 集合跨视图与工作流取用",
+    "NodeId": "5343:830",
+    "Name": "设计说明 / B01 / Main · 直接呼出工作流",
+    "Type": "TEXT",
+    "Width": 1440,
+    "Height": 20,
+    "Visible": true,
+    "Role": "说明 / 裁决 / 注释",
+    "Checks": [],
+    "Coverage": "采用说明，需约束相关功能"
+  },
+  {
+    "Page": "13 / Gen2 · 集合跨视图与工作流取用",
+    "NodeId": "5343:831",
+    "Name": "B02 / 光幕与工作流手牌",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "S24"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "13 / Gen2 · 集合跨视图与工作流取用",
+    "NodeId": "5343:1047",
+    "Name": "设计说明 / B02 / 光幕与工作流手牌",
+    "Type": "TEXT",
+    "Width": 1440,
+    "Height": 20,
+    "Visible": true,
+    "Role": "说明 / 裁决 / 注释",
+    "Checks": [],
+    "Coverage": "采用说明，需约束相关功能"
+  },
+  {
+    "Page": "13 / Gen2 · 集合跨视图与工作流取用",
+    "NodeId": "5344:752",
+    "Name": "B03 / 卡片轻预览 · 三种动作",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "S26"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "13 / Gen2 · 集合跨视图与工作流取用",
+    "NodeId": "5344:998",
+    "Name": "设计说明 / B03 / 卡片轻预览 · 三种动作",
+    "Type": "TEXT",
+    "Width": 1440,
+    "Height": 20,
+    "Visible": true,
+    "Role": "说明 / 裁决 / 注释",
+    "Checks": [],
+    "Coverage": "采用说明，需约束相关功能"
+  },
+  {
+    "Page": "13 / Gen2 · 集合跨视图与工作流取用",
+    "NodeId": "5344:999",
+    "Name": "B04 / 交给目标 Glyth",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "N31",
+      "S26"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "13 / Gen2 · 集合跨视图与工作流取用",
+    "NodeId": "5344:1180",
+    "Name": "设计说明 / B04 / 交给目标 Glyth",
+    "Type": "TEXT",
+    "Width": 1440,
+    "Height": 20,
+    "Visible": true,
+    "Role": "说明 / 裁决 / 注释",
+    "Checks": [],
+    "Coverage": "采用说明，需约束相关功能"
+  },
+  {
+    "Page": "13 / Gen2 · 集合跨视图与工作流取用",
+    "NodeId": "5345:869",
+    "Name": "B05 / 引用已入草稿",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "S27",
+      "S29"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "13 / Gen2 · 集合跨视图与工作流取用",
+    "NodeId": "5345:1189",
+    "Name": "设计说明 / B05 / 引用已入草稿",
+    "Type": "TEXT",
+    "Width": 1440,
+    "Height": 20,
+    "Visible": true,
+    "Role": "说明 / 裁决 / 注释",
+    "Checks": [],
+    "Coverage": "采用说明，需约束相关功能"
+  },
+  {
+    "Page": "13 / Gen2 · 集合跨视图与工作流取用",
+    "NodeId": "5345:1190",
+    "Name": "B06 / 移除引用 · 输入仍在",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "S27",
+      "S29"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "13 / Gen2 · 集合跨视图与工作流取用",
+    "NodeId": "5345:1440",
+    "Name": "设计说明 / B06 / 移除引用 · 输入仍在",
+    "Type": "TEXT",
+    "Width": 1440,
+    "Height": 20,
+    "Visible": true,
+    "Role": "说明 / 裁决 / 注释",
+    "Checks": [],
+    "Coverage": "采用说明，需约束相关功能"
+  },
+  {
+    "Page": "13 / Gen2 · 集合跨视图与工作流取用",
+    "NodeId": "5345:1441",
+    "Name": "B07 / 替换引用 · 未发送",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "S27",
+      "S29"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "13 / Gen2 · 集合跨视图与工作流取用",
+    "NodeId": "5345:1691",
+    "Name": "设计说明 / B07 / 替换引用 · 未发送",
+    "Type": "TEXT",
+    "Width": 1440,
+    "Height": 20,
+    "Visible": true,
+    "Role": "说明 / 裁决 / 注释",
+    "Checks": [],
+    "Coverage": "采用说明，需约束相关功能"
+  },
+  {
+    "Page": "13 / Gen2 · 集合跨视图与工作流取用",
+    "NodeId": "5345:1692",
+    "Name": "B08 / 提交中 · 不重复发送",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "S27",
+      "S29",
+      "S30"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "13 / Gen2 · 集合跨视图与工作流取用",
+    "NodeId": "5345:1949",
+    "Name": "设计说明 / B08 / 提交中 · 不重复发送",
+    "Type": "TEXT",
+    "Width": 1440,
+    "Height": 20,
+    "Visible": true,
+    "Role": "说明 / 裁决 / 注释",
+    "Checks": [],
+    "Coverage": "采用说明，需约束相关功能"
+  },
+  {
+    "Page": "13 / Gen2 · 集合跨视图与工作流取用",
+    "NodeId": "5345:1950",
+    "Name": "B09 / 回执确认已采用",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "S27",
+      "S29",
+      "S30"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "13 / Gen2 · 集合跨视图与工作流取用",
+    "NodeId": "5345:2207",
+    "Name": "设计说明 / B09 / 回执确认已采用",
+    "Type": "TEXT",
+    "Width": 1440,
+    "Height": 20,
+    "Visible": true,
+    "Role": "说明 / 裁决 / 注释",
+    "Checks": [],
+    "Coverage": "采用说明，需约束相关功能"
+  },
+  {
+    "Page": "13 / Gen2 · 集合跨视图与工作流取用",
+    "NodeId": "5345:2208",
+    "Name": "B10 / 拒绝 · 保留草稿",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "S27",
+      "S29",
+      "S30"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "13 / Gen2 · 集合跨视图与工作流取用",
+    "NodeId": "5345:2465",
+    "Name": "设计说明 / B10 / 拒绝 · 保留草稿",
+    "Type": "TEXT",
+    "Width": 1440,
+    "Height": 20,
+    "Visible": true,
+    "Role": "说明 / 裁决 / 注释",
+    "Checks": [],
+    "Coverage": "采用说明，需约束相关功能"
+  },
+  {
+    "Page": "13 / Gen2 · 集合跨视图与工作流取用",
+    "NodeId": "5345:2466",
+    "Name": "B11 / 未确认 · 核对原发送",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "S27",
+      "S29",
+      "S30"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "13 / Gen2 · 集合跨视图与工作流取用",
+    "NodeId": "5345:2723",
+    "Name": "设计说明 / B11 / 未确认 · 核对原发送",
+    "Type": "TEXT",
+    "Width": 1440,
+    "Height": 20,
+    "Visible": true,
+    "Role": "说明 / 裁决 / 注释",
+    "Checks": [],
+    "Coverage": "采用说明，需约束相关功能"
+  },
+  {
+    "Page": "13 / Gen2 · 集合跨视图与工作流取用",
+    "NodeId": "5345:2724",
+    "Name": "B12 / 内容已更新",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "S25",
+      "S26",
+      "S27"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "13 / Gen2 · 集合跨视图与工作流取用",
+    "NodeId": "5345:2981",
+    "Name": "设计说明 / B12 / 内容已更新",
+    "Type": "TEXT",
+    "Width": 1440,
+    "Height": 20,
+    "Visible": true,
+    "Role": "说明 / 裁决 / 注释",
+    "Checks": [],
+    "Coverage": "采用说明，需约束相关功能"
+  },
+  {
+    "Page": "13 / Gen2 · 集合跨视图与工作流取用",
+    "NodeId": "5345:2982",
+    "Name": "B13 / 工作流不可用",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "S25",
+      "S26",
+      "S27"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "13 / Gen2 · 集合跨视图与工作流取用",
+    "NodeId": "5345:3239",
+    "Name": "设计说明 / B13 / 工作流不可用",
+    "Type": "TEXT",
+    "Width": 1440,
+    "Height": 20,
+    "Visible": true,
+    "Role": "说明 / 裁决 / 注释",
+    "Checks": [],
+    "Coverage": "采用说明，需约束相关功能"
+  },
+  {
+    "Page": "13 / Gen2 · 集合跨视图与工作流取用",
+    "NodeId": "5346:1416",
+    "Name": "C01 / 装配 · 瀑布流",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "N41",
+      "S01",
+      "S05"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "13 / Gen2 · 集合跨视图与工作流取用",
+    "NodeId": "5346:1665",
+    "Name": "设计说明 / C01 / 装配 · 瀑布流",
+    "Type": "TEXT",
+    "Width": 1440,
+    "Height": 20,
+    "Visible": true,
+    "Role": "说明 / 裁决 / 注释",
+    "Checks": [],
+    "Coverage": "采用说明，需约束相关功能"
+  },
+  {
+    "Page": "13 / Gen2 · 集合跨视图与工作流取用",
+    "NodeId": "5346:1666",
+    "Name": "C02 / 装配 · 悬停取用",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "S02",
+      "S05"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "13 / Gen2 · 集合跨视图与工作流取用",
+    "NodeId": "5346:1884",
+    "Name": "设计说明 / C02 / 装配 · 悬停取用",
+    "Type": "TEXT",
+    "Width": 1440,
+    "Height": 20,
+    "Visible": true,
+    "Role": "说明 / 裁决 / 注释",
+    "Checks": [],
+    "Coverage": "采用说明，需约束相关功能"
+  },
+  {
+    "Page": "13 / Gen2 · 集合跨视图与工作流取用",
+    "NodeId": "5346:1885",
+    "Name": "C03 / 装配 · 搜索结果",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "S02",
+      "S04",
+      "S05"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "13 / Gen2 · 集合跨视图与工作流取用",
+    "NodeId": "5346:2082",
+    "Name": "设计说明 / C03 / 装配 · 搜索结果",
+    "Type": "TEXT",
+    "Width": 1440,
+    "Height": 20,
+    "Visible": true,
+    "Role": "说明 / 裁决 / 注释",
+    "Checks": [],
+    "Coverage": "采用说明，需约束相关功能"
+  },
+  {
+    "Page": "13 / Gen2 · 集合跨视图与工作流取用",
+    "NodeId": "5347:838",
+    "Name": "N01 / 窄屏 · 工作流预览",
+    "Type": "FRAME",
+    "Width": 390,
+    "Height": 844,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "S26",
+      "S28"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "13 / Gen2 · 集合跨视图与工作流取用",
+    "NodeId": "5347:899",
+    "Name": "设计说明 / N01 / 窄屏 · 工作流预览",
+    "Type": "TEXT",
+    "Width": 390,
+    "Height": 40,
+    "Visible": true,
+    "Role": "说明 / 裁决 / 注释",
+    "Checks": [],
+    "Coverage": "采用说明，需约束相关功能"
+  },
+  {
+    "Page": "13 / Gen2 · 集合跨视图与工作流取用",
+    "NodeId": "5347:900",
+    "Name": "N02 / 窄屏 · 草稿与键盘焦点",
+    "Type": "FRAME",
+    "Width": 390,
+    "Height": 844,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "S27",
+      "S28"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "13 / Gen2 · 集合跨视图与工作流取用",
+    "NodeId": "5347:1036",
+    "Name": "设计说明 / N02 / 窄屏 · 草稿与键盘焦点",
+    "Type": "TEXT",
+    "Width": 390,
+    "Height": 60,
+    "Visible": true,
+    "Role": "说明 / 裁决 / 注释",
+    "Checks": [],
+    "Coverage": "采用说明，需约束相关功能"
+  },
+  {
+    "Page": "13 / Gen2 · 集合跨视图与工作流取用",
+    "NodeId": "5347:1037",
+    "Name": "N03 / 窄屏 · 装配单列",
+    "Type": "FRAME",
+    "Width": 390,
+    "Height": 844,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "S02",
+      "S08"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "13 / Gen2 · 集合跨视图与工作流取用",
+    "NodeId": "5347:1088",
+    "Name": "设计说明 / N03 / 窄屏 · 装配单列",
+    "Type": "TEXT",
+    "Width": 390,
+    "Height": 40,
+    "Visible": true,
+    "Role": "说明 / 裁决 / 注释",
+    "Checks": [],
+    "Coverage": "采用说明，需约束相关功能"
+  },
+  {
+    "Page": "13 / Gen2 · 集合跨视图与工作流取用",
+    "NodeId": "5347:1089",
+    "Name": "K01 / 菜单替代拖放",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "NAV-16",
+      "NAV-20"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "13 / Gen2 · 集合跨视图与工作流取用",
+    "NodeId": "5347:1230",
+    "Name": "设计说明 / K01 / 菜单替代拖放",
+    "Type": "TEXT",
+    "Width": 1440,
+    "Height": 20,
+    "Visible": true,
+    "Role": "说明 / 裁决 / 注释",
+    "Checks": [],
+    "Coverage": "采用说明，需约束相关功能"
+  },
+  {
+    "Page": "13 / Gen2 · 集合跨视图与工作流取用",
+    "NodeId": "5348:1151",
+    "Name": "产品 Portal / 目标预览状态",
+    "Type": "COMPONENT_SET",
+    "Width": 1500,
+    "Height": 1280,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "N23",
+      "S32"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "13 / Gen2 · 集合跨视图与工作流取用",
+    "NodeId": "5350:1332",
+    "Name": "P01 / Context 门户 · 只读预览",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "N23"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "13 / Gen2 · 集合跨视图与工作流取用",
+    "NodeId": "5350:1489",
+    "Name": "设计说明 / P01 / Context 门户 · 只读预览",
+    "Type": "TEXT",
+    "Width": 1440,
+    "Height": 20,
+    "Visible": true,
+    "Role": "说明 / 裁决 / 注释",
+    "Checks": [],
+    "Coverage": "采用说明，需约束相关功能"
+  },
+  {
+    "Page": "13 / Gen2 · 集合跨视图与工作流取用",
+    "NodeId": "5350:1490",
+    "Name": "P02 / 门户局部放大 · Main 不动",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "N23"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "13 / Gen2 · 集合跨视图与工作流取用",
+    "NodeId": "5350:1671",
+    "Name": "设计说明 / P02 / 门户局部放大 · Main 不动",
+    "Type": "TEXT",
+    "Width": 1440,
+    "Height": 20,
+    "Visible": true,
+    "Role": "说明 / 裁决 / 注释",
+    "Checks": [],
+    "Coverage": "采用说明，需约束相关功能"
+  },
+  {
+    "Page": "13 / Gen2 · 集合跨视图与工作流取用",
+    "NodeId": "5350:1672",
+    "Name": "P03 / 打开工作流现场 · 独立状态",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "N23"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "13 / Gen2 · 集合跨视图与工作流取用",
+    "NodeId": "5350:1790",
+    "Name": "设计说明 / P03 / 打开工作流现场 · 独立状态",
+    "Type": "TEXT",
+    "Width": 1440,
+    "Height": 20,
+    "Visible": true,
+    "Role": "说明 / 裁决 / 注释",
+    "Checks": [],
+    "Coverage": "采用说明，需约束相关功能"
+  },
+  {
+    "Page": "13 / Gen2 · 集合跨视图与工作流取用",
+    "NodeId": "5350:20679",
+    "Name": "P04 / 门户提升为装配 · 同目标",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "N24"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "13 / Gen2 · 集合跨视图与工作流取用",
+    "NodeId": "5350:20876",
+    "Name": "设计说明 / P04 / 门户提升为装配 · 同目标",
+    "Type": "TEXT",
+    "Width": 1440,
+    "Height": 20,
+    "Visible": true,
+    "Role": "说明 / 裁决 / 注释",
+    "Checks": [],
+    "Coverage": "采用说明，需约束相关功能"
+  },
+  {
+    "Page": "13 / Gen2 · 集合跨视图与工作流取用",
+    "NodeId": "5350:20877",
+    "Name": "P05 / 门户提升为工作台 · 同目标",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "N24",
+      "N40"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "13 / Gen2 · 集合跨视图与工作流取用",
+    "NodeId": "5350:20986",
+    "Name": "设计说明 / P05 / 门户提升为工作台 · 同目标",
+    "Type": "TEXT",
+    "Width": 1440,
+    "Height": 20,
+    "Visible": true,
+    "Role": "说明 / 裁决 / 注释",
+    "Checks": [],
+    "Coverage": "采用说明，需约束相关功能"
+  },
+  {
+    "Page": "13 / Gen2 · 集合跨视图与工作流取用",
+    "NodeId": "5350:20987",
+    "Name": "P06 / 进入Context子画布 · 返回Portal来源",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "N22"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "13 / Gen2 · 集合跨视图与工作流取用",
+    "NodeId": "5350:21134",
+    "Name": "设计说明 / P06 / 进入Context子画布 · 返回Portal来源",
+    "Type": "TEXT",
+    "Width": 1440,
+    "Height": 20,
+    "Visible": true,
+    "Role": "说明 / 裁决 / 注释",
+    "Checks": [],
+    "Coverage": "采用说明，需约束相关功能"
+  },
+  {
+    "Page": "13 / Gen2 · 集合跨视图与工作流取用",
+    "NodeId": "5351:1219",
+    "Name": "P07 / 门户投递 · 落点预览",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "N24"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "13 / Gen2 · 集合跨视图与工作流取用",
+    "NodeId": "5351:1357",
+    "Name": "设计说明 / P07 / 门户投递 · 落点预览",
+    "Type": "TEXT",
+    "Width": 1440,
+    "Height": 20,
+    "Visible": true,
+    "Role": "说明 / 裁决 / 注释",
+    "Checks": [],
+    "Coverage": "采用说明，需约束相关功能"
+  },
+  {
+    "Page": "13 / Gen2 · 集合跨视图与工作流取用",
+    "NodeId": "5351:1358",
+    "Name": "P08 / 门户投递 · 等待回执",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "N24"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "13 / Gen2 · 集合跨视图与工作流取用",
+    "NodeId": "5351:1490",
+    "Name": "设计说明 / P08 / 门户投递 · 等待回执",
+    "Type": "TEXT",
+    "Width": 1440,
+    "Height": 20,
+    "Visible": true,
+    "Role": "说明 / 裁决 / 注释",
+    "Checks": [],
+    "Coverage": "采用说明，需约束相关功能"
+  },
+  {
+    "Page": "13 / Gen2 · 集合跨视图与工作流取用",
+    "NodeId": "5351:1491",
+    "Name": "P09 / 门户投递 · 部分完成",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "N24"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "13 / Gen2 · 集合跨视图与工作流取用",
+    "NodeId": "5351:1623",
+    "Name": "设计说明 / P09 / 门户投递 · 部分完成",
+    "Type": "TEXT",
+    "Width": 1440,
+    "Height": 20,
+    "Visible": true,
+    "Role": "说明 / 裁决 / 注释",
+    "Checks": [],
+    "Coverage": "采用说明，需约束相关功能"
+  },
+  {
+    "Page": "13 / Gen2 · 集合跨视图与工作流取用",
+    "NodeId": "5351:1624",
+    "Name": "P10 / 门户投递 · 已确认放入",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "N24"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "13 / Gen2 · 集合跨视图与工作流取用",
+    "NodeId": "5351:1756",
+    "Name": "设计说明 / P10 / 门户投递 · 已确认放入",
+    "Type": "TEXT",
+    "Width": 1440,
+    "Height": 20,
+    "Visible": true,
+    "Role": "说明 / 裁决 / 注释",
+    "Checks": [],
+    "Coverage": "采用说明，需约束相关功能"
+  },
+  {
+    "Page": "13 / Gen2 · 集合跨视图与工作流取用",
+    "NodeId": "5351:1757",
+    "Name": "P11 / 门户投递 · 结果未知",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "N24"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "13 / Gen2 · 集合跨视图与工作流取用",
+    "NodeId": "5351:1889",
+    "Name": "设计说明 / P11 / 门户投递 · 结果未知",
+    "Type": "TEXT",
+    "Width": 1440,
+    "Height": 20,
+    "Visible": true,
+    "Role": "说明 / 裁决 / 注释",
+    "Checks": [],
+    "Coverage": "采用说明，需约束相关功能"
+  },
+  {
+    "Page": "13 / Gen2 · 集合跨视图与工作流取用",
+    "NodeId": "5351:1890",
+    "Name": "P12 / 门户投递 · 投递失败",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "N24"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "13 / Gen2 · 集合跨视图与工作流取用",
+    "NodeId": "5351:2022",
+    "Name": "设计说明 / P12 / 门户投递 · 投递失败",
+    "Type": "TEXT",
+    "Width": 1440,
+    "Height": 20,
+    "Visible": true,
+    "Role": "说明 / 裁决 / 注释",
+    "Checks": [],
+    "Coverage": "采用说明，需约束相关功能"
+  },
+  {
+    "Page": "13 / Gen2 · 集合跨视图与工作流取用",
+    "NodeId": "5352:1377",
+    "Name": "B14 / 本次采用 · 只读回执",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "S27"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "13 / Gen2 · 集合跨视图与工作流取用",
+    "NodeId": "5352:1501",
+    "Name": "设计说明 / B14 / 本次采用 · 只读回执",
+    "Type": "TEXT",
+    "Width": 1440,
+    "Height": 20,
+    "Visible": true,
+    "Role": "说明 / 裁决 / 注释",
+    "Checks": [],
+    "Coverage": "采用说明，需约束相关功能"
+  },
+  {
+    "Page": "13 / Gen2 · 集合跨视图与工作流取用",
+    "NodeId": "5352:1502",
+    "Name": "B15 / 有来源时 · 续接原会话",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "S27"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "13 / Gen2 · 集合跨视图与工作流取用",
+    "NodeId": "5352:1662",
+    "Name": "设计说明 / B15 / 有来源时 · 续接原会话",
+    "Type": "TEXT",
+    "Width": 1440,
+    "Height": 20,
+    "Visible": true,
+    "Role": "说明 / 裁决 / 注释",
+    "Checks": [],
+    "Coverage": "采用说明，需约束相关功能"
+  },
+  {
+    "Page": "13 / Gen2 · 集合跨视图与工作流取用",
+    "NodeId": "5352:1707",
+    "Name": "B16 / 续接原会话 · 沿用已有确认界面",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "S27"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "13 / Gen2 · 集合跨视图与工作流取用",
+    "NodeId": "5352:2037",
+    "Name": "设计说明 / B16 / 续接原会话 · 沿用已有确认界面",
+    "Type": "TEXT",
+    "Width": 1440,
+    "Height": 20,
+    "Visible": true,
+    "Role": "说明 / 裁决 / 注释",
+    "Checks": [],
+    "Coverage": "采用说明，需约束相关功能"
+  },
+  {
+    "Page": "13 / Gen2 · 集合跨视图与工作流取用",
+    "NodeId": "5352:2038",
+    "Name": "P13 / 投递部分完成 · 逐项结果",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "N24"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "13 / Gen2 · 集合跨视图与工作流取用",
+    "NodeId": "5352:2150",
+    "Name": "设计说明 / P13 / 投递部分完成 · 逐项结果",
+    "Type": "TEXT",
+    "Width": 1440,
+    "Height": 20,
+    "Visible": true,
+    "Role": "说明 / 裁决 / 注释",
+    "Checks": [],
+    "Coverage": "采用说明，需约束相关功能"
+  },
+  {
+    "Page": "13 / Gen2 · 集合跨视图与工作流取用",
+    "NodeId": "5353:1476",
+    "Name": "R01 / 减少动态效果 · Main",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "N38"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "13 / Gen2 · 集合跨视图与工作流取用",
+    "NodeId": "5353:1604",
+    "Name": "设计说明 / R01 / 减少动态效果 · Main",
+    "Type": "TEXT",
+    "Width": 1440,
+    "Height": 20,
+    "Visible": true,
+    "Role": "说明 / 裁决 / 注释",
+    "Checks": [],
+    "Coverage": "采用说明，需约束相关功能"
+  },
+  {
+    "Page": "13 / Gen2 · 集合跨视图与工作流取用",
+    "NodeId": "5353:1605",
+    "Name": "R02 / 减少动态效果 · 手牌",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "S24",
+      "S28"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "13 / Gen2 · 集合跨视图与工作流取用",
+    "NodeId": "5353:1787",
+    "Name": "设计说明 / R02 / 减少动态效果 · 手牌",
+    "Type": "TEXT",
+    "Width": 1440,
+    "Height": 20,
+    "Visible": true,
+    "Role": "说明 / 裁决 / 注释",
+    "Checks": [],
+    "Coverage": "采用说明，需约束相关功能"
+  },
+  {
+    "Page": "13 / Gen2 · 集合跨视图与工作流取用",
+    "NodeId": "5353:1788",
+    "Name": "R03 / 减少动态效果 · 预览",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "S26",
+      "S28"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "13 / Gen2 · 集合跨视图与工作流取用",
+    "NodeId": "5353:1948",
+    "Name": "设计说明 / R03 / 减少动态效果 · 预览",
+    "Type": "TEXT",
+    "Width": 1440,
+    "Height": 20,
+    "Visible": true,
+    "Role": "说明 / 裁决 / 注释",
+    "Checks": [],
+    "Coverage": "采用说明，需约束相关功能"
+  },
+  {
+    "Page": "13 / Gen2 · 集合跨视图与工作流取用",
+    "NodeId": "5353:1949",
+    "Name": "R04 / 减少动态效果 · 目标",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "N38"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "13 / Gen2 · 集合跨视图与工作流取用",
+    "NodeId": "5353:2094",
+    "Name": "设计说明 / R04 / 减少动态效果 · 目标",
+    "Type": "TEXT",
+    "Width": 1440,
+    "Height": 20,
+    "Visible": true,
+    "Role": "说明 / 裁决 / 注释",
+    "Checks": [],
+    "Coverage": "采用说明，需约束相关功能"
+  },
+  {
+    "Page": "13 / Gen2 · 集合跨视图与工作流取用",
+    "NodeId": "5353:2095",
+    "Name": "R05 / 减少动态效果 · 草稿",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "S27",
+      "S29"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "13 / Gen2 · 集合跨视图与工作流取用",
+    "NodeId": "5353:2262",
+    "Name": "设计说明 / R05 / 减少动态效果 · 草稿",
+    "Type": "TEXT",
+    "Width": 1440,
+    "Height": 20,
+    "Visible": true,
+    "Role": "说明 / 裁决 / 注释",
+    "Checks": [],
+    "Coverage": "采用说明，需约束相关功能"
+  },
+  {
+    "Page": "13 / Gen2 · 集合跨视图与工作流取用",
+    "NodeId": "5353:2263",
+    "Name": "R06 / 减少动态效果 · 等待回执",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "NAV-21"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "13 / Gen2 · 集合跨视图与工作流取用",
+    "NodeId": "5353:2427",
+    "Name": "设计说明 / R06 / 减少动态效果 · 等待回执",
+    "Type": "TEXT",
+    "Width": 1440,
+    "Height": 20,
+    "Visible": true,
+    "Role": "说明 / 裁决 / 注释",
+    "Checks": [],
+    "Coverage": "采用说明，需约束相关功能"
+  },
+  {
+    "Page": "13 / Gen2 · 集合跨视图与工作流取用",
+    "NodeId": "5354:1647",
+    "Name": "A10 / 核对原放入 · 不重复提交",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "S04",
+      "S05",
+      "S20"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "13 / Gen2 · 集合跨视图与工作流取用",
+    "NodeId": "5354:1791",
+    "Name": "设计说明 / A10 / 核对原放入 · 不重复提交",
+    "Type": "TEXT",
+    "Width": 1440,
+    "Height": 20,
+    "Visible": true,
+    "Role": "说明 / 裁决 / 注释",
+    "Checks": [],
+    "Coverage": "采用说明，需约束相关功能"
+  },
+  {
+    "Page": "13 / Gen2 · 集合跨视图与工作流取用",
+    "NodeId": "5354:1792",
+    "Name": "A11 / 定位已有集合 · 不再创建",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "S04",
+      "S05",
+      "S20"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "13 / Gen2 · 集合跨视图与工作流取用",
+    "NodeId": "5354:1936",
+    "Name": "设计说明 / A11 / 定位已有集合 · 不再创建",
+    "Type": "TEXT",
+    "Width": 1440,
+    "Height": 20,
+    "Visible": true,
+    "Role": "说明 / 裁决 / 注释",
+    "Checks": [],
+    "Coverage": "采用说明，需约束相关功能"
+  },
+  {
+    "Page": "13 / Gen2 · 集合跨视图与工作流取用",
+    "NodeId": "5354:1937",
+    "Name": "B17 / 核对原发送 · 不重复提交",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "S27",
+      "S29",
+      "S30"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "13 / Gen2 · 集合跨视图与工作流取用",
+    "NodeId": "5354:2101",
+    "Name": "设计说明 / B17 / 核对原发送 · 不重复提交",
+    "Type": "TEXT",
+    "Width": 1440,
+    "Height": 20,
+    "Visible": true,
+    "Role": "说明 / 裁决 / 注释",
+    "Checks": [],
+    "Coverage": "采用说明，需约束相关功能"
+  },
+  {
+    "Page": "13 / Gen2 · 集合跨视图与工作流取用",
+    "NodeId": "5358:1712",
+    "Name": "B18 / 替换引用 · 选择工作流",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "S27",
+      "S29"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "13 / Gen2 · 集合跨视图与工作流取用",
+    "NodeId": "5358:1894",
+    "Name": "设计说明 / B18 / 替换引用 · 选择工作流",
+    "Type": "TEXT",
+    "Width": 1440,
+    "Height": 20,
+    "Visible": true,
+    "Role": "说明 / 裁决 / 注释",
+    "Checks": [],
+    "Coverage": "采用说明，需约束相关功能"
+  },
+  {
+    "Page": "13 / Gen2 · 集合跨视图与工作流取用",
+    "NodeId": "5358:1895",
+    "Name": "B19 / 替换预览 · 研究到主张",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "S27",
+      "S29"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "13 / Gen2 · 集合跨视图与工作流取用",
+    "NodeId": "5358:2057",
+    "Name": "设计说明 / B19 / 替换预览 · 研究到主张",
+    "Type": "TEXT",
+    "Width": 1440,
+    "Height": 20,
+    "Visible": true,
+    "Role": "说明 / 裁决 / 注释",
+    "Checks": [],
+    "Coverage": "采用说明，需约束相关功能"
+  },
+  {
+    "Page": "13 / Gen2 · 集合跨视图与工作流取用",
+    "NodeId": "5358:2058",
+    "Name": "P14 / Portal · 加载中",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "N23",
+      "N24"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "13 / Gen2 · 集合跨视图与工作流取用",
+    "NodeId": "5358:2215",
+    "Name": "设计说明 / P14 / Portal · 加载中",
+    "Type": "TEXT",
+    "Width": 1440,
+    "Height": 20,
+    "Visible": true,
+    "Role": "说明 / 裁决 / 注释",
+    "Checks": [],
+    "Coverage": "采用说明，需约束相关功能"
+  },
+  {
+    "Page": "13 / Gen2 · 集合跨视图与工作流取用",
+    "NodeId": "5358:2216",
+    "Name": "P15 / Portal · 旧缓存",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "N23",
+      "N24"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "13 / Gen2 · 集合跨视图与工作流取用",
+    "NodeId": "5358:2373",
+    "Name": "设计说明 / P15 / Portal · 旧缓存",
+    "Type": "TEXT",
+    "Width": 1440,
+    "Height": 20,
+    "Visible": true,
+    "Role": "说明 / 裁决 / 注释",
+    "Checks": [],
+    "Coverage": "采用说明，需约束相关功能"
+  },
+  {
+    "Page": "13 / Gen2 · 集合跨视图与工作流取用",
+    "NodeId": "5358:2374",
+    "Name": "P16 / Portal · 部分预览",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "N23",
+      "N24"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "13 / Gen2 · 集合跨视图与工作流取用",
+    "NodeId": "5358:2529",
+    "Name": "设计说明 / P16 / Portal · 部分预览",
+    "Type": "TEXT",
+    "Width": 1440,
+    "Height": 20,
+    "Visible": true,
+    "Role": "说明 / 裁决 / 注释",
+    "Checks": [],
+    "Coverage": "采用说明，需约束相关功能"
+  },
+  {
+    "Page": "13 / Gen2 · 集合跨视图与工作流取用",
+    "NodeId": "5358:2530",
+    "Name": "P17 / Portal · 预览失败",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "N10",
+      "N23",
+      "N24"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "13 / Gen2 · 集合跨视图与工作流取用",
+    "NodeId": "5358:2685",
+    "Name": "设计说明 / P17 / Portal · 预览失败",
+    "Type": "TEXT",
+    "Width": 1440,
+    "Height": 20,
+    "Visible": true,
+    "Role": "说明 / 裁决 / 注释",
+    "Checks": [],
+    "Coverage": "采用说明，需约束相关功能"
+  },
+  {
+    "Page": "13 / Gen2 · 集合跨视图与工作流取用",
+    "NodeId": "5358:2686",
+    "Name": "P18 / Portal · 目标缺失",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "N10",
+      "N23",
+      "N24"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "13 / Gen2 · 集合跨视图与工作流取用",
+    "NodeId": "5358:2841",
+    "Name": "设计说明 / P18 / Portal · 目标缺失",
+    "Type": "TEXT",
+    "Width": 1440,
+    "Height": 20,
+    "Visible": true,
+    "Role": "说明 / 裁决 / 注释",
+    "Checks": [],
+    "Coverage": "采用说明，需约束相关功能"
+  },
+  {
+    "Page": "13 / Gen2 · 集合跨视图与工作流取用",
+    "NodeId": "5359:2026",
+    "Name": "01 / 集合与工作流取用 · 交互导览",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 1210,
+    "Visible": true,
+    "Role": "说明 / 裁决 / 注释",
+    "Checks": [],
+    "Coverage": "采用说明，需约束相关功能"
+  },
+  {
+    "Page": "13 / Gen2 · 集合跨视图与工作流取用",
+    "NodeId": "5362:2142",
+    "Name": "B20 / 替换后提交 · 研究到主张",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "S27",
+      "S29",
+      "S30"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "13 / Gen2 · 集合跨视图与工作流取用",
+    "NodeId": "5362:2308",
+    "Name": "B21 / 无工作流引用 · 提交中",
+    "Type": "FRAME",
+    "Width": 1440,
+    "Height": 900,
+    "Visible": true,
+    "Role": "专项状态 / 增量 / 需按最终稿合并",
+    "Checks": [
+      "S27",
+      "S29",
+      "S30"
+    ],
+    "Coverage": "有对应功能检查"
+  },
+  {
+    "Page": "13 / Gen2 · 集合跨视图与工作流取用",
+    "NodeId": "5363:2186",
+    "Name": "02 / 本轮采用说明 · 交给 T5",
+    "Type": "FRAME",
+    "Width": 1400,
+    "Height": 350,
+    "Visible": true,
+    "Role": "说明 / 裁决 / 注释",
+    "Checks": [],
+    "Coverage": "采用说明，需约束相关功能"
+  }
+]

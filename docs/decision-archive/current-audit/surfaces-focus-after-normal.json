@@ -1,0 +1,65 @@
+{
+  "states": [
+    {
+      "name": "card-return",
+      "tag": "ARTICLE",
+      "label": "真实工作流导入验收 · 工作流 · 卡牌 · 取用后未发送 · 这个工作流对应 3 个现场，请选择要进入的现场",
+      "card": true,
+      "instrument": null,
+      "handTrigger": false,
+      "preview": 0,
+      "hand": 1
+    },
+    {
+      "name": "card-escape",
+      "tag": "ARTICLE",
+      "label": "真实工作流导入验收 · 工作流 · 卡牌 · 取用后未发送 · 这个工作流对应 3 个现场，请选择要进入的现场",
+      "card": true,
+      "instrument": null,
+      "handTrigger": false,
+      "preview": 0,
+      "hand": 1
+    },
+    {
+      "name": "hand-escape",
+      "tag": "BUTTON",
+      "label": "打开工作流手牌",
+      "card": false,
+      "instrument": null,
+      "handTrigger": true,
+      "preview": 0,
+      "hand": 0
+    },
+    {
+      "name": "atlas-return",
+      "tag": "BUTTON",
+      "label": "打开集合总览",
+      "card": false,
+      "instrument": "atlas",
+      "handTrigger": false,
+      "preview": 0,
+      "hand": 0
+    },
+    {
+      "name": "atlas-escape",
+      "tag": "BUTTON",
+      "label": "打开集合总览",
+      "card": false,
+      "instrument": "atlas",
+      "handTrigger": false,
+      "preview": 0,
+      "hand": 0
+    },
+    {
+      "name": "hand-main-return",
+      "tag": "BUTTON",
+      "label": "呼出工作流手牌",
+      "card": false,
+      "instrument": null,
+      "handTrigger": false,
+      "preview": 0,
+      "hand": 0
+    }
+  ],
+  "errors": []
+}

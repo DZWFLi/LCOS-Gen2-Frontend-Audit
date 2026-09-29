@@ -1,0 +1,1081 @@
+diff --git a/huabu/apps/web/src/lcos/professional/ArtifactReaderBody.tsx b/huabu/apps/web/src/lcos/professional/ArtifactReaderBody.tsx
+--- a/huabu/apps/web/src/lcos/professional/ArtifactReaderBody.tsx
++++ b/huabu/apps/web/src/lcos/professional/ArtifactReaderBody.tsx
+@@ -25,5 +25,6 @@
+ import { useLcosShellStore } from '../shell/lcosShellStore';
+ import { LcosSurfaceFeedback } from '../ui/LcosSurfaceFeedback';
+ import { lcosTokens } from '../ui/lcosTokens';
++import { ReaderContentView } from '../ui/professional/ReaderContentView';
+ 
+ export interface ArtifactReaderBodyProps {
+@@ -304,7 +305,7 @@
+   return (
+-    <div data-lcos-reader className="flex h-full flex-col gap-3 p-5" style={{ minHeight: 320 }}>
+-      <div className="flex items-start justify-between gap-3">
++    <div data-lcos-reader className="lcos-reader-body">
++      <div className="lcos-reader-heading">
+         <div className="min-w-0">
+-          <h3 className="truncate text-base font-semibold" style={{ color: lcosTokens.color.text }}>
++          <h3 className="lcos-reader-title" style={{ color: lcosTokens.color.text }}>
+             {detail.artifact.title ?? '未命名'}
+           </h3>
+@@ -382,5 +383,5 @@
+       {/* R4：动作行（引用 / 摘录 / 对比 / 回到来源） */}
+-      <div className="flex flex-wrap items-center gap-2">
++      <div data-lcos-reader-actions className="flex flex-wrap items-center gap-2">
+         <button
+           type="button"
+           data-lcos-reader-to-draft
+@@ -496,31 +497,16 @@
+   onScroll: (event: React.UIEvent<HTMLDivElement>) => void;
+ }): React.JSX.Element {
+-  if (content?.kind === 'text') {
+-    return (
+-      <div
+-        ref={contentRef}
+-        onScroll={onScroll}
+-        data-lcos-reader-content="text"
+-        className="min-h-0 flex-1 overflow-auto rounded-xl p-5"
+-        style={{ background: lcosTokens.color.surface, border: `1px solid ${lcosTokens.color.borderSubtle}` }}
+-      >
+-        <pre className="whitespace-pre-wrap break-words text-sm leading-6" style={{ color: lcosTokens.color.text }}>{content.value}</pre>
+-      </div>
+-    );
+-  }
+-  if (content?.kind === 'image') {
+-    return (
+-      <div data-lcos-reader-content="image" className="flex min-h-0 flex-1 items-center justify-center overflow-auto rounded-xl p-4" style={{ background: lcosTokens.color.surface, border: `1px solid ${lcosTokens.color.borderSubtle}` }}>
+-        <img src={content.url} alt={fileName} className="max-h-full max-w-full object-contain" />
+-        <span className="sr-only">{content.mimeType}</span>
+-      </div>
+-    );
+-  }
+   return (
+-    <div data-lcos-reader-content="unavailable" className="flex flex-1 flex-col items-center justify-center gap-3 rounded-xl p-6" style={{ background: lcosTokens.color.surface, border: `1px solid ${lcosTokens.color.borderSubtle}` }}>
+-      {kind === 'image' ? <FileImage className="h-6 w-6" style={{ color: lcosTokens.color.muted }} aria-hidden /> : <FileText className="h-6 w-6" style={{ color: lcosTokens.color.muted }} aria-hidden />}
+-      <span className="text-sm" style={{ color: lcosTokens.color.muted }}>{fileName ?? '材料'} · {String(kind)} 暂无可用正文读取通道</span>
+-    </div>
++    <ReaderContentView
++      content={content}
++      kind={kind}
++      fileName={fileName}
++      contentRef={contentRef}
++      onScroll={onScroll}
++      unavailableGlyph={kind === 'image'
++        ? <FileImage className="h-6 w-6" style={{ color: lcosTokens.color.muted }} aria-hidden />
++        : <FileText className="h-6 w-6" style={{ color: lcosTokens.color.muted }} aria-hidden />}
++    />
+   );
+ }
+ 
+diff --git a/huabu/apps/web/src/lcos/professional/AssemblyBody.tsx b/huabu/apps/web/src/lcos/professional/AssemblyBody.tsx
+--- a/huabu/apps/web/src/lcos/professional/AssemblyBody.tsx
++++ b/huabu/apps/web/src/lcos/professional/AssemblyBody.tsx
+@@ -30,3 +30,6 @@
+ import { LcosSurfaceFeedback } from '../ui/LcosSurfaceFeedback';
+ import { lcosTokens } from '../ui/lcosTokens';
++import { AssemblyMasonryView } from '../ui/professional/AssemblyMasonryView';
++import { AssemblyMaterialView } from '../ui/professional/AssemblyMaterialView';
++import { AssemblySourceTabsView } from '../ui/professional/AssemblySourceTabsView';
+ import { assemblySourceRefOf } from './assemblySourceRef';
+@@ -615,4 +618,4 @@
+       data-lcos-assembly-target={targetRef.kind}
+       data-lcos-assembly-target-id={'id' in targetRef ? targetRef.id : ''}
+-      className="flex flex-col gap-3 p-4"
++      className="lcos-assembly-body"
+     >
+@@ -622,24 +625,8 @@
+-      <div data-lcos-assembly-source-tabs className="flex items-center gap-1" aria-label="Assembly 来源">
+-        {(['project', 'capture', 'sources', 'skills'] as const).map((key) => (
+-          <button
+-            key={key}
+-            type="button"
+-            aria-pressed={tab === key}
+-            data-lcos-assembly-source-tab={key}
+-            onClick={() => selectTab(key)}
+-            className="rounded-full px-3 py-1.5 text-xs"
+-            style={{
+-              background: tab === key ? lcosTokens.color.inverse : lcosTokens.color.raised,
+-              color: tab === key ? lcosTokens.color.textOnInverse : lcosTokens.color.text,
+-              minHeight: 32,
+-            }}
+-          >
+-            {TAB_LABEL[key]}
+-          </button>
+-        ))}
+-        <span className="ml-auto truncate text-[10px]" style={{ color: lcosTokens.color.muted }}>
+-          {TAB_OWNER_LABEL[tab]} · 投放到{targetLabel(targetRef)}
+-        </span>
+-      </div>
++      <AssemblySourceTabsView
++        items={(['project', 'capture', 'sources', 'skills'] as const).map((key) => ({ key, label: TAB_LABEL[key] }))}
++        value={tab}
++        onSelect={selectTab}
++        context={<span>{TAB_OWNER_LABEL[tab]} · 投放到{targetLabel(targetRef)}</span>}
++      />
+ 
+       {/* Project Warehouse：canonical 搜索 + 分页 */}
+@@ -716,3 +703,3 @@
+               <div className="max-h-[52vh] overflow-y-auto pr-1">
+-                <div className="columns-1 gap-4 sm:columns-2" data-lcos-assembly-waterfall>
++                <AssemblyMasonryView>
+                   {bay.warehouse!.items.map((item) => {
+@@ -731,8 +718,9 @@
+                         draggable
+                         onDragStart={(event) => beginAssemblyDrag(event, item.entityRef.id, assemblySourceRefOf(item))}
+                         onDragEnd={finishAssemblyDrag}
+-                        className="group mb-4 flex break-inside-avoid flex-col gap-2 rounded-2xl p-3 transition-shadow hover:shadow-md focus-within:shadow-md"
++                        className="group lcos-assembly-item"
++                        data-visual-active={activeItemKey === itemKey}
++                        data-referenced={card.referenced}
+                         onMouseEnter={() => setActiveItemKey(itemKey)}
+                         onMouseLeave={() => setActiveItemKey((current) => current === itemKey ? null : current)}
+-                        style={{ background: lcosTokens.color.surface, border: `1px solid ${lcosTokens.color.borderSubtle}`, boxShadow: lcosTokens.shadow.default }}
+                       >
+@@ -740,16 +728,7 @@
+-                        <div
+-                          className={`${previewUrl ? 'min-h-24' : 'px-3 py-2'} flex items-center justify-center rounded-xl`}
+-                          data-lcos-assembly-material
+-                          style={{ background: previewUrl ? lcosTokens.color.raised : 'transparent', color: lcosTokens.color.muted }}
+-                        >
+-                          {previewUrl ? (
+-                            <img src={previewUrl} alt="" className="max-h-56 w-full rounded-xl object-cover" />
+-                          ) : (
+-                            <div className="flex flex-col items-center gap-1 text-xs">
+-                              <MaterialGlyph item={item} />
+-                              <span>{materialFamily(item)}</span>
+-                              <span className="text-[10px] opacity-70">暂无真实预览</span>
+-                            </div>
+-                          )}
+-                        </div>
++                        <AssemblyMaterialView
++                          title={item.title ?? '未命名'}
++                          familyLabel={materialFamily(item)}
++                          {...(previewUrl === undefined ? {} : { previewUrl })}
++                          fallbackGlyph={<MaterialGlyph item={item} />}
++                        />
+                         <div className="flex items-start justify-between gap-2">
+@@ -834,6 +813,6 @@
+                       </div>
+                     );
+                   })}
+-                </div>
++                </AssemblyMasonryView>
+               </div>
+               {bay.warehouseNextCursor !== undefined && (
+diff --git a/huabu/apps/web/src/lcos/professional/ConversationWorkViewBody.tsx b/huabu/apps/web/src/lcos/professional/ConversationWorkViewBody.tsx
+--- a/huabu/apps/web/src/lcos/professional/ConversationWorkViewBody.tsx
++++ b/huabu/apps/web/src/lcos/professional/ConversationWorkViewBody.tsx
+@@ -23,4 +23,6 @@
+ import { LcosSurfaceFeedback } from '../ui/LcosSurfaceFeedback';
+ import { lcosTokens } from '../ui/lcosTokens';
++import { ConversationEventView } from '../ui/professional/ConversationEventView';
++import { ConversationIdentityView } from '../ui/professional/ConversationIdentityView';
+ 
+ import type { CollaborationDiagnosticsV1, CollaborationTimelineItemV1, CollaborationUserStateV1 } from '@local-creative-os/contracts';
+@@ -115,3 +117,3 @@
+   return (
+-    <div data-lcos-conversation-work-view className="flex flex-col gap-4 p-4">
++    <div data-lcos-conversation-work-view className="lcos-conversation-body">
+       {/* Header：projection 身份 + 用户态 + capability 驱动动作 */}
+@@ -118,35 +120,9 @@
+-      <section
+-        data-lcos-conversation-header
+-        className="flex flex-col gap-2 rounded-xl p-3"
+-        style={{ background: lcosTokens.color.surface, border: `1px solid ${lcosTokens.color.borderSubtle}` }}
+-      >
+-        <div className="flex items-center gap-2">
+-          <span
+-            aria-hidden
+-            className="flex h-7 w-7 items-center justify-center rounded-full text-[11px] font-bold"
+-            style={{ background: lcosTokens.color.inverse, color: lcosTokens.color.textOnInverse }}
+-          >
+-            <User className="h-3.5 w-3.5" />
+-          </span>
+-          <div className="min-w-0">
+-            <div className="truncate text-sm font-semibold" style={{ color: lcosTokens.color.text }}>
+-              {projection?.identity.title ?? connectedConversationId}
+-            </div>
+-            {projection?.identity.subtitle !== undefined && (
+-              <div className="truncate text-[10px]" style={{ color: lcosTokens.color.muted }}>
+-                {projection.identity.subtitle}
+-              </div>
+-            )}
+-          </div>
+-          <span
+-            data-lcos-conversation-user-state
+-            className="ml-auto rounded-full px-2 py-0.5 text-[10px]"
+-            style={{ background: lcosTokens.color.raised, color: lcosTokens.color.text }}
+-          >
+-            {userState === undefined ? '状态读取中…' : USER_STATE_LABEL[userState]}
+-          </span>
+-          {/* R4 §7 target continuity：只把共享 Assembly 的 live targetRef 更新为当前会话，
+-              不创建 ConversationAssembly，也不新开第二窗口。 */}
++      <ConversationIdentityView
++        title={projection?.identity.title ?? connectedConversationId}
++        {...(projection?.identity.subtitle === undefined ? {} : { subtitle: projection.identity.subtitle })}
++        stateLabel={userState === undefined ? '状态读取中…' : USER_STATE_LABEL[userState]}
++        identity={<User className="h-3.5 w-3.5" />}
++        actions={
+           <button
+             type="button"
+             data-lcos-conversation-open-assembly
+@@ -158,7 +134,8 @@
+           >
+             <Boxes className="h-3.5 w-3.5" aria-hidden />
+           </button>
+-        </div>
++        }
++      >
+         {projection?.recovery !== undefined && projection.recovery.state !== 'none' && (
+           <div className="text-[11px]" style={{ color: lcosTokens.color.pinAmber }}>
+             {projection.recovery.userMessage ?? '需要恢复'}
+@@ -177,6 +154,6 @@
+             {sendReason ?? '当前协作方式暂不支持直接追加消息'}
+           </div>
+         )}
+-      </section>
++      </ConversationIdentityView>
+ 
+       {/* Timeline / Work Events */}
+@@ -195,21 +172,18 @@
+             return (
+-              <div
++              <ConversationEventView
+                 key={item.itemId}
+-                data-lcos-timeline-item={item.kind}
+-                className="flex items-center gap-2 rounded-xl px-3 py-2"
+-                style={{ background: lcosTokens.color.surface, border: `1px solid ${lcosTokens.color.borderSubtle}` }}
+-              >
+-                <meta.Icon
+-                  className="h-3.5 w-3.5 shrink-0"
+-                  style={{ color: item.kind === 'error' ? lcosTokens.color.danger : item.kind === 'input_required' ? lcosTokens.color.pinAmber : lcosTokens.color.muted }}
+-                  aria-hidden
+-                />
+-                <div className="min-w-0 flex-1">
+-                  <div className="truncate text-sm" style={{ color: lcosTokens.color.text }}>{item.title}</div>
+-                  {item.body !== undefined && (
+-                    <div className="truncate text-[11px]" style={{ color: lcosTokens.color.muted }}>{item.body}</div>
+-                  )}
+-                </div>
+-                <span className="shrink-0 text-[10px]" style={{ color: lcosTokens.color.muted }}>{meta.label}</span>
+-              </div>
++                kind={item.kind}
++                title={item.title}
++                {...(item.body === undefined ? {} : { body: item.body })}
++                label={meta.label}
++                presentation={item.kind === 'user_message' || item.kind === 'agent_message' ? 'message' : 'activity'}
++                tone={item.kind === 'error' ? 'danger' : item.kind === 'input_required' ? 'attention' : 'neutral'}
++                icon={
++                  <meta.Icon
++                    className="h-3.5 w-3.5 shrink-0"
++                    style={{ color: item.kind === 'error' ? lcosTokens.color.danger : item.kind === 'input_required' ? lcosTokens.color.pinAmber : lcosTokens.color.muted }}
++                    aria-hidden
++                  />
++                }
++              />
+             );
+diff --git a/huabu/apps/web/src/lcos/ui/professional/AssemblyMasonryView.tsx b/huabu/apps/web/src/lcos/ui/professional/AssemblyMasonryView.tsx
+new file mode 100644
+--- /dev/null
++++ b/huabu/apps/web/src/lcos/ui/professional/AssemblyMasonryView.tsx
+@@ -0,0 +1,17 @@
++import type { ReactNode } from 'react';
++
++import './professional-assembly.css';
++
++export interface AssemblyMasonryViewProps {
++  readonly children: ReactNode;
++  readonly label?: string;
++}
++
++/** Current CSS-columns mechanism retained. No reordering, layout store or measurement engine. */
++export function AssemblyMasonryView({ children, label = '项目材料' }: AssemblyMasonryViewProps): React.JSX.Element {
++  return (
++    <div data-lcos-assembly-waterfall className="lcos-assembly-masonry" aria-label={label}>
++      {children}
++    </div>
++  );
++}
+diff --git a/huabu/apps/web/src/lcos/ui/professional/AssemblyMaterialView.tsx b/huabu/apps/web/src/lcos/ui/professional/AssemblyMaterialView.tsx
+new file mode 100644
+--- /dev/null
++++ b/huabu/apps/web/src/lcos/ui/professional/AssemblyMaterialView.tsx
+@@ -0,0 +1,55 @@
++import type { ReactNode } from 'react';
++
++import './professional-assembly.css';
++
++export interface AssemblyMaterialViewProps {
++  readonly title: string;
++  readonly familyLabel: string;
++  readonly previewUrl?: string;
++  readonly fallbackGlyph: ReactNode;
++  /** Actual readable preview supplied by its owner, never generated from a title. */
++  readonly excerpt?: string;
++  readonly feedback?: ReactNode;
++}
++
++/**
++ * GEN1 WarehouseObject: content + identity + optional references stay separate.
++ * Lovart contributes reference-only hierarchy, NOT copied commercial source/assets.
++ */
++export function AssemblyMaterialView({
++  title,
++  familyLabel,
++  previewUrl,
++  fallbackGlyph,
++  excerpt,
++  feedback,
++}: AssemblyMaterialViewProps): React.JSX.Element {
++  return (
++    <div
++      data-lcos-assembly-material
++      data-preview-available={previewUrl !== undefined && previewUrl !== ''}
++      className="lcos-assembly-material-view"
++    >
++      {previewUrl !== undefined && previewUrl !== '' ? (
++        <img
++          src={previewUrl}
++          alt={title}
++          draggable={false}
++          decoding="async"
++          className="lcos-assembly-preview-image"
++        />
++      ) : excerpt !== undefined && excerpt !== '' ? (
++        <p className="lcos-assembly-preview-excerpt">{excerpt}</p>
++      ) : (
++        <div className="lcos-assembly-preview-unavailable">
++          <span aria-hidden="true" className="lcos-assembly-material-glyph">{fallbackGlyph}</span>
++          <span className="lcos-assembly-preview-reason">
++            <span>{familyLabel}</span>
++            <small>暂无真实预览</small>
++          </span>
++        </div>
++      )}
++      {feedback}
++    </div>
++  );
++}
+diff --git a/huabu/apps/web/src/lcos/ui/professional/AssemblySourceTabsView.tsx b/huabu/apps/web/src/lcos/ui/professional/AssemblySourceTabsView.tsx
+new file mode 100644
+--- /dev/null
++++ b/huabu/apps/web/src/lcos/ui/professional/AssemblySourceTabsView.tsx
+@@ -0,0 +1,44 @@
++import type { ReactNode } from 'react';
++
++import './professional-assembly.css';
++
++export interface AssemblySourceTabPresentation<Key extends string> {
++  readonly key: Key;
++  readonly label: string;
++  readonly disabled?: boolean;
++}
++
++export interface AssemblySourceTabsViewProps<Key extends string> {
++  readonly items: readonly AssemblySourceTabPresentation<Key>[];
++  readonly value: Key;
++  readonly onSelect: (key: Key) => void;
++  readonly context?: ReactNode;
++}
++
++/** Reuses GEN1 Source Bay's four-channel navigation pattern, not its old fetching/state. */
++export function AssemblySourceTabsView<Key extends string>({
++  items,
++  value,
++  onSelect,
++  context,
++}: AssemblySourceTabsViewProps<Key>): React.JSX.Element {
++  return (
++    <div data-lcos-assembly-source-tabs className="lcos-assembly-source-tabs" aria-label="Assembly 来源">
++      <div className="lcos-assembly-source-buttons" role="group" aria-label="材料来源">
++        {items.map((item) => (
++          <button
++            key={item.key}
++            type="button"
++            data-lcos-assembly-source-tab={item.key}
++            aria-pressed={value === item.key}
++            disabled={item.disabled}
++            onClick={() => onSelect(item.key)}
++          >
++            {item.label}
++          </button>
++        ))}
++      </div>
++      {context === undefined ? null : <div className="lcos-assembly-target-context">{context}</div>}
++    </div>
++  );
++}
+diff --git a/huabu/apps/web/src/lcos/ui/professional/ConversationEventView.tsx b/huabu/apps/web/src/lcos/ui/professional/ConversationEventView.tsx
+new file mode 100644
+--- /dev/null
++++ b/huabu/apps/web/src/lcos/ui/professional/ConversationEventView.tsx
+@@ -0,0 +1,44 @@
++import type { ReactNode } from 'react';
++
++import './professional-conversation.css';
++
++export interface ConversationEventViewProps {
++  readonly kind: string;
++  readonly title: string;
++  readonly body?: string;
++  readonly label: string;
++  readonly icon: ReactNode;
++  /** Visual emphasis only; the container maps its existing canonical event kind. */
++  readonly presentation: 'message' | 'activity';
++  readonly tone?: 'neutral' | 'attention' | 'danger';
++  readonly children?: ReactNode;
++}
++
++/** Figma A10 reading rhythm. Events remain in the owner's order, with untruncated real text. */
++export function ConversationEventView({
++  kind,
++  title,
++  body,
++  label,
++  icon,
++  presentation,
++  tone = 'neutral',
++  children,
++}: ConversationEventViewProps): React.JSX.Element {
++  return (
++    <div
++      data-lcos-timeline-item={kind}
++      data-event-presentation={presentation}
++      data-event-tone={tone}
++      className="lcos-conversation-event"
++    >
++      <span aria-hidden="true" className="lcos-conversation-event-icon">{icon}</span>
++      <div className="lcos-conversation-event-content">
++        <span className="lcos-conversation-event-label">{label}</span>
++        <div className="lcos-conversation-event-title">{title}</div>
++        {body === undefined ? null : <div className="lcos-conversation-event-body">{body}</div>}
++        {children}
++      </div>
++    </div>
++  );
++}
+diff --git a/huabu/apps/web/src/lcos/ui/professional/ConversationIdentityView.tsx b/huabu/apps/web/src/lcos/ui/professional/ConversationIdentityView.tsx
+new file mode 100644
+--- /dev/null
++++ b/huabu/apps/web/src/lcos/ui/professional/ConversationIdentityView.tsx
+@@ -0,0 +1,38 @@
++import type { ReactNode } from 'react';
++
++import './professional-conversation.css';
++
++export interface ConversationIdentityViewProps {
++  readonly title: string;
++  readonly subtitle?: string;
++  readonly stateLabel: string;
++  readonly identity?: ReactNode;
++  readonly actions?: ReactNode;
++  /** Owner-rendered capability/recovery messages retain their semantics and selectors. */
++  readonly children?: ReactNode;
++}
++
++/** GEN1 WorkbenchFrame header/body slots, without its RunStatus interpretation or window shell. */
++export function ConversationIdentityView({
++  title,
++  subtitle,
++  stateLabel,
++  identity,
++  actions,
++  children,
++}: ConversationIdentityViewProps): React.JSX.Element {
++  return (
++    <section data-lcos-conversation-header className="lcos-conversation-identity">
++      <div className="lcos-conversation-identity-row">
++        {identity === undefined ? null : <span aria-hidden="true" className="lcos-conversation-identity-glyph">{identity}</span>}
++        <div className="lcos-conversation-identity-copy">
++          <h3 title={title}>{title}</h3>
++          {subtitle === undefined ? null : <p>{subtitle}</p>}
++        </div>
++        <span data-lcos-conversation-user-state className="lcos-conversation-state-label">{stateLabel}</span>
++        {actions === undefined ? null : <div className="lcos-conversation-identity-actions">{actions}</div>}
++      </div>
++      <div className="lcos-conversation-identity-notices">{children}</div>
++    </section>
++  );
++}
+diff --git a/huabu/apps/web/src/lcos/ui/professional/ProfessionalViews.test.tsx b/huabu/apps/web/src/lcos/ui/professional/ProfessionalViews.test.tsx
+new file mode 100644
+--- /dev/null
++++ b/huabu/apps/web/src/lcos/ui/professional/ProfessionalViews.test.tsx
+@@ -0,0 +1,145 @@
++import { act } from 'react';
++import { createRoot } from 'react-dom/client';
++import { afterEach, describe, expect, it, vi } from 'vitest';
++
++import { AssemblyMasonryView } from './AssemblyMasonryView';
++import { AssemblyMaterialView } from './AssemblyMaterialView';
++import { AssemblySourceTabsView } from './AssemblySourceTabsView';
++import { ConversationEventView } from './ConversationEventView';
++import { ConversationIdentityView } from './ConversationIdentityView';
++import { ReaderContentView } from './ReaderContentView';
++import { ReaderGroupView } from './ReaderGroupView';
++
++import type { ReactNode } from 'react';
++
++const mounted: { root: ReturnType<typeof createRoot>; host: HTMLDivElement }[] = [];
++async function mount(node: ReactNode): Promise<HTMLDivElement> {
++  const host = document.createElement('div');
++  document.body.append(host);
++  const root = createRoot(host);
++  mounted.push({ host, root });
++  await act(async () => root.render(node));
++  return host;
++}
++
++afterEach(async () => {
++  for (const { root, host } of mounted.splice(0)) {
++    await act(async () => root.unmount());
++    host.remove();
++  }
++});
++
++describe('Reader production presentation', () => {
++  it('preserves all supplied text and escapes markup instead of adding an HTML execution channel', async () => {
++    const value = '第一行\n<script>window.bad = true</script>\n最后一行';
++    const host = await mount(<ReaderContentView content={{ kind: 'text', value }} kind="markdown" fileName="资料" />);
++    expect(host.querySelector('pre')?.textContent).toBe(value);
++    expect(host.querySelector('script')).toBeNull();
++  });
++  it('keeps the scroll ref on the actual content viewport', async () => {
++    const ref = vi.fn();
++    const scroll = vi.fn();
++    const host = await mount(<ReaderContentView content={{ kind: 'text', value: '正文' }} kind="markdown" fileName="资料" contentRef={ref} onScroll={scroll} />);
++    const viewport = host.querySelector('[data-lcos-reader-content="text"]');
++    expect(ref).toHaveBeenCalledWith(viewport);
++    await act(async () => viewport?.dispatchEvent(new Event('scroll')));
++    expect(scroll).toHaveBeenCalledTimes(1);
++  });
++  it('does not treat a genuinely empty text file as missing content', async () => {
++    const host = await mount(<ReaderContentView content={{ kind: 'text', value: '' }} kind="markdown" fileName="空文本" />);
++    expect(host.querySelector('[data-lcos-reader-content="text"]')).not.toBeNull();
++    expect(host.querySelector('[data-lcos-reader-content="unavailable"]')).toBeNull();
++  });
++  it('uses the exact owner-supplied image URL without staging or mutating it', async () => {
++    const host = await mount(<ReaderContentView content={{ kind: 'image', url: 'blob:owner-owned', mimeType: 'image/png' }} kind="image" fileName="原图" />);
++    expect(host.querySelector('img')?.getAttribute('src')).toBe('blob:owner-owned');
++    expect(host.querySelector('img')?.getAttribute('alt')).toBe('原图');
++  });
++  it('keeps unsupported content honest and invents no Open/Retry callback', async () => {
++    const host = await mount(<ReaderContentView content={null} kind="pdf" fileName="尚不可读" />);
++    expect(host.textContent).toContain('暂无可用正文读取通道');
++    expect(host.querySelector('button')).toBeNull();
++  });
++  it('consumes supplied feedback instead of manufacturing a success state', async () => {
++    const host = await mount(<ReaderContentView content={null} kind="image" fileName="原图" feedback={<span role="alert">读取失败</span>} />);
++    expect(host.querySelector('[role="alert"]')?.textContent).toBe('读取失败');
++    expect(host.textContent).not.toContain('已就绪');
++  });
++  it('can reuse a host renderer without reparsing or duplicating its content', async () => {
++    const host = await mount(<ReaderContentView content={{ kind: 'text', value: '# 原文' }} kind="markdown" fileName="资料" renderedText={<h1>原文</h1>} />);
++    expect(host.querySelectorAll('h1')).toHaveLength(1);
++    expect(host.querySelector('pre')).toBeNull();
++  });
++});
++
++describe('Controlled reading groups', () => {
++  const groups = [{ id: 'a', label: 'A', content: <p>甲</p> }, { id: 'b', label: 'B', content: <p>乙</p> }];
++  it('shows both supplied panes in split mode without creating window controls', async () => {
++    const host = await mount(<ReaderGroupView groups={groups} presentation="split" activeGroupId="a" />);
++    expect(host.querySelectorAll('[data-reader-group-id]:not([hidden])')).toHaveLength(2);
++    expect(host.querySelector('button')).toBeNull();
++  });
++  it('only shows the explicitly active pane in single mode while retaining the other DOM', async () => {
++    const host = await mount(<ReaderGroupView groups={groups} presentation="single" activeGroupId="b" />);
++    expect(host.querySelectorAll('[data-reader-group-id]')).toHaveLength(2);
++    expect(host.querySelector('[data-reader-group-id="a"]')?.hasAttribute('hidden')).toBe(true);
++    expect(host.querySelector('[data-reader-group-id="b"]')?.hasAttribute('hidden')).toBe(false);
++  });
++});
++
++describe('Assembly Source Bay presentation', () => {
++  it('retains child order without introducing a second masonry layout engine', async () => {
++    const host = await mount(<AssemblyMasonryView><div data-item="first" /><div data-item="second" /></AssemblyMasonryView>);
++    expect([...host.querySelectorAll('[data-item]')].map((el) => el.getAttribute('data-item'))).toEqual(['first', 'second']);
++  });
++  it('does not substitute a fake photograph for unavailable preview bytes', async () => {
++    const host = await mount(<AssemblyMaterialView title="材料" familyLabel="图像" fallbackGlyph={<span>图</span>} />);
++    expect(host.querySelector('img')).toBeNull();
++    expect(host.textContent).toContain('暂无真实预览');
++  });
++  it('renders only a real supplied excerpt and escapes it', async () => {
++    const host = await mount(<AssemblyMaterialView title="文档" familyLabel="文本" fallbackGlyph={null} excerpt="<b>原文</b>" />);
++    expect(host.querySelector('.lcos-assembly-preview-excerpt')?.textContent).toBe('<b>原文</b>');
++    expect(host.querySelector('b')).toBeNull();
++  });
++  it('keeps the image out of native image drag so the existing item drag remains the entry', async () => {
++    const host = await mount(<AssemblyMaterialView title="原图" familyLabel="图像" fallbackGlyph={null} previewUrl="blob:read-model" />);
++    expect(host.querySelector('img')?.getAttribute('draggable')).toBe('false');
++  });
++  it('dispatches the existing key without changing selected state by itself', async () => {
++    const select = vi.fn();
++    const host = await mount(<AssemblySourceTabsView items={[{ key: 'project', label: '项目' }, { key: 'capture', label: '暂存' }]} value="project" onSelect={select} />);
++    await act(async () => host.querySelector<HTMLButtonElement>('[data-lcos-assembly-source-tab="capture"]')?.click());
++    expect(select).toHaveBeenCalledWith('capture');
++    expect(host.querySelector('[aria-pressed="true"]')?.textContent).toBe('项目');
++    expect(host.querySelector('[role="tab"]')).toBeNull();
++  });
++  it('does not dispatch disabled actions', async () => {
++    const select = vi.fn();
++    const host = await mount(<AssemblySourceTabsView items={[{ key: 'skills', label: '技能', disabled: true }]} value="skills" onSelect={select} />);
++    await act(async () => host.querySelector<HTMLButtonElement>('button')?.click());
++    expect(select).not.toHaveBeenCalled();
++  });
++});
++
++describe('Conversation presentation', () => {
++  it('retains long multiline messages instead of truncating them into event badges', async () => {
++    const body = '首段\n' + '这是完整的会话正文。'.repeat(80) + '\n末段';
++    const host = await mount(<ConversationEventView kind="agent_message" title="回复" body={body} label="协作者" icon={null} presentation="message" />);
++    expect(host.querySelector('.lcos-conversation-event-body')?.textContent).toBe(body);
++    expect(host.querySelector('.truncate')).toBeNull();
++  });
++  it('shows an error without inventing a retry or resend operation', async () => {
++    const host = await mount(<ConversationEventView kind="error" title="失败" label="执行失败" icon={null} presentation="activity" tone="danger" />);
++    expect(host.querySelector('[data-event-tone="danger"]')).not.toBeNull();
++    expect(host.querySelector('button')).toBeNull();
++  });
++  it('preserves current capability notices and supplied callbacks', async () => {
++    const action = vi.fn();
++    const host = await mount(<ConversationIdentityView title="当前会话" stateLabel="暂时不可用" actions={<button onClick={action}>装配</button>}><p>不支持直接追加消息</p></ConversationIdentityView>);
++    expect(host.textContent).toContain('不支持直接追加消息');
++    await act(async () => host.querySelector<HTMLButtonElement>('button')?.click());
++    expect(action).toHaveBeenCalledTimes(1);
++    expect(host.querySelector('[data-lcos-conversation-user-state]')?.textContent).toBe('暂时不可用');
++  });
++});
+diff --git a/huabu/apps/web/src/lcos/ui/professional/ReaderContentView.tsx b/huabu/apps/web/src/lcos/ui/professional/ReaderContentView.tsx
+new file mode 100644
+--- /dev/null
++++ b/huabu/apps/web/src/lcos/ui/professional/ReaderContentView.tsx
+@@ -0,0 +1,89 @@
++import type { ReactNode, Ref, UIEventHandler } from 'react';
++
++import './professional-reading.css';
++
++/** The owning Reader supplies revision bytes. No loading, URL or revision owner lives here. */
++export type ReaderVisibleContent =
++  | { readonly kind: 'text'; readonly value: string }
++  | { readonly kind: 'image'; readonly url: string; readonly mimeType: string }
++  | null;
++
++export interface ReaderContentViewProps {
++  readonly content: ReaderVisibleContent;
++  readonly kind: string;
++  readonly fileName: string;
++  readonly contentRef?: Ref<HTMLDivElement>;
++  readonly onScroll?: UIEventHandler<HTMLDivElement>;
++  /** Reuse the host's renderer when one is available; never parse or fetch a second copy. */
++  readonly renderedText?: ReactNode;
++  readonly unavailableGlyph?: ReactNode;
++  /** Optional owner-supplied loading/error/recovery presentation. null content is NOT success. */
++  readonly feedback?: ReactNode;
++}
++
++/** Thin presentation adaptation of GEN1 ArtifactViewerHost's content/fallback junction. */
++export function ReaderContentView({
++  content,
++  kind,
++  fileName,
++  contentRef,
++  onScroll,
++  renderedText,
++  unavailableGlyph,
++  feedback,
++}: ReaderContentViewProps): React.JSX.Element {
++  if (content?.kind === 'text') {
++    return (
++      <div
++        ref={contentRef}
++        onScroll={onScroll}
++        data-lcos-reader-content="text"
++        data-figma-node-id="5388:27484"
++        className="lcos-reader-page"
++      >
++        <div className="lcos-reader-measure">
++          {renderedText === undefined ? (
++            <pre className="lcos-reader-plaintext">{content.value}</pre>
++          ) : (
++            <div className="lcos-reader-richtext">{renderedText}</div>
++          )}
++        </div>
++        {feedback}
++      </div>
++    );
++  }
++
++  if (content?.kind === 'image') {
++    return (
++      <div
++        ref={contentRef}
++        onScroll={onScroll}
++        data-lcos-reader-content="image"
++        className="lcos-reader-media-page"
++      >
++        <figure className="lcos-reader-figure">
++          <img
++            data-figma-node-id="5388:27490"
++            src={content.url}
++            alt={fileName}
++            className="lcos-reader-image"
++          />
++          <figcaption className="lcos-reader-media-caption">{fileName}</figcaption>
++        </figure>
++        <span className="lcos-professional-sr-only">{content.mimeType}</span>
++        {feedback}
++      </div>
++    );
++  }
++
++  return (
++    <div data-lcos-reader-content="unavailable" className="lcos-reader-unavailable">
++      {feedback === undefined ? (
++        <>
++          <span aria-hidden="true" className="lcos-reader-unavailable-glyph">{unavailableGlyph}</span>
++          <span>{fileName} · {kind} 暂无可用正文读取通道</span>
++        </>
++      ) : feedback}
++    </div>
++  );
++}
+diff --git a/huabu/apps/web/src/lcos/ui/professional/ReaderGroupView.tsx b/huabu/apps/web/src/lcos/ui/professional/ReaderGroupView.tsx
+new file mode 100644
+--- /dev/null
++++ b/huabu/apps/web/src/lcos/ui/professional/ReaderGroupView.tsx
+@@ -0,0 +1,54 @@
++import type { ReactNode } from 'react';
++
++import './professional-reading.css';
++
++export interface ReaderGroupPresentation {
++  readonly id: string;
++  readonly label: string;
++  readonly content: ReactNode;
++  /** Existing window/group owner supplies the real tabs and actions, if any. */
++  readonly tabs?: ReactNode;
++  readonly footer?: ReactNode;
++}
++
++export interface ReaderGroupViewProps {
++  readonly groups: readonly ReaderGroupPresentation[];
++  readonly presentation: 'split' | 'single';
++  readonly activeGroupId: string;
++  /** In single-group mode the owner provides its existing group selector. */
++  readonly groupSelector?: ReactNode;
++}
++
++/**
++ * Figma 5388:27475 group body only. No window, tab state, resize or navigation owner.
++ * Based on GEN1 WorkbenchFrame's named content/side slots, not its legacy Run model.
++ */
++export function ReaderGroupView({
++  groups,
++  presentation,
++  activeGroupId,
++  groupSelector,
++}: ReaderGroupViewProps): React.JSX.Element {
++  return (
++    <div className="lcos-reader-groups" data-reader-group-layout={presentation}>
++      {presentation === 'single' && groupSelector !== undefined ? (
++        <div className="lcos-reader-group-selector">{groupSelector}</div>
++      ) : null}
++      <div className="lcos-reader-group-columns">
++        {groups.map((group) => (
++          <section
++            key={group.id}
++            data-reader-group-id={group.id}
++            aria-label={group.label}
++            hidden={presentation === 'single' && group.id !== activeGroupId}
++            className="lcos-reader-group"
++          >
++            {group.tabs === undefined ? null : <div className="lcos-reader-group-tabs">{group.tabs}</div>}
++            <div className="lcos-reader-group-content">{group.content}</div>
++            {group.footer === undefined ? null : <footer className="lcos-reader-group-footer">{group.footer}</footer>}
++          </section>
++        ))}
++      </div>
++    </div>
++  );
++}
+diff --git a/huabu/apps/web/src/lcos/ui/professional/professional-assembly.css b/huabu/apps/web/src/lcos/ui/professional/professional-assembly.css
+new file mode 100644
+--- /dev/null
++++ b/huabu/apps/web/src/lcos/ui/professional/professional-assembly.css
+@@ -0,0 +1,89 @@
++/* Figma C01 5346:1416. Current Source Bay + CSS columns retained; Lovart is behavior-only evidence. */
++.lcos-assembly-body {
++  container-type: inline-size;
++  box-sizing: border-box;
++  min-inline-size: 0;
++  inline-size: 100%;
++  display: flex;
++  flex-direction: column;
++  gap: 16px;
++  padding: 24px 32px;
++  color: var(--gen2-text);
++  background: var(--gen2-surface);
++  font-family: 'Noto Sans SC', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
++}
++.lcos-assembly-source-tabs { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; min-inline-size: 0; }
++.lcos-assembly-source-buttons { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
++.lcos-assembly-source-buttons button {
++  min-inline-size: 44px;
++  min-block-size: 44px;
++  padding: 8px 12px;
++  border: 0;
++  border-radius: var(--lcos-radius-control, 8px);
++  color: var(--gen2-muted);
++  background: transparent;
++  font: inherit;
++  font-size: 12px;
++  line-height: 18px;
++  cursor: pointer;
++  transition: background 120ms ease, color 120ms ease;
++}
++.lcos-assembly-source-buttons button:hover:not(:disabled) { background: var(--gen2-raised); color: var(--gen2-text); }
++.lcos-assembly-source-buttons button[aria-pressed='true'] { background: var(--lcos-color-bg-inverse); color: var(--lcos-color-text-on-inverse); }
++.lcos-assembly-source-buttons button:disabled { opacity: 0.45; cursor: not-allowed; }
++.lcos-assembly-target-context { flex: 1 1 100%; min-inline-size: 0; overflow-wrap: anywhere; font-size: 11px; line-height: 18px; color: var(--gen2-muted); }
++.lcos-assembly-body [data-lcos-assembly-source-panel] { min-inline-size: 0; }
++.lcos-assembly-body form { flex-wrap: wrap; }
++.lcos-assembly-body form label { min-inline-size: 120px; }
++.lcos-assembly-body [data-lcos-assembly-search] { min-inline-size: 0; inline-size: 100%; font-size: 14px; line-height: 20px; }
++.lcos-assembly-masonry { column-width: 216px; column-gap: 24px; inline-size: 100%; }
++.lcos-assembly-item {
++  display: flex;
++  flex-direction: column;
++  gap: 8px;
++  break-inside: avoid;
++  box-sizing: border-box;
++  position: relative;
++  margin-block-end: 24px;
++  min-inline-size: 0;
++  padding: 10px;
++  border: 1px solid transparent;
++  border-radius: var(--lcos-radius-medium, 16px);
++  background: transparent;
++  color: var(--gen2-text);
++  transition: border-color 120ms ease, box-shadow 120ms ease;
++}
++.lcos-assembly-item:hover, .lcos-assembly-item:focus-within, .lcos-assembly-item[data-visual-active='true'] {
++  border-color: var(--lcos-color-border-subtle, var(--gen2-border));
++  box-shadow: var(--lcos-shadow-default);
++}
++.lcos-assembly-item[data-referenced='true']::before { content: ''; position: absolute; inset-inline-start: 3px; inset-block-start: 14px; inline-size: 2px; block-size: 18px; border-radius: 1px; background: var(--gen2-accent); }
++.lcos-assembly-material-view { inline-size: 100%; min-inline-size: 0; }
++.lcos-assembly-preview-image { display: block; inline-size: 100%; block-size: auto; border-radius: 12px; }
++.lcos-assembly-preview-excerpt { margin: 0; padding: 16px; border-radius: 2px; background: var(--lcos-main-paper, var(--gen2-surface)); font-size: 14px; line-height: 23px; white-space: pre-wrap; overflow-wrap: anywhere; }
++.lcos-assembly-preview-unavailable { display: flex; align-items: center; gap: 12px; padding: 12px 2px; min-block-size: 48px; color: var(--gen2-muted); }
++.lcos-assembly-material-glyph { inline-size: 24px; block-size: 24px; display: inline-flex; flex: 0 0 auto; }
++.lcos-assembly-preview-reason { display: flex; flex-direction: column; gap: 4px; font-size: 12px; line-height: 18px; }
++.lcos-assembly-preview-reason small { font-size: 10px; line-height: 16px; }
++.lcos-assembly-item [data-lcos-assembly-actions] { flex-wrap: wrap; }
++.lcos-assembly-item [data-lcos-assembly-actions] button, .lcos-assembly-item [data-lcos-assembly-more] { min-block-size: 44px; }
++.lcos-assembly-item [data-lcos-assembly-more] { opacity: 0.75; transition: opacity 120ms ease; }
++.lcos-assembly-item:hover [data-lcos-assembly-more], .lcos-assembly-item:focus-within [data-lcos-assembly-more] { opacity: 1; }
++.lcos-assembly-body :is(button, a, input):focus-visible { outline: 2px solid var(--gen2-accent); outline-offset: 2px; }
++.lcos-assembly-body [data-lcos-assembly-preview] { overflow-wrap: anywhere; }
++@container (max-width: 460px) {
++  .lcos-assembly-masonry { column-count: 1; }
++}
++@media (max-width: 480px) {
++  .lcos-assembly-body { padding-inline: 16px; }
++}
++@media (hover: none), (pointer: coarse) {
++  .lcos-assembly-item [data-lcos-assembly-more] { opacity: 1; }
++  .lcos-assembly-item [data-lcos-assembly-actions] { display: flex; }
++}
++@media (prefers-reduced-motion: reduce) {
++  .lcos-assembly-item, .lcos-assembly-item [data-lcos-assembly-more], .lcos-assembly-source-buttons button { transition: none; }
++}
++@media (forced-colors: active) {
++  .lcos-assembly-item, .lcos-assembly-source-buttons button { border: 1px solid ButtonText; }
++}
+diff --git a/huabu/apps/web/src/lcos/ui/professional/professional-conversation.css b/huabu/apps/web/src/lcos/ui/professional/professional-conversation.css
+new file mode 100644
+--- /dev/null
++++ b/huabu/apps/web/src/lcos/ui/professional/professional-conversation.css
+@@ -0,0 +1,62 @@
++/* Figma 5289:6673–6691; current conversation/Run/capability owners unchanged. */
++.lcos-conversation-body {
++  container-type: inline-size;
++  box-sizing: border-box;
++  inline-size: 100%;
++  min-inline-size: 0;
++  display: flex;
++  flex-direction: column;
++  gap: 12px;
++  padding: 16px;
++  font-family: 'Noto Sans SC', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
++  color: var(--gen2-text);
++  background: var(--gen2-surface);
++}
++.lcos-conversation-identity { display: flex; flex-direction: column; gap: 8px; min-inline-size: 0; padding: 2px; }
++.lcos-conversation-identity-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
++.lcos-conversation-identity-glyph { display: grid; place-items: center; flex: 0 0 28px; inline-size: 28px; block-size: 28px; border-radius: 50%; background: var(--lcos-color-bg-inverse); color: var(--lcos-color-text-on-inverse); }
++.lcos-conversation-identity-copy { flex: 1 1 120px; min-inline-size: 0; }
++.lcos-conversation-identity-copy h3 { margin: 0; font-size: 16px; line-height: 24px; font-weight: 500; overflow-wrap: anywhere; }
++.lcos-conversation-identity-copy p { margin: 4px 0 0; font-size: 12px; line-height: 18px; color: var(--gen2-muted); overflow-wrap: anywhere; }
++.lcos-conversation-state-label { max-inline-size: 100%; padding: 4px 8px; border-radius: var(--lcos-radius-control, 8px); background: var(--gen2-raised); font-size: 11px; line-height: 18px; overflow-wrap: anywhere; }
++.lcos-conversation-identity-actions { display: flex; flex: 0 0 auto; align-items: center; gap: 8px; }
++.lcos-conversation-identity-actions button { min-inline-size: 44px; min-block-size: 44px; }
++.lcos-conversation-identity-notices { display: flex; flex-direction: column; gap: 8px; min-inline-size: 0; overflow-wrap: anywhere; }
++.lcos-conversation-identity-notices:empty { display: none; }
++.lcos-conversation-body [data-lcos-conversation-timeline] { display: flex; flex-direction: column; gap: 12px; min-inline-size: 0; }
++.lcos-conversation-event {
++  display: flex;
++  align-items: flex-start;
++  gap: 8px;
++  min-inline-size: 0;
++  border: 1px solid transparent;
++  border-radius: var(--lcos-radius-card-small, 12px);
++  padding: 10px 8px;
++  background: transparent;
++}
++.lcos-conversation-event[data-event-presentation='activity'] { background: var(--gen2-raised); padding: 8px 10px; }
++.lcos-conversation-event[data-event-tone='attention'] { border-inline-start-color: var(--lcos-pin-amber); }
++.lcos-conversation-event[data-event-tone='danger'] { border-inline-start-color: var(--lcos-status-danger); }
++.lcos-conversation-event-icon { display: inline-flex; flex: 0 0 16px; inline-size: 16px; block-size: 16px; margin-block-start: 2px; color: var(--gen2-muted); }
++.lcos-conversation-event-content { flex: 1; min-inline-size: 0; }
++.lcos-conversation-event-label { display: block; margin-block-end: 6px; color: var(--gen2-muted); font-size: 11px; line-height: 18px; }
++.lcos-conversation-event-title { font-size: 14px; line-height: 21px; font-weight: 500; white-space: pre-wrap; overflow-wrap: anywhere; }
++.lcos-conversation-event-body { margin-block-start: 8px; font-size: 14px; line-height: 21px; font-weight: 400; white-space: pre-wrap; overflow-wrap: anywhere; }
++.lcos-conversation-event[data-event-presentation='activity'] .lcos-conversation-event-body { font-size: 13px; line-height: 20px; color: var(--gen2-muted); }
++.lcos-conversation-body [data-lcos-conversation-composer] { min-inline-size: 0; }
++.lcos-conversation-body [data-lcos-conversation-composer] > :first-child { flex-wrap: wrap; }
++.lcos-conversation-body [data-lcos-conversation-context] { min-inline-size: 0; }
++.lcos-conversation-body [data-lcos-conversation-context] span { max-inline-size: 100%; overflow-wrap: anywhere; }
++.lcos-conversation-body [data-lcos-diagnostics] { min-inline-size: 0; overflow-wrap: anywhere; }
++.lcos-conversation-body :is(button, a, textarea):focus-visible { outline: 2px solid var(--gen2-accent); outline-offset: 2px; }
++.lcos-conversation-body [data-lcos-open-work-composer], .lcos-conversation-body [data-lcos-diagnostics-toggle] { min-block-size: 44px; }
++@container (max-width: 380px) {
++  .lcos-conversation-identity-copy { flex-basis: 100px; }
++  .lcos-conversation-event { padding-inline: 2px; }
++}
++@media (prefers-reduced-motion: reduce) {
++  .lcos-conversation-body .lcos-static-pulse { animation: none; }
++}
++@media (forced-colors: active) {
++  .lcos-conversation-event[data-event-presentation='activity'] { border-color: CanvasText; }
++}
+diff --git a/huabu/apps/web/src/lcos/ui/professional/professional-reading.css b/huabu/apps/web/src/lcos/ui/professional/professional-reading.css
+new file mode 100644
+--- /dev/null
++++ b/huabu/apps/web/src/lcos/ui/professional/professional-reading.css
+@@ -0,0 +1,112 @@
++/* Reader body only. Figma 5388:27484–27492; Stage still owns the window and its geometry. */
++.lcos-reader-body {
++  container-type: inline-size;
++  box-sizing: border-box;
++  inline-size: 100%;
++  block-size: 100%;
++  min-inline-size: 0;
++  min-block-size: 320px;
++  padding: 24px 32px;
++  display: flex;
++  flex-direction: column;
++  gap: 18px;
++  background: var(--gen2-surface);
++  color: var(--gen2-text);
++  font-family: 'Noto Sans SC', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
++}
++.lcos-reader-heading { inline-size: 100%; max-inline-size: 62ch; margin-inline: auto; display: flex; flex-wrap: wrap; align-items: flex-start; gap: 12px; }
++.lcos-reader-heading > :first-child { flex: 1; min-inline-size: 0; }
++.lcos-reader-title {
++  margin: 0;
++  font-size: 27px;
++  line-height: 42px;
++  font-weight: 500;
++  overflow-wrap: anywhere;
++}
++.lcos-reader-heading p { margin: 4px 0 0; font-size: 11px; line-height: 18px; }
++.lcos-reader-page, .lcos-reader-media-page, .lcos-reader-unavailable {
++  box-sizing: border-box;
++  min-inline-size: 0;
++  min-block-size: 0;
++  flex: 1 1 0;
++  overflow: auto;
++  scrollbar-gutter: stable;
++  overscroll-behavior: contain;
++  color: var(--gen2-text);
++  background: var(--gen2-surface);
++}
++.lcos-reader-page { padding: 18px 12px; }
++.lcos-reader-measure { inline-size: 100%; max-inline-size: 62ch; margin-inline: auto; }
++.lcos-reader-plaintext {
++  margin: 0;
++  white-space: pre-wrap;
++  overflow-wrap: anywhere;
++  tab-size: 4;
++  font-family: inherit;
++  font-size: 16px;
++  line-height: 25px;
++  font-weight: 400;
++}
++.lcos-reader-richtext { font-size: 16px; line-height: 25px; overflow-wrap: anywhere; }
++.lcos-reader-richtext > :first-child { margin-block-start: 0; }
++.lcos-reader-richtext h1 { font-size: 27px; line-height: 42px; font-weight: 500; }
++.lcos-reader-richtext h2 { font-size: 18px; line-height: 28px; font-weight: 500; }
++.lcos-reader-richtext h3 { font-size: 13px; line-height: 21px; font-weight: 500; }
++.lcos-reader-richtext p { margin-block: 0 18px; }
++.lcos-reader-richtext blockquote { margin-inline: 0; color: var(--gen2-accent); font-size: 18px; line-height: 28px; }
++.lcos-reader-richtext img, .lcos-reader-richtext video { max-inline-size: 100%; block-size: auto; }
++.lcos-reader-richtext pre { overflow: auto; }
++.lcos-reader-media-page { padding: 18px 12px; }
++.lcos-reader-figure { margin: 0; display: flex; flex-direction: column; gap: 18px; }
++.lcos-reader-image {
++  display: block;
++  inline-size: 100%;
++  max-inline-size: 100%;
++  max-block-size: min(52vh, 520px);
++  object-fit: contain;
++  border-radius: 10px;
++  background: var(--lcos-surface-elevated, var(--gen2-raised));
++}
++.lcos-reader-media-caption { font-size: 11px; line-height: 18px; color: var(--gen2-muted); overflow-wrap: anywhere; }
++.lcos-reader-unavailable { min-block-size: 240px; display: grid; place-content: center; justify-items: center; gap: 12px; padding: 24px; font-size: 13px; line-height: 21px; text-align: center; color: var(--gen2-muted); }
++.lcos-reader-unavailable-glyph { display: inline-flex; inline-size: 24px; block-size: 24px; }
++.lcos-reader-body [data-lcos-reader-revisions] { gap: 6px; }
++.lcos-reader-body [data-lcos-reader-revisions] button,
++.lcos-reader-body [data-lcos-reader-actions] button {
++  min-block-size: 44px;
++  border-radius: var(--lcos-radius-control, 8px);
++  padding: 8px 10px;
++  font-size: 12px;
++  line-height: 18px;
++}
++.lcos-reader-body [data-lcos-reader-actions] { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
++.lcos-reader-body button:focus-visible, .lcos-reader-group :is(button, a):focus-visible {
++  outline: 2px solid var(--gen2-accent);
++  outline-offset: 2px;
++}
++.lcos-reader-body button:disabled { opacity: 0.45; cursor: not-allowed; }
++.lcos-reader-body [data-lcos-reader-compare] { font-family: ui-monospace, monospace; }
++.lcos-reader-body [data-lcos-reader-compare-line] { font-size: 12px; line-height: 20px; }
++.lcos-professional-sr-only { position: absolute; inline-size: 1px; block-size: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
++
++/* Controlled split/single variant. Never creates or selects a group. */
++.lcos-reader-groups { container-type: inline-size; inline-size: 100%; min-inline-size: 0; font-family: 'Noto Sans SC', sans-serif; }
++.lcos-reader-group-columns { display: flex; align-items: stretch; min-inline-size: 0; }
++.lcos-reader-group { display: flex; flex: 1 1 0; min-inline-size: 0; flex-direction: column; }
++.lcos-reader-group[hidden] { display: none; }
++.lcos-reader-group + .lcos-reader-group { border-inline-start: 1px solid var(--gen2-border); }
++[data-reader-group-layout='single'] .lcos-reader-group { border-inline-start: 0; }
++.lcos-reader-group-tabs, .lcos-reader-group-selector { display: flex; align-items: center; gap: 6px; padding: 12px 18px; overflow-x: auto; }
++.lcos-reader-group-content { min-inline-size: 0; flex: 1; padding: 24px 32px; }
++.lcos-reader-group-footer { padding: 12px 18px 24px; }
++@container (max-width: 620px) {
++  .lcos-reader-page, .lcos-reader-media-page { padding-inline: 0; }
++  .lcos-reader-group-content { padding-inline: 18px; }
++}
++@media (max-width: 480px) {
++  .lcos-reader-body { padding-inline: 16px; }
++  .lcos-reader-group-content { padding-inline: 12px; }
++}
++@media (forced-colors: active) {
++  .lcos-reader-body button, .lcos-reader-group { border: 1px solid ButtonText; }
++}

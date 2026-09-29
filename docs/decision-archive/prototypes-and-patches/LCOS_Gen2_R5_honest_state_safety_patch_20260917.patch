@@ -1,0 +1,175 @@
+diff --git a/apps/web-gen2/src/backend/collaboration.ts b/apps/web-gen2/src/backend/collaboration.ts
+--- a/apps/web-gen2/src/backend/collaboration.ts
++++ b/apps/web-gen2/src/backend/collaboration.ts
+@@ -170,10 +170,7 @@ export class CoreCollaborationClient {
+     const pendingInputId = session.activity.pendingInputId;
+     const activeRunId = session.activity.activeRunId;
+     if (pendingInputId === undefined || activeRunId === undefined) return undefined;
+-    let request;
+-    try {
+-      request = await this.runs.getPendingInputRequest(activeRunId, signal);
+-    } catch {
+-      return undefined;
+-    }
++    // CoreRunClient 已经把“合法的 404 / 当前没有 pending input”折算成 undefined。
++    // 其它读取失败必须继续向上抛，让产品层显示 honest error，不能伪装成“没有待回答”。
++    const request = await this.runs.getPendingInputRequest(activeRunId, signal);
+     if (request === undefined || request.status !== 'pending') return undefined;
+@@ -224,5 +221,7 @@ export class CoreCollaborationClient {
+       }
+-    } catch {
+-      // 读取失败 = 无可用复核面（UI 显示空态，不伪造）。
++    } catch (error: unknown) {
++      // 读取失败 != “当前没有待复核产出”。
++      // 让上层 ArtifactReturnSection 进入 error 状态，避免把 5xx / 网络故障伪装成空态。
++      throw error;
+     }
+     return reviews;
+@@ -462,31 +461,25 @@ export class CoreCollaborationClient {
+-  /** 交接：ReceiverRuntimeService.prepareHandoff（快照冻结，零副作用切换）。 */
++  /**
++   * 交接必须代表完整 Receiver 切换完成。
++   *
++   * 当前 Core 暴露的 /receiver-handoff 只负责 prepareHandoff：
++   * 冻结/准备 handoff pack，本身不完成 receiver binding 切换。
++   * 在 authoritative bind/commit 事务接入 facade 前，handoff 必须 fail-closed，
++   * 不能把 prepare receipt 冒充成产品层“交接完成”。
++   */
+   async handoff(
+     projectId: string,
+     fromConversationId: string | null,
+     input: CollaborationHandoffInputV1,
+     context: {
+       readonly surface: { readonly kind: 'main' | 'context' | 'workflow'; readonly surfaceId: string };
+       readonly selectionEntityIds?: readonly string[];
+     },
+     signal?: AbortSignal,
+   ): Promise<CollaborationCommandResultV1> {
+-    try {
+-      await coreRequest<unknown>(
+-        this.http,
+-        'POST',
+-        `/projects/${encodeURIComponent(projectId)}/receiver-handoff`,
+-        {
+-          body: {
+-            fromConversationId,
+-            toConversationId: input.conversationId,
+-            surface: context.surface,
+-            selectionEntityIds: context.selectionEntityIds ?? [],
+-          },
+-          signal,
+-        },
+-      );
+-      return receipt('handoff', { conversationId: input.conversationId });
+-    } catch (error: unknown) {
+-      return toProductError(error, '交接失败');
+-    }
++    void projectId;
++    void fromConversationId;
++    void input;
++    void context;
++    void signal;
++    return unavailable('「交接」尚未接通完整的 Receiver 切换事务；当前仅有交接快照准备能力');
+   }
+diff --git a/apps/web-gen2/test/collaboration-client.test.ts b/apps/web-gen2/test/collaboration-client.test.ts
+--- a/apps/web-gen2/test/collaboration-client.test.ts
++++ b/apps/web-gen2/test/collaboration-client.test.ts
+@@ -89,9 +89,40 @@ test('readSession：200 返回投影；404 → undefined', async () => {
+ test('readTimeline：limit 参数进 query', async () => {
+   const { http, calls } = stubHttp({ 'GET http://core.test/projects/p-1/connected-conversations/c-1/collaboration-timeline?limit=10': { value: [] } });
+   const collaboration = new CoreCollaborationClient(http);
+   const items = await collaboration.readTimeline('p-1', 'c-1', { limit: 10 });
+   assert.deepEqual(items, []);
+   assert.equal(calls[0]?.url, `${BASE}/projects/p-1/connected-conversations/c-1/collaboration-timeline?limit=10`);
+ });
+
++test('readPendingInput：合法 404 仍可折算为空，但 5xx 必须向上抛，不能伪装成“没有待回答”', async () => {
++  const { http, calls } = stubHttp({
++    'GET http://core.test/projects/p-1/connected-conversations/c-1/collaboration-session': {
++      value: {
++        schemaVersion: 1,
++        projectId: 'p-1',
++        conversationId: 'c-1',
++        activity: { pendingInputId: 'req-1', activeRunId: 'run-1' },
++      },
++    },
++    'GET http://core.test/runs/run-1/input-request': { status: 500 },
++  });
++  const collaboration = new CoreCollaborationClient(http);
++  await assert.rejects(() => collaboration.readPendingInput('p-1', 'c-1'));
++  assert.equal(calls.length, 2);
++  assert.equal(calls[1]?.url, `${BASE}/runs/run-1/input-request`);
++});
++
++test('readReviews：下游读取失败必须向上抛，不能折算成空 review 列表', async () => {
++  const { http, calls } = stubHttp({
++    'GET http://core.test/projects/p-1/connected-conversations/c-1/work-view': {
++      value: { runs: [{ runId: 'run-1' }] },
++    },
++    'GET http://core.test/projects/p-1/runs': { status: 500 },
++  });
++  const collaboration = new CoreCollaborationClient(http);
++  await assert.rejects(() => collaboration.readReviews('p-1', 'c-1'));
++  assert.equal(calls.length, 2);
++  assert.equal(calls[1]?.url, `${BASE}/projects/p-1/runs`);
++});
++
+ test('answerInput：pendingInputId 映射 requestId，走同一 Run 的 input-request 路由', async () => {
+@@ -174,12 +204,11 @@ test('resume：会话不存在 → unavailable，不发起 submit', async () => {
+-test('handoff 走 receiver-handoff 路由（from/to/surface/selection 透传）', async () => {
+-  const { http, calls } = stubHttp({ 'POST http://core.test/projects/p-1/receiver-handoff': { status: 201, value: {} } });
++test('handoff：完整 receiver 切换事务未接通前 fail-closed，不把 prepareHandoff 冒充完成态', async () => {
++  const { http, calls } = stubHttp({});
+   const collaboration = new CoreCollaborationClient(http);
+   const result = await collaboration.handoff('p-1', 'c-old', { conversationId: 'c-new' }, { surface: { kind: 'main', surfaceId: 'main' }, selectionEntityIds: ['e-1'] });
+-  assert.equal(result.ok, true);
+-  assert.deepEqual(calls[0]?.body, {
+-    fromConversationId: 'c-old',
+-    toConversationId: 'c-new',
+-    surface: { kind: 'main', surfaceId: 'main' },
+-    selectionEntityIds: ['e-1'],
+-  });
++  assert.equal(result.ok, false);
++  if (!result.ok) {
++    assert.equal(result.error.code, 'unavailable');
++    assert.match(result.error.userMessage, /Receiver/);
++  }
++  assert.equal(calls.length, 0);
+ });
+diff --git a/huabu/apps/web/src/lcos/professional/ArtifactReturnSection.tsx b/huabu/apps/web/src/lcos/professional/ArtifactReturnSection.tsx
+--- a/huabu/apps/web/src/lcos/professional/ArtifactReturnSection.tsx
++++ b/huabu/apps/web/src/lcos/professional/ArtifactReturnSection.tsx
+@@ -49,2 +49,4 @@ export function ArtifactReturnSection({ collaboration, projectId, conversationId
+   const pending = reviews.filter((review) => review.status === 'pending_review');
+-  if (pending.length === 0) return null;
++  // loading/error 时 reviews 仍可能是空数组，但这不代表“没有待复核产出”。
++  // 只有一次读取成功后，才能把空 pending 列表解释为真正的空态。
++  if (state === 'ready' && pending.length === 0) return null;
+diff --git a/huabu/apps/web/src/lcos/professional/ArtifactReturnSection.test.tsx b/huabu/apps/web/src/lcos/professional/ArtifactReturnSection.test.tsx
+--- a/huabu/apps/web/src/lcos/professional/ArtifactReturnSection.test.tsx
++++ b/huabu/apps/web/src/lcos/professional/ArtifactReturnSection.test.tsx
+@@ -144,8 +144,24 @@ describe('ArtifactReturnSection', () => {
+   it('无关联 Run 时不渲染（不占位、不伪造空态）', async () => {
+     const { collaboration } = fakeRuns([review({})]);
+     const container = await render(
+       <ArtifactReturnSection collaboration={collaboration} projectId="p1" conversationId="c-1" />,
+     );
+     expect(container.querySelector('[data-lcos-artifact-return]')).toBeNull();
+   });
++
++  it('readReviews 失败时显示 honest error，不把读取失败伪装成空态', async () => {
++    const collaboration = {
++      readReviews: async () => {
++        throw new Error('review backend unavailable');
++      },
++      approve: vi.fn(),
++      retry: vi.fn(),
++    } as unknown as CoreCollaborationClient;
++    const container = await render(
++      <ArtifactReturnSection collaboration={collaboration} projectId="p1" conversationId="c-1" />,
++    );
++    expect(container.querySelector('[data-lcos-artifact-return]')).not.toBeNull();
++    expect(container.textContent).toContain('复核状态读取失败');
++    expect(container.textContent).toContain('review backend unavailable');
++  });
+ });

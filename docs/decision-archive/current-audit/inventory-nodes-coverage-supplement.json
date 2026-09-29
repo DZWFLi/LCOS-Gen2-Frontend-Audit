@@ -1,0 +1,189 @@
+{
+  "domain": "nodes",
+  "scope": "仅补已有检查项与顶层目录关联；未新增扩读，名称使用主代理提供的目录标题。",
+  "items": [
+    {
+      "figmaNodeId": "5039:93",
+      "name": "影像",
+      "inspectionIds": [
+        "N06",
+        "N08",
+        "N41"
+      ],
+      "adoptionNote": "历史节点媒介稿；当前形态按九面统一稿，原稿只补未被纠正的媒介状态。",
+      "verificationStatus": "纳入既有检查；不等于已实现或已浏览器验收"
+    },
+    {
+      "figmaNodeId": "5054:319",
+      "name": "文档",
+      "inspectionIds": [
+        "N05",
+        "N10",
+        "N40"
+      ],
+      "adoptionNote": "文档/PDF/Reader材料；当前按九面与04共用呈现，保留原稿未纠正的内容状态。",
+      "verificationStatus": "纳入既有检查；不等于已实现或已浏览器验收"
+    },
+    {
+      "figmaNodeId": "5054:4560",
+      "name": "判断摘录",
+      "inspectionIds": [
+        "N13",
+        "N15",
+        "N27"
+      ],
+      "adoptionNote": "判断/决策对象及引用、状态反馈；不把摘录自动当成Core新对象。",
+      "verificationStatus": "纳入既有检查；不等于已实现或已浏览器验收"
+    },
+    {
+      "figmaNodeId": "5054:4617",
+      "name": "执行步骤",
+      "inspectionIds": [
+        "N11",
+        "N27"
+      ],
+      "adoptionNote": "节点域承接过程与运行状态；步骤全景与工作流编排由surface域承接。",
+      "verificationStatus": "纳入既有检查；不等于已实现或已浏览器验收"
+    },
+    {
+      "figmaNodeId": "5054:4622",
+      "name": "精灵状态",
+      "inspectionIds": [
+        "N29",
+        "N35",
+        "N37"
+      ],
+      "adoptionNote": "GLYTH状态历史细节，09/11与真实会话回执优先纠正。",
+      "verificationStatus": "纳入既有检查；不等于已实现或已浏览器验收"
+    },
+    {
+      "figmaNodeId": "5121:1679",
+      "name": "对话工作现场",
+      "inspectionIds": [
+        "N32",
+        "N33",
+        "N34",
+        "N39"
+      ],
+      "adoptionNote": "节点域承接GLYTH近场与续工；会话工作窗口壳与空间避让由surface域承接。",
+      "verificationStatus": "纳入既有检查；不等于已实现或已浏览器验收"
+    },
+    {
+      "figmaNodeId": "5203:93",
+      "name": "集合地景",
+      "inspectionIds": [
+        "N17",
+        "N18",
+        "N20",
+        "N26"
+      ],
+      "adoptionNote": "历史集合地景；轮廓以13页5333:96及九面统一为准，不恢复旧长扁卡。",
+      "verificationStatus": "纳入既有检查；不等于已实现或已浏览器验收"
+    },
+    {
+      "figmaNodeId": "5229:1246",
+      "name": "可点开媒体预览",
+      "inspectionIds": [
+        "N06",
+        "N08",
+        "N40"
+      ],
+      "adoptionNote": "节点媒体呈现与Reader真实入口；浮动阅读窗口由surface域承接。",
+      "verificationStatus": "纳入既有检查；不等于已实现或已浏览器验收"
+    },
+    {
+      "figmaNodeId": "5340:146",
+      "name": "主画布压缩文件夹",
+      "inspectionIds": [
+        "N17",
+        "N18",
+        "N26"
+      ],
+      "adoptionNote": "13页集合压缩形态；由主画布集合与LOD检查共同覆盖。",
+      "verificationStatus": "纳入既有检查；不等于已实现或已浏览器验收"
+    },
+    {
+      "figmaNodeId": "5341:675",
+      "name": "创建失败",
+      "inspectionIds": [
+        "N35",
+        "N37"
+      ],
+      "adoptionNote": "GLYTH创建阶段失败回执与原位恢复。",
+      "verificationStatus": "纳入既有检查；不等于已实现或已浏览器验收"
+    },
+    {
+      "figmaNodeId": "5341:854",
+      "name": "结果未知",
+      "inspectionIds": [
+        "N35",
+        "N37"
+      ],
+      "adoptionNote": "GLYTH创建结果未知需保留原意图、核对真实回执，不伪装失败或成功。",
+      "verificationStatus": "纳入既有检查；不等于已实现或已浏览器验收"
+    },
+    {
+      "figmaNodeId": "5341:1391",
+      "name": "返回来源",
+      "inspectionIds": [
+        "N22",
+        "N36",
+        "N39"
+      ],
+      "adoptionNote": "子现场/GLYTH来源连续性；实际返回栈与恢复相机由导航域承接。",
+      "verificationStatus": "纳入既有检查；不等于已实现或已浏览器验收"
+    },
+    {
+      "figmaNodeId": "5358:2058",
+      "name": "Portal只读",
+      "inspectionIds": [
+        "N23",
+        "N24"
+      ],
+      "adoptionNote": "门户只读同目标预览与能力限制。",
+      "verificationStatus": "纳入既有检查；不等于已实现或已浏览器验收"
+    },
+    {
+      "figmaNodeId": "5358:2216",
+      "name": "Portal可交互",
+      "inspectionIds": [
+        "N23",
+        "N24"
+      ],
+      "adoptionNote": "门户可交互状态、局部视图与能力边界。",
+      "verificationStatus": "纳入既有检查；不等于已实现或已浏览器验收"
+    },
+    {
+      "figmaNodeId": "5358:2374",
+      "name": "Portal预览",
+      "inspectionIds": [
+        "N23",
+        "N24"
+      ],
+      "adoptionNote": "门户真实预览、局部缩放与升级打开。",
+      "verificationStatus": "纳入既有检查；不等于已实现或已浏览器验收"
+    },
+    {
+      "figmaNodeId": "5358:2530",
+      "name": "Portal失败",
+      "inspectionIds": [
+        "N23",
+        "N24",
+        "N10"
+      ],
+      "adoptionNote": "门户读取失败、重试及原目标身份保留。",
+      "verificationStatus": "纳入既有检查；不等于已实现或已浏览器验收"
+    },
+    {
+      "figmaNodeId": "5358:2686",
+      "name": "Portal目标缺失",
+      "inspectionIds": [
+        "N23",
+        "N24",
+        "N10"
+      ],
+      "adoptionNote": "门户目标缺失；不得用通用空态掩盖失效入口。",
+      "verificationStatus": "纳入既有检查；不等于已实现或已浏览器验收"
+    }
+  ]
+}

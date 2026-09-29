@@ -1,0 +1,7184 @@
+{
+  "states": [
+    {
+      "name": "1440",
+      "body": {
+        "x": 705,
+        "y": 169,
+        "w": 638,
+        "h": 598,
+        "scrollWidth": 638,
+        "scrollHeight": 598,
+        "overflow": "hidden",
+        "columns": "auto",
+        "columnWidth": "auto",
+        "visibility": "visible"
+      },
+      "sourceTabs": {
+        "x": 705,
+        "y": 169,
+        "w": 638,
+        "h": 68,
+        "scrollWidth": 638,
+        "scrollHeight": 68,
+        "overflow": "visible",
+        "columns": "auto",
+        "columnWidth": "auto",
+        "visibility": "visible"
+      },
+      "toolbar": {
+        "x": 705,
+        "y": 237,
+        "w": 638,
+        "h": 52,
+        "scrollWidth": 638,
+        "scrollHeight": 52,
+        "overflow": "visible",
+        "columns": "auto",
+        "columnWidth": "auto",
+        "visibility": "visible"
+      },
+      "meta": {
+        "x": 705,
+        "y": 289,
+        "w": 638,
+        "h": 44,
+        "scrollWidth": 638,
+        "scrollHeight": 44,
+        "overflow": "visible",
+        "columns": "auto",
+        "columnWidth": "auto",
+        "visibility": "visible"
+      },
+      "scroll": {
+        "x": 705,
+        "y": 333,
+        "w": 638,
+        "h": 391,
+        "scrollWidth": 628,
+        "scrollHeight": 2119,
+        "overflow": "auto",
+        "columns": "auto",
+        "columnWidth": "auto",
+        "visibility": "visible"
+      },
+      "masonry": {
+        "x": 737,
+        "y": 339,
+        "w": 572,
+        "h": 2101,
+        "scrollWidth": 572,
+        "scrollHeight": 2101,
+        "overflow": "visible",
+        "columns": "auto",
+        "columnWidth": "248px",
+        "visibility": "visible"
+      },
+      "items": [
+        {
+          "title": "山野环境声音频 · 音频",
+          "item": {
+            "x": 737,
+            "y": 339,
+            "w": 274,
+            "h": 182,
+            "scrollWidth": 272,
+            "scrollHeight": 180,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          },
+          "object": {
+            "x": 744,
+            "y": 348,
+            "w": 260,
+            "h": 125,
+            "scrollWidth": 260,
+            "scrollHeight": 125,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          },
+          "actions": {
+            "x": 750,
+            "y": 413,
+            "w": 248,
+            "h": 54,
+            "scrollWidth": 246,
+            "scrollHeight": 52,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "品牌主张（e2e fixture）文本 · 文本",
+          "item": {
+            "x": 737,
+            "y": 545,
+            "w": 274,
+            "h": 217,
+            "scrollWidth": 272,
+            "scrollHeight": 215,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          },
+          "object": {
+            "x": 744,
+            "y": 554,
+            "w": 260,
+            "h": 160,
+            "scrollWidth": 260,
+            "scrollHeight": 160,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          },
+          "actions": {
+            "x": 750,
+            "y": 654,
+            "w": 248,
+            "h": 54,
+            "scrollWidth": 246,
+            "scrollHeight": 52,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "参考图 B（e2e fixture）图像 · 图像",
+          "item": {
+            "x": 737,
+            "y": 786,
+            "w": 274,
+            "h": 182,
+            "scrollWidth": 272,
+            "scrollHeight": 180,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          },
+          "object": {
+            "x": 744,
+            "y": 795,
+            "w": 260,
+            "h": 125,
+            "scrollWidth": 260,
+            "scrollHeight": 125,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          },
+          "actions": {
+            "x": 750,
+            "y": 860,
+            "w": 248,
+            "h": 54,
+            "scrollWidth": 246,
+            "scrollHeight": 52,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "参考图（e2e fixture）图像 · 图像",
+          "item": {
+            "x": 737,
+            "y": 992,
+            "w": 274,
+            "h": 182,
+            "scrollWidth": 272,
+            "scrollHeight": 180,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          },
+          "object": {
+            "x": 744,
+            "y": 1001,
+            "w": 260,
+            "h": 125,
+            "scrollWidth": 260,
+            "scrollHeight": 125,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          },
+          "actions": {
+            "x": 750,
+            "y": 1066,
+            "w": 248,
+            "h": 54,
+            "scrollWidth": 246,
+            "scrollHeight": 52,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "决策记录（e2e fixture）文本 · 文本",
+          "item": {
+            "x": 737,
+            "y": 1198,
+            "w": 274,
+            "h": 217,
+            "scrollWidth": 272,
+            "scrollHeight": 215,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          },
+          "object": {
+            "x": 744,
+            "y": 1207,
+            "w": 260,
+            "h": 160,
+            "scrollWidth": 260,
+            "scrollHeight": 160,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          },
+          "actions": {
+            "x": 750,
+            "y": 1307,
+            "w": 248,
+            "h": 54,
+            "scrollWidth": 246,
+            "scrollHeight": 52,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "当前里程碑文本 · 文本",
+          "item": {
+            "x": 737,
+            "y": 1439,
+            "w": 274,
+            "h": 217,
+            "scrollWidth": 272,
+            "scrollHeight": 215,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          },
+          "object": {
+            "x": 744,
+            "y": 1448,
+            "w": 260,
+            "h": 160,
+            "scrollWidth": 260,
+            "scrollHeight": 160,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          },
+          "actions": {
+            "x": 750,
+            "y": 1548,
+            "w": 248,
+            "h": 54,
+            "scrollWidth": 246,
+            "scrollHeight": 52,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "施工纪律文本 · 文本",
+          "item": {
+            "x": 737,
+            "y": 1680,
+            "w": 274,
+            "h": 217,
+            "scrollWidth": 272,
+            "scrollHeight": 215,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          },
+          "object": {
+            "x": 744,
+            "y": 1689,
+            "w": 260,
+            "h": 160,
+            "scrollWidth": 260,
+            "scrollHeight": 160,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          },
+          "actions": {
+            "x": 750,
+            "y": 1789,
+            "w": 248,
+            "h": 54,
+            "scrollWidth": 246,
+            "scrollHeight": 52,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "项目定位文本 · 文本",
+          "item": {
+            "x": 737,
+            "y": 1921,
+            "w": 274,
+            "h": 217,
+            "scrollWidth": 272,
+            "scrollHeight": 215,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          },
+          "object": {
+            "x": 744,
+            "y": 1930,
+            "w": 260,
+            "h": 160,
+            "scrollWidth": 260,
+            "scrollHeight": 160,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          },
+          "actions": {
+            "x": 750,
+            "y": 2030,
+            "w": 248,
+            "h": 54,
+            "scrollWidth": 246,
+            "scrollHeight": 52,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "item": {
+            "x": 737,
+            "y": 2162,
+            "w": 274,
+            "h": 254,
+            "scrollWidth": 272,
+            "scrollHeight": 252,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          },
+          "object": {
+            "x": 744,
+            "y": 2171,
+            "w": 260,
+            "h": 244,
+            "scrollWidth": 260,
+            "scrollHeight": 244,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          },
+          "actions": {
+            "x": 750,
+            "y": 2307,
+            "w": 248,
+            "h": 102,
+            "scrollWidth": 246,
+            "scrollHeight": 100,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "item": {
+            "x": 1035,
+            "y": 339,
+            "w": 274,
+            "h": 452,
+            "scrollWidth": 272,
+            "scrollHeight": 450,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          },
+          "object": {
+            "x": 1042,
+            "y": 348,
+            "w": 260,
+            "h": 324,
+            "scrollWidth": 260,
+            "scrollHeight": 324,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          },
+          "actions": {
+            "x": 1042,
+            "y": 688,
+            "w": 260,
+            "h": 102,
+            "scrollWidth": 258,
+            "scrollHeight": 100,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "item": {
+            "x": 1035,
+            "y": 815,
+            "w": 274,
+            "h": 254,
+            "scrollWidth": 272,
+            "scrollHeight": 252,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          },
+          "object": {
+            "x": 1042,
+            "y": 824,
+            "w": 260,
+            "h": 244,
+            "scrollWidth": 260,
+            "scrollHeight": 244,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          },
+          "actions": {
+            "x": 1048,
+            "y": 960,
+            "w": 248,
+            "h": 102,
+            "scrollWidth": 246,
+            "scrollHeight": 100,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "item": {
+            "x": 1035,
+            "y": 1093,
+            "w": 274,
+            "h": 254,
+            "scrollWidth": 272,
+            "scrollHeight": 252,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          },
+          "object": {
+            "x": 1042,
+            "y": 1102,
+            "w": 260,
+            "h": 244,
+            "scrollWidth": 260,
+            "scrollHeight": 244,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          },
+          "actions": {
+            "x": 1048,
+            "y": 1238,
+            "w": 248,
+            "h": 102,
+            "scrollWidth": 246,
+            "scrollHeight": 100,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "item": {
+            "x": 1035,
+            "y": 1371,
+            "w": 274,
+            "h": 254,
+            "scrollWidth": 272,
+            "scrollHeight": 252,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          },
+          "object": {
+            "x": 1042,
+            "y": 1380,
+            "w": 260,
+            "h": 244,
+            "scrollWidth": 260,
+            "scrollHeight": 244,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          },
+          "actions": {
+            "x": 1048,
+            "y": 1516,
+            "w": 248,
+            "h": 102,
+            "scrollWidth": 246,
+            "scrollHeight": 100,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "item": {
+            "x": 1035,
+            "y": 1649,
+            "w": 274,
+            "h": 254,
+            "scrollWidth": 272,
+            "scrollHeight": 252,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          },
+          "object": {
+            "x": 1042,
+            "y": 1658,
+            "w": 260,
+            "h": 244,
+            "scrollWidth": 260,
+            "scrollHeight": 244,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          },
+          "actions": {
+            "x": 1048,
+            "y": 1794,
+            "w": 248,
+            "h": 102,
+            "scrollWidth": 246,
+            "scrollHeight": 100,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "item": {
+            "x": 1035,
+            "y": 1927,
+            "w": 274,
+            "h": 254,
+            "scrollWidth": 272,
+            "scrollHeight": 252,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          },
+          "object": {
+            "x": 1042,
+            "y": 1936,
+            "w": 260,
+            "h": 244,
+            "scrollWidth": 260,
+            "scrollHeight": 244,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          },
+          "actions": {
+            "x": 1048,
+            "y": 2072,
+            "w": 248,
+            "h": 102,
+            "scrollWidth": 246,
+            "scrollHeight": 100,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "承接会话（e2e fixture）会话 · 接收会话",
+          "item": {
+            "x": 1035,
+            "y": 2205,
+            "w": 274,
+            "h": 193,
+            "scrollWidth": 272,
+            "scrollHeight": 191,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          },
+          "object": {
+            "x": 1042,
+            "y": 2214,
+            "w": 260,
+            "h": 136,
+            "scrollWidth": 260,
+            "scrollHeight": 136,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          },
+          "actions": {
+            "x": 1048,
+            "y": 2242,
+            "w": 248,
+            "h": 102,
+            "scrollWidth": 246,
+            "scrollHeight": 100,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        }
+      ],
+      "buttons": [
+        {
+          "title": "项目",
+          "rect": {
+            "x": 739,
+            "y": 183,
+            "w": 60,
+            "h": 44,
+            "scrollWidth": 60,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          }
+        },
+        {
+          "title": "收件",
+          "rect": {
+            "x": 805,
+            "y": 183,
+            "w": 60,
+            "h": 44,
+            "scrollWidth": 60,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          }
+        },
+        {
+          "title": "来源",
+          "rect": {
+            "x": 871,
+            "y": 183,
+            "w": 60,
+            "h": 44,
+            "scrollWidth": 60,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          }
+        },
+        {
+          "title": "技能",
+          "rect": {
+            "x": 937,
+            "y": 183,
+            "w": 60,
+            "h": 44,
+            "scrollWidth": 60,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          }
+        },
+        {
+          "title": "搜索",
+          "rect": {
+            "x": 1205,
+            "y": 245,
+            "w": 48,
+            "h": 44,
+            "scrollWidth": 48,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          }
+        },
+        {
+          "title": "全部",
+          "rect": {
+            "x": 1262,
+            "y": 540.5,
+            "w": 72,
+            "h": 44,
+            "scrollWidth": 72,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          }
+        },
+        {
+          "title": "图片",
+          "rect": {
+            "x": 1262,
+            "y": 592.5,
+            "w": 72,
+            "h": 44,
+            "scrollWidth": 72,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          }
+        },
+        {
+          "title": "文字",
+          "rect": {
+            "x": 1262,
+            "y": 644.5,
+            "w": 72,
+            "h": 44,
+            "scrollWidth": 72,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          }
+        },
+        {
+          "title": "影音",
+          "rect": {
+            "x": 1262,
+            "y": 696.5,
+            "w": 72,
+            "h": 44,
+            "scrollWidth": 72,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          }
+        },
+        {
+          "title": "集合",
+          "rect": {
+            "x": 1262,
+            "y": 748.5,
+            "w": 72,
+            "h": 44,
+            "scrollWidth": 72,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          }
+        },
+        {
+          "title": "查看归档",
+          "rect": {
+            "x": 1005.390625,
+            "y": 289,
+            "w": 92,
+            "h": 44,
+            "scrollWidth": 92,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          }
+        },
+        {
+          "title": "刷新当前来源",
+          "rect": {
+            "x": 1263,
+            "y": 289,
+            "w": 48,
+            "h": 44,
+            "scrollWidth": 48,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          }
+        },
+        {
+          "title": "取用 山野环境声",
+          "rect": {
+            "x": 958,
+            "y": 348,
+            "w": 44,
+            "h": 44,
+            "scrollWidth": 42,
+            "scrollHeight": 42,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          }
+        },
+        {
+          "title": "草稿",
+          "rect": {
+            "x": 762,
+            "y": 418,
+            "w": 60,
+            "h": 44,
+            "scrollWidth": 60,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "阅读",
+          "rect": {
+            "x": 826,
+            "y": 418,
+            "w": 60,
+            "h": 44,
+            "scrollWidth": 60,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "放入主画布",
+          "rect": {
+            "x": 890,
+            "y": 418,
+            "w": 96,
+            "h": 44,
+            "scrollWidth": 96,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "取用 品牌主张（e2e fixture）",
+          "rect": {
+            "x": 958,
+            "y": 554,
+            "w": 44,
+            "h": 44,
+            "scrollWidth": 42,
+            "scrollHeight": 42,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          }
+        },
+        {
+          "title": "草稿",
+          "rect": {
+            "x": 762,
+            "y": 659,
+            "w": 60,
+            "h": 44,
+            "scrollWidth": 60,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "阅读",
+          "rect": {
+            "x": 826,
+            "y": 659,
+            "w": 60,
+            "h": 44,
+            "scrollWidth": 60,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "放入主画布",
+          "rect": {
+            "x": 890,
+            "y": 659,
+            "w": 96,
+            "h": 44,
+            "scrollWidth": 96,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "取用 参考图 B（e2e fixture）",
+          "rect": {
+            "x": 958,
+            "y": 795,
+            "w": 44,
+            "h": 44,
+            "scrollWidth": 42,
+            "scrollHeight": 42,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          }
+        },
+        {
+          "title": "草稿",
+          "rect": {
+            "x": 762,
+            "y": 865,
+            "w": 60,
+            "h": 44,
+            "scrollWidth": 60,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "阅读",
+          "rect": {
+            "x": 826,
+            "y": 865,
+            "w": 60,
+            "h": 44,
+            "scrollWidth": 60,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "放入主画布",
+          "rect": {
+            "x": 890,
+            "y": 865,
+            "w": 96,
+            "h": 44,
+            "scrollWidth": 96,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "取用 参考图（e2e fixture）",
+          "rect": {
+            "x": 958,
+            "y": 1001,
+            "w": 44,
+            "h": 44,
+            "scrollWidth": 42,
+            "scrollHeight": 42,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          }
+        },
+        {
+          "title": "草稿",
+          "rect": {
+            "x": 762,
+            "y": 1071,
+            "w": 60,
+            "h": 44,
+            "scrollWidth": 60,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "阅读",
+          "rect": {
+            "x": 826,
+            "y": 1071,
+            "w": 60,
+            "h": 44,
+            "scrollWidth": 60,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "放入主画布",
+          "rect": {
+            "x": 890,
+            "y": 1071,
+            "w": 96,
+            "h": 44,
+            "scrollWidth": 96,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "取用 决策记录（e2e fixture）",
+          "rect": {
+            "x": 958,
+            "y": 1207,
+            "w": 44,
+            "h": 44,
+            "scrollWidth": 42,
+            "scrollHeight": 42,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          }
+        },
+        {
+          "title": "草稿",
+          "rect": {
+            "x": 762,
+            "y": 1312,
+            "w": 60,
+            "h": 44,
+            "scrollWidth": 60,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "阅读",
+          "rect": {
+            "x": 826,
+            "y": 1312,
+            "w": 60,
+            "h": 44,
+            "scrollWidth": 60,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "放入主画布",
+          "rect": {
+            "x": 890,
+            "y": 1312,
+            "w": 96,
+            "h": 44,
+            "scrollWidth": 96,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "取用 当前里程碑",
+          "rect": {
+            "x": 958,
+            "y": 1448,
+            "w": 44,
+            "h": 44,
+            "scrollWidth": 42,
+            "scrollHeight": 42,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          }
+        },
+        {
+          "title": "草稿",
+          "rect": {
+            "x": 762,
+            "y": 1553,
+            "w": 60,
+            "h": 44,
+            "scrollWidth": 60,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "阅读",
+          "rect": {
+            "x": 826,
+            "y": 1553,
+            "w": 60,
+            "h": 44,
+            "scrollWidth": 60,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "放入主画布",
+          "rect": {
+            "x": 890,
+            "y": 1553,
+            "w": 96,
+            "h": 44,
+            "scrollWidth": 96,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "取用 施工纪律",
+          "rect": {
+            "x": 958,
+            "y": 1689,
+            "w": 44,
+            "h": 44,
+            "scrollWidth": 42,
+            "scrollHeight": 42,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          }
+        },
+        {
+          "title": "草稿",
+          "rect": {
+            "x": 762,
+            "y": 1794,
+            "w": 60,
+            "h": 44,
+            "scrollWidth": 60,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "阅读",
+          "rect": {
+            "x": 826,
+            "y": 1794,
+            "w": 60,
+            "h": 44,
+            "scrollWidth": 60,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "放入主画布",
+          "rect": {
+            "x": 890,
+            "y": 1794,
+            "w": 96,
+            "h": 44,
+            "scrollWidth": 96,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "取用 项目定位",
+          "rect": {
+            "x": 958,
+            "y": 1930,
+            "w": 44,
+            "h": 44,
+            "scrollWidth": 42,
+            "scrollHeight": 42,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          }
+        },
+        {
+          "title": "草稿",
+          "rect": {
+            "x": 762,
+            "y": 2035,
+            "w": 60,
+            "h": 44,
+            "scrollWidth": 60,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "阅读",
+          "rect": {
+            "x": 826,
+            "y": 2035,
+            "w": 60,
+            "h": 44,
+            "scrollWidth": 60,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "放入主画布",
+          "rect": {
+            "x": 890,
+            "y": 2035,
+            "w": 96,
+            "h": 44,
+            "scrollWidth": 96,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "取用 施工主线",
+          "rect": {
+            "x": 958,
+            "y": 2171,
+            "w": 44,
+            "h": 44,
+            "scrollWidth": 42,
+            "scrollHeight": 42,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          }
+        },
+        {
+          "title": "草稿",
+          "rect": {
+            "x": 800,
+            "y": 2312,
+            "w": 60,
+            "h": 44,
+            "scrollWidth": 60,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "预览现场",
+          "rect": {
+            "x": 864,
+            "y": 2312,
+            "w": 84,
+            "h": 44,
+            "scrollWidth": 84,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "放入主画布",
+          "rect": {
+            "x": 826,
+            "y": 2360,
+            "w": 96,
+            "h": 44,
+            "scrollWidth": 96,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "用于当前会话",
+          "rect": {
+            "x": 1080,
+            "y": 527,
+            "w": 184,
+            "h": 40,
+            "scrollWidth": 182,
+            "scrollHeight": 38,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "取用 真实工作流导入验收",
+          "rect": {
+            "x": 1256,
+            "y": 348,
+            "w": 44,
+            "h": 44,
+            "scrollWidth": 42,
+            "scrollHeight": 42,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          }
+        },
+        {
+          "title": "草稿",
+          "rect": {
+            "x": 1096,
+            "y": 693,
+            "w": 60,
+            "h": 44,
+            "scrollWidth": 60,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "选择现场预览",
+          "rect": {
+            "x": 1160,
+            "y": 693,
+            "w": 88,
+            "h": 44,
+            "scrollWidth": 88,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "放入主画布",
+          "rect": {
+            "x": 1124,
+            "y": 741,
+            "w": 96,
+            "h": 44,
+            "scrollWidth": 96,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "取用 施工主线",
+          "rect": {
+            "x": 1256,
+            "y": 824,
+            "w": 44,
+            "h": 44,
+            "scrollWidth": 42,
+            "scrollHeight": 42,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          }
+        },
+        {
+          "title": "草稿",
+          "rect": {
+            "x": 1100,
+            "y": 965,
+            "w": 60,
+            "h": 44,
+            "scrollWidth": 60,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "放入主画布",
+          "rect": {
+            "x": 1124,
+            "y": 1013,
+            "w": 96,
+            "h": 44,
+            "scrollWidth": 96,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "取用 Workflow · 行动现场",
+          "rect": {
+            "x": 1256,
+            "y": 1102,
+            "w": 44,
+            "h": 44,
+            "scrollWidth": 42,
+            "scrollHeight": 42,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          }
+        },
+        {
+          "title": "草稿",
+          "rect": {
+            "x": 1100,
+            "y": 1243,
+            "w": 60,
+            "h": 44,
+            "scrollWidth": 60,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "放入主画布",
+          "rect": {
+            "x": 1124,
+            "y": 1291,
+            "w": 96,
+            "h": 44,
+            "scrollWidth": 96,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "取用 Context · 理解现场",
+          "rect": {
+            "x": 1256,
+            "y": 1380,
+            "w": 44,
+            "h": 44,
+            "scrollWidth": 42,
+            "scrollHeight": 42,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          }
+        },
+        {
+          "title": "草稿",
+          "rect": {
+            "x": 1100,
+            "y": 1521,
+            "w": 60,
+            "h": 44,
+            "scrollWidth": 60,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "放入主画布",
+          "rect": {
+            "x": 1124,
+            "y": 1569,
+            "w": 96,
+            "h": 44,
+            "scrollWidth": 96,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "取用 Workflow · 行动现场",
+          "rect": {
+            "x": 1256,
+            "y": 1658,
+            "w": 44,
+            "h": 44,
+            "scrollWidth": 42,
+            "scrollHeight": 42,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          }
+        },
+        {
+          "title": "草稿",
+          "rect": {
+            "x": 1098,
+            "y": 1799,
+            "w": 60,
+            "h": 44,
+            "scrollWidth": 60,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "预览现场",
+          "rect": {
+            "x": 1162,
+            "y": 1799,
+            "w": 84,
+            "h": 44,
+            "scrollWidth": 84,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "放入主画布",
+          "rect": {
+            "x": 1124,
+            "y": 1847,
+            "w": 96,
+            "h": 44,
+            "scrollWidth": 96,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "取用 Context · 理解现场",
+          "rect": {
+            "x": 1256,
+            "y": 1936,
+            "w": 44,
+            "h": 44,
+            "scrollWidth": 42,
+            "scrollHeight": 42,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          }
+        },
+        {
+          "title": "草稿",
+          "rect": {
+            "x": 1098,
+            "y": 2077,
+            "w": 60,
+            "h": 44,
+            "scrollWidth": 60,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "预览现场",
+          "rect": {
+            "x": 1162,
+            "y": 2077,
+            "w": 84,
+            "h": 44,
+            "scrollWidth": 84,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "放入主画布",
+          "rect": {
+            "x": 1124,
+            "y": 2125,
+            "w": 96,
+            "h": 44,
+            "scrollWidth": 96,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "取用 承接会话（e2e fixture）",
+          "rect": {
+            "x": 1256,
+            "y": 2214,
+            "w": 44,
+            "h": 44,
+            "scrollWidth": 42,
+            "scrollHeight": 42,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          }
+        },
+        {
+          "title": "草稿",
+          "rect": {
+            "x": 1098,
+            "y": 2247,
+            "w": 60,
+            "h": 44,
+            "scrollWidth": 60,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "打开会话",
+          "rect": {
+            "x": 1162,
+            "y": 2247,
+            "w": 84,
+            "h": 44,
+            "scrollWidth": 84,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "放入主画布",
+          "rect": {
+            "x": 1124,
+            "y": 2295,
+            "w": 96,
+            "h": 44,
+            "scrollWidth": 96,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        }
+      ]
+    },
+    {
+      "name": "resize-510",
+      "body": {
+        "x": 832,
+        "y": 169,
+        "w": 511,
+        "h": 598,
+        "scrollWidth": 511,
+        "scrollHeight": 598,
+        "overflow": "hidden",
+        "columns": "auto",
+        "columnWidth": "auto",
+        "visibility": "visible"
+      },
+      "sourceTabs": {
+        "x": 832,
+        "y": 169,
+        "w": 511,
+        "h": 68,
+        "scrollWidth": 511,
+        "scrollHeight": 68,
+        "overflow": "visible",
+        "columns": "auto",
+        "columnWidth": "auto",
+        "visibility": "visible"
+      },
+      "toolbar": {
+        "x": 832,
+        "y": 237,
+        "w": 511,
+        "h": 52,
+        "scrollWidth": 511,
+        "scrollHeight": 52,
+        "overflow": "visible",
+        "columns": "auto",
+        "columnWidth": "auto",
+        "visibility": "visible"
+      },
+      "meta": {
+        "x": 832,
+        "y": 289,
+        "w": 511,
+        "h": 44,
+        "scrollWidth": 511,
+        "scrollHeight": 44,
+        "overflow": "visible",
+        "columns": "auto",
+        "columnWidth": "auto",
+        "visibility": "visible"
+      },
+      "scroll": {
+        "x": 832,
+        "y": 333,
+        "w": 511,
+        "h": 391,
+        "scrollWidth": 501,
+        "scrollHeight": 4154,
+        "overflow": "auto",
+        "columns": "auto",
+        "columnWidth": "auto",
+        "visibility": "visible"
+      },
+      "masonry": {
+        "x": 848,
+        "y": 339,
+        "w": 469,
+        "h": 4136,
+        "scrollWidth": 469,
+        "scrollHeight": 4136,
+        "overflow": "visible",
+        "columns": "1",
+        "columnWidth": "auto",
+        "visibility": "visible"
+      },
+      "items": [
+        {
+          "title": "山野环境声音频 · 音频",
+          "item": {
+            "x": 848,
+            "y": 339,
+            "w": 469,
+            "h": 182,
+            "scrollWidth": 467,
+            "scrollHeight": 180,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          },
+          "object": {
+            "x": 855,
+            "y": 348,
+            "w": 455,
+            "h": 125,
+            "scrollWidth": 455,
+            "scrollHeight": 125,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          },
+          "actions": {
+            "x": 861,
+            "y": 413,
+            "w": 443,
+            "h": 54,
+            "scrollWidth": 441,
+            "scrollHeight": 52,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "品牌主张（e2e fixture）文本 · 文本",
+          "item": {
+            "x": 848,
+            "y": 545,
+            "w": 469,
+            "h": 217,
+            "scrollWidth": 467,
+            "scrollHeight": 215,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          },
+          "object": {
+            "x": 855,
+            "y": 554,
+            "w": 455,
+            "h": 160,
+            "scrollWidth": 455,
+            "scrollHeight": 160,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          },
+          "actions": {
+            "x": 861,
+            "y": 654,
+            "w": 443,
+            "h": 54,
+            "scrollWidth": 441,
+            "scrollHeight": 52,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "参考图 B（e2e fixture）图像 · 图像",
+          "item": {
+            "x": 848,
+            "y": 786,
+            "w": 469,
+            "h": 182,
+            "scrollWidth": 467,
+            "scrollHeight": 180,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          },
+          "object": {
+            "x": 855,
+            "y": 795,
+            "w": 455,
+            "h": 125,
+            "scrollWidth": 455,
+            "scrollHeight": 125,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          },
+          "actions": {
+            "x": 861,
+            "y": 860,
+            "w": 443,
+            "h": 54,
+            "scrollWidth": 441,
+            "scrollHeight": 52,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "参考图（e2e fixture）图像 · 图像",
+          "item": {
+            "x": 848,
+            "y": 992,
+            "w": 469,
+            "h": 182,
+            "scrollWidth": 467,
+            "scrollHeight": 180,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          },
+          "object": {
+            "x": 855,
+            "y": 1001,
+            "w": 455,
+            "h": 125,
+            "scrollWidth": 455,
+            "scrollHeight": 125,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          },
+          "actions": {
+            "x": 861,
+            "y": 1066,
+            "w": 443,
+            "h": 54,
+            "scrollWidth": 441,
+            "scrollHeight": 52,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "决策记录（e2e fixture）文本 · 文本",
+          "item": {
+            "x": 848,
+            "y": 1198,
+            "w": 469,
+            "h": 217,
+            "scrollWidth": 467,
+            "scrollHeight": 215,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          },
+          "object": {
+            "x": 855,
+            "y": 1207,
+            "w": 455,
+            "h": 160,
+            "scrollWidth": 455,
+            "scrollHeight": 160,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          },
+          "actions": {
+            "x": 861,
+            "y": 1307,
+            "w": 443,
+            "h": 54,
+            "scrollWidth": 441,
+            "scrollHeight": 52,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "当前里程碑文本 · 文本",
+          "item": {
+            "x": 848,
+            "y": 1439,
+            "w": 469,
+            "h": 217,
+            "scrollWidth": 467,
+            "scrollHeight": 215,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          },
+          "object": {
+            "x": 855,
+            "y": 1448,
+            "w": 455,
+            "h": 160,
+            "scrollWidth": 455,
+            "scrollHeight": 160,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          },
+          "actions": {
+            "x": 861,
+            "y": 1548,
+            "w": 443,
+            "h": 54,
+            "scrollWidth": 441,
+            "scrollHeight": 52,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "施工纪律文本 · 文本",
+          "item": {
+            "x": 848,
+            "y": 1680,
+            "w": 469,
+            "h": 217,
+            "scrollWidth": 467,
+            "scrollHeight": 215,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          },
+          "object": {
+            "x": 855,
+            "y": 1689,
+            "w": 455,
+            "h": 160,
+            "scrollWidth": 455,
+            "scrollHeight": 160,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          },
+          "actions": {
+            "x": 861,
+            "y": 1789,
+            "w": 443,
+            "h": 54,
+            "scrollWidth": 441,
+            "scrollHeight": 52,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "项目定位文本 · 文本",
+          "item": {
+            "x": 848,
+            "y": 1921,
+            "w": 469,
+            "h": 217,
+            "scrollWidth": 467,
+            "scrollHeight": 215,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          },
+          "object": {
+            "x": 855,
+            "y": 1930,
+            "w": 455,
+            "h": 160,
+            "scrollWidth": 455,
+            "scrollHeight": 160,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          },
+          "actions": {
+            "x": 861,
+            "y": 2030,
+            "w": 443,
+            "h": 54,
+            "scrollWidth": 441,
+            "scrollHeight": 52,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "item": {
+            "x": 937.5,
+            "y": 2162,
+            "w": 290,
+            "h": 254,
+            "scrollWidth": 288,
+            "scrollHeight": 252,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          },
+          "object": {
+            "x": 944.5,
+            "y": 2171,
+            "w": 276,
+            "h": 244,
+            "scrollWidth": 276,
+            "scrollHeight": 244,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          },
+          "actions": {
+            "x": 950.5,
+            "y": 2355,
+            "w": 264,
+            "h": 54,
+            "scrollWidth": 262,
+            "scrollHeight": 52,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "item": {
+            "x": 937.5,
+            "y": 2440,
+            "w": 290,
+            "h": 404,
+            "scrollWidth": 288,
+            "scrollHeight": 402,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          },
+          "object": {
+            "x": 944.5,
+            "y": 2449,
+            "w": 276,
+            "h": 324,
+            "scrollWidth": 276,
+            "scrollHeight": 324,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          },
+          "actions": {
+            "x": 944.5,
+            "y": 2789,
+            "w": 276,
+            "h": 54,
+            "scrollWidth": 274,
+            "scrollHeight": 52,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "item": {
+            "x": 937.5,
+            "y": 2868,
+            "w": 290,
+            "h": 254,
+            "scrollWidth": 288,
+            "scrollHeight": 252,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          },
+          "object": {
+            "x": 944.5,
+            "y": 2877,
+            "w": 276,
+            "h": 244,
+            "scrollWidth": 276,
+            "scrollHeight": 244,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          },
+          "actions": {
+            "x": 950.5,
+            "y": 3061,
+            "w": 264,
+            "h": 54,
+            "scrollWidth": 262,
+            "scrollHeight": 52,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "item": {
+            "x": 937.5,
+            "y": 3146,
+            "w": 290,
+            "h": 254,
+            "scrollWidth": 288,
+            "scrollHeight": 252,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          },
+          "object": {
+            "x": 944.5,
+            "y": 3155,
+            "w": 276,
+            "h": 244,
+            "scrollWidth": 276,
+            "scrollHeight": 244,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          },
+          "actions": {
+            "x": 950.5,
+            "y": 3339,
+            "w": 264,
+            "h": 54,
+            "scrollWidth": 262,
+            "scrollHeight": 52,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "item": {
+            "x": 937.5,
+            "y": 3424,
+            "w": 290,
+            "h": 254,
+            "scrollWidth": 288,
+            "scrollHeight": 252,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          },
+          "object": {
+            "x": 944.5,
+            "y": 3433,
+            "w": 276,
+            "h": 244,
+            "scrollWidth": 276,
+            "scrollHeight": 244,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          },
+          "actions": {
+            "x": 950.5,
+            "y": 3617,
+            "w": 264,
+            "h": 54,
+            "scrollWidth": 262,
+            "scrollHeight": 52,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "item": {
+            "x": 937.5,
+            "y": 3702,
+            "w": 290,
+            "h": 254,
+            "scrollWidth": 288,
+            "scrollHeight": 252,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          },
+          "object": {
+            "x": 944.5,
+            "y": 3711,
+            "w": 276,
+            "h": 244,
+            "scrollWidth": 276,
+            "scrollHeight": 244,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          },
+          "actions": {
+            "x": 950.5,
+            "y": 3895,
+            "w": 264,
+            "h": 54,
+            "scrollWidth": 262,
+            "scrollHeight": 52,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "item": {
+            "x": 937.5,
+            "y": 3980,
+            "w": 290,
+            "h": 254,
+            "scrollWidth": 288,
+            "scrollHeight": 252,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          },
+          "object": {
+            "x": 944.5,
+            "y": 3989,
+            "w": 276,
+            "h": 244,
+            "scrollWidth": 276,
+            "scrollHeight": 244,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          },
+          "actions": {
+            "x": 950.5,
+            "y": 4173,
+            "w": 264,
+            "h": 54,
+            "scrollWidth": 262,
+            "scrollHeight": 52,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "承接会话（e2e fixture）会话 · 接收会话",
+          "item": {
+            "x": 848,
+            "y": 4258,
+            "w": 469,
+            "h": 193,
+            "scrollWidth": 467,
+            "scrollHeight": 191,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          },
+          "object": {
+            "x": 855,
+            "y": 4267,
+            "w": 455,
+            "h": 136,
+            "scrollWidth": 455,
+            "scrollHeight": 136,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          },
+          "actions": {
+            "x": 861,
+            "y": 4343,
+            "w": 443,
+            "h": 54,
+            "scrollWidth": 441,
+            "scrollHeight": 52,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        }
+      ],
+      "buttons": [
+        {
+          "title": "项目",
+          "rect": {
+            "x": 850,
+            "y": 183,
+            "w": 60,
+            "h": 44,
+            "scrollWidth": 60,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          }
+        },
+        {
+          "title": "收件",
+          "rect": {
+            "x": 916,
+            "y": 183,
+            "w": 60,
+            "h": 44,
+            "scrollWidth": 60,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          }
+        },
+        {
+          "title": "来源",
+          "rect": {
+            "x": 982,
+            "y": 183,
+            "w": 60,
+            "h": 44,
+            "scrollWidth": 60,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          }
+        },
+        {
+          "title": "技能",
+          "rect": {
+            "x": 1048,
+            "y": 183,
+            "w": 60,
+            "h": 44,
+            "scrollWidth": 60,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          }
+        },
+        {
+          "title": "全部",
+          "rect": {
+            "x": 1294,
+            "y": 540.5,
+            "w": 72,
+            "h": 44,
+            "scrollWidth": 72,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          }
+        },
+        {
+          "title": "图片",
+          "rect": {
+            "x": 1294,
+            "y": 592.5,
+            "w": 72,
+            "h": 44,
+            "scrollWidth": 72,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          }
+        },
+        {
+          "title": "文字",
+          "rect": {
+            "x": 1294,
+            "y": 644.5,
+            "w": 72,
+            "h": 44,
+            "scrollWidth": 72,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          }
+        },
+        {
+          "title": "影音",
+          "rect": {
+            "x": 1294,
+            "y": 696.5,
+            "w": 72,
+            "h": 44,
+            "scrollWidth": 72,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          }
+        },
+        {
+          "title": "集合",
+          "rect": {
+            "x": 1294,
+            "y": 748.5,
+            "w": 72,
+            "h": 44,
+            "scrollWidth": 72,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          }
+        },
+        {
+          "title": "查看归档",
+          "rect": {
+            "x": 1068.890625,
+            "y": 289,
+            "w": 92,
+            "h": 44,
+            "scrollWidth": 92,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          }
+        },
+        {
+          "title": "刷新当前来源",
+          "rect": {
+            "x": 1279,
+            "y": 289,
+            "w": 48,
+            "h": 44,
+            "scrollWidth": 48,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          }
+        },
+        {
+          "title": "取用 山野环境声",
+          "rect": {
+            "x": 1264,
+            "y": 348,
+            "w": 44,
+            "h": 44,
+            "scrollWidth": 42,
+            "scrollHeight": 42,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          }
+        },
+        {
+          "title": "草稿",
+          "rect": {
+            "x": 970.5,
+            "y": 418,
+            "w": 60,
+            "h": 44,
+            "scrollWidth": 60,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "阅读",
+          "rect": {
+            "x": 1034.5,
+            "y": 418,
+            "w": 60,
+            "h": 44,
+            "scrollWidth": 60,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "放入主画布",
+          "rect": {
+            "x": 1098.5,
+            "y": 418,
+            "w": 96,
+            "h": 44,
+            "scrollWidth": 96,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "取用 品牌主张（e2e fixture）",
+          "rect": {
+            "x": 1264,
+            "y": 554,
+            "w": 44,
+            "h": 44,
+            "scrollWidth": 42,
+            "scrollHeight": 42,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          }
+        },
+        {
+          "title": "草稿",
+          "rect": {
+            "x": 970.5,
+            "y": 659,
+            "w": 60,
+            "h": 44,
+            "scrollWidth": 60,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "阅读",
+          "rect": {
+            "x": 1034.5,
+            "y": 659,
+            "w": 60,
+            "h": 44,
+            "scrollWidth": 60,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "放入主画布",
+          "rect": {
+            "x": 1098.5,
+            "y": 659,
+            "w": 96,
+            "h": 44,
+            "scrollWidth": 96,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "取用 参考图 B（e2e fixture）",
+          "rect": {
+            "x": 1264,
+            "y": 795,
+            "w": 44,
+            "h": 44,
+            "scrollWidth": 42,
+            "scrollHeight": 42,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          }
+        },
+        {
+          "title": "草稿",
+          "rect": {
+            "x": 970.5,
+            "y": 865,
+            "w": 60,
+            "h": 44,
+            "scrollWidth": 60,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "阅读",
+          "rect": {
+            "x": 1034.5,
+            "y": 865,
+            "w": 60,
+            "h": 44,
+            "scrollWidth": 60,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "放入主画布",
+          "rect": {
+            "x": 1098.5,
+            "y": 865,
+            "w": 96,
+            "h": 44,
+            "scrollWidth": 96,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "取用 参考图（e2e fixture）",
+          "rect": {
+            "x": 1264,
+            "y": 1001,
+            "w": 44,
+            "h": 44,
+            "scrollWidth": 42,
+            "scrollHeight": 42,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          }
+        },
+        {
+          "title": "草稿",
+          "rect": {
+            "x": 970.5,
+            "y": 1071,
+            "w": 60,
+            "h": 44,
+            "scrollWidth": 60,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "阅读",
+          "rect": {
+            "x": 1034.5,
+            "y": 1071,
+            "w": 60,
+            "h": 44,
+            "scrollWidth": 60,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "放入主画布",
+          "rect": {
+            "x": 1098.5,
+            "y": 1071,
+            "w": 96,
+            "h": 44,
+            "scrollWidth": 96,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "取用 决策记录（e2e fixture）",
+          "rect": {
+            "x": 1264,
+            "y": 1207,
+            "w": 44,
+            "h": 44,
+            "scrollWidth": 42,
+            "scrollHeight": 42,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          }
+        },
+        {
+          "title": "草稿",
+          "rect": {
+            "x": 970.5,
+            "y": 1312,
+            "w": 60,
+            "h": 44,
+            "scrollWidth": 60,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "阅读",
+          "rect": {
+            "x": 1034.5,
+            "y": 1312,
+            "w": 60,
+            "h": 44,
+            "scrollWidth": 60,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "放入主画布",
+          "rect": {
+            "x": 1098.5,
+            "y": 1312,
+            "w": 96,
+            "h": 44,
+            "scrollWidth": 96,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "取用 当前里程碑",
+          "rect": {
+            "x": 1264,
+            "y": 1448,
+            "w": 44,
+            "h": 44,
+            "scrollWidth": 42,
+            "scrollHeight": 42,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          }
+        },
+        {
+          "title": "草稿",
+          "rect": {
+            "x": 970.5,
+            "y": 1553,
+            "w": 60,
+            "h": 44,
+            "scrollWidth": 60,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "阅读",
+          "rect": {
+            "x": 1034.5,
+            "y": 1553,
+            "w": 60,
+            "h": 44,
+            "scrollWidth": 60,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "放入主画布",
+          "rect": {
+            "x": 1098.5,
+            "y": 1553,
+            "w": 96,
+            "h": 44,
+            "scrollWidth": 96,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "取用 施工纪律",
+          "rect": {
+            "x": 1264,
+            "y": 1689,
+            "w": 44,
+            "h": 44,
+            "scrollWidth": 42,
+            "scrollHeight": 42,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          }
+        },
+        {
+          "title": "草稿",
+          "rect": {
+            "x": 970.5,
+            "y": 1794,
+            "w": 60,
+            "h": 44,
+            "scrollWidth": 60,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "阅读",
+          "rect": {
+            "x": 1034.5,
+            "y": 1794,
+            "w": 60,
+            "h": 44,
+            "scrollWidth": 60,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "放入主画布",
+          "rect": {
+            "x": 1098.5,
+            "y": 1794,
+            "w": 96,
+            "h": 44,
+            "scrollWidth": 96,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "取用 项目定位",
+          "rect": {
+            "x": 1264,
+            "y": 1930,
+            "w": 44,
+            "h": 44,
+            "scrollWidth": 42,
+            "scrollHeight": 42,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          }
+        },
+        {
+          "title": "草稿",
+          "rect": {
+            "x": 970.5,
+            "y": 2035,
+            "w": 60,
+            "h": 44,
+            "scrollWidth": 60,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "阅读",
+          "rect": {
+            "x": 1034.5,
+            "y": 2035,
+            "w": 60,
+            "h": 44,
+            "scrollWidth": 60,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "放入主画布",
+          "rect": {
+            "x": 1098.5,
+            "y": 2035,
+            "w": 96,
+            "h": 44,
+            "scrollWidth": 96,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "取用 施工主线",
+          "rect": {
+            "x": 1174.5,
+            "y": 2171,
+            "w": 44,
+            "h": 44,
+            "scrollWidth": 42,
+            "scrollHeight": 42,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          }
+        },
+        {
+          "title": "草稿",
+          "rect": {
+            "x": 958.5,
+            "y": 2360,
+            "w": 60,
+            "h": 44,
+            "scrollWidth": 60,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "预览现场",
+          "rect": {
+            "x": 1022.5,
+            "y": 2360,
+            "w": 84,
+            "h": 44,
+            "scrollWidth": 84,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "放入主画布",
+          "rect": {
+            "x": 1110.5,
+            "y": 2360,
+            "w": 96,
+            "h": 44,
+            "scrollWidth": 96,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "用于当前会话",
+          "rect": {
+            "x": 990.5,
+            "y": 2628,
+            "w": 184,
+            "h": 40,
+            "scrollWidth": 182,
+            "scrollHeight": 38,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "取用 真实工作流导入验收",
+          "rect": {
+            "x": 1174.5,
+            "y": 2449,
+            "w": 44,
+            "h": 44,
+            "scrollWidth": 42,
+            "scrollHeight": 42,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          }
+        },
+        {
+          "title": "草稿",
+          "rect": {
+            "x": 956.5,
+            "y": 2794,
+            "w": 60,
+            "h": 44,
+            "scrollWidth": 60,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "选择现场预览",
+          "rect": {
+            "x": 1020.5,
+            "y": 2794,
+            "w": 88,
+            "h": 44,
+            "scrollWidth": 88,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "放入主画布",
+          "rect": {
+            "x": 1112.5,
+            "y": 2794,
+            "w": 96,
+            "h": 44,
+            "scrollWidth": 96,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "取用 施工主线",
+          "rect": {
+            "x": 1174.5,
+            "y": 2877,
+            "w": 44,
+            "h": 44,
+            "scrollWidth": 42,
+            "scrollHeight": 42,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          }
+        },
+        {
+          "title": "草稿",
+          "rect": {
+            "x": 960.5,
+            "y": 3066,
+            "w": 60,
+            "h": 44,
+            "scrollWidth": 60,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "放入主画布",
+          "rect": {
+            "x": 1108.5,
+            "y": 3066,
+            "w": 96,
+            "h": 44,
+            "scrollWidth": 96,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "取用 Workflow · 行动现场",
+          "rect": {
+            "x": 1174.5,
+            "y": 3155,
+            "w": 44,
+            "h": 44,
+            "scrollWidth": 42,
+            "scrollHeight": 42,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          }
+        },
+        {
+          "title": "草稿",
+          "rect": {
+            "x": 960.5,
+            "y": 3344,
+            "w": 60,
+            "h": 44,
+            "scrollWidth": 60,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "放入主画布",
+          "rect": {
+            "x": 1108.5,
+            "y": 3344,
+            "w": 96,
+            "h": 44,
+            "scrollWidth": 96,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "取用 Context · 理解现场",
+          "rect": {
+            "x": 1174.5,
+            "y": 3433,
+            "w": 44,
+            "h": 44,
+            "scrollWidth": 42,
+            "scrollHeight": 42,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          }
+        },
+        {
+          "title": "草稿",
+          "rect": {
+            "x": 960.5,
+            "y": 3622,
+            "w": 60,
+            "h": 44,
+            "scrollWidth": 60,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "放入主画布",
+          "rect": {
+            "x": 1108.5,
+            "y": 3622,
+            "w": 96,
+            "h": 44,
+            "scrollWidth": 96,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "取用 Workflow · 行动现场",
+          "rect": {
+            "x": 1174.5,
+            "y": 3711,
+            "w": 44,
+            "h": 44,
+            "scrollWidth": 42,
+            "scrollHeight": 42,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          }
+        },
+        {
+          "title": "草稿",
+          "rect": {
+            "x": 958.5,
+            "y": 3900,
+            "w": 60,
+            "h": 44,
+            "scrollWidth": 60,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "预览现场",
+          "rect": {
+            "x": 1022.5,
+            "y": 3900,
+            "w": 84,
+            "h": 44,
+            "scrollWidth": 84,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "放入主画布",
+          "rect": {
+            "x": 1110.5,
+            "y": 3900,
+            "w": 96,
+            "h": 44,
+            "scrollWidth": 96,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "取用 Context · 理解现场",
+          "rect": {
+            "x": 1174.5,
+            "y": 3989,
+            "w": 44,
+            "h": 44,
+            "scrollWidth": 42,
+            "scrollHeight": 42,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          }
+        },
+        {
+          "title": "草稿",
+          "rect": {
+            "x": 958.5,
+            "y": 4178,
+            "w": 60,
+            "h": 44,
+            "scrollWidth": 60,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "预览现场",
+          "rect": {
+            "x": 1022.5,
+            "y": 4178,
+            "w": 84,
+            "h": 44,
+            "scrollWidth": 84,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "放入主画布",
+          "rect": {
+            "x": 1110.5,
+            "y": 4178,
+            "w": 96,
+            "h": 44,
+            "scrollWidth": 96,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "取用 承接会话（e2e fixture）",
+          "rect": {
+            "x": 1264,
+            "y": 4267,
+            "w": 44,
+            "h": 44,
+            "scrollWidth": 42,
+            "scrollHeight": 42,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          }
+        },
+        {
+          "title": "草稿",
+          "rect": {
+            "x": 958.5,
+            "y": 4348,
+            "w": 60,
+            "h": 44,
+            "scrollWidth": 60,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "打开会话",
+          "rect": {
+            "x": 1022.5,
+            "y": 4348,
+            "w": 84,
+            "h": 44,
+            "scrollWidth": 84,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "放入主画布",
+          "rect": {
+            "x": 1110.5,
+            "y": 4348,
+            "w": 96,
+            "h": 44,
+            "scrollWidth": 96,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        }
+      ]
+    },
+    {
+      "name": "1024",
+      "body": {
+        "x": 512,
+        "y": 169,
+        "w": 511,
+        "h": 598,
+        "scrollWidth": 511,
+        "scrollHeight": 598,
+        "overflow": "hidden",
+        "columns": "auto",
+        "columnWidth": "auto",
+        "visibility": "visible"
+      },
+      "sourceTabs": {
+        "x": 512,
+        "y": 169,
+        "w": 511,
+        "h": 68,
+        "scrollWidth": 511,
+        "scrollHeight": 68,
+        "overflow": "visible",
+        "columns": "auto",
+        "columnWidth": "auto",
+        "visibility": "visible"
+      },
+      "toolbar": {
+        "x": 512,
+        "y": 237,
+        "w": 511,
+        "h": 52,
+        "scrollWidth": 511,
+        "scrollHeight": 52,
+        "overflow": "visible",
+        "columns": "auto",
+        "columnWidth": "auto",
+        "visibility": "visible"
+      },
+      "meta": {
+        "x": 512,
+        "y": 289,
+        "w": 511,
+        "h": 44,
+        "scrollWidth": 511,
+        "scrollHeight": 44,
+        "overflow": "visible",
+        "columns": "auto",
+        "columnWidth": "auto",
+        "visibility": "visible"
+      },
+      "scroll": {
+        "x": 512,
+        "y": 333,
+        "w": 511,
+        "h": 391,
+        "scrollWidth": 501,
+        "scrollHeight": 4154,
+        "overflow": "auto",
+        "columns": "auto",
+        "columnWidth": "auto",
+        "visibility": "visible"
+      },
+      "masonry": {
+        "x": 528,
+        "y": 339,
+        "w": 469,
+        "h": 4136,
+        "scrollWidth": 469,
+        "scrollHeight": 4136,
+        "overflow": "visible",
+        "columns": "1",
+        "columnWidth": "auto",
+        "visibility": "visible"
+      },
+      "items": [
+        {
+          "title": "山野环境声音频 · 音频",
+          "item": {
+            "x": 528,
+            "y": 339,
+            "w": 469,
+            "h": 182,
+            "scrollWidth": 467,
+            "scrollHeight": 180,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          },
+          "object": {
+            "x": 535,
+            "y": 348,
+            "w": 455,
+            "h": 125,
+            "scrollWidth": 455,
+            "scrollHeight": 125,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          },
+          "actions": {
+            "x": 541,
+            "y": 413,
+            "w": 443,
+            "h": 54,
+            "scrollWidth": 441,
+            "scrollHeight": 52,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          }
+        },
+        {
+          "title": "品牌主张（e2e fixture）文本 · 文本",
+          "item": {
+            "x": 528,
+            "y": 545,
+            "w": 469,
+            "h": 217,
+            "scrollWidth": 467,
+            "scrollHeight": 215,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          },
+          "object": {
+            "x": 535,
+            "y": 554,
+            "w": 455,
+            "h": 160,
+            "scrollWidth": 455,
+            "scrollHeight": 160,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          },
+          "actions": {
+            "x": 541,
+            "y": 654,
+            "w": 443,
+            "h": 54,
+            "scrollWidth": 441,
+            "scrollHeight": 52,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "参考图 B（e2e fixture）图像 · 图像",
+          "item": {
+            "x": 528,
+            "y": 786,
+            "w": 469,
+            "h": 182,
+            "scrollWidth": 467,
+            "scrollHeight": 180,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          },
+          "object": {
+            "x": 535,
+            "y": 795,
+            "w": 455,
+            "h": 125,
+            "scrollWidth": 455,
+            "scrollHeight": 125,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          },
+          "actions": {
+            "x": 541,
+            "y": 860,
+            "w": 443,
+            "h": 54,
+            "scrollWidth": 441,
+            "scrollHeight": 52,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "参考图（e2e fixture）图像 · 图像",
+          "item": {
+            "x": 528,
+            "y": 992,
+            "w": 469,
+            "h": 182,
+            "scrollWidth": 467,
+            "scrollHeight": 180,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          },
+          "object": {
+            "x": 535,
+            "y": 1001,
+            "w": 455,
+            "h": 125,
+            "scrollWidth": 455,
+            "scrollHeight": 125,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          },
+          "actions": {
+            "x": 541,
+            "y": 1066,
+            "w": 443,
+            "h": 54,
+            "scrollWidth": 441,
+            "scrollHeight": 52,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "决策记录（e2e fixture）文本 · 文本",
+          "item": {
+            "x": 528,
+            "y": 1198,
+            "w": 469,
+            "h": 217,
+            "scrollWidth": 467,
+            "scrollHeight": 215,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          },
+          "object": {
+            "x": 535,
+            "y": 1207,
+            "w": 455,
+            "h": 160,
+            "scrollWidth": 455,
+            "scrollHeight": 160,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          },
+          "actions": {
+            "x": 541,
+            "y": 1307,
+            "w": 443,
+            "h": 54,
+            "scrollWidth": 441,
+            "scrollHeight": 52,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "当前里程碑文本 · 文本",
+          "item": {
+            "x": 528,
+            "y": 1439,
+            "w": 469,
+            "h": 217,
+            "scrollWidth": 467,
+            "scrollHeight": 215,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          },
+          "object": {
+            "x": 535,
+            "y": 1448,
+            "w": 455,
+            "h": 160,
+            "scrollWidth": 455,
+            "scrollHeight": 160,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          },
+          "actions": {
+            "x": 541,
+            "y": 1548,
+            "w": 443,
+            "h": 54,
+            "scrollWidth": 441,
+            "scrollHeight": 52,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "施工纪律文本 · 文本",
+          "item": {
+            "x": 528,
+            "y": 1680,
+            "w": 469,
+            "h": 217,
+            "scrollWidth": 467,
+            "scrollHeight": 215,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          },
+          "object": {
+            "x": 535,
+            "y": 1689,
+            "w": 455,
+            "h": 160,
+            "scrollWidth": 455,
+            "scrollHeight": 160,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          },
+          "actions": {
+            "x": 541,
+            "y": 1789,
+            "w": 443,
+            "h": 54,
+            "scrollWidth": 441,
+            "scrollHeight": 52,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "项目定位文本 · 文本",
+          "item": {
+            "x": 528,
+            "y": 1921,
+            "w": 469,
+            "h": 217,
+            "scrollWidth": 467,
+            "scrollHeight": 215,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          },
+          "object": {
+            "x": 535,
+            "y": 1930,
+            "w": 455,
+            "h": 160,
+            "scrollWidth": 455,
+            "scrollHeight": 160,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          },
+          "actions": {
+            "x": 541,
+            "y": 2030,
+            "w": 443,
+            "h": 54,
+            "scrollWidth": 441,
+            "scrollHeight": 52,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "item": {
+            "x": 617.5,
+            "y": 2162,
+            "w": 290,
+            "h": 254,
+            "scrollWidth": 288,
+            "scrollHeight": 252,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          },
+          "object": {
+            "x": 624.5,
+            "y": 2171,
+            "w": 276,
+            "h": 244,
+            "scrollWidth": 276,
+            "scrollHeight": 244,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          },
+          "actions": {
+            "x": 630.5,
+            "y": 2355,
+            "w": 264,
+            "h": 54,
+            "scrollWidth": 262,
+            "scrollHeight": 52,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "item": {
+            "x": 617.5,
+            "y": 2440,
+            "w": 290,
+            "h": 404,
+            "scrollWidth": 288,
+            "scrollHeight": 402,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          },
+          "object": {
+            "x": 624.5,
+            "y": 2449,
+            "w": 276,
+            "h": 324,
+            "scrollWidth": 276,
+            "scrollHeight": 324,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          },
+          "actions": {
+            "x": 624.5,
+            "y": 2789,
+            "w": 276,
+            "h": 54,
+            "scrollWidth": 274,
+            "scrollHeight": 52,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "item": {
+            "x": 617.5,
+            "y": 2868,
+            "w": 290,
+            "h": 254,
+            "scrollWidth": 288,
+            "scrollHeight": 252,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          },
+          "object": {
+            "x": 624.5,
+            "y": 2877,
+            "w": 276,
+            "h": 244,
+            "scrollWidth": 276,
+            "scrollHeight": 244,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          },
+          "actions": {
+            "x": 630.5,
+            "y": 3061,
+            "w": 264,
+            "h": 54,
+            "scrollWidth": 262,
+            "scrollHeight": 52,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "item": {
+            "x": 617.5,
+            "y": 3146,
+            "w": 290,
+            "h": 254,
+            "scrollWidth": 288,
+            "scrollHeight": 252,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          },
+          "object": {
+            "x": 624.5,
+            "y": 3155,
+            "w": 276,
+            "h": 244,
+            "scrollWidth": 276,
+            "scrollHeight": 244,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          },
+          "actions": {
+            "x": 630.5,
+            "y": 3339,
+            "w": 264,
+            "h": 54,
+            "scrollWidth": 262,
+            "scrollHeight": 52,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "item": {
+            "x": 617.5,
+            "y": 3424,
+            "w": 290,
+            "h": 254,
+            "scrollWidth": 288,
+            "scrollHeight": 252,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          },
+          "object": {
+            "x": 624.5,
+            "y": 3433,
+            "w": 276,
+            "h": 244,
+            "scrollWidth": 276,
+            "scrollHeight": 244,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          },
+          "actions": {
+            "x": 630.5,
+            "y": 3617,
+            "w": 264,
+            "h": 54,
+            "scrollWidth": 262,
+            "scrollHeight": 52,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "item": {
+            "x": 617.5,
+            "y": 3702,
+            "w": 290,
+            "h": 254,
+            "scrollWidth": 288,
+            "scrollHeight": 252,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          },
+          "object": {
+            "x": 624.5,
+            "y": 3711,
+            "w": 276,
+            "h": 244,
+            "scrollWidth": 276,
+            "scrollHeight": 244,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          },
+          "actions": {
+            "x": 630.5,
+            "y": 3895,
+            "w": 264,
+            "h": 54,
+            "scrollWidth": 262,
+            "scrollHeight": 52,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "item": {
+            "x": 617.5,
+            "y": 3980,
+            "w": 290,
+            "h": 254,
+            "scrollWidth": 288,
+            "scrollHeight": 252,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          },
+          "object": {
+            "x": 624.5,
+            "y": 3989,
+            "w": 276,
+            "h": 244,
+            "scrollWidth": 276,
+            "scrollHeight": 244,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          },
+          "actions": {
+            "x": 630.5,
+            "y": 4173,
+            "w": 264,
+            "h": 54,
+            "scrollWidth": 262,
+            "scrollHeight": 52,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "承接会话（e2e fixture）会话 · 接收会话",
+          "item": {
+            "x": 528,
+            "y": 4258,
+            "w": 469,
+            "h": 193,
+            "scrollWidth": 467,
+            "scrollHeight": 191,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          },
+          "object": {
+            "x": 535,
+            "y": 4267,
+            "w": 455,
+            "h": 136,
+            "scrollWidth": 455,
+            "scrollHeight": 136,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          },
+          "actions": {
+            "x": 541,
+            "y": 4343,
+            "w": 443,
+            "h": 54,
+            "scrollWidth": 441,
+            "scrollHeight": 52,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        }
+      ],
+      "buttons": [
+        {
+          "title": "项目",
+          "rect": {
+            "x": 530,
+            "y": 183,
+            "w": 60,
+            "h": 44,
+            "scrollWidth": 60,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          }
+        },
+        {
+          "title": "收件",
+          "rect": {
+            "x": 596,
+            "y": 183,
+            "w": 60,
+            "h": 44,
+            "scrollWidth": 60,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          }
+        },
+        {
+          "title": "来源",
+          "rect": {
+            "x": 662,
+            "y": 183,
+            "w": 60,
+            "h": 44,
+            "scrollWidth": 60,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          }
+        },
+        {
+          "title": "技能",
+          "rect": {
+            "x": 728,
+            "y": 183,
+            "w": 60,
+            "h": 44,
+            "scrollWidth": 60,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          }
+        },
+        {
+          "title": "全部",
+          "rect": {
+            "x": 974,
+            "y": 540.5,
+            "w": 72,
+            "h": 44,
+            "scrollWidth": 72,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          }
+        },
+        {
+          "title": "图片",
+          "rect": {
+            "x": 974,
+            "y": 592.5,
+            "w": 72,
+            "h": 44,
+            "scrollWidth": 72,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          }
+        },
+        {
+          "title": "文字",
+          "rect": {
+            "x": 974,
+            "y": 644.5,
+            "w": 72,
+            "h": 44,
+            "scrollWidth": 72,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          }
+        },
+        {
+          "title": "影音",
+          "rect": {
+            "x": 974,
+            "y": 696.5,
+            "w": 72,
+            "h": 44,
+            "scrollWidth": 72,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          }
+        },
+        {
+          "title": "集合",
+          "rect": {
+            "x": 974,
+            "y": 748.5,
+            "w": 72,
+            "h": 44,
+            "scrollWidth": 72,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          }
+        },
+        {
+          "title": "查看归档",
+          "rect": {
+            "x": 748.890625,
+            "y": 289,
+            "w": 92,
+            "h": 44,
+            "scrollWidth": 92,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          }
+        },
+        {
+          "title": "刷新当前来源",
+          "rect": {
+            "x": 959,
+            "y": 289,
+            "w": 48,
+            "h": 44,
+            "scrollWidth": 48,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          }
+        },
+        {
+          "title": "取用 山野环境声",
+          "rect": {
+            "x": 944,
+            "y": 348,
+            "w": 44,
+            "h": 44,
+            "scrollWidth": 42,
+            "scrollHeight": 42,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          }
+        },
+        {
+          "title": "草稿",
+          "rect": {
+            "x": 650.5,
+            "y": 418,
+            "w": 60,
+            "h": 44,
+            "scrollWidth": 60,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          }
+        },
+        {
+          "title": "阅读",
+          "rect": {
+            "x": 714.5,
+            "y": 418,
+            "w": 60,
+            "h": 44,
+            "scrollWidth": 60,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          }
+        },
+        {
+          "title": "放入主画布",
+          "rect": {
+            "x": 778.5,
+            "y": 418,
+            "w": 96,
+            "h": 44,
+            "scrollWidth": 96,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          }
+        },
+        {
+          "title": "取用 品牌主张（e2e fixture）",
+          "rect": {
+            "x": 944,
+            "y": 554,
+            "w": 44,
+            "h": 44,
+            "scrollWidth": 42,
+            "scrollHeight": 42,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          }
+        },
+        {
+          "title": "草稿",
+          "rect": {
+            "x": 650.5,
+            "y": 659,
+            "w": 60,
+            "h": 44,
+            "scrollWidth": 60,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "阅读",
+          "rect": {
+            "x": 714.5,
+            "y": 659,
+            "w": 60,
+            "h": 44,
+            "scrollWidth": 60,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "放入主画布",
+          "rect": {
+            "x": 778.5,
+            "y": 659,
+            "w": 96,
+            "h": 44,
+            "scrollWidth": 96,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "取用 参考图 B（e2e fixture）",
+          "rect": {
+            "x": 944,
+            "y": 795,
+            "w": 44,
+            "h": 44,
+            "scrollWidth": 42,
+            "scrollHeight": 42,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          }
+        },
+        {
+          "title": "草稿",
+          "rect": {
+            "x": 650.5,
+            "y": 865,
+            "w": 60,
+            "h": 44,
+            "scrollWidth": 60,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "阅读",
+          "rect": {
+            "x": 714.5,
+            "y": 865,
+            "w": 60,
+            "h": 44,
+            "scrollWidth": 60,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "放入主画布",
+          "rect": {
+            "x": 778.5,
+            "y": 865,
+            "w": 96,
+            "h": 44,
+            "scrollWidth": 96,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "取用 参考图（e2e fixture）",
+          "rect": {
+            "x": 944,
+            "y": 1001,
+            "w": 44,
+            "h": 44,
+            "scrollWidth": 42,
+            "scrollHeight": 42,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          }
+        },
+        {
+          "title": "草稿",
+          "rect": {
+            "x": 650.5,
+            "y": 1071,
+            "w": 60,
+            "h": 44,
+            "scrollWidth": 60,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "阅读",
+          "rect": {
+            "x": 714.5,
+            "y": 1071,
+            "w": 60,
+            "h": 44,
+            "scrollWidth": 60,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "放入主画布",
+          "rect": {
+            "x": 778.5,
+            "y": 1071,
+            "w": 96,
+            "h": 44,
+            "scrollWidth": 96,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "取用 决策记录（e2e fixture）",
+          "rect": {
+            "x": 944,
+            "y": 1207,
+            "w": 44,
+            "h": 44,
+            "scrollWidth": 42,
+            "scrollHeight": 42,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          }
+        },
+        {
+          "title": "草稿",
+          "rect": {
+            "x": 650.5,
+            "y": 1312,
+            "w": 60,
+            "h": 44,
+            "scrollWidth": 60,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "阅读",
+          "rect": {
+            "x": 714.5,
+            "y": 1312,
+            "w": 60,
+            "h": 44,
+            "scrollWidth": 60,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "放入主画布",
+          "rect": {
+            "x": 778.5,
+            "y": 1312,
+            "w": 96,
+            "h": 44,
+            "scrollWidth": 96,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "取用 当前里程碑",
+          "rect": {
+            "x": 944,
+            "y": 1448,
+            "w": 44,
+            "h": 44,
+            "scrollWidth": 42,
+            "scrollHeight": 42,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          }
+        },
+        {
+          "title": "草稿",
+          "rect": {
+            "x": 650.5,
+            "y": 1553,
+            "w": 60,
+            "h": 44,
+            "scrollWidth": 60,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "阅读",
+          "rect": {
+            "x": 714.5,
+            "y": 1553,
+            "w": 60,
+            "h": 44,
+            "scrollWidth": 60,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "放入主画布",
+          "rect": {
+            "x": 778.5,
+            "y": 1553,
+            "w": 96,
+            "h": 44,
+            "scrollWidth": 96,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "取用 施工纪律",
+          "rect": {
+            "x": 944,
+            "y": 1689,
+            "w": 44,
+            "h": 44,
+            "scrollWidth": 42,
+            "scrollHeight": 42,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          }
+        },
+        {
+          "title": "草稿",
+          "rect": {
+            "x": 650.5,
+            "y": 1794,
+            "w": 60,
+            "h": 44,
+            "scrollWidth": 60,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "阅读",
+          "rect": {
+            "x": 714.5,
+            "y": 1794,
+            "w": 60,
+            "h": 44,
+            "scrollWidth": 60,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "放入主画布",
+          "rect": {
+            "x": 778.5,
+            "y": 1794,
+            "w": 96,
+            "h": 44,
+            "scrollWidth": 96,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "取用 项目定位",
+          "rect": {
+            "x": 944,
+            "y": 1930,
+            "w": 44,
+            "h": 44,
+            "scrollWidth": 42,
+            "scrollHeight": 42,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          }
+        },
+        {
+          "title": "草稿",
+          "rect": {
+            "x": 650.5,
+            "y": 2035,
+            "w": 60,
+            "h": 44,
+            "scrollWidth": 60,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "阅读",
+          "rect": {
+            "x": 714.5,
+            "y": 2035,
+            "w": 60,
+            "h": 44,
+            "scrollWidth": 60,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "放入主画布",
+          "rect": {
+            "x": 778.5,
+            "y": 2035,
+            "w": 96,
+            "h": 44,
+            "scrollWidth": 96,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "取用 施工主线",
+          "rect": {
+            "x": 854.5,
+            "y": 2171,
+            "w": 44,
+            "h": 44,
+            "scrollWidth": 42,
+            "scrollHeight": 42,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          }
+        },
+        {
+          "title": "草稿",
+          "rect": {
+            "x": 638.5,
+            "y": 2360,
+            "w": 60,
+            "h": 44,
+            "scrollWidth": 60,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "预览现场",
+          "rect": {
+            "x": 702.5,
+            "y": 2360,
+            "w": 84,
+            "h": 44,
+            "scrollWidth": 84,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "放入主画布",
+          "rect": {
+            "x": 790.5,
+            "y": 2360,
+            "w": 96,
+            "h": 44,
+            "scrollWidth": 96,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "用于当前会话",
+          "rect": {
+            "x": 670.5,
+            "y": 2628,
+            "w": 184,
+            "h": 40,
+            "scrollWidth": 182,
+            "scrollHeight": 38,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "取用 真实工作流导入验收",
+          "rect": {
+            "x": 854.5,
+            "y": 2449,
+            "w": 44,
+            "h": 44,
+            "scrollWidth": 42,
+            "scrollHeight": 42,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          }
+        },
+        {
+          "title": "草稿",
+          "rect": {
+            "x": 636.5,
+            "y": 2794,
+            "w": 60,
+            "h": 44,
+            "scrollWidth": 60,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "选择现场预览",
+          "rect": {
+            "x": 700.5,
+            "y": 2794,
+            "w": 88,
+            "h": 44,
+            "scrollWidth": 88,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "放入主画布",
+          "rect": {
+            "x": 792.5,
+            "y": 2794,
+            "w": 96,
+            "h": 44,
+            "scrollWidth": 96,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "取用 施工主线",
+          "rect": {
+            "x": 854.5,
+            "y": 2877,
+            "w": 44,
+            "h": 44,
+            "scrollWidth": 42,
+            "scrollHeight": 42,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          }
+        },
+        {
+          "title": "草稿",
+          "rect": {
+            "x": 640.5,
+            "y": 3066,
+            "w": 60,
+            "h": 44,
+            "scrollWidth": 60,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "放入主画布",
+          "rect": {
+            "x": 788.5,
+            "y": 3066,
+            "w": 96,
+            "h": 44,
+            "scrollWidth": 96,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "取用 Workflow · 行动现场",
+          "rect": {
+            "x": 854.5,
+            "y": 3155,
+            "w": 44,
+            "h": 44,
+            "scrollWidth": 42,
+            "scrollHeight": 42,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          }
+        },
+        {
+          "title": "草稿",
+          "rect": {
+            "x": 640.5,
+            "y": 3344,
+            "w": 60,
+            "h": 44,
+            "scrollWidth": 60,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "放入主画布",
+          "rect": {
+            "x": 788.5,
+            "y": 3344,
+            "w": 96,
+            "h": 44,
+            "scrollWidth": 96,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "取用 Context · 理解现场",
+          "rect": {
+            "x": 854.5,
+            "y": 3433,
+            "w": 44,
+            "h": 44,
+            "scrollWidth": 42,
+            "scrollHeight": 42,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          }
+        },
+        {
+          "title": "草稿",
+          "rect": {
+            "x": 640.5,
+            "y": 3622,
+            "w": 60,
+            "h": 44,
+            "scrollWidth": 60,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "放入主画布",
+          "rect": {
+            "x": 788.5,
+            "y": 3622,
+            "w": 96,
+            "h": 44,
+            "scrollWidth": 96,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "取用 Workflow · 行动现场",
+          "rect": {
+            "x": 854.5,
+            "y": 3711,
+            "w": 44,
+            "h": 44,
+            "scrollWidth": 42,
+            "scrollHeight": 42,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          }
+        },
+        {
+          "title": "草稿",
+          "rect": {
+            "x": 638.5,
+            "y": 3900,
+            "w": 60,
+            "h": 44,
+            "scrollWidth": 60,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "预览现场",
+          "rect": {
+            "x": 702.5,
+            "y": 3900,
+            "w": 84,
+            "h": 44,
+            "scrollWidth": 84,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "放入主画布",
+          "rect": {
+            "x": 790.5,
+            "y": 3900,
+            "w": 96,
+            "h": 44,
+            "scrollWidth": 96,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "取用 Context · 理解现场",
+          "rect": {
+            "x": 854.5,
+            "y": 3989,
+            "w": 44,
+            "h": 44,
+            "scrollWidth": 42,
+            "scrollHeight": 42,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          }
+        },
+        {
+          "title": "草稿",
+          "rect": {
+            "x": 638.5,
+            "y": 4178,
+            "w": 60,
+            "h": 44,
+            "scrollWidth": 60,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "预览现场",
+          "rect": {
+            "x": 702.5,
+            "y": 4178,
+            "w": 84,
+            "h": 44,
+            "scrollWidth": 84,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "放入主画布",
+          "rect": {
+            "x": 790.5,
+            "y": 4178,
+            "w": 96,
+            "h": 44,
+            "scrollWidth": 96,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "取用 承接会话（e2e fixture）",
+          "rect": {
+            "x": 944,
+            "y": 4267,
+            "w": 44,
+            "h": 44,
+            "scrollWidth": 42,
+            "scrollHeight": 42,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          }
+        },
+        {
+          "title": "草稿",
+          "rect": {
+            "x": 638.5,
+            "y": 4348,
+            "w": 60,
+            "h": 44,
+            "scrollWidth": 60,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "打开会话",
+          "rect": {
+            "x": 702.5,
+            "y": 4348,
+            "w": 84,
+            "h": 44,
+            "scrollWidth": 84,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "放入主画布",
+          "rect": {
+            "x": 790.5,
+            "y": 4348,
+            "w": 96,
+            "h": 44,
+            "scrollWidth": 96,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        }
+      ]
+    },
+    {
+      "name": "390",
+      "body": {
+        "x": 1,
+        "y": 169,
+        "w": 364,
+        "h": 598,
+        "scrollWidth": 364,
+        "scrollHeight": 598,
+        "overflow": "hidden",
+        "columns": "auto",
+        "columnWidth": "auto",
+        "visibility": "visible"
+      },
+      "sourceTabs": {
+        "x": 1,
+        "y": 169,
+        "w": 364,
+        "h": 68,
+        "scrollWidth": 364,
+        "scrollHeight": 68,
+        "overflow": "visible",
+        "columns": "auto",
+        "columnWidth": "auto",
+        "visibility": "visible"
+      },
+      "toolbar": {
+        "x": 1,
+        "y": 237,
+        "w": 364,
+        "h": 52,
+        "scrollWidth": 364,
+        "scrollHeight": 52,
+        "overflow": "visible",
+        "columns": "auto",
+        "columnWidth": "auto",
+        "visibility": "visible"
+      },
+      "meta": {
+        "x": 1,
+        "y": 289,
+        "w": 364,
+        "h": 44,
+        "scrollWidth": 364,
+        "scrollHeight": 44,
+        "overflow": "visible",
+        "columns": "auto",
+        "columnWidth": "auto",
+        "visibility": "visible"
+      },
+      "scroll": {
+        "x": 1,
+        "y": 333,
+        "w": 364,
+        "h": 391,
+        "scrollWidth": 354,
+        "scrollHeight": 4154,
+        "overflow": "auto",
+        "columns": "auto",
+        "columnWidth": "auto",
+        "visibility": "visible"
+      },
+      "masonry": {
+        "x": 17,
+        "y": 339,
+        "w": 322,
+        "h": 4136,
+        "scrollWidth": 322,
+        "scrollHeight": 4136,
+        "overflow": "visible",
+        "columns": "1",
+        "columnWidth": "auto",
+        "visibility": "visible"
+      },
+      "items": [
+        {
+          "title": "山野环境声音频 · 音频",
+          "item": {
+            "x": 17,
+            "y": 339,
+            "w": 322,
+            "h": 182,
+            "scrollWidth": 320,
+            "scrollHeight": 180,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          },
+          "object": {
+            "x": 24,
+            "y": 348,
+            "w": 308,
+            "h": 125,
+            "scrollWidth": 308,
+            "scrollHeight": 125,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          },
+          "actions": {
+            "x": 30,
+            "y": 413,
+            "w": 296,
+            "h": 54,
+            "scrollWidth": 294,
+            "scrollHeight": 52,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "品牌主张（e2e fixture）文本 · 文本",
+          "item": {
+            "x": 17,
+            "y": 545,
+            "w": 322,
+            "h": 217,
+            "scrollWidth": 320,
+            "scrollHeight": 215,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          },
+          "object": {
+            "x": 24,
+            "y": 554,
+            "w": 308,
+            "h": 160,
+            "scrollWidth": 308,
+            "scrollHeight": 160,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          },
+          "actions": {
+            "x": 30,
+            "y": 654,
+            "w": 296,
+            "h": 54,
+            "scrollWidth": 294,
+            "scrollHeight": 52,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "参考图 B（e2e fixture）图像 · 图像",
+          "item": {
+            "x": 17,
+            "y": 786,
+            "w": 322,
+            "h": 182,
+            "scrollWidth": 320,
+            "scrollHeight": 180,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          },
+          "object": {
+            "x": 24,
+            "y": 795,
+            "w": 308,
+            "h": 125,
+            "scrollWidth": 308,
+            "scrollHeight": 125,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          },
+          "actions": {
+            "x": 30,
+            "y": 860,
+            "w": 296,
+            "h": 54,
+            "scrollWidth": 294,
+            "scrollHeight": 52,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "参考图（e2e fixture）图像 · 图像",
+          "item": {
+            "x": 17,
+            "y": 992,
+            "w": 322,
+            "h": 182,
+            "scrollWidth": 320,
+            "scrollHeight": 180,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          },
+          "object": {
+            "x": 24,
+            "y": 1001,
+            "w": 308,
+            "h": 125,
+            "scrollWidth": 308,
+            "scrollHeight": 125,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          },
+          "actions": {
+            "x": 30,
+            "y": 1066,
+            "w": 296,
+            "h": 54,
+            "scrollWidth": 294,
+            "scrollHeight": 52,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "决策记录（e2e fixture）文本 · 文本",
+          "item": {
+            "x": 17,
+            "y": 1198,
+            "w": 322,
+            "h": 217,
+            "scrollWidth": 320,
+            "scrollHeight": 215,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          },
+          "object": {
+            "x": 24,
+            "y": 1207,
+            "w": 308,
+            "h": 160,
+            "scrollWidth": 308,
+            "scrollHeight": 160,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          },
+          "actions": {
+            "x": 30,
+            "y": 1307,
+            "w": 296,
+            "h": 54,
+            "scrollWidth": 294,
+            "scrollHeight": 52,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "当前里程碑文本 · 文本",
+          "item": {
+            "x": 17,
+            "y": 1439,
+            "w": 322,
+            "h": 217,
+            "scrollWidth": 320,
+            "scrollHeight": 215,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          },
+          "object": {
+            "x": 24,
+            "y": 1448,
+            "w": 308,
+            "h": 160,
+            "scrollWidth": 308,
+            "scrollHeight": 160,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          },
+          "actions": {
+            "x": 30,
+            "y": 1548,
+            "w": 296,
+            "h": 54,
+            "scrollWidth": 294,
+            "scrollHeight": 52,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "施工纪律文本 · 文本",
+          "item": {
+            "x": 17,
+            "y": 1680,
+            "w": 322,
+            "h": 217,
+            "scrollWidth": 320,
+            "scrollHeight": 215,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          },
+          "object": {
+            "x": 24,
+            "y": 1689,
+            "w": 308,
+            "h": 160,
+            "scrollWidth": 308,
+            "scrollHeight": 160,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          },
+          "actions": {
+            "x": 30,
+            "y": 1789,
+            "w": 296,
+            "h": 54,
+            "scrollWidth": 294,
+            "scrollHeight": 52,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "项目定位文本 · 文本",
+          "item": {
+            "x": 17,
+            "y": 1921,
+            "w": 322,
+            "h": 217,
+            "scrollWidth": 320,
+            "scrollHeight": 215,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          },
+          "object": {
+            "x": 24,
+            "y": 1930,
+            "w": 308,
+            "h": 160,
+            "scrollWidth": 308,
+            "scrollHeight": 160,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          },
+          "actions": {
+            "x": 30,
+            "y": 2030,
+            "w": 296,
+            "h": 54,
+            "scrollWidth": 294,
+            "scrollHeight": 52,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "item": {
+            "x": 33,
+            "y": 2162,
+            "w": 290,
+            "h": 254,
+            "scrollWidth": 288,
+            "scrollHeight": 252,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          },
+          "object": {
+            "x": 40,
+            "y": 2171,
+            "w": 276,
+            "h": 244,
+            "scrollWidth": 276,
+            "scrollHeight": 244,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          },
+          "actions": {
+            "x": 46,
+            "y": 2355,
+            "w": 264,
+            "h": 54,
+            "scrollWidth": 262,
+            "scrollHeight": 52,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "item": {
+            "x": 33,
+            "y": 2440,
+            "w": 290,
+            "h": 404,
+            "scrollWidth": 288,
+            "scrollHeight": 402,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          },
+          "object": {
+            "x": 40,
+            "y": 2449,
+            "w": 276,
+            "h": 324,
+            "scrollWidth": 276,
+            "scrollHeight": 324,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          },
+          "actions": {
+            "x": 40,
+            "y": 2789,
+            "w": 276,
+            "h": 54,
+            "scrollWidth": 274,
+            "scrollHeight": 52,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "item": {
+            "x": 33,
+            "y": 2868,
+            "w": 290,
+            "h": 254,
+            "scrollWidth": 288,
+            "scrollHeight": 252,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          },
+          "object": {
+            "x": 40,
+            "y": 2877,
+            "w": 276,
+            "h": 244,
+            "scrollWidth": 276,
+            "scrollHeight": 244,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          },
+          "actions": {
+            "x": 46,
+            "y": 3061,
+            "w": 264,
+            "h": 54,
+            "scrollWidth": 262,
+            "scrollHeight": 52,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "item": {
+            "x": 33,
+            "y": 3146,
+            "w": 290,
+            "h": 254,
+            "scrollWidth": 288,
+            "scrollHeight": 252,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          },
+          "object": {
+            "x": 40,
+            "y": 3155,
+            "w": 276,
+            "h": 244,
+            "scrollWidth": 276,
+            "scrollHeight": 244,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          },
+          "actions": {
+            "x": 46,
+            "y": 3339,
+            "w": 264,
+            "h": 54,
+            "scrollWidth": 262,
+            "scrollHeight": 52,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "item": {
+            "x": 33,
+            "y": 3424,
+            "w": 290,
+            "h": 254,
+            "scrollWidth": 288,
+            "scrollHeight": 252,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          },
+          "object": {
+            "x": 40,
+            "y": 3433,
+            "w": 276,
+            "h": 244,
+            "scrollWidth": 276,
+            "scrollHeight": 244,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          },
+          "actions": {
+            "x": 46,
+            "y": 3617,
+            "w": 264,
+            "h": 54,
+            "scrollWidth": 262,
+            "scrollHeight": 52,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "item": {
+            "x": 33,
+            "y": 3702,
+            "w": 290,
+            "h": 254,
+            "scrollWidth": 288,
+            "scrollHeight": 252,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          },
+          "object": {
+            "x": 40,
+            "y": 3711,
+            "w": 276,
+            "h": 244,
+            "scrollWidth": 276,
+            "scrollHeight": 244,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          },
+          "actions": {
+            "x": 46,
+            "y": 3895,
+            "w": 264,
+            "h": 54,
+            "scrollWidth": 262,
+            "scrollHeight": 52,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "item": {
+            "x": 33,
+            "y": 3980,
+            "w": 290,
+            "h": 254,
+            "scrollWidth": 288,
+            "scrollHeight": 252,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          },
+          "object": {
+            "x": 40,
+            "y": 3989,
+            "w": 276,
+            "h": 244,
+            "scrollWidth": 276,
+            "scrollHeight": 244,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          },
+          "actions": {
+            "x": 46,
+            "y": 4173,
+            "w": 264,
+            "h": 54,
+            "scrollWidth": 262,
+            "scrollHeight": 52,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "承接会话（e2e fixture）会话 · 接收会话",
+          "item": {
+            "x": 17,
+            "y": 4258,
+            "w": 322,
+            "h": 193,
+            "scrollWidth": 320,
+            "scrollHeight": 191,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          },
+          "object": {
+            "x": 24,
+            "y": 4267,
+            "w": 308,
+            "h": 136,
+            "scrollWidth": 308,
+            "scrollHeight": 136,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          },
+          "actions": {
+            "x": 30,
+            "y": 4343,
+            "w": 296,
+            "h": 54,
+            "scrollWidth": 294,
+            "scrollHeight": 52,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        }
+      ],
+      "buttons": [
+        {
+          "title": "项目",
+          "rect": {
+            "x": 19,
+            "y": 183,
+            "w": 52,
+            "h": 44,
+            "scrollWidth": 52,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          }
+        },
+        {
+          "title": "收件",
+          "rect": {
+            "x": 77,
+            "y": 183,
+            "w": 52,
+            "h": 44,
+            "scrollWidth": 52,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          }
+        },
+        {
+          "title": "来源",
+          "rect": {
+            "x": 135,
+            "y": 183,
+            "w": 52,
+            "h": 44,
+            "scrollWidth": 52,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          }
+        },
+        {
+          "title": "技能",
+          "rect": {
+            "x": 193,
+            "y": 183,
+            "w": 52,
+            "h": 44,
+            "scrollWidth": 52,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          }
+        },
+        {
+          "title": "全部",
+          "rect": {
+            "x": 316,
+            "y": 540.5,
+            "w": 72,
+            "h": 44,
+            "scrollWidth": 72,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          }
+        },
+        {
+          "title": "图片",
+          "rect": {
+            "x": 316,
+            "y": 592.5,
+            "w": 72,
+            "h": 44,
+            "scrollWidth": 72,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          }
+        },
+        {
+          "title": "文字",
+          "rect": {
+            "x": 316,
+            "y": 644.5,
+            "w": 72,
+            "h": 44,
+            "scrollWidth": 72,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          }
+        },
+        {
+          "title": "影音",
+          "rect": {
+            "x": 316,
+            "y": 696.5,
+            "w": 72,
+            "h": 44,
+            "scrollWidth": 72,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          }
+        },
+        {
+          "title": "集合",
+          "rect": {
+            "x": 316,
+            "y": 748.5,
+            "w": 72,
+            "h": 44,
+            "scrollWidth": 72,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          }
+        },
+        {
+          "title": "查看归档",
+          "rect": {
+            "x": 164.390625,
+            "y": 289,
+            "w": 92,
+            "h": 44,
+            "scrollWidth": 92,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          }
+        },
+        {
+          "title": "刷新当前来源",
+          "rect": {
+            "x": 301,
+            "y": 289,
+            "w": 48,
+            "h": 44,
+            "scrollWidth": 48,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          }
+        },
+        {
+          "title": "取用 山野环境声",
+          "rect": {
+            "x": 286,
+            "y": 348,
+            "w": 44,
+            "h": 44,
+            "scrollWidth": 42,
+            "scrollHeight": 42,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          }
+        },
+        {
+          "title": "草稿",
+          "rect": {
+            "x": 74,
+            "y": 418,
+            "w": 56,
+            "h": 44,
+            "scrollWidth": 56,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "阅读",
+          "rect": {
+            "x": 132,
+            "y": 418,
+            "w": 56,
+            "h": 44,
+            "scrollWidth": 56,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "放入主画布",
+          "rect": {
+            "x": 190,
+            "y": 418,
+            "w": 92,
+            "h": 44,
+            "scrollWidth": 92,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "取用 品牌主张（e2e fixture）",
+          "rect": {
+            "x": 286,
+            "y": 554,
+            "w": 44,
+            "h": 44,
+            "scrollWidth": 42,
+            "scrollHeight": 42,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          }
+        },
+        {
+          "title": "草稿",
+          "rect": {
+            "x": 74,
+            "y": 659,
+            "w": 56,
+            "h": 44,
+            "scrollWidth": 56,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "阅读",
+          "rect": {
+            "x": 132,
+            "y": 659,
+            "w": 56,
+            "h": 44,
+            "scrollWidth": 56,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "放入主画布",
+          "rect": {
+            "x": 190,
+            "y": 659,
+            "w": 92,
+            "h": 44,
+            "scrollWidth": 92,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "取用 参考图 B（e2e fixture）",
+          "rect": {
+            "x": 286,
+            "y": 795,
+            "w": 44,
+            "h": 44,
+            "scrollWidth": 42,
+            "scrollHeight": 42,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          }
+        },
+        {
+          "title": "草稿",
+          "rect": {
+            "x": 74,
+            "y": 865,
+            "w": 56,
+            "h": 44,
+            "scrollWidth": 56,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "阅读",
+          "rect": {
+            "x": 132,
+            "y": 865,
+            "w": 56,
+            "h": 44,
+            "scrollWidth": 56,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "放入主画布",
+          "rect": {
+            "x": 190,
+            "y": 865,
+            "w": 92,
+            "h": 44,
+            "scrollWidth": 92,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "取用 参考图（e2e fixture）",
+          "rect": {
+            "x": 286,
+            "y": 1001,
+            "w": 44,
+            "h": 44,
+            "scrollWidth": 42,
+            "scrollHeight": 42,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          }
+        },
+        {
+          "title": "草稿",
+          "rect": {
+            "x": 74,
+            "y": 1071,
+            "w": 56,
+            "h": 44,
+            "scrollWidth": 56,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "阅读",
+          "rect": {
+            "x": 132,
+            "y": 1071,
+            "w": 56,
+            "h": 44,
+            "scrollWidth": 56,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "放入主画布",
+          "rect": {
+            "x": 190,
+            "y": 1071,
+            "w": 92,
+            "h": 44,
+            "scrollWidth": 92,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "取用 决策记录（e2e fixture）",
+          "rect": {
+            "x": 286,
+            "y": 1207,
+            "w": 44,
+            "h": 44,
+            "scrollWidth": 42,
+            "scrollHeight": 42,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          }
+        },
+        {
+          "title": "草稿",
+          "rect": {
+            "x": 74,
+            "y": 1312,
+            "w": 56,
+            "h": 44,
+            "scrollWidth": 56,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "阅读",
+          "rect": {
+            "x": 132,
+            "y": 1312,
+            "w": 56,
+            "h": 44,
+            "scrollWidth": 56,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "放入主画布",
+          "rect": {
+            "x": 190,
+            "y": 1312,
+            "w": 92,
+            "h": 44,
+            "scrollWidth": 92,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "取用 当前里程碑",
+          "rect": {
+            "x": 286,
+            "y": 1448,
+            "w": 44,
+            "h": 44,
+            "scrollWidth": 42,
+            "scrollHeight": 42,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          }
+        },
+        {
+          "title": "草稿",
+          "rect": {
+            "x": 74,
+            "y": 1553,
+            "w": 56,
+            "h": 44,
+            "scrollWidth": 56,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "阅读",
+          "rect": {
+            "x": 132,
+            "y": 1553,
+            "w": 56,
+            "h": 44,
+            "scrollWidth": 56,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "放入主画布",
+          "rect": {
+            "x": 190,
+            "y": 1553,
+            "w": 92,
+            "h": 44,
+            "scrollWidth": 92,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "取用 施工纪律",
+          "rect": {
+            "x": 286,
+            "y": 1689,
+            "w": 44,
+            "h": 44,
+            "scrollWidth": 42,
+            "scrollHeight": 42,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          }
+        },
+        {
+          "title": "草稿",
+          "rect": {
+            "x": 74,
+            "y": 1794,
+            "w": 56,
+            "h": 44,
+            "scrollWidth": 56,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "阅读",
+          "rect": {
+            "x": 132,
+            "y": 1794,
+            "w": 56,
+            "h": 44,
+            "scrollWidth": 56,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "放入主画布",
+          "rect": {
+            "x": 190,
+            "y": 1794,
+            "w": 92,
+            "h": 44,
+            "scrollWidth": 92,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "取用 项目定位",
+          "rect": {
+            "x": 286,
+            "y": 1930,
+            "w": 44,
+            "h": 44,
+            "scrollWidth": 42,
+            "scrollHeight": 42,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          }
+        },
+        {
+          "title": "草稿",
+          "rect": {
+            "x": 74,
+            "y": 2035,
+            "w": 56,
+            "h": 44,
+            "scrollWidth": 56,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "阅读",
+          "rect": {
+            "x": 132,
+            "y": 2035,
+            "w": 56,
+            "h": 44,
+            "scrollWidth": 56,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "放入主画布",
+          "rect": {
+            "x": 190,
+            "y": 2035,
+            "w": 92,
+            "h": 44,
+            "scrollWidth": 92,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "取用 施工主线",
+          "rect": {
+            "x": 270,
+            "y": 2171,
+            "w": 44,
+            "h": 44,
+            "scrollWidth": 42,
+            "scrollHeight": 42,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          }
+        },
+        {
+          "title": "草稿",
+          "rect": {
+            "x": 62,
+            "y": 2360,
+            "w": 56,
+            "h": 44,
+            "scrollWidth": 56,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "预览现场",
+          "rect": {
+            "x": 120,
+            "y": 2360,
+            "w": 80,
+            "h": 44,
+            "scrollWidth": 80,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "放入主画布",
+          "rect": {
+            "x": 202,
+            "y": 2360,
+            "w": 92,
+            "h": 44,
+            "scrollWidth": 92,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "用于当前会话",
+          "rect": {
+            "x": 86,
+            "y": 2628,
+            "w": 184,
+            "h": 40,
+            "scrollWidth": 182,
+            "scrollHeight": 38,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "取用 真实工作流导入验收",
+          "rect": {
+            "x": 270,
+            "y": 2449,
+            "w": 44,
+            "h": 44,
+            "scrollWidth": 42,
+            "scrollHeight": 42,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          }
+        },
+        {
+          "title": "草稿",
+          "rect": {
+            "x": 60,
+            "y": 2794,
+            "w": 56,
+            "h": 44,
+            "scrollWidth": 56,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "选择现场预览",
+          "rect": {
+            "x": 118,
+            "y": 2794,
+            "w": 84,
+            "h": 44,
+            "scrollWidth": 84,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "放入主画布",
+          "rect": {
+            "x": 204,
+            "y": 2794,
+            "w": 92,
+            "h": 44,
+            "scrollWidth": 92,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "取用 施工主线",
+          "rect": {
+            "x": 270,
+            "y": 2877,
+            "w": 44,
+            "h": 44,
+            "scrollWidth": 42,
+            "scrollHeight": 42,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          }
+        },
+        {
+          "title": "草稿",
+          "rect": {
+            "x": 62,
+            "y": 3066,
+            "w": 56,
+            "h": 44,
+            "scrollWidth": 56,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "放入主画布",
+          "rect": {
+            "x": 202,
+            "y": 3066,
+            "w": 92,
+            "h": 44,
+            "scrollWidth": 92,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "取用 Workflow · 行动现场",
+          "rect": {
+            "x": 270,
+            "y": 3155,
+            "w": 44,
+            "h": 44,
+            "scrollWidth": 42,
+            "scrollHeight": 42,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          }
+        },
+        {
+          "title": "草稿",
+          "rect": {
+            "x": 62,
+            "y": 3344,
+            "w": 56,
+            "h": 44,
+            "scrollWidth": 56,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "放入主画布",
+          "rect": {
+            "x": 202,
+            "y": 3344,
+            "w": 92,
+            "h": 44,
+            "scrollWidth": 92,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "取用 Context · 理解现场",
+          "rect": {
+            "x": 270,
+            "y": 3433,
+            "w": 44,
+            "h": 44,
+            "scrollWidth": 42,
+            "scrollHeight": 42,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          }
+        },
+        {
+          "title": "草稿",
+          "rect": {
+            "x": 62,
+            "y": 3622,
+            "w": 56,
+            "h": 44,
+            "scrollWidth": 56,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "放入主画布",
+          "rect": {
+            "x": 202,
+            "y": 3622,
+            "w": 92,
+            "h": 44,
+            "scrollWidth": 92,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "取用 Workflow · 行动现场",
+          "rect": {
+            "x": 270,
+            "y": 3711,
+            "w": 44,
+            "h": 44,
+            "scrollWidth": 42,
+            "scrollHeight": 42,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          }
+        },
+        {
+          "title": "草稿",
+          "rect": {
+            "x": 62,
+            "y": 3900,
+            "w": 56,
+            "h": 44,
+            "scrollWidth": 56,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "预览现场",
+          "rect": {
+            "x": 120,
+            "y": 3900,
+            "w": 80,
+            "h": 44,
+            "scrollWidth": 80,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "放入主画布",
+          "rect": {
+            "x": 202,
+            "y": 3900,
+            "w": 92,
+            "h": 44,
+            "scrollWidth": 92,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "取用 Context · 理解现场",
+          "rect": {
+            "x": 270,
+            "y": 3989,
+            "w": 44,
+            "h": 44,
+            "scrollWidth": 42,
+            "scrollHeight": 42,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          }
+        },
+        {
+          "title": "草稿",
+          "rect": {
+            "x": 62,
+            "y": 4178,
+            "w": 56,
+            "h": 44,
+            "scrollWidth": 56,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "预览现场",
+          "rect": {
+            "x": 120,
+            "y": 4178,
+            "w": 80,
+            "h": 44,
+            "scrollWidth": 80,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "放入主画布",
+          "rect": {
+            "x": 202,
+            "y": 4178,
+            "w": 92,
+            "h": 44,
+            "scrollWidth": 92,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "取用 承接会话（e2e fixture）",
+          "rect": {
+            "x": 286,
+            "y": 4267,
+            "w": 44,
+            "h": 44,
+            "scrollWidth": 42,
+            "scrollHeight": 42,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "visible"
+          }
+        },
+        {
+          "title": "草稿",
+          "rect": {
+            "x": 62,
+            "y": 4348,
+            "w": 56,
+            "h": 44,
+            "scrollWidth": 56,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "打开会话",
+          "rect": {
+            "x": 120,
+            "y": 4348,
+            "w": 80,
+            "h": 44,
+            "scrollWidth": 80,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        },
+        {
+          "title": "放入主画布",
+          "rect": {
+            "x": 202,
+            "y": 4348,
+            "w": 92,
+            "h": 44,
+            "scrollWidth": 92,
+            "scrollHeight": 44,
+            "overflow": "visible",
+            "columns": "auto",
+            "columnWidth": "auto",
+            "visibility": "hidden"
+          }
+        }
+      ]
+    }
+  ],
+  "errors": []
+}

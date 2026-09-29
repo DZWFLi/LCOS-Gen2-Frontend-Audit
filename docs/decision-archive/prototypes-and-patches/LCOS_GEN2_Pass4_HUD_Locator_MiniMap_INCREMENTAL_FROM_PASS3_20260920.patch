@@ -1,0 +1,787 @@
+diff --git a/huabu/apps/web/src/lcos/navigation/LcosCameraControls.tsx b/huabu/apps/web/src/lcos/navigation/LcosCameraControls.tsx
+index fb5bc96..3409ada 100644
+--- a/huabu/apps/web/src/lcos/navigation/LcosCameraControls.tsx
++++ b/huabu/apps/web/src/lcos/navigation/LcosCameraControls.tsx
+@@ -19,6 +19,8 @@ export function LcosCameraControls(): React.JSX.Element {
+   // Route-level HUD cannot depend on ReactFlow context. Huabu's canonical canvas
+   // store already owns the same viewport; reading it here keeps one camera truth.
+   const zoom = useCanvasStore((s) => s.viewport?.zoom ?? 1);
++  const minimapEnabled = useCanvasStore((s) => s.minimapEnabled);
++  const toggleMinimap = useCanvasStore((s) => s.toggleMinimap);
+   const [expanded, setExpanded] = useState(false);
+   useCloseOnEscape(expanded, () => setExpanded(false));
+ 
+@@ -31,7 +33,8 @@ export function LcosCameraControls(): React.JSX.Element {
+       compact={{ expanded, onToggle: () => setExpanded((value) => !value) }}
+       onZoomOut={() => requestCamera('zoom-out')}
+       onZoomIn={() => requestCamera('zoom-in')}
+-      onFit={() => requestCamera('fit')}
++      minimapEnabled={minimapEnabled}
++      onToggleMinimap={toggleMinimap}
+       zoomOutIcon={<Minus className="h-4 w-4" />}
+       zoomInIcon={<Plus className="h-4 w-4" />} />
+   );
+diff --git a/huabu/apps/web/src/lcos/navigation/LcosCanvasCommands.tsx b/huabu/apps/web/src/lcos/navigation/LcosCanvasCommands.tsx
+index b2aae54..0c0d545 100644
+--- a/huabu/apps/web/src/lcos/navigation/LcosCanvasCommands.tsx
++++ b/huabu/apps/web/src/lcos/navigation/LcosCanvasCommands.tsx
+@@ -17,11 +17,11 @@ import {
+   initialLocatorState,
+   reduceArrivalState,
+   reduceLocatorState,
+-  type SafeInsets,
+   type ArrivalState,
+   type LocatorState,
+ } from '@local-creative-os/web-gen2';
+ import { useReactFlow, useViewport } from '@xyflow/react';
++import { Navigation2 } from 'lucide-react';
+ import { useEffect, useReducer, useRef, useState } from 'react';
+ 
+ 
+@@ -29,28 +29,15 @@ import { focusNodesOnCanvas } from '@/components/Panels/CanvasLayerPanel/focusNo
+ import useCanvasStore from '@/store/canvasStore';
+ 
+ import { useLcosReferenceStore } from '../lcosReferenceState';
++import { lcosCanvasSafeInsets } from '../shell/lcosHudPlacement';
+ import { useLcosShellStore } from '../shell/lcosShellStore';
+ import { lcosTokens } from '../ui/lcosTokens';
+ 
+ import type { Node } from '@xyflow/react';
+ 
+-/** HUD / Composer / Dock 在屏幕上的占用（对齐 R1 族的真实几何 + 24 边距）。 */
+-const HUD_INSETS: SafeInsets = {
+-  left: 24 + 52 + 16, // Railway 宽 52 + 左右呼吸
+-  right: 24 + 24,
+-  top: 24 + 48 + 16, // NavigatorIsland 高 48
+-  bottom: 24 + 56 + 16, // Composer 高约 56
+-};
+-
+-const LOCATOR_SAFE_INSETS = {
+-  left: HUD_INSETS.left,
+-  right: HUD_INSETS.right,
+-  top: HUD_INSETS.top,
+-  bottom: HUD_INSETS.bottom,
+-};
+-
+ const ARRIVAL_LIFETIME_MS = 720;
+ 
++
+ interface ArrivalTarget {
+   readonly surface: ReturnType<typeof useLcosShellStore.getState>['activeSurface'];
+   readonly canvasId: string;
+@@ -124,6 +111,7 @@ export function LcosCanvasCommands(): React.JSX.Element {
+   const consumeCamera = useLcosShellStore((s) => s.consumeCamera);
+   const consumeLocate = useLcosShellStore((s) => s.consumeLocate);
+   const activeSurface = useLcosShellStore((s) => s.activeSurface);
++  const windowEnvironment = useLcosShellStore((s) => s.windowEnvironment);
+   const canvasId = useCanvasStore((s) => s.canvasId);
+   const nodeCount = useCanvasStore((s) => s.nodes.length);
+   const rf = useReactFlow();
+@@ -153,7 +141,8 @@ export function LcosCanvasCommands(): React.JSX.Element {
+     const bounds = contentBounds(nodes);
+     const size = document.querySelector('.react-flow')?.getBoundingClientRect();
+     if (!size || size.width <= 0) return;
+-    const result = fitBoundsWithInsets(bounds, { width: size.width, height: size.height }, HUD_INSETS);
++    const safeInsets = lcosCanvasSafeInsets(windowEnvironment, { width: size.width, height: size.height });
++    const result = fitBoundsWithInsets(bounds, { width: size.width, height: size.height }, safeInsets);
+     rf.setViewport(result, duration > 0 ? { duration } : undefined);
+   };
+ 
+@@ -353,6 +342,7 @@ export function LcosCanvasCommands(): React.JSX.Element {
+         locatorState={locatorState}
+         arrivalState={arrivalState}
+         arrivalTarget={arrivalTarget}
++        windowEnvironment={windowEnvironment}
+       />
+     </>
+   );
+@@ -367,6 +357,7 @@ function LcosLocatorCue({
+   locatorState,
+   arrivalState,
+   arrivalTarget,
++  windowEnvironment,
+ }: {
+   readonly request: ReturnType<typeof useLcosShellStore.getState>['locateRequest'];
+   readonly activeSurface: ReturnType<typeof useLcosShellStore.getState>['activeSurface'];
+@@ -376,6 +367,7 @@ function LcosLocatorCue({
+   readonly locatorState: LocatorState;
+   readonly arrivalState: ArrivalState;
+   readonly arrivalTarget: ArrivalTarget | null;
++  readonly windowEnvironment: ReturnType<typeof useLcosShellStore.getState>['windowEnvironment'];
+ }): React.JSX.Element | null {
+   const presentationRequest = request ?? (
+     arrivalTarget === null
+@@ -427,23 +419,19 @@ function LcosLocatorCue({
+     width: width * viewport.zoom,
+     height: height * viewport.zoom,
+   };
+-  const professionalStage = document.querySelector('[data-lcos-professional-stage]');
+-  const professionalRect = professionalStage instanceof HTMLElement
+-    ? professionalStage.getBoundingClientRect()
+-    : undefined;
+-  const rightInset = professionalRect !== undefined && professionalRect.left > rootRect.left
+-    ? Math.max(LOCATOR_SAFE_INSETS.right, rootRect.right - professionalRect.left + 16)
+-    : LOCATOR_SAFE_INSETS.right;
+-  const safeLeft = rootRect.left + LOCATOR_SAFE_INSETS.left;
+-  const safeTop = rootRect.top + LOCATOR_SAFE_INSETS.top;
++  const safeInsets = lcosCanvasSafeInsets(windowEnvironment, {
++    width: rootRect.width,
++    height: rootRect.height,
++  });
++  const safeLeft = rootRect.left + safeInsets.left;
++  const safeTop = rootRect.top + safeInsets.top;
+   const safeRect = {
+     left: safeLeft,
+     top: safeTop,
+-    // On a narrow viewport a professional window can consume almost the
+-    // entire width. Keep a one-pixel mathematical safe rect instead of
+-    // feeding an inverted rectangle into the pure geometry function.
+-    right: Math.max(safeLeft + 1, rootRect.right - rightInset),
+-    bottom: Math.max(safeTop + 1, rootRect.bottom - LOCATOR_SAFE_INSETS.bottom),
++    // The Stage can legitimately leave a very narrow safeRect. Keep the pure
++    // locator geometry valid without silently discarding the Stage inset.
++    right: Math.max(safeLeft + 1, rootRect.right - safeInsets.right),
++    bottom: Math.max(safeTop + 1, rootRect.bottom - safeInsets.bottom),
+   };
+   const geometry = computeLocatorGeometry({
+     safeRect,
+@@ -481,35 +469,36 @@ function LcosLocatorCue({
+   if (geometry.state === 'local') return null;
+ 
+   const anchor = geometry.edgeAnchor ?? geometry.directionAnchor ?? geometry.targetCenter;
+-  const angle = Math.atan2(geometry.direction.y, geometry.direction.x) * 180 / Math.PI;
++  const angle = Math.atan2(geometry.direction.y, geometry.direction.x) * 180 / Math.PI + 90;
+   return (
+-    <div
++    <button
++      type="button"
+       data-lcos-locator={geometry.state}
+-      role="status"
+-      aria-label={geometry.state === 'edge' ? '目标在画外，正在抵达' : '目标接近画布边缘'}
+-      className="pointer-events-none fixed z-[65] flex items-center gap-2 rounded-full px-3 py-2 text-xs font-medium"
++      data-lcos-locator-node-id={presentationRequest.nodeId}
++      aria-label={geometry.state === 'edge' ? '前往画外目标' : '前往边缘目标'}
++      title={geometry.state === 'edge' ? '目标在画外 · 点击前往' : '目标接近边缘 · 点击前往'}
++      className="pointer-events-auto fixed z-[65] grid h-9 w-9 place-items-center rounded-full"
+       style={{
+         left: anchor.x,
+         top: anchor.y,
+         transform: 'translate(-50%, -50%)',
+-          background: lcosTokens.color.inverse,
+-          color: lcosTokens.color.textOnInverse,
+-          boxShadow: lcosTokens.glass.shadow,
++        background: lcosTokens.glass.background,
++        color: lcosTokens.color.text,
++        border: `0.6px solid ${lcosTokens.glass.border}`,
++        boxShadow: lcosTokens.glass.shadow,
++        backdropFilter: `blur(${lcosTokens.glass.blur})`,
++        WebkitBackdropFilter: `blur(${lcosTokens.glass.blur})`,
++      }}
++      onClick={() => {
++        void focusNodesOnCanvas(rf, [presentationRequest.nodeId!]);
+       }}
+     >
+-      <span
++      <Navigation2
+         aria-hidden
+-        style={{
+-          display: 'inline-block',
+-          width: 0,
+-          height: 0,
+-          borderTop: '4px solid transparent',
+-          borderBottom: '4px solid transparent',
+-          borderLeft: '6px solid currentColor',
+-          transform: `rotate(${angle}deg)`,
+-        }}
++        size={18}
++        strokeWidth={1.8}
++        style={{ transform: `rotate(${angle}deg)`, transformOrigin: '50% 50%' }}
+       />
+-      {geometry.state === 'edge' ? '正在定位' : '目标在边缘'}
+-    </div>
++    </button>
+   );
+ }
+diff --git a/huabu/apps/web/src/lcos/navigation/LcosMiniMapOverlay.tsx b/huabu/apps/web/src/lcos/navigation/LcosMiniMapOverlay.tsx
+new file mode 100644
+index 0000000..a7b7ebd
+--- /dev/null
++++ b/huabu/apps/web/src/lcos/navigation/LcosMiniMapOverlay.tsx
+@@ -0,0 +1,38 @@
++// LcosMiniMapOverlay — LCOS chrome reuses Huabu/ReactFlow's native MiniMap.
++// No second camera, node graph, or minimap store is created: visibility is the
++// existing canvasStore preference, pan/zoom operate on the mounted ReactFlow,
++// and only the screen-space shell geometry is LCOS-specific.
++
++import { MiniMap } from '@xyflow/react';
++
++import useCanvasStore from '@/store/canvasStore';
++
++import { lcosMinimapPlacement } from '../shell/lcosHudPlacement';
++import { useLcosShellStore } from '../shell/lcosShellStore';
++import { useLcosViewportSize } from '../shell/useLcosViewportSize';
++
++export function LcosMiniMapOverlay(): React.JSX.Element | null {
++  const enabled = useCanvasStore((state) => state.minimapEnabled);
++  const windowEnvironment = useLcosShellStore((state) => state.windowEnvironment);
++  const viewport = useLcosViewportSize();
++  if (!enabled) return null;
++
++  const placement = lcosMinimapPlacement(windowEnvironment, viewport);
++  return (
++    <MiniMap
++      data-lcos-minimap
++      pannable
++      zoomable
++      ariaLabel="项目小地图"
++      position="bottom-left"
++      className="lcos-minimap"
++      style={{
++        left: placement.left,
++        bottom: placement.bottom,
++        width: placement.width,
++        height: placement.height,
++        margin: 0,
++      }}
++    />
++  );
++}
+diff --git a/huabu/apps/web/src/lcos/navigation/LcosNavigatorIsland.tsx b/huabu/apps/web/src/lcos/navigation/LcosNavigatorIsland.tsx
+index 3badf6d..26344e5 100644
+--- a/huabu/apps/web/src/lcos/navigation/LcosNavigatorIsland.tsx
++++ b/huabu/apps/web/src/lcos/navigation/LcosNavigatorIsland.tsx
+@@ -452,7 +452,11 @@ export function LcosNavigatorIsland(_props: NavigatorIslandProps): React.JSX.Ele
+   const viewState: LcosNavigatorIslandState =
+     focus ? '搜索' : pins.length > 0 ? '彩色标' : '静息';
+   const viewport = useLcosViewportSize();
+-  const anchors = lcosHudAnchors(windowEnvironment, viewport);
++  // Figma 5384:367 is hug-sized: 52 resting, +44 per visible Pin, +218 for
++  // the search input slot. Feed the actual requested width into the shared
++  // placement helper so a docked window cannot center a 402px island offscreen.
++  const navigatorWidth = 52 + pins.length * 44 + (focus ? 218 : 0);
++  const anchors = lcosHudAnchors(windowEnvironment, viewport, false, navigatorWidth);
+ 
+   return (
+     <div
+diff --git a/huabu/apps/web/src/lcos/shell/LcosRailway.tsx b/huabu/apps/web/src/lcos/shell/LcosRailway.tsx
+index 8a5c061..646be69 100644
+--- a/huabu/apps/web/src/lcos/shell/LcosRailway.tsx
++++ b/huabu/apps/web/src/lcos/shell/LcosRailway.tsx
+@@ -13,7 +13,7 @@ import {
+ import { Eye, FolderOpen, Inbox, Layers, ListTree, MoreHorizontal, PanelsTopLeft, Trash2 } from 'lucide-react';
+ import { useCallback, useEffect, useMemo, useRef, useState, type DragEvent } from 'react';
+ 
+-import { lcosHudEdgeOffsets, lcosHudSafeCenterY } from './lcosHudPlacement';
++import { lcosHudEdgeOffsets, lcosRailwayLayout } from './lcosHudPlacement';
+ import { useLcosViewportSize } from './useLcosViewportSize';
+ import { useLcosShellStore, type LcosSurfaceKey } from './lcosShellStore';
+ import { createLcosCoreSession } from '../app/lcosCoreClient';
+@@ -446,11 +446,17 @@ export function LcosRailway({
+     }),
+   );
+ 
+-  const overflowDestinations = destinations.length > 4 ? destinations.slice(3) : [];
++  const viewport = useLcosViewportSize();
++  const railwayLayout = lcosRailwayLayout(windowEnvironment, viewport);
++  const visibleSlots = railwayLayout.visibleSlots;
++  const directSlots = Math.max(0, visibleSlots - 1);
++  const overflowDestinations = destinations.length > visibleSlots
++    ? destinations.slice(directSlots)
++    : [];
+   const items: readonly LcosRailwayViewItem[] = overflowDestinations.length === 0
+     ? destinationItems
+     : [
+-        ...destinationItems.slice(0, 3),
++        ...destinationItems.slice(0, directSlots),
+         {
+           key: '__overflow__',
+           label: `还有 ${overflowDestinations.length} 个目的地`,
+@@ -483,8 +489,6 @@ export function LcosRailway({
+         },
+       ];
+ 
+-  const viewport = useLcosViewportSize();
+-
+   // An empty project has no Railway yet. Do not leave a decorative empty rail
+   // on screen: the rail appears only after the user has durable destinations.
+   if (items.length === 0 && error === undefined) return <></>;
+@@ -498,7 +502,7 @@ export function LcosRailway({
+       className="pointer-events-auto fixed top-1/2 left-6 z-40 flex -translate-y-1/2 flex-col items-center gap-2"
+       style={{
+         left: edgeOffsets.left,
+-        top: lcosHudSafeCenterY(windowEnvironment, viewport.height),
++        top: railwayLayout.centerY,
+       }}
+     >
+       <LcosRailwayView
+diff --git a/huabu/apps/web/src/lcos/shell/lcosHudPlacement.test.ts b/huabu/apps/web/src/lcos/shell/lcosHudPlacement.test.ts
+index 7f8f058..e927a64 100644
+--- a/huabu/apps/web/src/lcos/shell/lcosHudPlacement.test.ts
++++ b/huabu/apps/web/src/lcos/shell/lcosHudPlacement.test.ts
+@@ -1,6 +1,14 @@
+ import { describe, expect, it } from 'vitest';
+ 
+-import { lcosHudAnchors, lcosHudEdgeOffsets, lcosHudSafeCenterY } from './lcosHudPlacement';
++import {
++  lcosCanvasSafeInsets,
++  lcosHudAnchors,
++  lcosHudEdgeOffsets,
++  lcosHudSafeCenterY,
++  lcosMinimapPlacement,
++  lcosRailwayLayout,
++  lcosRailwayVisibleSlots,
++} from './lcosHudPlacement';
+ 
+ describe('lcosHudEdgeOffsets', () => {
+   it('keeps the historical 24px resting anchors without an active window environment', () => {
+@@ -36,6 +44,7 @@ describe('HUD visual anchors', () => {
+     expect(anchors.camera).toEqual({ left: 24, bottom: 28 });
+     expect(anchors.assembly).toEqual({ right: 30, bottom: 29 });
+   });
++
+   it('stacks controls only when their actual widths would collide', () => {
+     const resting = lcosHudAnchors(null, { width: 320, height: 900 });
+     const expanded = lcosHudAnchors(null, { width: 320, height: 900 }, true);
+@@ -45,6 +54,23 @@ describe('HUD visual anchors', () => {
+     expect(expanded.dock).toEqual(resting.dock);
+     expect(expanded.navigator.top).toBe(80);
+   });
++
++  it('never throws shell controls off the physical viewport when the Stage safeRect is narrower than them', () => {
++    const environment = {
++      safeRect: { x: 0, y: 0, width: 144, height: 900 },
++      occupiedRects: [{ x: 160, y: 0, width: 1280, height: 900 }],
++      activeRegionId: 'right-dock',
++    };
++    const viewport = { width: 1440, height: 900 };
++    const anchors = lcosHudAnchors(environment, viewport, false, 184);
++    expect(anchors.dock.left - 89).toBeGreaterThanOrEqual(12);
++    expect(anchors.dock.left + 89).toBeLessThanOrEqual(viewport.width - 12);
++    const assemblyLeft = viewport.width - anchors.assembly.right - 128;
++    expect(assemblyLeft).toBeGreaterThanOrEqual(12);
++    expect(assemblyLeft + 128).toBeLessThanOrEqual(viewport.width - 12);
++    expect(anchors.navigator.left - 92).toBeGreaterThanOrEqual(12);
++  });
++
+   it('consumes the shared safeRect without mutating its occupied regions', () => {
+     const environment = {
+       safeRect: { x: 0, y: 0, width: 900, height: 900 },
+@@ -54,7 +80,49 @@ describe('HUD visual anchors', () => {
+     const original = JSON.stringify(environment);
+     const anchors = lcosHudAnchors(environment, { width: 1440, height: 900 });
+     expect(anchors.dock.left).toBe(450);
+-    expect(anchors.assembly.right).toBe(570);
+     expect(JSON.stringify(environment)).toBe(original);
+   });
+ });
++
++describe('Railway responsive slots', () => {
++  it('preserves 36px items and reduces only visible destination count on short viewports', () => {
++    expect(lcosRailwayVisibleSlots(900)).toBe(4);
++    expect(lcosRailwayVisibleSlots(600)).toBe(3);
++    expect(lcosRailwayVisibleSlots(400)).toBe(2);
++    expect(lcosRailwayVisibleSlots(300)).toBe(1);
++  });
++
++  it('moves a short-window rail out of the expanded camera stack without shrinking items', () => {
++    const layout = lcosRailwayLayout(null, { width: 320, height: 400 });
++    const anchors = lcosHudAnchors(null, { width: 320, height: 400 }, true);
++    const railHeight = 16 + layout.visibleSlots * 36 + Math.max(0, layout.visibleSlots - 1) * 6;
++    const railBottom = layout.centerY + railHeight / 2;
++    const cameraTop = 400 - anchors.camera.bottom - 48;
++    expect(layout.visibleSlots).toBe(1);
++    expect(railBottom).toBeLessThanOrEqual(cameraTop);
++  });
++});
++
++describe('camera and minimap safe geometry', () => {
++  it('derives camera insets from the shared Stage safeRect', () => {
++    const environment = {
++      safeRect: { x: 0, y: 0, width: 900, height: 900 },
++      occupiedRects: [{ x: 916, y: 0, width: 524, height: 900 }],
++      activeRegionId: 'right-dock',
++    };
++    const insets = lcosCanvasSafeInsets(environment, { width: 1440, height: 900 });
++    expect(insets.left).toBe(92);
++    expect(insets.right).toBe(588);
++    expect(insets.top).toBe(88);
++    expect(insets.bottom).toBe(98);
++  });
++
++  it('keeps the LCOS minimap above bottom chrome and inside the viewport', () => {
++    const viewport = { width: 390, height: 400 };
++    const map = lcosMinimapPlacement(null, viewport);
++    expect(map.left).toBeGreaterThanOrEqual(12);
++    expect(map.left + map.width).toBeLessThanOrEqual(viewport.width - 12);
++    expect(map.bottom).toBeGreaterThan(80);
++    expect(map.height).toBeGreaterThanOrEqual(56);
++  });
++});
+diff --git a/huabu/apps/web/src/lcos/shell/lcosHudPlacement.ts b/huabu/apps/web/src/lcos/shell/lcosHudPlacement.ts
+index 2b0004a..eb6e8ab 100644
+--- a/huabu/apps/web/src/lcos/shell/lcosHudPlacement.ts
++++ b/huabu/apps/web/src/lcos/shell/lcosHudPlacement.ts
+@@ -12,7 +12,52 @@ export interface LcosHudEdgeOffsets {
+   readonly left: number;
+ }
+ 
++export interface LcosCanvasSafeInsets {
++  readonly top: number;
++  readonly right: number;
++  readonly bottom: number;
++  readonly left: number;
++}
++
++
++export interface LcosRailwayLayout {
++  readonly visibleSlots: number;
++  readonly centerY: number;
++}
++
++export interface LcosMinimapPlacement {
++  readonly left: number;
++  readonly bottom: number;
++  readonly width: number;
++  readonly height: number;
++}
++
+ const DEFAULT_EDGE_GAP = 24;
++const VIEWPORT_MARGIN = 12;
++const DOCK_WIDTH = 178;
++const DOCK_HEIGHT = 58;
++const CAMERA_COLLAPSED_WIDTH = 52;
++const CAMERA_EXPANDED_WIDTH = 174;
++const CAMERA_HEIGHT = 48;
++const ASSEMBLY_WIDTH = 128;
++const ASSEMBLY_HEIGHT = 52;
++const CONTROL_GAP = 12;
++const NAV_MAX_WIDTH = 402;
++
++function clamp(value: number, min: number, max: number): number {
++  if (max < min) return (min + max) / 2;
++  return Math.min(max, Math.max(min, value));
++}
++
++function clampControlLeft(
++  requestedLeft: number,
++  width: number,
++  viewportWidth: number,
++  margin = VIEWPORT_MARGIN,
++): number {
++  if (viewportWidth <= width + margin * 2) return Math.max(0, (viewportWidth - width) / 2);
++  return clamp(requestedLeft, margin, viewportWidth - width - margin);
++}
+ 
+ /**
+  * Translate the single Stage environment into shared HUD edge offsets.
+@@ -45,14 +90,97 @@ export function lcosHudSafeCenterY(
+   return safe.y + safe.height / 2;
+ }
+ 
++/**
++ * Railway never shrinks its 36px destination body. Short viewports reduce the
++ * number of visible destinations and move the remainder behind the existing
++ * +N overflow entry, preserving Figma's fixed glyph/body scale.
++ */
++export function lcosRailwayVisibleSlots(availableHeight: number): number {
++  if (availableHeight < 340) return 1;
++  if (availableHeight < 480) return 2;
++  if (availableHeight < 620) return 3;
++  return 4;
++}
++
++/**
++ * Railway center/slot budget derived from the same HUD geometry. Short windows
++ * reserve the worst-case expanded camera row so the rail never runs through
++ * camera/dock/assembly controls; destination bodies remain 36px.
++ */
++export function lcosRailwayLayout(
++  environment: ProfessionalWindowEnvironmentV1 | null,
++  viewport: LcosViewportSize,
++): LcosRailwayLayout {
++  const anchors = lcosHudAnchors(environment, viewport, true);
++  const safeHeight = Math.min(viewport.height, environment?.safeRect.height ?? viewport.height);
++  const preferredSlots = lcosRailwayVisibleSlots(safeHeight);
++  const topLimit = anchors.navigator.top + 48 + 8;
++  const bottomControlTop = Math.min(
++    viewport.height - anchors.camera.bottom - CAMERA_HEIGHT,
++    viewport.height - anchors.assembly.bottom - ASSEMBLY_HEIGHT,
++    viewport.height - anchors.dock.bottom - DOCK_HEIGHT,
++  );
++  const bottomLimit = bottomControlTop - 8;
++  const available = Math.max(36, bottomLimit - topLimit);
++  const slotsBySpace = Math.max(1, Math.floor((available - 10) / 42));
++  const visibleSlots = Math.min(preferredSlots, slotsBySpace, 4);
++  const railHeight = 16 + visibleSlots * 36 + Math.max(0, visibleSlots - 1) * 6;
++  const minCenter = topLimit + railHeight / 2;
++  const maxCenter = bottomLimit - railHeight / 2;
++  const preferredCenter = lcosHudSafeCenterY(environment, viewport.height);
++  return {
++    visibleSlots,
++    centerY: clamp(preferredCenter, minCenter, maxCenter),
++  };
++}
++
++/**
++ * Insets used by the real Huabu camera/locator. They are derived from the same
++ * ProfessionalWindowStage safeRect as the route-level HUD, so fit/arrival does
++ * not center content underneath a docked professional window.
++ */
++export function lcosCanvasSafeInsets(
++  environment: ProfessionalWindowEnvironmentV1 | null,
++  viewport: LcosViewportSize,
++): LcosCanvasSafeInsets {
++  const edge = lcosHudEdgeOffsets(environment, viewport);
++  const raw = {
++    left: edge.left + 52 + 16,
++    right: edge.right + 24,
++    top: edge.top + 48 + 16,
++    bottom: edge.bottom + 58 + 16,
++  };
++  // Keep at least one physical pixel of usable camera area even when a docked
++  // window leaves a very narrow safeRect. Scale only the insets; never mutate
++  // Stage geometry or invent another safe-area owner.
++  const maxHorizontal = Math.max(1, viewport.width - 1);
++  const horizontalScale = raw.left + raw.right > maxHorizontal
++    ? maxHorizontal / (raw.left + raw.right)
++    : 1;
++  const maxVertical = Math.max(1, viewport.height - 1);
++  const verticalScale = raw.top + raw.bottom > maxVertical
++    ? maxVertical / (raw.top + raw.bottom)
++    : 1;
++  return {
++    left: raw.left * horizontalScale,
++    right: raw.right * horizontalScale,
++    top: raw.top * verticalScale,
++    bottom: raw.bottom * verticalScale,
++  };
++}
++
+ /** Shared visual anchors, not window placement or a second camera/layout store.
+  * Desktop follows 5386:436. In a narrow safe area controls move to separate rows,
+  * rather than overlapping or shrinking glyphs/type. Stage obstructions are read-only.
++ * Every final anchor is clamped to the physical viewport, because an extremely
++ * narrow docked safeRect must degrade by overlapping the dock before it may throw
++ * controls completely off screen.
+  */
+ export function lcosHudAnchors(
+   environment: ProfessionalWindowEnvironmentV1 | null,
+   viewport: LcosViewportSize,
+   cameraExpanded = false,
++  navigatorWidth = 184,
+ ): {
+   readonly navigator: { readonly left: number; readonly top: number; readonly maxWidth: number };
+   readonly dock: { readonly left: number; readonly bottom: number };
+@@ -61,24 +189,89 @@ export function lcosHudAnchors(
+ } {
+   const edge = lcosHudEdgeOffsets(environment, viewport);
+   const safeWidth = Math.max(0, viewport.width - edge.left - edge.right);
+-  const center = edge.left + safeWidth / 2;
+-  const dockBottom = Math.max(23, edge.bottom - 1);
+-  const dockLeft = center - 89;
+-  const assemblyLeft = viewport.width - edge.right - 6 - 128;
+-  const narrow = assemblyLeft < dockLeft + 178 + 12;
+-  const assemblyBottom = narrow ? dockBottom + 58 + 12 : edge.bottom + 5;
+-  const cameraWidth = cameraExpanded ? 174 : 52;
+-  const cameraOverlapsDock = edge.left + cameraWidth + 12 > dockLeft;
+-  let cameraBottom = cameraOverlapsDock ? dockBottom + 58 + 12 : edge.bottom + 4;
+-  if (narrow && cameraOverlapsDock && edge.left + cameraWidth + 12 > assemblyLeft) {
+-    cameraBottom = assemblyBottom + 52 + 12;
++  const safeCenter = edge.left + safeWidth / 2;
++
++  const dockCenter = clamp(
++    safeCenter,
++    VIEWPORT_MARGIN + DOCK_WIDTH / 2,
++    viewport.width - VIEWPORT_MARGIN - DOCK_WIDTH / 2,
++  );
++  const dockBottom = Math.max(23, Math.min(edge.bottom - 1, Math.max(23, viewport.height - DOCK_HEIGHT - VIEWPORT_MARGIN)));
++  const dockLeft = dockCenter - DOCK_WIDTH / 2;
++
++  const requestedAssemblyLeft = viewport.width - edge.right - 6 - ASSEMBLY_WIDTH;
++  const assemblyLeft = clampControlLeft(requestedAssemblyLeft, ASSEMBLY_WIDTH, viewport.width);
++  const narrow = assemblyLeft < dockLeft + DOCK_WIDTH + CONTROL_GAP
++    && assemblyLeft + ASSEMBLY_WIDTH > dockLeft - CONTROL_GAP;
++  let assemblyBottom = narrow ? dockBottom + DOCK_HEIGHT + CONTROL_GAP : edge.bottom + 5;
++  assemblyBottom = Math.max(VIEWPORT_MARGIN, Math.min(assemblyBottom, Math.max(VIEWPORT_MARGIN, viewport.height - ASSEMBLY_HEIGHT - VIEWPORT_MARGIN)));
++
++  const cameraWidth = cameraExpanded ? CAMERA_EXPANDED_WIDTH : CAMERA_COLLAPSED_WIDTH;
++  const cameraLeft = clampControlLeft(edge.left, cameraWidth, viewport.width);
++  const cameraOverlapsDock = cameraLeft + cameraWidth + CONTROL_GAP > dockLeft
++    && cameraLeft < dockLeft + DOCK_WIDTH + CONTROL_GAP;
++  let cameraBottom = cameraOverlapsDock ? dockBottom + DOCK_HEIGHT + CONTROL_GAP : edge.bottom + 4;
++  const cameraOverlapsAssembly = cameraLeft + cameraWidth + CONTROL_GAP > assemblyLeft
++    && cameraLeft < assemblyLeft + ASSEMBLY_WIDTH + CONTROL_GAP;
++  if (narrow && cameraOverlapsDock && cameraOverlapsAssembly) {
++    cameraBottom = assemblyBottom + ASSEMBLY_HEIGHT + CONTROL_GAP;
+   }
+-  // Keep the project identity (including a child-return action) on the first row.
++  cameraBottom = Math.max(VIEWPORT_MARGIN, Math.min(cameraBottom, Math.max(VIEWPORT_MARGIN, viewport.height - CAMERA_HEIGHT - VIEWPORT_MARGIN)));
++
++  // Keep project identity on the first row. The island itself is hug-sized, so
++  // clamp its *actual* requested width rather than only its transient panels.
+   const navigatorTop = safeWidth < 760 ? edge.top + 56 : edge.top;
++  const navWidth = Math.min(
++    NAV_MAX_WIDTH,
++    Math.max(52, Math.min(navigatorWidth, Math.max(52, viewport.width - VIEWPORT_MARGIN * 2))),
++  );
++  const navigatorCenter = clamp(
++    safeCenter,
++    VIEWPORT_MARGIN + navWidth / 2,
++    viewport.width - VIEWPORT_MARGIN - navWidth / 2,
++  );
++  const navigatorMaxWidth = Math.max(52, Math.min(
++    Math.max(52, safeWidth),
++    Math.max(52, viewport.width - VIEWPORT_MARGIN * 2),
++  ));
++
+   return {
+-    navigator: { left: center, top: navigatorTop, maxWidth: safeWidth },
+-    dock: { left: center, bottom: dockBottom },
+-    camera: { left: edge.left, bottom: cameraBottom },
+-    assembly: { right: edge.right + 6, bottom: assemblyBottom },
++    navigator: { left: navigatorCenter, top: navigatorTop, maxWidth: navigatorMaxWidth },
++    dock: { left: dockCenter, bottom: dockBottom },
++    camera: { left: cameraLeft, bottom: cameraBottom },
++    assembly: {
++      right: Math.max(0, viewport.width - assemblyLeft - ASSEMBLY_WIDTH),
++      bottom: assemblyBottom,
++    },
+   };
+ }
++
++/**
++ * Native ReactFlow MiniMap placement for LCOS mode. The map remains the Huabu
++ * donor (same camera/node truth), while this helper only places its screen-space
++ * chrome above whichever bottom control row is currently highest.
++ */
++export function lcosMinimapPlacement(
++  environment: ProfessionalWindowEnvironmentV1 | null,
++  viewport: LcosViewportSize,
++): LcosMinimapPlacement {
++  const edge = lcosHudEdgeOffsets(environment, viewport);
++  const anchors = lcosHudAnchors(environment, viewport);
++  const requestedWidth = viewport.width < 480 ? 132 : viewport.width < 720 ? 156 : 188;
++  let width = Math.min(requestedWidth, Math.max(96, viewport.width - VIEWPORT_MARGIN * 2));
++  let height = Math.round(width * 0.62);
++  const bottom = Math.max(
++    anchors.dock.bottom + DOCK_HEIGHT,
++    anchors.assembly.bottom + ASSEMBLY_HEIGHT,
++  ) + CONTROL_GAP;
++  const minimumTop = anchors.navigator.top + 48 + CONTROL_GAP;
++  const availableHeight = viewport.height - bottom - minimumTop;
++  if (availableHeight < height) {
++    height = Math.max(56, availableHeight);
++    width = Math.max(96, Math.round(height / 0.62));
++  }
++  width = Math.min(width, Math.max(96, viewport.width - VIEWPORT_MARGIN * 2));
++  const requestedLeft = viewport.width - edge.right - width;
++  const left = clampControlLeft(requestedLeft, width, viewport.width);
++  return { left, bottom, width, height };
++}
+diff --git a/huabu/apps/web/src/lcos/ui/families/LcosCameraControlsView.tsx b/huabu/apps/web/src/lcos/ui/families/LcosCameraControlsView.tsx
+index 38c2029..7c19e76 100644
+--- a/huabu/apps/web/src/lcos/ui/families/LcosCameraControlsView.tsx
++++ b/huabu/apps/web/src/lcos/ui/families/LcosCameraControlsView.tsx
+@@ -10,14 +10,15 @@ export interface LcosCameraControlsViewProps {
+   readonly style?: CSSProperties;
+   readonly onZoomOut: () => void;
+   readonly onZoomIn: () => void;
+-  readonly onFit: () => void;
++  readonly minimapEnabled: boolean;
++  readonly onToggleMinimap: () => void;
+   /** 原有图标 primitive 由现有 container 注入，不自行重画。 */
+   readonly zoomOutIcon: ReactNode;
+   readonly zoomInIcon: ReactNode;
+   readonly compact?: { readonly expanded: boolean; readonly onToggle: () => void };
+   readonly disabled?: boolean;
+ }
+-export function LcosCameraControlsView({ zoom, onZoomOut, onZoomIn, onFit,
++export function LcosCameraControlsView({ zoom, onZoomOut, onZoomIn, minimapEnabled, onToggleMinimap,
+   zoomOutIcon, zoomInIcon, compact, disabled = false, className, style,
+ }: LcosCameraControlsViewProps): React.JSX.Element {
+   const collapsed = compact !== undefined && !compact.expanded;
+@@ -32,8 +33,9 @@ export function LcosCameraControlsView({ zoom, onZoomOut, onZoomIn, onFit,
+         title="收起控件（不改变缩放）" disabled={disabled} onClick={compact.onToggle}>{zoomLabel}</button>
+         : <span data-lcos-camera-zoom>{zoomLabel}</span>}
+       <LcosIconButton type="button" aria-label="放大" title="放大" disabled={disabled} onClick={onZoomIn}>{zoomInIcon}</LcosIconButton>
+-      <LcosIconButton type="button" data-lcos-camera-fit aria-label="适合画面" title="适合画面" disabled={disabled}
+-        onClick={onFit}>
++      <LcosIconButton type="button" data-lcos-camera-minimap aria-label={minimapEnabled ? '收起小地图' : '展开小地图'}
++        aria-pressed={minimapEnabled} title={minimapEnabled ? '收起小地图' : '展开小地图'} disabled={disabled}
++        onClick={onToggleMinimap}>
+         <FigmaShellGlyph name="grid" size={17} />
+       </LcosIconButton>
+     </>}
+diff --git a/huabu/apps/web/src/lcos/ui/families/lcos-hud-presentation.css b/huabu/apps/web/src/lcos/ui/families/lcos-hud-presentation.css
+index a5332f3..132d5a5 100644
+--- a/huabu/apps/web/src/lcos/ui/families/lcos-hud-presentation.css
++++ b/huabu/apps/web/src/lcos/ui/families/lcos-hud-presentation.css
+@@ -516,3 +516,46 @@
+ @media (pointer:coarse) {
+   [data-lcos-railway-entry] { width:44px; height:44px; }
+ }
++
++/* LCOS MiniMap: native ReactFlow donor, only re-skinned/repositioned. The
++   viewport rectangle and pan/zoom behavior remain owned by the mounted RF. */
++.lcos-minimap {
++  position: fixed !important;
++  z-index: 39;
++  margin: 0 !important;
++  box-sizing: border-box;
++  overflow: hidden;
++  border: 0.6px solid var(--lcos-hud-border) !important;
++  border-radius: 16px !important;
++  background: color-mix(in srgb, var(--lcos-hud-surface) 92%, transparent) !important;
++  box-shadow: var(--lcos-glass-shadow) !important;
++  backdrop-filter: blur(var(--lcos-glass-blur));
++  -webkit-backdrop-filter: blur(var(--lcos-glass-blur));
++  pointer-events: auto;
++}
++.lcos-minimap .react-flow__minimap-mask { fill: color-mix(in srgb, var(--gen2-text) 10%, transparent); }
++.lcos-minimap .react-flow__minimap-node { fill: var(--gen2-muted); stroke: none; }
++[data-lcos-camera-minimap][aria-pressed='true'] {
++  background: var(--gen2-raised) !important;
++  color: var(--gen2-text);
++}
++
++[data-lcos-locator] {
++  appearance: none;
++  padding: 0;
++  cursor: pointer;
++  transition: transform 120ms ease, background-color 120ms ease, box-shadow 120ms ease;
++}
++[data-lcos-locator]:hover { background: var(--gen2-raised) !important; }
++[data-lcos-locator]:focus-visible {
++  outline: 2px solid var(--lcos-pin-violet);
++  outline-offset: 2px;
++}
++[data-lcos-locator='edge'] { animation: lcos-locator-breathe 1.5s ease-in-out infinite; }
++@keyframes lcos-locator-breathe {
++  0%, 100% { box-shadow: var(--lcos-glass-shadow); }
++  50% { box-shadow: var(--lcos-glass-shadow), 0 0 0 5px color-mix(in srgb, var(--gen2-accent) 13%, transparent); }
++}
++@media (prefers-reduced-motion: reduce) {
++  [data-lcos-locator='edge'] { animation: none; }
++}
+diff --git a/huabu/apps/web/src/lcos/useLcosCanvasProps.tsx b/huabu/apps/web/src/lcos/useLcosCanvasProps.tsx
+index cfd380d..da825f4 100644
+--- a/huabu/apps/web/src/lcos/useLcosCanvasProps.tsx
++++ b/huabu/apps/web/src/lcos/useLcosCanvasProps.tsx
+@@ -37,6 +37,7 @@ import { createLcosRecognizers } from './lcosRecognizers';
+ import { useLcosReferenceStore } from './lcosReferenceState';
+ import { LcosActionArc } from './navigation/LcosActionArc';
+ import { LcosCanvasCommands } from './navigation/LcosCanvasCommands';
++import { LcosMiniMapOverlay } from './navigation/LcosMiniMapOverlay';
+ import { LcosEdgeArc } from './navigation/LcosEdgeArc';
+ import { createLcosNodePresentationSeam } from './nodes/createLcosNodePresentationSeam';
+ import { stageProjectedSources } from './nodes/stageProjectedSources';
+@@ -92,6 +93,9 @@ export function useLcosCanvasProps(projectId: string): LcosCanvasProps {
+         { key: 'lcos/host-overlay', node: <LcosHostOverlay /> },
+         // Camera command consumer remains canvas-local; the visible HUD control is ProjectShell-level.
+         { key: 'lcos/canvas-commands', node: <LcosCanvasCommands /> },
++        // LCOS mode hides Huabu's stock chrome but reuses its native MiniMap
++        // inside the same ReactFlow context and canonical camera.
++        { key: 'lcos/minimap', node: <LcosMiniMapOverlay /> },
+         // R2：节点命令菜单（T3 Action Arc）—— 画布内唯一节点命令入口（节点近场）
+         { key: 'lcos/action-arc', node: <LcosActionArc /> },
+         // R2：边命令入口（替换旧 EdgeStyleToolbar 的可见壳）

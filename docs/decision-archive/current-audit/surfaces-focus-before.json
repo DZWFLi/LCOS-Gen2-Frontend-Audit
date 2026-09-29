@@ -1,0 +1,45 @@
+{
+  "states": [
+    {
+      "name": "card-return",
+      "tag": "BODY",
+      "label": null,
+      "card": false,
+      "instrument": null,
+      "handTrigger": false,
+      "preview": 0,
+      "hand": 1
+    },
+    {
+      "name": "card-escape",
+      "tag": "BODY",
+      "label": null,
+      "card": false,
+      "instrument": null,
+      "handTrigger": false,
+      "preview": 0,
+      "hand": 1
+    },
+    {
+      "name": "hand-escape",
+      "tag": "BODY",
+      "label": null,
+      "card": false,
+      "instrument": null,
+      "handTrigger": false,
+      "preview": 0,
+      "hand": 0
+    },
+    {
+      "name": "atlas-return",
+      "tag": "BODY",
+      "label": null,
+      "card": false,
+      "instrument": null,
+      "handTrigger": false,
+      "preview": 0,
+      "hand": 0
+    }
+  ],
+  "errors": []
+}

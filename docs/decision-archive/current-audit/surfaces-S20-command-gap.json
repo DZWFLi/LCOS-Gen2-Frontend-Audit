@@ -1,0 +1,144 @@
+{
+  "status": "缺真实能力，未施工",
+  "buttons": [
+    {
+      "label": "打开现场 · 施工主线",
+      "disabled": false
+    },
+    {
+      "label": "打开 施工主线 现场",
+      "disabled": false
+    },
+    {
+      "label": "打开 施工主线 现场",
+      "disabled": true
+    },
+    {
+      "label": "打开 Workflow · 行动现场 现场",
+      "disabled": true
+    },
+    {
+      "label": "打开 Context · 理解现场 现场",
+      "disabled": true
+    },
+    {
+      "label": "打开现场 · Workflow · 行动现场",
+      "disabled": false
+    },
+    {
+      "label": "打开 Workflow · 行动现场 现场",
+      "disabled": false
+    },
+    {
+      "label": "打开现场 · Context · 理解现场",
+      "disabled": false
+    },
+    {
+      "label": "打开 Context · 理解现场 现场",
+      "disabled": false
+    }
+  ],
+  "tree": "- button \"打开现场 · 施工主线\"\n- text: 暂无预览 暂无预览\n- strong: 施工主线\n- text: 现场 · 组织未标注\n- button \"打开 施工主线 现场\"\n- text: 暂无预览 暂无预览\n- strong: 施工主线\n- text: 现场 · 组织未标注\n- button \"打开 施工主线 现场\" [disabled]\n- text: 暂无预览 暂无预览\n- strong: Workflow · 行动现场\n- text: 现场 · 组织未标注\n- button \"打开 Workflow · 行动现场 现场\" [disabled]\n- text: 暂无预览 暂无预览\n- strong: Context · 理解现场\n- text: 现场 · 组织未标注\n- button \"打开 Context · 理解现场 现场\" [disabled]\n- button \"打开现场 · Workflow · 行动现场\"\n- text: 暂无预览 暂无预览\n- strong: Workflow · 行动现场\n- text: 现场 · 组织未标注\n- button \"打开 Workflow · 行动现场 现场\"\n- button \"打开现场 · Context · 理解现场\"\n- text: 暂无预览 暂无预览\n- strong: Context · 理解现场\n- text: 现场 · 组织未标注\n- button \"打开 Context · 理解现场 现场\"",
+  "warehouse": [
+    {
+      "status": 200,
+      "keys": [
+        "schemaVersion",
+        "projectId",
+        "items",
+        "totalApprox"
+      ],
+      "items": [
+        {
+          "keys": [
+            "schemaVersion",
+            "entityRef",
+            "kind",
+            "title",
+            "updatedAt",
+            "usageCount"
+          ],
+          "kind": "scene",
+          "id": "workspace-real-main",
+          "title": "施工主线",
+          "allowedActions": null
+        },
+        {
+          "keys": [
+            "schemaVersion",
+            "entityRef",
+            "kind",
+            "title",
+            "updatedAt",
+            "usageCount"
+          ],
+          "kind": "scene",
+          "id": "workspace-workflow-6cf857fa00a7",
+          "title": "施工主线",
+          "allowedActions": null
+        },
+        {
+          "keys": [
+            "schemaVersion",
+            "entityRef",
+            "kind",
+            "title",
+            "updatedAt",
+            "usageCount"
+          ],
+          "kind": "scene",
+          "id": "workspace-workflow-8df4c3041532",
+          "title": "Workflow · 行动现场",
+          "allowedActions": null
+        },
+        {
+          "keys": [
+            "schemaVersion",
+            "entityRef",
+            "kind",
+            "title",
+            "updatedAt",
+            "usageCount"
+          ],
+          "kind": "scene",
+          "id": "workspace-workflow-e38c0c595d4f",
+          "title": "Context · 理解现场",
+          "allowedActions": null
+        },
+        {
+          "keys": [
+            "schemaVersion",
+            "entityRef",
+            "kind",
+            "title",
+            "updatedAt",
+            "usageCount"
+          ],
+          "kind": "scene",
+          "id": "workspace-real-workflow",
+          "title": "Workflow · 行动现场",
+          "allowedActions": null
+        },
+        {
+          "keys": [
+            "schemaVersion",
+            "entityRef",
+            "kind",
+            "title",
+            "updatedAt",
+            "usageCount"
+          ],
+          "kind": "scene",
+          "id": "workspace-real-context",
+          "title": "Context · 理解现场",
+          "allowedActions": null
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "nonGetPaths": [
+    "POST /api/rfs/canvas-5e26c422-466e-4994-9b57-34b8ec5cfcd2/query",
+    "POST /api/rfs/canvas-7fa2a998-c59e-4ce0-8e00-4b1aa171f53b/query"
+  ]
+}

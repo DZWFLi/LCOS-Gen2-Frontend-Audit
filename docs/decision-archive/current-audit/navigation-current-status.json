@@ -1,0 +1,2087 @@
+{
+  "date": "2026-09-26",
+  "updated": "20:15",
+  "mode": "当前施工状态；不改初始盘点历史，不等于全产品完成",
+  "worktree": "E:\\TRAE项目\\LCOS0.1收口\\LCOS_GEN2_GUI_RECOVERY_20260926",
+  "adoption": "最终九面统一构图 + 04共享组件 + 13专项增量；06/07/08/11保留细节状态，原T2/T3负责真实UX；00采用说明决定纠正顺序。",
+  "complete": false,
+  "items": [
+    {
+      "id": "NAV-01",
+      "name": "项目启动器：真实项目封面、最近/全部/归档",
+      "status": "部分已修；根代理浏览器验收",
+      "figma": [
+        {
+          "nodeId": "5388:3652",
+          "pageId": "5095:49",
+          "name": "统一主稿 / 项目启动",
+          "structureParts": [
+            "unification/structures/launcher/nodes-000.json"
+          ],
+          "url": "https://www.figma.com/design/nFUdroLvI5qJZuYTW8h2rF?node-id=5388-3652"
+        },
+        {
+          "nodeId": "5122:1806",
+          "pageId": "5095:49",
+          "name": "18 / 项目 · 最近现场",
+          "structureParts": [
+            "pages/5095-49/frames/5122-1806/nodes-000.json"
+          ],
+          "url": "https://www.figma.com/design/nFUdroLvI5qJZuYTW8h2rF?node-id=5122-1806"
+        },
+        {
+          "nodeId": "5046:49",
+          "pageId": "5036:49",
+          "name": "01 / 首次打开",
+          "structureParts": [
+            "pages/5036-49/frames/5046-49/nodes-000.json"
+          ],
+          "url": "https://www.figma.com/design/nFUdroLvI5qJZuYTW8h2rF?node-id=5046-49"
+        },
+        {
+          "nodeId": "5046:50",
+          "pageId": "5036:49",
+          "name": "02 / 项目库与归档",
+          "structureParts": [
+            "pages/5036-49/frames/5046-50/nodes-000.json"
+          ],
+          "url": "https://www.figma.com/design/nFUdroLvI5qJZuYTW8h2rF?node-id=5046-50"
+        }
+      ],
+      "productionCaller": "LcosProjectLauncherPage → projects facade → project route",
+      "designedStates": [
+        "读取中",
+        "空项目库",
+        "正常列表",
+        "搜索结果",
+        "无结果",
+        "最近",
+        "全部",
+        "归档",
+        "长标题",
+        "读取失败/重试",
+        "进入项目"
+      ],
+      "fixed": [
+        "启动器接真实项目预览；无图时保留诚实占位；长标题和卡片比例已调整。"
+      ],
+      "remaining": [
+        "归档设计入口尚未出现；需核实真实归档 API 后接，不能用假分组代替。",
+        "空库/读取失败/持久重载本代理未重跑。"
+      ],
+      "evidence": [
+        "launcher-1440.png"
+      ],
+      "browserCheckedStates": [
+        "正常列表",
+        "长标题",
+        "进入项目"
+      ],
+      "notIndividuallyBrowserProvenStates": [
+        "读取中",
+        "空项目库",
+        "搜索结果",
+        "无结果",
+        "最近",
+        "全部",
+        "归档",
+        "读取失败/重试"
+      ],
+      "recommendedFiles": [
+        "app/LcosProjectLauncherPage.tsx",
+        "项目已有封面读取适配处"
+      ]
+    },
+    {
+      "id": "NAV-02",
+      "name": "项目创建/打开、键盘与焦点",
+      "status": "主要入口已修；根代理浏览器验收",
+      "figma": [
+        {
+          "nodeId": "5388:3652",
+          "pageId": "5095:49",
+          "name": "统一主稿 / 项目启动",
+          "structureParts": [
+            "unification/structures/launcher/nodes-000.json"
+          ],
+          "url": "https://www.figma.com/design/nFUdroLvI5qJZuYTW8h2rF?node-id=5388-3652"
+        },
+        {
+          "nodeId": "5046:49",
+          "pageId": "5036:49",
+          "name": "01 / 首次打开",
+          "structureParts": [
+            "pages/5036-49/frames/5046-49/nodes-000.json"
+          ],
+          "url": "https://www.figma.com/design/nFUdroLvI5qJZuYTW8h2rF?node-id=5046-49"
+        },
+        {
+          "nodeId": "5046:72",
+          "pageId": "5036:49",
+          "name": "24 / 空态与失败恢复",
+          "structureParts": [
+            "pages/5036-49/frames/5046-72/nodes-000.json"
+          ],
+          "url": "https://www.figma.com/design/nFUdroLvI5qJZuYTW8h2rF?node-id=5046-72"
+        }
+      ],
+      "productionCaller": "Launcher → manual role=dialog → create/open",
+      "designedStates": [
+        "创建弹窗",
+        "打开目录",
+        "提交中",
+        "路径/名称错误",
+        "取消",
+        "焦点",
+        "disabled",
+        "recovery"
+      ],
+      "fixed": [
+        "创建/打开用原能力；焦点锁定/返回、Esc、Enter、disabled提交和320px弹窗已由根代理验证。"
+      ],
+      "remaining": [
+        "目录权限失败、恢复分支仍需真实桌面环境补验。"
+      ],
+      "evidence": [
+        "launcher-dialog-320.png"
+      ],
+      "browserCheckedStates": [
+        "创建弹窗",
+        "取消",
+        "焦点",
+        "disabled"
+      ],
+      "notIndividuallyBrowserProvenStates": [
+        "打开目录",
+        "提交中",
+        "路径/名称错误",
+        "recovery"
+      ],
+      "recommendedFiles": [
+        "app/LcosProjectLauncherPage.tsx"
+      ]
+    },
+    {
+      "id": "NAV-03",
+      "name": "主画布/上下文/工作流共享壳与材质",
+      "status": "部分已修；多域共同验收",
+      "figma": [
+        {
+          "nodeId": "5388:96",
+          "pageId": "5235:49",
+          "name": "统一主稿 / 主画布",
+          "structureParts": [
+            "unification/structures/main/nodes-000.json",
+            "unification/structures/main/nodes-001.json"
+          ],
+          "url": "https://www.figma.com/design/nFUdroLvI5qJZuYTW8h2rF?node-id=5388-96"
+        },
+        {
+          "nodeId": "5388:27696",
+          "pageId": "5198:49",
+          "name": "统一主稿 / 全局导航与画外定位",
+          "structureParts": [
+            "unification/structures/hud/nodes-000.json",
+            "unification/structures/hud/nodes-001.json"
+          ],
+          "url": "https://www.figma.com/design/nFUdroLvI5qJZuYTW8h2rF?node-id=5388-27696"
+        },
+        {
+          "nodeId": "5386:211",
+          "pageId": "5036:50",
+          "name": null,
+          "structureParts": [
+            "unification/structures/shell/nodes-000.json"
+          ],
+          "url": "https://www.figma.com/design/nFUdroLvI5qJZuYTW8h2rF?node-id=5386-211"
+        },
+        {
+          "nodeId": "5386:286",
+          "pageId": "5036:50",
+          "name": null,
+          "structureParts": [
+            "unification/structures/shell/nodes-000.json"
+          ],
+          "url": "https://www.figma.com/design/nFUdroLvI5qJZuYTW8h2rF?node-id=5386-286"
+        },
+        {
+          "nodeId": "5386:361",
+          "pageId": "5036:50",
+          "name": null,
+          "structureParts": [
+            "unification/structures/shell/nodes-000.json"
+          ],
+          "url": "https://www.figma.com/design/nFUdroLvI5qJZuYTW8h2rF?node-id=5386-361"
+        },
+        {
+          "nodeId": "5235:50",
+          "pageId": "5235:49",
+          "name": "A · 通透液态玻璃",
+          "structureParts": [
+            "pages/5235-49/frames/5235-50/nodes-000.json",
+            "pages/5235-49/frames/5235-50/nodes-001.json"
+          ],
+          "url": "https://www.figma.com/design/nFUdroLvI5qJZuYTW8h2rF?node-id=5235-50"
+        }
+      ],
+      "productionCaller": "LcosProjectRoute → LcosProjectShell → LcosGlobalHud + SurfaceDock + canvas seam",
+      "designedStates": [
+        "主画布",
+        "上下文",
+        "工作流",
+        "场景切换",
+        "空场景",
+        "加载/错误",
+        "悬浮窗并存",
+        "不同屏幕宽度"
+      ],
+      "fixed": [
+        "三面保持同一个Shell；项目身份簇24px、截断标题、装配入口及底部Dock继续沿现有owner。"
+      ],
+      "remaining": [
+        "整套Context/Workflow及源窗视觉采用由对应域报告负责，导航修复不等于九面已统一。",
+        "浏览器200%与系统高对比度仍待验。"
+      ],
+      "evidence": [
+        "navigation-1440.png",
+        "hud-narrow-390.png"
+      ],
+      "browserCheckedStates": [
+        "主画布",
+        "不同屏幕宽度"
+      ],
+      "notIndividuallyBrowserProvenStates": [
+        "上下文",
+        "工作流",
+        "场景切换",
+        "空场景",
+        "加载/错误",
+        "悬浮窗并存"
+      ],
+      "recommendedFiles": [
+        "shell/LcosProjectShell.tsx",
+        "shell/LcosGlobalHud.tsx",
+        "ui/lcos-tokens.css",
+        "ui/lcosTokens.ts"
+      ]
+    },
+    {
+      "id": "NAV-04",
+      "name": "HUD缩放、resize、窗口避让",
+      "status": "已修核心冲突；浏览器通过",
+      "figma": [
+        {
+          "nodeId": "5388:27696",
+          "pageId": "5198:49",
+          "name": "统一主稿 / 全局导航与画外定位",
+          "structureParts": [
+            "unification/structures/hud/nodes-000.json",
+            "unification/structures/hud/nodes-001.json"
+          ],
+          "url": "https://www.figma.com/design/nFUdroLvI5qJZuYTW8h2rF?node-id=5388-27696"
+        },
+        {
+          "nodeId": "5386:211",
+          "pageId": "5036:50",
+          "name": null,
+          "structureParts": [
+            "unification/structures/shell/nodes-000.json"
+          ],
+          "url": "https://www.figma.com/design/nFUdroLvI5qJZuYTW8h2rF?node-id=5386-211"
+        },
+        {
+          "nodeId": "5051:3599",
+          "pageId": "5036:49",
+          "name": "28 / 多窗口与画布拾取",
+          "structureParts": [
+            "pages/5036-49/frames/5051-3599/nodes-000.json"
+          ],
+          "url": "https://www.figma.com/design/nFUdroLvI5qJZuYTW8h2rF?node-id=5051-3599"
+        },
+        {
+          "nodeId": "5051:3776",
+          "pageId": "5036:49",
+          "name": "29 / 窗口停靠与恢复",
+          "structureParts": [
+            "pages/5036-49/frames/5051-3776/nodes-000.json"
+          ],
+          "url": "https://www.figma.com/design/nFUdroLvI5qJZuYTW8h2rF?node-id=5051-3776"
+        }
+      ],
+      "productionCaller": "Hud consumers → lcosHudPlacement → current safeRect",
+      "designedStates": [
+        "resize",
+        "浏览器缩放",
+        "自由窗口",
+        "贴边窗口",
+        "左右停靠",
+        "底部操作区",
+        "窄屏"
+      ],
+      "fixed": [
+        "useHudViewport订阅resize；搜索/Where/Pin和相机复用HUD几何；自由窗使用原occupiedRect；HUD之间同一avoidSelector避让。",
+        "根代理补320/390/640/1440搜索岛和底Dock真实点击。"
+      ],
+      "remaining": [
+        "所有安全区同时被占满时的退让/不可见提示尚未专项验收。",
+        "浏览器200%未完成。"
+      ],
+      "evidence": [
+        "navigation-1024.png",
+        "navigation-search-window-avoidance.png",
+        "hud-narrow-390.png"
+      ],
+      "browserCheckedStates": [
+        "resize",
+        "自由窗口",
+        "底部操作区",
+        "窄屏"
+      ],
+      "notIndividuallyBrowserProvenStates": [
+        "浏览器缩放",
+        "贴边窗口",
+        "左右停靠"
+      ],
+      "recommendedFiles": [
+        "shell/lcosHudPlacement.ts",
+        "shell/LcosSurfaceDock.tsx",
+        "shell/LcosRailway.tsx",
+        "navigation/LcosNavigatorIsland.tsx",
+        "navigation/LcosFocusWhere.tsx",
+        "pin/ColorPinHud.tsx"
+      ]
+    },
+    {
+      "id": "NAV-05",
+      "name": "底部常驻三视图 Dock",
+      "status": "已修；浏览器通过",
+      "figma": [
+        {
+          "nodeId": "5386:211",
+          "pageId": "5036:50",
+          "name": null,
+          "structureParts": [
+            "unification/structures/shell/nodes-000.json"
+          ],
+          "url": "https://www.figma.com/design/nFUdroLvI5qJZuYTW8h2rF?node-id=5386-211"
+        },
+        {
+          "nodeId": "5386:286",
+          "pageId": "5036:50",
+          "name": null,
+          "structureParts": [
+            "unification/structures/shell/nodes-000.json"
+          ],
+          "url": "https://www.figma.com/design/nFUdroLvI5qJZuYTW8h2rF?node-id=5386-286"
+        },
+        {
+          "nodeId": "5386:361",
+          "pageId": "5036:50",
+          "name": null,
+          "structureParts": [
+            "unification/structures/shell/nodes-000.json"
+          ],
+          "url": "https://www.figma.com/design/nFUdroLvI5qJZuYTW8h2rF?node-id=5386-361"
+        },
+        {
+          "nodeId": "5137:61",
+          "pageId": "5136:49",
+          "name": "图标控制 / 主画布",
+          "structureParts": [
+            "pages/5136-49/frames/5137-61/nodes-000.json"
+          ],
+          "url": "https://www.figma.com/design/nFUdroLvI5qJZuYTW8h2rF?node-id=5137-61"
+        },
+        {
+          "nodeId": "5137:81",
+          "pageId": "5136:49",
+          "name": "图标控制 / 上下文",
+          "structureParts": [
+            "pages/5136-49/frames/5137-81/nodes-000.json"
+          ],
+          "url": "https://www.figma.com/design/nFUdroLvI5qJZuYTW8h2rF?node-id=5137-81"
+        },
+        {
+          "nodeId": "5137:99",
+          "pageId": "5136:49",
+          "name": "图标控制 / 工作流",
+          "structureParts": [
+            "pages/5136-49/frames/5137-99/nodes-000.json"
+          ],
+          "url": "https://www.figma.com/design/nFUdroLvI5qJZuYTW8h2rF?node-id=5137-99"
+        }
+      ],
+      "productionCaller": "LcosProjectShell → LcosSurfaceDock → activeSurface",
+      "designedStates": [
+        "主画布active",
+        "上下文active",
+        "工作流active",
+        "hover提示",
+        "keyboard focus",
+        "停靠避让"
+      ],
+      "fixed": [
+        "Main/Context/Workflow三常驻与左Rail分离；保留真实switchWorksite；窄屏避开右下空间按钮。"
+      ],
+      "remaining": [
+        "跨子现场三面返回链全组合仍需矩阵验收。"
+      ],
+      "evidence": [
+        "hud-narrow-390.png",
+        "navigation-main-atlas-root.png"
+      ],
+      "browserCheckedStates": [
+        "主画布active",
+        "上下文active",
+        "工作流active",
+        "停靠避让"
+      ],
+      "notIndividuallyBrowserProvenStates": [
+        "hover提示",
+        "keyboard focus"
+      ],
+      "recommendedFiles": [
+        "shell/LcosSurfaceDock.tsx",
+        "ui/families/LcosSurfaceDockView.tsx"
+      ]
+    },
+    {
+      "id": "NAV-06",
+      "name": "灵动岛：静息、按Pin增长、搜索展开",
+      "status": "主要结构已修；浏览器+组件通过",
+      "figma": [
+        {
+          "nodeId": "5384:247",
+          "pageId": "5036:50",
+          "name": null,
+          "structureParts": [
+            "unification/structures/navigator/nodes-000.json"
+          ],
+          "url": "https://www.figma.com/design/nFUdroLvI5qJZuYTW8h2rF?node-id=5384-247"
+        },
+        {
+          "nodeId": "5384:306",
+          "pageId": "5036:50",
+          "name": null,
+          "structureParts": [
+            "unification/structures/navigator/nodes-000.json"
+          ],
+          "url": "https://www.figma.com/design/nFUdroLvI5qJZuYTW8h2rF?node-id=5384-306"
+        },
+        {
+          "nodeId": "5384:366",
+          "pageId": "5036:50",
+          "name": null,
+          "structureParts": [
+            "unification/structures/navigator/nodes-000.json"
+          ],
+          "url": "https://www.figma.com/design/nFUdroLvI5qJZuYTW8h2rF?node-id=5384-366"
+        },
+        {
+          "nodeId": "5139:1571",
+          "pageId": "5136:49",
+          "name": "02 · 同体导航 / 搜索与彩色标",
+          "structureParts": [
+            "pages/5136-49/frames/5139-1571/nodes-000.json",
+            "pages/5136-49/frames/5139-1571/nodes-001.json",
+            "pages/5136-49/frames/5139-1571/nodes-002.json",
+            "pages/5136-49/frames/5139-1571/nodes-003.json",
+            "pages/5136-49/frames/5139-1571/nodes-004.json",
+            "pages/5136-49/frames/5139-1571/nodes-005.json",
+            "pages/5136-49/frames/5139-1571/nodes-006.json"
+          ],
+          "url": "https://www.figma.com/design/nFUdroLvI5qJZuYTW8h2rF?node-id=5139-1571"
+        }
+      ],
+      "productionCaller": "ColorPinHud → LcosNavigatorIsland → LcosNavigatorIslandView",
+      "designedStates": [
+        "无Pin52×48",
+        "一个/多个Pin",
+        "搜索402×48",
+        "折叠",
+        "Pin溢出",
+        "hover",
+        "pressed",
+        "focus",
+        "disabled",
+        "loading",
+        "error",
+        "degraded",
+        "selected"
+      ],
+      "fixed": [
+        "无Pin仅52×48搜索键；有Pin随数量增长，按空间折入+N；不常驻创建+号。",
+        "搜索/Where/Pin共用一个presentation槽，401/402px设计按窄屏可用宽适配。"
+      ],
+      "remaining": [
+        "原设计增长/收拢连续变形的运动细节仍未全量匹配。",
+        "loading/error/degraded逐态视觉尚非全覆盖。"
+      ],
+      "evidence": [
+        "navigation-1440.png",
+        "navigation-1024.png"
+      ],
+      "browserCheckedStates": [
+        "无Pin52×48",
+        "一个/多个Pin",
+        "搜索402×48",
+        "折叠"
+      ],
+      "notIndividuallyBrowserProvenStates": [
+        "Pin溢出",
+        "hover",
+        "pressed",
+        "focus",
+        "disabled",
+        "loading",
+        "error",
+        "degraded",
+        "selected"
+      ],
+      "recommendedFiles": [
+        "pin/ColorPinHud.tsx",
+        "navigation/LcosNavigatorIsland.tsx",
+        "ui/families/LcosNavigatorIslandView.tsx",
+        "ui/families/lcos-families.css"
+      ]
+    },
+    {
+      "id": "NAV-07",
+      "name": "搜索→位置解析→子现场/多投影",
+      "status": "已接准确位置；部分浏览器、复杂情况仅测试",
+      "figma": [
+        {
+          "nodeId": "5046:57",
+          "pageId": "5036:49",
+          "name": "09 / 搜索与定位",
+          "structureParts": [
+            "pages/5036-49/frames/5046-57/nodes-000.json"
+          ],
+          "url": "https://www.figma.com/design/nFUdroLvI5qJZuYTW8h2rF?node-id=5046-57"
+        },
+        {
+          "nodeId": "5101:590",
+          "pageId": "5095:49",
+          "name": "05 / 搜索 · 同体展开",
+          "structureParts": [
+            "pages/5095-49/frames/5101-590/nodes-000.json"
+          ],
+          "url": "https://www.figma.com/design/nFUdroLvI5qJZuYTW8h2rF?node-id=5101-590"
+        },
+        {
+          "nodeId": "5139:1571",
+          "pageId": "5136:49",
+          "name": "02 · 同体导航 / 搜索与彩色标",
+          "structureParts": [
+            "pages/5136-49/frames/5139-1571/nodes-000.json",
+            "pages/5136-49/frames/5139-1571/nodes-001.json",
+            "pages/5136-49/frames/5139-1571/nodes-002.json",
+            "pages/5136-49/frames/5139-1571/nodes-003.json",
+            "pages/5136-49/frames/5139-1571/nodes-004.json",
+            "pages/5136-49/frames/5139-1571/nodes-005.json",
+            "pages/5136-49/frames/5139-1571/nodes-006.json"
+          ],
+          "url": "https://www.figma.com/design/nFUdroLvI5qJZuYTW8h2rF?node-id=5139-1571"
+        }
+      ],
+      "productionCaller": "Navigator → project search → legacy locationRefs → switchWorksite → waitForProjectedEntity",
+      "designedStates": [
+        "空查询",
+        "加载",
+        "命中本地",
+        "命中远端",
+        "多个occurrence",
+        "子现场",
+        "无位置",
+        "不可访问",
+        "过期结果",
+        "失败重试"
+      ],
+      "fixed": [
+        "Core Search保留真实entity/view；完整SqliteBindingStore.list + workspaces形成位置候选；不使用locationRefs[0]猜位置。",
+        "childworkspace identity与exact spatialId/canvasId贯穿switchWorksite和locate。",
+        "CoreSearch没有cursor/offset/nextCursor；按truncated展示还有结果并建议缩小范围，不伪造分页。"
+      ],
+      "remaining": [
+        "真实fixture尚无多处投影+嵌套child实例，现有测试证明传参与分流，不冒称端到端。",
+        "不可访问/结果删除中途失效需实测。"
+      ],
+      "evidence": [
+        "navigation-third-batch-qa.json",
+        "navigation-main-atlas-root.png"
+      ],
+      "browserCheckedStates": [
+        "空查询",
+        "命中本地",
+        "命中远端",
+        "失败重试"
+      ],
+      "notIndividuallyBrowserProvenStates": [
+        "加载",
+        "多个occurrence",
+        "子现场",
+        "无位置",
+        "不可访问",
+        "过期结果"
+      ],
+      "recommendedFiles": [
+        "navigation/LcosNavigatorIsland.tsx",
+        "navigation/LcosFocusWhere.tsx",
+        "现有导航resolve helper"
+      ]
+    },
+    {
+      "id": "NAV-08",
+      "name": "搜索键盘和局部查找归属",
+      "status": "已修；组件+浏览器通过",
+      "figma": [
+        {
+          "nodeId": "5384:366",
+          "pageId": "5036:50",
+          "name": null,
+          "structureParts": [
+            "unification/structures/navigator/nodes-000.json"
+          ],
+          "url": "https://www.figma.com/design/nFUdroLvI5qJZuYTW8h2rF?node-id=5384-366"
+        },
+        {
+          "nodeId": "5295:2982",
+          "pageId": "5277:602",
+          "name": "N01 / 窄屏 · Composer",
+          "structureParts": [
+            "pages/5277-602/frames/5295-2982/nodes-000.json"
+          ],
+          "url": "https://www.figma.com/design/nFUdroLvI5qJZuYTW8h2rF?node-id=5295-2982"
+        },
+        {
+          "nodeId": "5304:3646",
+          "pageId": "5277:602",
+          "name": "N07 / 键盘焦点 · 发送",
+          "structureParts": [
+            "pages/5277-602/frames/5304-3646/nodes-000.json"
+          ],
+          "url": "https://www.figma.com/design/nFUdroLvI5qJZuYTW8h2rF?node-id=5304-3646"
+        }
+      ],
+      "productionCaller": "Navigator window keydown + result buttons",
+      "designedStates": [
+        "Ctrl/Cmd+F",
+        "输入中文",
+        "方向键候选",
+        "Enter",
+        "Esc",
+        "结果焦点",
+        "读源局部搜索"
+      ],
+      "fixed": [
+        "全局Ctrl/Cmd+F尊重编辑器/阅读器局部查找；IME composition不误提交；方向键/Enter和combobox语义已接。",
+        "Esc仅关闭当前导航层，保留已有窗口和选择。"
+      ],
+      "remaining": [
+        "真实IME输入法与辅助技术读屏仍需设备验收。"
+      ],
+      "evidence": [
+        "navigation-search-window-avoidance.png"
+      ],
+      "browserCheckedStates": [
+        "Ctrl/Cmd+F",
+        "方向键候选",
+        "Enter",
+        "Esc",
+        "结果焦点"
+      ],
+      "notIndividuallyBrowserProvenStates": [
+        "输入中文",
+        "读源局部搜索"
+      ],
+      "recommendedFiles": [
+        "navigation/LcosNavigatorIsland.tsx",
+        "ui/families/LcosNavigatorIslandView.tsx",
+        "现有Escape/interaction调度点"
+      ]
+    },
+    {
+      "id": "NAV-09",
+      "name": "已知对象的在哪里/聚焦",
+      "status": "已修精确身份；复杂场景仅组件测试",
+      "figma": [
+        {
+          "nodeId": "5101:724",
+          "pageId": "5095:49",
+          "name": "06 / 定位 · 屏边指路",
+          "structureParts": [
+            "pages/5095-49/frames/5101-724/nodes-000.json"
+          ],
+          "url": "https://www.figma.com/design/nFUdroLvI5qJZuYTW8h2rF?node-id=5101-724"
+        },
+        {
+          "nodeId": "5153:774",
+          "pageId": "5151:49",
+          "name": "07 · 定位 / 屏边目标",
+          "structureParts": [
+            "pages/5151-49/frames/5153-774/nodes-000.json"
+          ],
+          "url": "https://www.figma.com/design/nFUdroLvI5qJZuYTW8h2rF?node-id=5153-774"
+        },
+        {
+          "nodeId": "5164:831",
+          "pageId": "5151:49",
+          "name": "13 · 定位完成 / 同一候选对象",
+          "structureParts": [
+            "pages/5151-49/frames/5164-831/nodes-000.json"
+          ],
+          "url": "https://www.figma.com/design/nFUdroLvI5qJZuYTW8h2rF?node-id=5164-831"
+        }
+      ],
+      "productionCaller": "LcosFocusWhere → bindings → goToOccurrence → requestLocate",
+      "designedStates": [
+        "当前投影",
+        "同场多个投影",
+        "其他根面",
+        "子现场",
+        "无空间位置",
+        "loading/error",
+        "返回发起处"
+      ],
+      "fixed": [
+        "Where与Search共用位置解析；真实child不归根，root普通目标不伪造子现场返回链。",
+        "locate支持preserveSelection，不偷换选择。"
+      ],
+      "remaining": [
+        "真实多投影/子现场返回到发起处仍需可用fixture补测。"
+      ],
+      "evidence": [
+        "navigation-main-atlas-root.png",
+        "navigation-third-batch-qa.json"
+      ],
+      "browserCheckedStates": [
+        "当前投影",
+        "其他根面",
+        "loading/error"
+      ],
+      "notIndividuallyBrowserProvenStates": [
+        "同场多个投影",
+        "子现场",
+        "无空间位置",
+        "返回发起处"
+      ],
+      "recommendedFiles": [
+        "navigation/LcosFocusWhere.tsx",
+        "navigation/LcosNavigatorIsland.tsx",
+        "shell/LcosGlobalHud.tsx"
+      ]
+    },
+    {
+      "id": "NAV-10",
+      "name": "Search/Where/Pin同槽和Esc栈",
+      "status": "同槽已修；已验常用Esc路径",
+      "figma": [
+        {
+          "nodeId": "5384:367",
+          "pageId": "5036:50",
+          "name": "统一 / NavigatorIsland",
+          "structureParts": [
+            "unification/structures/navigator/nodes-000.json"
+          ],
+          "url": "https://www.figma.com/design/nFUdroLvI5qJZuYTW8h2rF?node-id=5384-367"
+        },
+        {
+          "nodeId": "5388:27696",
+          "pageId": "5198:49",
+          "name": "统一主稿 / 全局导航与画外定位",
+          "structureParts": [
+            "unification/structures/hud/nodes-000.json",
+            "unification/structures/hud/nodes-001.json"
+          ],
+          "url": "https://www.figma.com/design/nFUdroLvI5qJZuYTW8h2rF?node-id=5388-27696"
+        },
+        {
+          "nodeId": "5139:1571",
+          "pageId": "5136:49",
+          "name": "02 · 同体导航 / 搜索与彩色标",
+          "structureParts": [
+            "pages/5136-49/frames/5139-1571/nodes-000.json",
+            "pages/5136-49/frames/5139-1571/nodes-001.json",
+            "pages/5136-49/frames/5139-1571/nodes-002.json",
+            "pages/5136-49/frames/5139-1571/nodes-003.json",
+            "pages/5136-49/frames/5139-1571/nodes-004.json",
+            "pages/5136-49/frames/5139-1571/nodes-005.json",
+            "pages/5136-49/frames/5139-1571/nodes-006.json"
+          ],
+          "url": "https://www.figma.com/design/nFUdroLvI5qJZuYTW8h2rF?node-id=5139-1571"
+        },
+        {
+          "nodeId": "5187:683",
+          "pageId": "5185:1051",
+          "name": "05 · 对象菜单与键盘退出",
+          "structureParts": [
+            "pages/5185-1051/frames/5187-683/nodes-000.json"
+          ],
+          "url": "https://www.figma.com/design/nFUdroLvI5qJZuYTW8h2rF?node-id=5187-683"
+        }
+      ],
+      "productionCaller": "GlobalHud simultaneously mounts separate Navigator,Where,Pin local state",
+      "designedStates": [
+        "none",
+        "search",
+        "focus/where",
+        "pin",
+        "嵌套more",
+        "返回上一层"
+      ],
+      "fixed": [
+        "NavigationHudSlot只仲裁none/search/where/pin；原业务owner不变；More先Esc，其他层检查defaultPrevented。"
+      ],
+      "remaining": [
+        "所有专业窗口内搜索、嵌套Tooltip/More/Composer组合仍未穷举。"
+      ],
+      "evidence": [
+        "navigation-search-window-avoidance.png",
+        "arc-more-open-qa.png"
+      ],
+      "browserCheckedStates": [
+        "none",
+        "search",
+        "focus/where",
+        "pin",
+        "嵌套more"
+      ],
+      "notIndividuallyBrowserProvenStates": [
+        "返回上一层"
+      ],
+      "recommendedFiles": [
+        "shell/LcosGlobalHud.tsx",
+        "navigation/LcosNavigatorIsland.tsx",
+        "navigation/LcosFocusWhere.tsx",
+        "pin/ColorPinHud.tsx"
+      ]
+    },
+    {
+      "id": "NAV-11",
+      "name": "ColorPin分组、节点本地角标、身份连续",
+      "status": "主要接口已修；浏览器+组件通过",
+      "figma": [
+        {
+          "nodeId": "5101:456",
+          "pageId": "5095:49",
+          "name": "04 / 颜色组 · 同体导航",
+          "structureParts": [
+            "pages/5095-49/frames/5101-456/nodes-000.json"
+          ],
+          "url": "https://www.figma.com/design/nFUdroLvI5qJZuYTW8h2rF?node-id=5101-456"
+        },
+        {
+          "nodeId": "5153:540",
+          "pageId": "5151:49",
+          "name": "06 · 彩色标 / 对象对应",
+          "structureParts": [
+            "pages/5151-49/frames/5153-540/nodes-000.json"
+          ],
+          "url": "https://www.figma.com/design/nFUdroLvI5qJZuYTW8h2rF?node-id=5153-540"
+        },
+        {
+          "nodeId": "5204:13457",
+          "pageId": "5198:49",
+          "name": "07 · 集合身份 · 图标颜色与外形",
+          "structureParts": [
+            "pages/5198-49/frames/5204-13457/nodes-000.json"
+          ],
+          "url": "https://www.figma.com/design/nFUdroLvI5qJZuYTW8h2rF?node-id=5204-13457"
+        },
+        {
+          "nodeId": "5384:306",
+          "pageId": "5036:50",
+          "name": null,
+          "structureParts": [
+            "unification/structures/navigator/nodes-000.json"
+          ],
+          "url": "https://www.figma.com/design/nFUdroLvI5qJZuYTW8h2rF?node-id=5384-306"
+        }
+      ],
+      "productionCaller": "ColorPinProvider canonical memberships → ColorPinHud；node mark消费链缺失",
+      "designedStates": [
+        "创建/命名",
+        "选择颜色",
+        "加入/移出",
+        "多Pin对象",
+        "无成员",
+        "成员失效",
+        "本地角标",
+        "远端定位"
+      ],
+      "fixed": [
+        "节点角标由节点组接existing membershipsByTargetKey/definitions；岛和离屏定位同一个精确target key。",
+        "Pin成员用live image真实投影缩略图；缺图用类型glyph，不猜Asset URL、不把view改成entity。"
+      ],
+      "remaining": [
+        "跨全部节点物种、多Pin、删除中途失效与自定义形状持久化尚未完整验收。"
+      ],
+      "evidence": [
+        "navigation-pin-real-preview.png",
+        "navigation-locator-offscreen.png"
+      ],
+      "browserCheckedStates": [
+        "本地角标",
+        "远端定位"
+      ],
+      "notIndividuallyBrowserProvenStates": [
+        "创建/命名",
+        "选择颜色",
+        "加入/移出",
+        "多Pin对象",
+        "无成员",
+        "成员失效"
+      ],
+      "recommendedFiles": [
+        "pin/ColorPinHud.tsx",
+        "pin/LcosColorPinProvider.tsx",
+        "现有节点overlay/seam",
+        "ui/FigmaShellGlyph.tsx"
+      ]
+    },
+    {
+      "id": "NAV-12",
+      "name": "画外动态浮标：出现、变形、点击直达、到达",
+      "status": "真实可点击已修；运动形态仍有差距",
+      "figma": [
+        {
+          "nodeId": "5101:724",
+          "pageId": "5095:49",
+          "name": "06 / 定位 · 屏边指路",
+          "structureParts": [
+            "pages/5095-49/frames/5101-724/nodes-000.json"
+          ],
+          "url": "https://www.figma.com/design/nFUdroLvI5qJZuYTW8h2rF?node-id=5101-724"
+        },
+        {
+          "nodeId": "5153:774",
+          "pageId": "5151:49",
+          "name": "07 · 定位 / 屏边目标",
+          "structureParts": [
+            "pages/5151-49/frames/5153-774/nodes-000.json"
+          ],
+          "url": "https://www.figma.com/design/nFUdroLvI5qJZuYTW8h2rF?node-id=5153-774"
+        },
+        {
+          "nodeId": "5164:831",
+          "pageId": "5151:49",
+          "name": "13 · 定位完成 / 同一候选对象",
+          "structureParts": [
+            "pages/5151-49/frames/5164-831/nodes-000.json"
+          ],
+          "url": "https://www.figma.com/design/nFUdroLvI5qJZuYTW8h2rF?node-id=5164-831"
+        },
+        {
+          "nodeId": "5204:14182",
+          "pageId": "5198:49",
+          "name": "10 · 导航岛 · 搜索与定位连续态",
+          "structureParts": [
+            "pages/5198-49/frames/5204-14182/nodes-000.json"
+          ],
+          "url": "https://www.figma.com/design/nFUdroLvI5qJZuYTW8h2rF?node-id=5204-14182"
+        }
+      ],
+      "productionCaller": "LcosCanvasCommands → LcosLocatorCue → computeLocatorGeometry",
+      "designedStates": [
+        "LOCAL",
+        "NEAR_EDGE",
+        "EDGE",
+        "TRAVELLING",
+        "ARRIVING",
+        "HIDDEN",
+        "UNAVAILABLE",
+        "reduced-motion"
+      ],
+      "fixed": [
+        "从真实Pin membership+当前RF几何派生离屏目标；浮标可主动点击，单击沿existing locate直达且保留选择。",
+        "local时节点角标承担身份，近边/边缘/到达和reduced-motion沿现有导航机。"
+      ],
+      "remaining": [
+        "高密多浮标碰撞、可自定义精致轮廓、贴物种的到达辉光仍需视觉补齐。",
+        "不能把现有圆形到达环称为全物种轮廓实现。"
+      ],
+      "evidence": [
+        "navigation-locator-offscreen.png",
+        "navigation-locator-arrived.png"
+      ],
+      "browserCheckedStates": [
+        "EDGE",
+        "TRAVELLING",
+        "ARRIVING"
+      ],
+      "notIndividuallyBrowserProvenStates": [
+        "LOCAL",
+        "NEAR_EDGE",
+        "HIDDEN",
+        "UNAVAILABLE",
+        "reduced-motion"
+      ],
+      "recommendedFiles": [
+        "navigation/LcosCanvasCommands.tsx",
+        "navigation/locatorGeometry.ts",
+        "pin本地角标投影",
+        "ui/FigmaShellGlyph.tsx"
+      ]
+    },
+    {
+      "id": "NAV-13",
+      "name": "相机胶囊、适配视野、100%与减弱运动",
+      "status": "核心相机已修；浏览器通过",
+      "figma": [
+        {
+          "nodeId": "5386:274",
+          "pageId": "5036:50",
+          "name": null,
+          "structureParts": [
+            "unification/structures/shell/nodes-000.json"
+          ],
+          "url": "https://www.figma.com/design/nFUdroLvI5qJZuYTW8h2rF?node-id=5386-274"
+        },
+        {
+          "nodeId": "5191:1292",
+          "pageId": "5185:1051",
+          "name": "14 · 地图与视口定位",
+          "structureParts": [
+            "pages/5185-1051/frames/5191-1292/nodes-000.json"
+          ],
+          "url": "https://www.figma.com/design/nFUdroLvI5qJZuYTW8h2rF?node-id=5191-1292"
+        },
+        {
+          "nodeId": "5388:27696",
+          "pageId": "5198:49",
+          "name": "统一主稿 / 全局导航与画外定位",
+          "structureParts": [
+            "unification/structures/hud/nodes-000.json",
+            "unification/structures/hud/nodes-001.json"
+          ],
+          "url": "https://www.figma.com/design/nFUdroLvI5qJZuYTW8h2rF?node-id=5388-27696"
+        }
+      ],
+      "productionCaller": "LcosSpatialNavigator → requestCamera → LcosCanvasCommands → existingReactFlow",
+      "designedStates": [
+        "折叠",
+        "展开",
+        "放大",
+        "缩小",
+        "100%",
+        "适配内容",
+        "网格",
+        "锁定",
+        "小地图开关"
+      ],
+      "fixed": [
+        "100%保持当前世界中心，实测中心漂移0.00039world units；fit使用真实节点bounds与安全区域；减弱运动服从系统设置。",
+        "折叠/展开入口和现有相机动作共用原RF实例。"
+      ],
+      "remaining": [
+        "网格/锁定/小地图等原设计项不因此宣称齐全；Pass4 MiniMap仍明确排除。",
+        "全遮挡情况下fit反馈未专项实现。"
+      ],
+      "evidence": [
+        "navigation-fit-window-safe.png",
+        "navigation-window-avoidance.png"
+      ],
+      "browserCheckedStates": [
+        "折叠",
+        "展开",
+        "放大",
+        "缩小",
+        "100%",
+        "适配内容"
+      ],
+      "notIndividuallyBrowserProvenStates": [
+        "网格",
+        "锁定",
+        "小地图开关"
+      ],
+      "recommendedFiles": [
+        "navigation/LcosCanvasCommands.tsx",
+        "navigation/LcosSpatialNavigator.tsx",
+        "ui/families/LcosSpatialNavigatorView.tsx"
+      ]
+    },
+    {
+      "id": "NAV-14",
+      "name": "Railway长度、图标底座、溢出、身份",
+      "status": "代码已接；Rail真数据浏览器缺证",
+      "figma": [
+        {
+          "nodeId": "5385:255",
+          "pageId": "5036:50",
+          "name": null,
+          "structureParts": [
+            "unification/structures/railway/nodes-000.json"
+          ],
+          "url": "https://www.figma.com/design/nFUdroLvI5qJZuYTW8h2rF?node-id=5385-255"
+        },
+        {
+          "nodeId": "5385:282",
+          "pageId": "5036:50",
+          "name": null,
+          "structureParts": [
+            "unification/structures/railway/nodes-000.json"
+          ],
+          "url": "https://www.figma.com/design/nFUdroLvI5qJZuYTW8h2rF?node-id=5385-282"
+        },
+        {
+          "nodeId": "5101:189",
+          "pageId": "5095:49",
+          "name": "02 / 现场轨道 · 悬停窥视",
+          "structureParts": [
+            "pages/5095-49/frames/5101-189/nodes-000.json"
+          ],
+          "url": "https://www.figma.com/design/nFUdroLvI5qJZuYTW8h2rF?node-id=5101-189"
+        },
+        {
+          "nodeId": "5106:1715",
+          "pageId": "5095:49",
+          "name": "Gen2 第二轮 / 现场轨道",
+          "structureParts": [
+            "pages/5095-49/frames/5106-1715/nodes-000.json"
+          ],
+          "url": "https://www.figma.com/design/nFUdroLvI5qJZuYTW8h2rF?node-id=5106-1715"
+        },
+        {
+          "nodeId": "5163:843",
+          "pageId": "5151:49",
+          "name": "Railway / 右侧提示 / RootGlyph",
+          "structureParts": [
+            "pages/5151-49/frames/5163-843/nodes-000.json"
+          ],
+          "url": "https://www.figma.com/design/nFUdroLvI5qJZuYTW8h2rF?node-id=5163-843"
+        },
+        {
+          "nodeId": "5163:863",
+          "pageId": "5151:49",
+          "name": "Railway / 右侧提示 / ContextGlyph",
+          "structureParts": [
+            "pages/5151-49/frames/5163-863/nodes-000.json"
+          ],
+          "url": "https://www.figma.com/design/nFUdroLvI5qJZuYTW8h2rF?node-id=5163-863"
+        },
+        {
+          "nodeId": "5163:881",
+          "pageId": "5151:49",
+          "name": "Railway / 右侧提示 / WorkflowGlyph",
+          "structureParts": [
+            "pages/5151-49/frames/5163-881/nodes-000.json"
+          ],
+          "url": "https://www.figma.com/design/nFUdroLvI5qJZuYTW8h2rF?node-id=5163-881"
+        },
+        {
+          "nodeId": "5163:895",
+          "pageId": "5151:49",
+          "name": "Railway / 右侧提示 / CollectionGlyph",
+          "structureParts": [
+            "pages/5151-49/frames/5163-895/nodes-000.json"
+          ],
+          "url": "https://www.figma.com/design/nFUdroLvI5qJZuYTW8h2rF?node-id=5163-895"
+        },
+        {
+          "nodeId": "5163:909",
+          "pageId": "5151:49",
+          "name": "Railway / 右侧提示 / ArchiveGlyph",
+          "structureParts": [
+            "pages/5151-49/frames/5163-909/nodes-000.json"
+          ],
+          "url": "https://www.figma.com/design/nFUdroLvI5qJZuYTW8h2rF?node-id=5163-909"
+        }
+      ],
+      "productionCaller": "GlobalHud → LcosRailway → canonical ordered refs → LcosRailwayView",
+      "designedStates": [
+        "0/1/4/20成员",
+        "active",
+        "hover",
+        "+N",
+        "管理",
+        "接收者",
+        "glyph/颜色身份"
+      ],
+      "fixed": [
+        "Rail按显式canonical orderedRefs数量hug；+N溢出；图标小底座与底HUD分开。",
+        "接收者使用现有Glyth头像+中文真实协作状态，沿共享SSE更新。"
+      ],
+      "remaining": [
+        "当前fixture无显式Rail orderedRefs/接收者绑定；未造数据刷截图，0/1/4/20真实数据矩阵仍待验。",
+        "自定义glyph/形状持久化未全补。"
+      ],
+      "evidence": [
+        "navigation-implementation.md"
+      ],
+      "browserCheckedStates": [],
+      "notIndividuallyBrowserProvenStates": [
+        "0/1/4/20成员",
+        "active",
+        "hover",
+        "+N",
+        "管理",
+        "接收者",
+        "glyph/颜色身份"
+      ],
+      "recommendedFiles": [
+        "shell/LcosRailway.tsx",
+        "ui/families/LcosRailwayView.tsx",
+        "ui/FigmaShellGlyph.tsx"
+      ]
+    },
+    {
+      "id": "NAV-15",
+      "name": "Railway悬停真预览、可进入操作区",
+      "status": "代码+组件通过；真Rail浏览器缺证",
+      "figma": [
+        {
+          "nodeId": "5101:189",
+          "pageId": "5095:49",
+          "name": "02 / 现场轨道 · 悬停窥视",
+          "structureParts": [
+            "pages/5095-49/frames/5101-189/nodes-000.json"
+          ],
+          "url": "https://www.figma.com/design/nFUdroLvI5qJZuYTW8h2rF?node-id=5101-189"
+        },
+        {
+          "nodeId": "5153:309",
+          "pageId": "5151:49",
+          "name": "05 · 图标轨道 / 悬停辨认",
+          "structureParts": [
+            "pages/5151-49/frames/5153-309/nodes-000.json"
+          ],
+          "url": "https://www.figma.com/design/nFUdroLvI5qJZuYTW8h2rF?node-id=5153-309"
+        },
+        {
+          "nodeId": "5163:843",
+          "pageId": "5151:49",
+          "name": "Railway / 右侧提示 / RootGlyph",
+          "structureParts": [
+            "pages/5151-49/frames/5163-843/nodes-000.json"
+          ],
+          "url": "https://www.figma.com/design/nFUdroLvI5qJZuYTW8h2rF?node-id=5163-843"
+        }
+      ],
+      "productionCaller": "LcosRailway item.peek → LcosRailwayView absolute aside",
+      "designedStates": [
+        "rest",
+        "peek loading",
+        "真空间预览",
+        "stale",
+        "partial",
+        "unavailable",
+        "指针跨入peek",
+        "keyboard focus"
+      ],
+      "fixed": [
+        "真Peek复用useSpacePreviewScene→只读SVG，不新建Canvas；loading/stale/error/unavailable如实呈现。",
+        "Peek不被Rail滚动clip，hover延迟让指针进入，键盘可打开管理。"
+      ],
+      "remaining": [
+        "真实混合媒体场景preview质量、stale更新与键盘跨区域仍缺浏览器证据。"
+      ],
+      "evidence": [
+        "navigation-implementation.md"
+      ],
+      "browserCheckedStates": [],
+      "notIndividuallyBrowserProvenStates": [
+        "rest",
+        "peek loading",
+        "真空间预览",
+        "stale",
+        "partial",
+        "unavailable",
+        "指针跨入peek",
+        "keyboard focus"
+      ],
+      "recommendedFiles": [
+        "shell/LcosRailway.tsx",
+        "ui/families/LcosRailwayView.tsx",
+        "现有Huabu空间预览hook"
+      ]
+    },
+    {
+      "id": "NAV-16",
+      "name": "Railway接收、排序、管理的可操作性",
+      "status": "代码+组件通过；真实失败部分已补",
+      "figma": [
+        {
+          "nodeId": "5101:322",
+          "pageId": "5095:49",
+          "name": "03 / 现场轨道 · 拖拽接收",
+          "structureParts": [
+            "pages/5095-49/frames/5101-322/nodes-000.json"
+          ],
+          "url": "https://www.figma.com/design/nFUdroLvI5qJZuYTW8h2rF?node-id=5101-322"
+        },
+        {
+          "nodeId": "5106:1715",
+          "pageId": "5095:49",
+          "name": "Gen2 第二轮 / 现场轨道",
+          "structureParts": [
+            "pages/5095-49/frames/5106-1715/nodes-000.json"
+          ],
+          "url": "https://www.figma.com/design/nFUdroLvI5qJZuYTW8h2rF?node-id=5106-1715"
+        },
+        {
+          "nodeId": "5187:179",
+          "pageId": "5185:1051",
+          "name": "03 · 拖动、对齐与取消",
+          "structureParts": [
+            "pages/5185-1051/frames/5187-179/nodes-000.json"
+          ],
+          "url": "https://www.figma.com/design/nFUdroLvI5qJZuYTW8h2rF?node-id=5187-179"
+        },
+        {
+          "nodeId": "5347:1089",
+          "pageId": "5332:2",
+          "name": "K01 / 菜单替代拖放",
+          "structureParts": [
+            "pages/5332-2/frames/5347-1089/nodes-000.json"
+          ],
+          "url": "https://www.figma.com/design/nFUdroLvI5qJZuYTW8h2rF?node-id=5347-1089"
+        }
+      ],
+      "productionCaller": "LcosRailway → live target registry + canonical destination/reorder",
+      "designedStates": [
+        "拖动接收",
+        "允许/拒绝",
+        "提交中",
+        "失败",
+        "排序",
+        "冲突重读",
+        "移除",
+        "键盘上移下移"
+      ],
+      "fixed": [
+        "主轨与+N菜单同等管理/移除/上下移；继续现有canonicalCAS，409重读后再解锁。",
+        "drop接收仍经Assembly；共享SSE和focus/visibility刷新，没有第二EventSource。",
+        "NAV21已补逐项回执+失败子集重试。"
+      ],
+      "remaining": [
+        "无真实Rail排序数据，本批只能说明handler/CAS/SSE组件回归，不声明已持久验收。"
+      ],
+      "evidence": [
+        "navigation-implementation.md",
+        "navigation-third-batch-qa.json"
+      ],
+      "browserCheckedStates": [],
+      "notIndividuallyBrowserProvenStates": [
+        "拖动接收",
+        "允许/拒绝",
+        "提交中",
+        "失败",
+        "排序",
+        "冲突重读",
+        "移除",
+        "键盘上移下移"
+      ],
+      "recommendedFiles": [
+        "shell/LcosRailway.tsx",
+        "ui/families/LcosRailwayView.tsx"
+      ]
+    },
+    {
+      "id": "NAV-17",
+      "name": "Arc角包、更多菜单与多窗口共存",
+      "status": "已修核心命中与初载；浏览器+组件通过",
+      "figma": [
+        {
+          "nodeId": "5202:58",
+          "pageId": "5198:49",
+          "name": "02 · 节点动作与紧凑输入",
+          "structureParts": [
+            "pages/5198-49/frames/5202-58/nodes-000.json"
+          ],
+          "url": "https://www.figma.com/design/nFUdroLvI5qJZuYTW8h2rF?node-id=5202-58"
+        },
+        {
+          "nodeId": "5226:1128",
+          "pageId": "5198:49",
+          "name": "11 · 贴角动作弧 / 更多操作",
+          "structureParts": [
+            "pages/5198-49/frames/5226-1128/nodes-000.json"
+          ],
+          "url": "https://www.figma.com/design/nFUdroLvI5qJZuYTW8h2rF?node-id=5226-1128"
+        },
+        {
+          "nodeId": "5186:49",
+          "pageId": "5185:1051",
+          "name": "01 · 单选与对象工具",
+          "structureParts": [
+            "pages/5185-1051/frames/5186-49/nodes-000.json"
+          ],
+          "url": "https://www.figma.com/design/nFUdroLvI5qJZuYTW8h2rF?node-id=5186-49"
+        },
+        {
+          "nodeId": "5186:312",
+          "pageId": "5185:1051",
+          "name": "02 · 框选与多选作用范围",
+          "structureParts": [
+            "pages/5185-1051/frames/5186-312/nodes-000.json"
+          ],
+          "url": "https://www.figma.com/design/nFUdroLvI5qJZuYTW8h2rF?node-id=5186-312"
+        },
+        {
+          "nodeId": "5187:683",
+          "pageId": "5185:1051",
+          "name": "05 · 对象菜单与键盘退出",
+          "structureParts": [
+            "pages/5185-1051/frames/5187-683/nodes-000.json"
+          ],
+          "url": "https://www.figma.com/design/nFUdroLvI5qJZuYTW8h2rF?node-id=5187-683"
+        }
+      ],
+      "productionCaller": "LcosHostOverlay/Canvas seam → LcosActionArc → command model/orbit geometry",
+      "designedStates": [
+        "单选",
+        "多选",
+        "hover",
+        "3个主操作/最多4",
+        "more",
+        "上下文菜单",
+        "对象锁定",
+        "窗口并存",
+        "安全区翻转"
+      ],
+      "fixed": [
+        "Arc与专业窗口共存；透明82×82空隙click-through；可点热区44px，视觉orb30px；More独立同anchor浮层。",
+        "局部最多48px避邻近真实控件；实测原More压Glyth→上移41px留4.29px空隙；开More不改相机。",
+        "disabled真实Tooltip+aria-description；初次binding未就绪时不挂Arc/右键入口；ready空表允许自由节点。"
+      ],
+      "remaining": [
+        "360px缩放下原生创建连接节点handle仍可能盖住Glyth（已报根代理，不属Arc修复）。",
+        "嵌套节点、混合未支持native节点的全命令尚未完全对齐。"
+      ],
+      "evidence": [
+        "arc-hit-avoidance-qa.json",
+        "arc-after-local-avoidance.png",
+        "arc-more-open-qa.png",
+        "arc-360-more.png",
+        "arc-glyth-real-open.png"
+      ],
+      "browserCheckedStates": [
+        "单选",
+        "more",
+        "上下文菜单",
+        "窗口并存",
+        "安全区翻转"
+      ],
+      "notIndividuallyBrowserProvenStates": [
+        "多选",
+        "hover",
+        "3个主操作/最多4",
+        "对象锁定"
+      ],
+      "recommendedFiles": [
+        "navigation/LcosActionArc.tsx",
+        "LcosHostOverlay.tsx",
+        "../lcos-seam/chromeModeSlot.tsx"
+      ]
+    },
+    {
+      "id": "NAV-18",
+      "name": "Composer引用条和工具按钮生产接线",
+      "status": "根代理在修；部分已验",
+      "figma": [
+        {
+          "nodeId": "5043:102",
+          "pageId": "5036:50",
+          "name": "输入 / Oreo 就地生成",
+          "structureParts": [
+            "pages/5036-50/frames/5043-102/nodes-000.json"
+          ],
+          "url": "https://www.figma.com/design/nFUdroLvI5qJZuYTW8h2rF?node-id=5043-102"
+        },
+        {
+          "nodeId": "5229:1489",
+          "pageId": "5198:49",
+          "name": "13 · 引用选择 / 缩略预览与就近操作",
+          "structureParts": [
+            "pages/5198-49/frames/5229-1489/nodes-000.json"
+          ],
+          "url": "https://www.figma.com/design/nFUdroLvI5qJZuYTW8h2rF?node-id=5229-1489"
+        },
+        {
+          "nodeId": "5229:1753",
+          "pageId": "5198:49",
+          "name": "14 · 移除一份引用 / 保留输入",
+          "structureParts": [
+            "pages/5198-49/frames/5229-1753/nodes-000.json"
+          ],
+          "url": "https://www.figma.com/design/nFUdroLvI5qJZuYTW8h2rF?node-id=5229-1753"
+        },
+        {
+          "nodeId": "5283:890",
+          "pageId": "5277:602",
+          "name": "A01 / 主画布 · 当前接收与输入",
+          "structureParts": [
+            "pages/5277-602/frames/5283-890/nodes-000.json",
+            "pages/5277-602/frames/5283-890/nodes-001.json"
+          ],
+          "url": "https://www.figma.com/design/nFUdroLvI5qJZuYTW8h2rF?node-id=5283-890"
+        },
+        {
+          "nodeId": "5289:6378",
+          "pageId": "5277:602",
+          "name": "A10 / 对话工作视图 · 同一 Composer",
+          "structureParts": [
+            "pages/5277-602/frames/5289-6378/nodes-000.json",
+            "pages/5277-602/frames/5289-6378/nodes-001.json"
+          ],
+          "url": "https://www.figma.com/design/nFUdroLvI5qJZuYTW8h2rF?node-id=5289-6378"
+        },
+        {
+          "nodeId": "5295:2982",
+          "pageId": "5277:602",
+          "name": "N01 / 窄屏 · Composer",
+          "structureParts": [
+            "pages/5277-602/frames/5295-2982/nodes-000.json"
+          ],
+          "url": "https://www.figma.com/design/nFUdroLvI5qJZuYTW8h2rF?node-id=5295-2982"
+        },
+        {
+          "nodeId": "5304:3646",
+          "pageId": "5277:602",
+          "name": "N07 / 键盘焦点 · 发送",
+          "structureParts": [
+            "pages/5277-602/frames/5304-3646/nodes-000.json"
+          ],
+          "url": "https://www.figma.com/design/nFUdroLvI5qJZuYTW8h2rF?node-id=5304-3646"
+        }
+      ],
+      "productionCaller": "LcosComposerHost → LcosComposerView → ComposerReferenceStrip",
+      "designedStates": [
+        "空草稿",
+        "2-4行增长",
+        "长文滚动",
+        "引用缩略图",
+        "预览",
+        "移除单引用",
+        "不可用引用",
+        "附件",
+        "receiver",
+        "提交中",
+        "失败恢复",
+        "窄屏",
+        "键盘"
+      ],
+      "fixed": [
+        "真实图片引用、单项移除、@选择、附件打开原Assembly、接收者身份已接生产Host；13项@键盘回归由根代理通过。"
+      ],
+      "remaining": [
+        "Composer整个气泡的Drop命中仍需确认；此前生产target只注册textarea。",
+        "不可用引用、长文滚动、跨窗口promote后草稿连续需根代理最终矩阵。"
+      ],
+      "evidence": [
+        "drop-real-reference-receipt.png"
+      ],
+      "browserCheckedStates": [
+        "引用缩略图",
+        "移除单引用",
+        "附件",
+        "receiver",
+        "键盘"
+      ],
+      "notIndividuallyBrowserProvenStates": [
+        "空草稿",
+        "2-4行增长",
+        "长文滚动",
+        "预览",
+        "不可用引用",
+        "提交中",
+        "失败恢复",
+        "窄屏"
+      ],
+      "recommendedFiles": [
+        "composer/LcosComposerHost.tsx",
+        "ui/nearfield/LcosComposerView.tsx",
+        "ui/nearfield/ComposerReferenceStrip.tsx"
+      ]
+    },
+    {
+      "id": "NAV-19",
+      "name": "近场输入定位、多窗口、语音状态",
+      "status": "近场归属已修；语音仍缺真实owner",
+      "figma": [
+        {
+          "nodeId": "5246:59",
+          "pageId": "5243:49",
+          "name": "02 · 续工在 Composer 内展开",
+          "structureParts": [
+            "pages/5243-49/frames/5246-59/nodes-000.json",
+            "pages/5243-49/frames/5246-59/nodes-001.json"
+          ],
+          "url": "https://www.figma.com/design/nFUdroLvI5qJZuYTW8h2rF?node-id=5246-59"
+        },
+        {
+          "nodeId": "5280:669",
+          "pageId": "5277:602",
+          "name": "P0-03 / ReceiverComposerBody",
+          "structureParts": [
+            "pages/5277-602/frames/5280-669/nodes-000.json"
+          ],
+          "url": "https://www.figma.com/design/nFUdroLvI5qJZuYTW8h2rF?node-id=5280-669"
+        },
+        {
+          "nodeId": "5295:2982",
+          "pageId": "5277:602",
+          "name": "N01 / 窄屏 · Composer",
+          "structureParts": [
+            "pages/5277-602/frames/5295-2982/nodes-000.json"
+          ],
+          "url": "https://www.figma.com/design/nFUdroLvI5qJZuYTW8h2rF?node-id=5295-2982"
+        },
+        {
+          "nodeId": "5300:3632",
+          "pageId": "5277:602",
+          "name": "R01 / 减少动态效果 · 输入",
+          "structureParts": [
+            "pages/5277-602/frames/5300-3632/nodes-000.json",
+            "pages/5277-602/frames/5300-3632/nodes-001.json"
+          ],
+          "url": "https://www.figma.com/design/nFUdroLvI5qJZuYTW8h2rF?node-id=5300-3632"
+        }
+      ],
+      "productionCaller": "LcosHostOverlay → shell draft → LcosComposerHost；voice helper未接生产入口",
+      "designedStates": [
+        "被动草稿",
+        "活跃输入",
+        "提升工作窗",
+        "返回近场",
+        "点击外部",
+        "Esc",
+        "录音/转写/错误"
+      ],
+      "fixed": [
+        "只对实际拥有同一Composer intent的可见窗口让位，普通Assembly/Reader不再把近场输入整体隐藏。",
+        "Glyth Drop通过真实target几何/RF反算近场anchor，去掉0,0硬编码。"
+      ],
+      "remaining": [
+        "Core语音转写生产入口未落；不能把Web Speech helper当成正式能力。",
+        "同草稿跨宿主提升/降回和窗口关闭边界由根代理继续验收。"
+      ],
+      "evidence": [
+        "drop-real-reference-receipt.png"
+      ],
+      "browserCheckedStates": [
+        "活跃输入",
+        "点击外部",
+        "Esc"
+      ],
+      "notIndividuallyBrowserProvenStates": [
+        "被动草稿",
+        "提升工作窗",
+        "返回近场",
+        "录音/转写/错误"
+      ],
+      "recommendedFiles": [
+        "LcosHostOverlay.tsx",
+        "composer/LcosComposerHost.tsx",
+        "现有语音owner适配"
+      ]
+    },
+    {
+      "id": "NAV-20",
+      "name": "通用Drop来源：画布节点、右拖携带、装配",
+      "status": "基础已接；通用覆盖远未齐全",
+      "figma": [
+        {
+          "nodeId": "5187:179",
+          "pageId": "5185:1051",
+          "name": "03 · 拖动、对齐与取消",
+          "structureParts": [
+            "pages/5185-1051/frames/5187-179/nodes-000.json"
+          ],
+          "url": "https://www.figma.com/design/nFUdroLvI5qJZuYTW8h2rF?node-id=5187-179"
+        },
+        {
+          "nodeId": "5187:431",
+          "pageId": "5185:1051",
+          "name": "04 · 引用落点与原位保留",
+          "structureParts": [
+            "pages/5185-1051/frames/5187-431/nodes-000.json"
+          ],
+          "url": "https://www.figma.com/design/nFUdroLvI5qJZuYTW8h2rF?node-id=5187-431"
+        },
+        {
+          "nodeId": "5188:1132",
+          "pageId": "5185:1051",
+          "name": "09 · 装配窗口与引用",
+          "structureParts": [
+            "pages/5185-1051/frames/5188-1132/nodes-000.json"
+          ],
+          "url": "https://www.figma.com/design/nFUdroLvI5qJZuYTW8h2rF?node-id=5188-1132"
+        },
+        {
+          "nodeId": "5347:1089",
+          "pageId": "5332:2",
+          "name": "K01 / 菜单替代拖放",
+          "structureParts": [
+            "pages/5332-2/frames/5347-1089/nodes-000.json"
+          ],
+          "url": "https://www.figma.com/design/nFUdroLvI5qJZuYTW8h2rF?node-id=5347-1089"
+        }
+      ],
+      "productionCaller": "AssemblyBody.acquireDrop → lcosRecognizers → target registry → dropCommitRouter",
+      "designedStates": [
+        "原生移动",
+        "左拖给予",
+        "右拖携带",
+        "远端给予",
+        "物理跨空间",
+        "取消",
+        "无效目标",
+        "跨窗口"
+      ],
+      "fixed": [
+        "根代理接node-carry/左拖给予入口：原源不移动、原生移动保留；右键未越阈值仍是右键菜单。",
+        "已真实右拖现有节点到Glyth，引用进入原Composer；Assembly来源继续真实canonical ref。"
+      ],
+      "remaining": [
+        "空白处新occurrence、普通集合接收的真实canonical producer缺口未补，当前明确拒绝，不伪造复制。",
+        "物理跨空间、集合/Portal/skill全部目标矩阵尚未齐全。"
+      ],
+      "evidence": [
+        "drop-real-reference-preview.png",
+        "drop-real-reference-receipt.png"
+      ],
+      "browserCheckedStates": [
+        "右拖携带",
+        "取消",
+        "无效目标"
+      ],
+      "notIndividuallyBrowserProvenStates": [
+        "原生移动",
+        "左拖给予",
+        "远端给予",
+        "物理跨空间",
+        "跨窗口"
+      ],
+      "recommendedFiles": [
+        "lcosRecognizers.ts",
+        "drop/*",
+        "LcosHostOverlay.tsx",
+        "../lcos-seam现有pointer入口"
+      ]
+    },
+    {
+      "id": "NAV-21",
+      "name": "Drop接收反馈、真实回执、Glyth输入锚点",
+      "status": "回执已修；HTTP+caller测试，部分真实浏览器",
+      "figma": [
+        {
+          "nodeId": "5187:431",
+          "pageId": "5185:1051",
+          "name": "04 · 引用落点与原位保留",
+          "structureParts": [
+            "pages/5185-1051/frames/5187-431/nodes-000.json"
+          ],
+          "url": "https://www.figma.com/design/nFUdroLvI5qJZuYTW8h2rF?node-id=5187-431"
+        },
+        {
+          "nodeId": "5188:1132",
+          "pageId": "5185:1051",
+          "name": "09 · 装配窗口与引用",
+          "structureParts": [
+            "pages/5185-1051/frames/5188-1132/nodes-000.json"
+          ],
+          "url": "https://www.figma.com/design/nFUdroLvI5qJZuYTW8h2rF?node-id=5188-1132"
+        },
+        {
+          "nodeId": "5262:551",
+          "pageId": "5243:49",
+          "name": "26 · 焦点 · 薄光边，不常驻发光",
+          "structureParts": [
+            "pages/5243-49/frames/5262-551/nodes-000.json",
+            "pages/5243-49/frames/5262-551/nodes-001.json"
+          ],
+          "url": "https://www.figma.com/design/nFUdroLvI5qJZuYTW8h2rF?node-id=5262-551"
+        },
+        {
+          "nodeId": "5262:807",
+          "pageId": "5243:49",
+          "name": "27 · 处理中 · 色散沿种子边缘流动",
+          "structureParts": [
+            "pages/5243-49/frames/5262-807/nodes-000.json",
+            "pages/5243-49/frames/5262-807/nodes-001.json"
+          ],
+          "url": "https://www.figma.com/design/nFUdroLvI5qJZuYTW8h2rF?node-id=5262-807"
+        },
+        {
+          "nodeId": "5262:1078",
+          "pageId": "5243:49",
+          "name": "28 · 创建完成 · 辉光扩散后收回",
+          "structureParts": [
+            "pages/5243-49/frames/5262-1078/nodes-000.json",
+            "pages/5243-49/frames/5262-1078/nodes-001.json"
+          ],
+          "url": "https://www.figma.com/design/nFUdroLvI5qJZuYTW8h2rF?node-id=5262-1078"
+        },
+        {
+          "nodeId": "5353:2263",
+          "pageId": "5332:2",
+          "name": "R06 / 减少动态效果 · 等待回执",
+          "structureParts": [
+            "pages/5332-2/frames/5353-2263/nodes-000.json"
+          ],
+          "url": "https://www.figma.com/design/nFUdroLvI5qJZuYTW8h2rF?node-id=5353-2263"
+        }
+      ],
+      "productionCaller": "Drop state → LcosDropPreview；commit owners → shell composer",
+      "designedStates": [
+        "候选目标",
+        "允许/拒绝",
+        "commit中",
+        "accepted",
+        "partial",
+        "failed",
+        "取消",
+        "到达回弹",
+        "减弱运动"
+      ],
+      "fixed": [
+        "原Bug已坐实并修：HTTP200不再等于全部成功；逐项applied/already/failed/unsupported显示。",
+        "只重试明确failed且非unsupported的原sourceRef；保留原target/placement；多次重试累积显示已成功结果，绝不回滚/重跑成功项。",
+        "未知回执/网络异常不盲重试；旧transaction不覆盖新手势；换项目清理本次反馈。",
+        "同Host显示轻量提交/结果反馈，真实Glyth引用投放已截图。"
+      ],
+      "remaining": [
+        "真实fixture缺可自然触发多项partial的交互路径，本次partial/重试为真实HTTP facade+production component模拟，不是后端实录。",
+        "全物种接收材质/到达回弹仍不是完整实现。"
+      ],
+      "evidence": [
+        "drop-real-reference-preview.png",
+        "drop-real-reference-receipt.png",
+        "navigation-drop-receipt-implementation.md"
+      ],
+      "browserCheckedStates": [
+        "候选目标",
+        "允许/拒绝",
+        "accepted",
+        "取消"
+      ],
+      "notIndividuallyBrowserProvenStates": [
+        "commit中",
+        "partial",
+        "failed",
+        "到达回弹",
+        "减弱运动"
+      ],
+      "recommendedFiles": [
+        "drop/LcosDropPreview.tsx",
+        "drop/dropCommitRouter.ts",
+        "LcosHostOverlay.tsx",
+        "shell既有composer调用"
+      ]
+    },
+    {
+      "id": "NAV-22",
+      "name": "共享反馈、disabled、长文与运动族",
+      "status": "局部已修；跨族待统一",
+      "figma": [
+        {
+          "nodeId": "5391:322",
+          "pageId": "5036:50",
+          "name": null,
+          "structureParts": [
+            "unification/structures/feedback/nodes-000.json"
+          ],
+          "url": "https://www.figma.com/design/nFUdroLvI5qJZuYTW8h2rF?node-id=5391-322"
+        },
+        {
+          "nodeId": "5391:327",
+          "pageId": "5036:50",
+          "name": null,
+          "structureParts": [
+            "unification/structures/feedback/nodes-000.json"
+          ],
+          "url": "https://www.figma.com/design/nFUdroLvI5qJZuYTW8h2rF?node-id=5391-327"
+        },
+        {
+          "nodeId": "5391:332",
+          "pageId": "5036:50",
+          "name": null,
+          "structureParts": [
+            "unification/structures/feedback/nodes-000.json"
+          ],
+          "url": "https://www.figma.com/design/nFUdroLvI5qJZuYTW8h2rF?node-id=5391-332"
+        },
+        {
+          "nodeId": "5391:337",
+          "pageId": "5036:50",
+          "name": null,
+          "structureParts": [
+            "unification/structures/feedback/nodes-000.json"
+          ],
+          "url": "https://www.figma.com/design/nFUdroLvI5qJZuYTW8h2rF?node-id=5391-337"
+        },
+        {
+          "nodeId": "5391:342",
+          "pageId": "5036:50",
+          "name": null,
+          "structureParts": [
+            "unification/structures/feedback/nodes-000.json"
+          ],
+          "url": "https://www.figma.com/design/nFUdroLvI5qJZuYTW8h2rF?node-id=5391-342"
+        },
+        {
+          "nodeId": "5391:347",
+          "pageId": "5036:50",
+          "name": null,
+          "structureParts": [
+            "unification/structures/feedback/nodes-000.json"
+          ],
+          "url": "https://www.figma.com/design/nFUdroLvI5qJZuYTW8h2rF?node-id=5391-347"
+        },
+        {
+          "nodeId": "5391:352",
+          "pageId": "5036:50",
+          "name": null,
+          "structureParts": [
+            "unification/structures/feedback/nodes-000.json"
+          ],
+          "url": "https://www.figma.com/design/nFUdroLvI5qJZuYTW8h2rF?node-id=5391-352"
+        },
+        {
+          "nodeId": "5262:551",
+          "pageId": "5243:49",
+          "name": "26 · 焦点 · 薄光边，不常驻发光",
+          "structureParts": [
+            "pages/5243-49/frames/5262-551/nodes-000.json",
+            "pages/5243-49/frames/5262-551/nodes-001.json"
+          ],
+          "url": "https://www.figma.com/design/nFUdroLvI5qJZuYTW8h2rF?node-id=5262-551"
+        },
+        {
+          "nodeId": "5262:807",
+          "pageId": "5243:49",
+          "name": "27 · 处理中 · 色散沿种子边缘流动",
+          "structureParts": [
+            "pages/5243-49/frames/5262-807/nodes-000.json",
+            "pages/5243-49/frames/5262-807/nodes-001.json"
+          ],
+          "url": "https://www.figma.com/design/nFUdroLvI5qJZuYTW8h2rF?node-id=5262-807"
+        },
+        {
+          "nodeId": "5262:1078",
+          "pageId": "5243:49",
+          "name": "28 · 创建完成 · 辉光扩散后收回",
+          "structureParts": [
+            "pages/5243-49/frames/5262-1078/nodes-000.json",
+            "pages/5243-49/frames/5262-1078/nodes-001.json"
+          ],
+          "url": "https://www.figma.com/design/nFUdroLvI5qJZuYTW8h2rF?node-id=5262-1078"
+        }
+      ],
+      "productionCaller": "LcosSurfaceFeedbackView等已存在 → 各真实caller状态映射不齐",
+      "designedStates": [
+        "loading",
+        "empty",
+        "normal",
+        "focus",
+        "disabled",
+        "error",
+        "recovery",
+        "motion-reduced"
+      ],
+      "fixed": [
+        "导航/Drop玻璃轻反馈、原Rail工程文字、真实disabled原因、常用keyboard focus和减弱运动已局部统一。"
+      ],
+      "remaining": [
+        "各页loading/empty/error/recovery全态未全部拍实证。",
+        "不宣称已做全套动态材质/每种节点轮廓的focus或运行辉光。"
+      ],
+      "evidence": [
+        "arc-more-open-qa.png",
+        "navigation-pin-real-preview.png"
+      ],
+      "browserCheckedStates": [
+        "focus",
+        "disabled"
+      ],
+      "notIndividuallyBrowserProvenStates": [
+        "loading",
+        "empty",
+        "normal",
+        "error",
+        "recovery",
+        "motion-reduced"
+      ],
+      "recommendedFiles": [
+        "ui/LcosSurfaceFeedbackView.tsx",
+        "各域container状态映射",
+        "ui/lcos-tokens.css"
+      ]
+    },
+    {
+      "id": "NAV-23",
+      "name": "项目级系统入口与能力不被视觉隐藏",
+      "status": "仍有明确入口缺口",
+      "figma": [
+        {
+          "nodeId": "5306:4074",
+          "pageId": "5277:602",
+          "name": "A12 / 项目菜单 · 系统入口",
+          "structureParts": [
+            "pages/5277-602/frames/5306-4074/nodes-000.json",
+            "pages/5277-602/frames/5306-4074/nodes-001.json"
+          ],
+          "url": "https://www.figma.com/design/nFUdroLvI5qJZuYTW8h2rF?node-id=5306-4074"
+        },
+        {
+          "nodeId": "5388:27696",
+          "pageId": "5198:49",
+          "name": "统一主稿 / 全局导航与画外定位",
+          "structureParts": [
+            "unification/structures/hud/nodes-000.json",
+            "unification/structures/hud/nodes-001.json"
+          ],
+          "url": "https://www.figma.com/design/nFUdroLvI5qJZuYTW8h2rF?node-id=5388-27696"
+        }
+      ],
+      "productionCaller": "LcosProjectShell project cluster → /projects link；其他菜单caller待跨域汇总",
+      "designedStates": [
+        "项目菜单",
+        "设置/运行诊断入口",
+        "当前接收者",
+        "退出到项目库",
+        "工作现场返回"
+      ],
+      "fixed": [
+        "退出到项目库、三面切换、接收者现有入口保留；Main Atlas root/child分流已经修正。"
+      ],
+      "remaining": [
+        "项目系统菜单/RuntimeDoctor/CurrentReceiver等5306设计尚未找到完整生产caller；ProfessionalStage部分工具仍此工具当前不可用。",
+        "应核实能力后接到既有工具，不能为视觉补空壳按钮。"
+      ],
+      "evidence": [
+        "navigation-main-atlas-root.png"
+      ],
+      "browserCheckedStates": [
+        "退出到项目库",
+        "工作现场返回"
+      ],
+      "notIndividuallyBrowserProvenStates": [
+        "项目菜单",
+        "设置/运行诊断入口",
+        "当前接收者"
+      ],
+      "recommendedFiles": [
+        "shell/LcosProjectShell.tsx",
+        "既有菜单/诊断入口组件"
+      ]
+    }
+  ],
+  "evidencePolicy": "本代理截图/JSON为直接证据；根代理报告项明确标注；组件与HTTP mock不冒称真实后端/持久浏览器验收。",
+  "highImpactRemaining": [
+    "NAV20通用Drop：空白复制/普通集合缺canonical producer，跨空间矩阵未齐。",
+    "NAV23项目系统能力入口仍缺生产caller。",
+    "NAV18/19整个Composer接收面、跨宿主草稿、语音正式通道需继续。",
+    "NAV12/14/15/16浮标高密/自定义与真实Rail数据持久验收。",
+    "NAV17小缩放原生连接handle与Glyth碰撞。"
+  ],
+  "latestValidation": {
+    "command": "pnpm exec vitest run --maxWorkers=2 (10 files listed in MD)",
+    "passed": 65,
+    "files": 10,
+    "tsc": "passed",
+    "diffCheck": "passed"
+  },
+  "codeStable": true
+}

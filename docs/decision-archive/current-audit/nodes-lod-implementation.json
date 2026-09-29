@@ -1,0 +1,60 @@
+{
+  "id": [
+    "N26",
+    "N30"
+  ],
+  "date": "2026-09-26",
+  "status": "LOD_consumption_implemented; full_Glyth_takeover_not_claimed",
+  "READ_SOURCE": [
+    "Figma 5152:272 far / 5152:49 middle / 5152:503 reading",
+    "Final Main unification/main-final.png 5388:96 + Glyth5388:118/119",
+    "T1 §14 Document Semantic Zoom / §16 continuity / §26 Glyth takeover constraints",
+    "Current resolvePresentationDensity / useLcosDensity / NodePresentation host"
+  ],
+  "ADOPTED": [
+    "同一密度owner，mark身份/summary真实单句/working真实关键段/reading所有已给预览",
+    "文档屏幕标题>=12px，摘要>=11px；图像/音频caption>=10.5px（非mark）",
+    "移除Glyth34/92硬切，92原始轮廓按世界框连续呈现；远景轻补偿且不超原节点框",
+    "媒体本体、真实会话态、Drop curious、本轮G02动作保留"
+  ],
+  "VISUAL_SOURCE": [
+    "07远中近内容层级",
+    "最终Main纸面材料/无外框文字/Glyth92轮廓"
+  ],
+  "RETIRED": [
+    "摘要档仍排长正文、依靠grid-item line-clamp失效",
+    "Glyth mark=34后再被canvas缩一次",
+    "缩放后6~8px蚂蚁字caption"
+  ],
+  "VERIFIED": [
+    "31项针对性媒体/材料/密度/G02测试通过",
+    "Huabu web typecheck通过",
+    "浏览器同一真实fixture37% / 53% / 100%，仅使用既有缩放/中键平移UI，未造测试业务数据",
+    "原summary文档clamp=1但display=flow-root；已改嵌套excerpt+显式高度上限",
+    "修后63%文档title实际12screen px、excerpt单行17screen px；Glyth主体58screen px"
+  ],
+  "UNRESOLVED": [
+    "上游buildContentPreview最多160字且已压平空白，近景只能诚实显示已给预览；全文仍由Reader提供，未伪造完整大纲",
+    "未增加完整Glyth node→WorkView takeover morph，N30仅完成body连续性部分",
+    "极小屏幕物理面积仍无法容纳完整长标题，保留原身份tooltip；无相机强制缩放",
+    "普通collection无canonical producer/geometry目标仍由原归档说明",
+    "Arc碰撞由root另行处理，本批不改Arc"
+  ],
+  "files": [
+    "huabu/apps/web/src/lcos/nodes/GlythNodeBody.tsx",
+    "huabu/apps/web/src/lcos/ui/glyth/glythBodyLayout.ts",
+    "huabu/apps/web/src/lcos/nodes/LcosSpeciesBodies.tsx",
+    "huabu/apps/web/src/lcos/nodes/source/sourceTypes.ts",
+    "huabu/apps/web/src/lcos/ui/source/DocumentSourceView.tsx",
+    "huabu/apps/web/src/lcos/ui/source/documentSourceLayout.ts",
+    "huabu/apps/web/src/lcos/ui/source/sourceTextLayout.ts",
+    "huabu/apps/web/src/lcos/ui/source/TextSourceView.tsx",
+    "huabu/apps/web/src/lcos/ui/source/source-presentation.css",
+    "huabu/apps/web/src/lcos/ui/source/materialReadability.test.tsx"
+  ],
+  "screenshots": {
+    "far": "nodes-lod-far.png",
+    "middle": "nodes-lod-medium.png",
+    "near": "nodes-lod-near.png"
+  }
+}

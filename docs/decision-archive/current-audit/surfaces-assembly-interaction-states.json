@@ -1,0 +1,909 @@
+{
+  "note": "Long title is an isolated browser response fixture; canonical IDs and contents unchanged.",
+  "states": [
+    {
+      "name": "hover-stable",
+      "body": {
+        "x": 705,
+        "y": 169,
+        "w": 638,
+        "h": 598
+      },
+      "overflow": false,
+      "scrollWidth": 628,
+      "clientWidth": 628,
+      "items": [
+        {
+          "box": {
+            "x": 737,
+            "y": 339,
+            "w": 274,
+            "h": 182
+          },
+          "caption": "山野环境声",
+          "captionBox": {
+            "x": 746,
+            "y": 481,
+            "w": 256,
+            "h": 20
+          },
+          "object": {
+            "x": 744,
+            "y": 348,
+            "w": 260,
+            "h": 125
+          },
+          "actions": {
+            "x": 750,
+            "y": 413,
+            "w": 248,
+            "h": 54
+          },
+          "actionArea": "1 / 1"
+        },
+        {
+          "box": {
+            "x": 737,
+            "y": 545,
+            "w": 274,
+            "h": 217
+          },
+          "caption": "品牌主张（e2e fixture）",
+          "captionBox": {
+            "x": 746,
+            "y": 722,
+            "w": 256,
+            "h": 20
+          },
+          "object": {
+            "x": 744,
+            "y": 554,
+            "w": 260,
+            "h": 160
+          },
+          "actions": {
+            "x": 750,
+            "y": 654,
+            "w": 248,
+            "h": 54
+          },
+          "actionArea": "1 / 1"
+        },
+        {
+          "box": {
+            "x": 737,
+            "y": 786,
+            "w": 274,
+            "h": 182
+          },
+          "caption": "参考图 B（e2e fixture）",
+          "captionBox": {
+            "x": 746,
+            "y": 928,
+            "w": 256,
+            "h": 20
+          },
+          "object": {
+            "x": 744,
+            "y": 795,
+            "w": 260,
+            "h": 125
+          },
+          "actions": {
+            "x": 750,
+            "y": 860,
+            "w": 248,
+            "h": 54
+          },
+          "actionArea": "1 / 1"
+        }
+      ],
+      "active": {
+        "tag": "BUTTON",
+        "label": "Assembly"
+      },
+      "touch": false
+    },
+    {
+      "name": "keyboard-action",
+      "body": {
+        "x": 705,
+        "y": 169,
+        "w": 638,
+        "h": 598
+      },
+      "overflow": false,
+      "scrollWidth": 628,
+      "clientWidth": 628,
+      "items": [
+        {
+          "box": {
+            "x": 737,
+            "y": 339,
+            "w": 274,
+            "h": 182
+          },
+          "caption": "山野环境声",
+          "captionBox": {
+            "x": 746,
+            "y": 481,
+            "w": 256,
+            "h": 20
+          },
+          "object": {
+            "x": 744,
+            "y": 348,
+            "w": 260,
+            "h": 125
+          },
+          "actions": {
+            "x": 750,
+            "y": 413,
+            "w": 248,
+            "h": 54
+          },
+          "actionArea": "1 / 1"
+        },
+        {
+          "box": {
+            "x": 737,
+            "y": 545,
+            "w": 274,
+            "h": 217
+          },
+          "caption": "品牌主张（e2e fixture）",
+          "captionBox": {
+            "x": 746,
+            "y": 722,
+            "w": 256,
+            "h": 20
+          },
+          "object": {
+            "x": 744,
+            "y": 554,
+            "w": 260,
+            "h": 160
+          },
+          "actions": {
+            "x": 750,
+            "y": 654,
+            "w": 248,
+            "h": 54
+          },
+          "actionArea": "1 / 1"
+        },
+        {
+          "box": {
+            "x": 737,
+            "y": 786,
+            "w": 274,
+            "h": 182
+          },
+          "caption": "参考图 B（e2e fixture）",
+          "captionBox": {
+            "x": 746,
+            "y": 928,
+            "w": 256,
+            "h": 20
+          },
+          "object": {
+            "x": 744,
+            "y": 795,
+            "w": 260,
+            "h": 125
+          },
+          "actions": {
+            "x": 750,
+            "y": 860,
+            "w": 248,
+            "h": 54
+          },
+          "actionArea": "1 / 1"
+        }
+      ],
+      "active": {
+        "tag": "BUTTON",
+        "label": "草稿"
+      },
+      "touch": false
+    },
+    {
+      "name": "escape-return",
+      "body": {
+        "x": 705,
+        "y": 169,
+        "w": 638,
+        "h": 598
+      },
+      "overflow": false,
+      "scrollWidth": 628,
+      "clientWidth": 628,
+      "items": [
+        {
+          "box": {
+            "x": 737,
+            "y": 339,
+            "w": 274,
+            "h": 182
+          },
+          "caption": "山野环境声",
+          "captionBox": {
+            "x": 746,
+            "y": 481,
+            "w": 256,
+            "h": 20
+          },
+          "object": {
+            "x": 744,
+            "y": 348,
+            "w": 260,
+            "h": 125
+          },
+          "actions": {
+            "x": 750,
+            "y": 413,
+            "w": 248,
+            "h": 54
+          },
+          "actionArea": "1 / 1"
+        },
+        {
+          "box": {
+            "x": 737,
+            "y": 545,
+            "w": 274,
+            "h": 217
+          },
+          "caption": "品牌主张（e2e fixture）",
+          "captionBox": {
+            "x": 746,
+            "y": 722,
+            "w": 256,
+            "h": 20
+          },
+          "object": {
+            "x": 744,
+            "y": 554,
+            "w": 260,
+            "h": 160
+          },
+          "actions": {
+            "x": 750,
+            "y": 654,
+            "w": 248,
+            "h": 54
+          },
+          "actionArea": "1 / 1"
+        },
+        {
+          "box": {
+            "x": 737,
+            "y": 786,
+            "w": 274,
+            "h": 182
+          },
+          "caption": "参考图 B（e2e fixture）",
+          "captionBox": {
+            "x": 746,
+            "y": 928,
+            "w": 256,
+            "h": 20
+          },
+          "object": {
+            "x": 744,
+            "y": 795,
+            "w": 260,
+            "h": 125
+          },
+          "actions": {
+            "x": 750,
+            "y": 860,
+            "w": 248,
+            "h": 54
+          },
+          "actionArea": "1 / 1"
+        }
+      ],
+      "active": {
+        "tag": "BUTTON",
+        "label": "取用 山野环境声"
+      },
+      "touch": false
+    },
+    {
+      "name": "real-image",
+      "body": {
+        "x": 705,
+        "y": 169,
+        "w": 638,
+        "h": 598
+      },
+      "overflow": false,
+      "scrollWidth": 628,
+      "clientWidth": 628,
+      "items": [
+        {
+          "box": {
+            "x": 737,
+            "y": -216,
+            "w": 274,
+            "h": 182
+          },
+          "caption": "山野环境声",
+          "captionBox": {
+            "x": 746,
+            "y": -74,
+            "w": 256,
+            "h": 20
+          },
+          "object": {
+            "x": 744,
+            "y": -207,
+            "w": 260,
+            "h": 125
+          },
+          "actions": {
+            "x": 750,
+            "y": -142,
+            "w": 248,
+            "h": 54
+          },
+          "actionArea": "1 / 1"
+        },
+        {
+          "box": {
+            "x": 737,
+            "y": -10,
+            "w": 274,
+            "h": 217
+          },
+          "caption": "品牌主张（e2e fixture）",
+          "captionBox": {
+            "x": 746,
+            "y": 167,
+            "w": 256,
+            "h": 20
+          },
+          "object": {
+            "x": 744,
+            "y": -1,
+            "w": 260,
+            "h": 160
+          },
+          "actions": {
+            "x": 750,
+            "y": 99,
+            "w": 248,
+            "h": 54
+          },
+          "actionArea": "1 / 1"
+        },
+        {
+          "box": {
+            "x": 737,
+            "y": 231,
+            "w": 274,
+            "h": 219.5
+          },
+          "caption": "参考图 B（e2e fixture）",
+          "captionBox": {
+            "x": 746,
+            "y": 410.5,
+            "w": 256,
+            "h": 20
+          },
+          "object": {
+            "x": 744,
+            "y": 240,
+            "w": 260,
+            "h": 162.5
+          },
+          "actions": {
+            "x": 750,
+            "y": 342.5,
+            "w": 248,
+            "h": 54
+          },
+          "actionArea": "1 / 1"
+        }
+      ],
+      "active": {
+        "tag": "BUTTON",
+        "label": "取用 山野环境声"
+      },
+      "touch": false
+    },
+    {
+      "name": "short-window",
+      "body": {
+        "x": 705,
+        "y": 169,
+        "w": 638,
+        "h": 250
+      },
+      "overflow": false,
+      "scrollWidth": 638,
+      "clientWidth": 638,
+      "items": [
+        {
+          "box": {
+            "x": 737,
+            "y": 339,
+            "w": 279,
+            "h": 182
+          },
+          "caption": "山野环境声",
+          "captionBox": {
+            "x": 746,
+            "y": 481,
+            "w": 261,
+            "h": 20
+          },
+          "object": {
+            "x": 744,
+            "y": 348,
+            "w": 265,
+            "h": 125
+          },
+          "actions": {
+            "x": 750,
+            "y": 413,
+            "w": 253,
+            "h": 54
+          },
+          "actionArea": "1 / 1"
+        },
+        {
+          "box": {
+            "x": 737,
+            "y": 545,
+            "w": 279,
+            "h": 217
+          },
+          "caption": "品牌主张（e2e fixture）",
+          "captionBox": {
+            "x": 746,
+            "y": 722,
+            "w": 261,
+            "h": 20
+          },
+          "object": {
+            "x": 744,
+            "y": 554,
+            "w": 265,
+            "h": 160
+          },
+          "actions": {
+            "x": 750,
+            "y": 654,
+            "w": 253,
+            "h": 54
+          },
+          "actionArea": "1 / 1"
+        },
+        {
+          "box": {
+            "x": 737,
+            "y": 786,
+            "w": 279,
+            "h": 222.625
+          },
+          "caption": "参考图 B（e2e fixture）",
+          "captionBox": {
+            "x": 746,
+            "y": 968.625,
+            "w": 261,
+            "h": 20
+          },
+          "object": {
+            "x": 744,
+            "y": 795,
+            "w": 265,
+            "h": 165.625
+          },
+          "actions": {
+            "x": 750,
+            "y": 900.625,
+            "w": 253,
+            "h": 54
+          },
+          "actionArea": "1 / 1"
+        }
+      ],
+      "active": {
+        "tag": "BUTTON",
+        "label": "取用 山野环境声"
+      },
+      "touch": false
+    },
+    {
+      "name": "long-title-390",
+      "body": {
+        "x": 13,
+        "y": 125,
+        "w": 364,
+        "h": 598
+      },
+      "overflow": false,
+      "scrollWidth": 354,
+      "clientWidth": 354,
+      "items": [
+        {
+          "box": {
+            "x": 29,
+            "y": 295,
+            "w": 322,
+            "h": 182
+          },
+          "caption": "排版压力测试：跨平台创意项目里的长文件名称与版本说明——ABCDEFGHIJKLMNOPQRSTUVWXYZ_排版压力测试：跨平台创意项目里的长文件名称与版本说明——ABCDEFGHIJKLMNOPQRSTUVWXYZ_排版压力测试：跨平台创意项目里的长文件名称与版本说明——ABCDEFGHIJKLMNOPQRSTUVWXYZ_",
+          "captionBox": {
+            "x": 38,
+            "y": 437,
+            "w": 304,
+            "h": 20
+          },
+          "object": {
+            "x": 36,
+            "y": 304,
+            "w": 308,
+            "h": 125
+          },
+          "actions": {
+            "x": 42,
+            "y": 369,
+            "w": 296,
+            "h": 54
+          },
+          "actionArea": "1 / 1"
+        },
+        {
+          "box": {
+            "x": 29,
+            "y": 501,
+            "w": 322,
+            "h": 217
+          },
+          "caption": "排版压力测试：跨平台创意项目里的长文件名称与版本说明——ABCDEFGHIJKLMNOPQRSTUVWXYZ_排版压力测试：跨平台创意项目里的长文件名称与版本说明——ABCDEFGHIJKLMNOPQRSTUVWXYZ_排版压力测试：跨平台创意项目里的长文件名称与版本说明——ABCDEFGHIJKLMNOPQRSTUVWXYZ_",
+          "captionBox": {
+            "x": 38,
+            "y": 678,
+            "w": 304,
+            "h": 20
+          },
+          "object": {
+            "x": 36,
+            "y": 510,
+            "w": 308,
+            "h": 160
+          },
+          "actions": {
+            "x": 42,
+            "y": 610,
+            "w": 296,
+            "h": 54
+          },
+          "actionArea": "1 / 1"
+        },
+        {
+          "box": {
+            "x": 29,
+            "y": 742,
+            "w": 322,
+            "h": 182
+          },
+          "caption": "参考图 B（e2e fixture）",
+          "captionBox": {
+            "x": 38,
+            "y": 884,
+            "w": 304,
+            "h": 20
+          },
+          "object": {
+            "x": 36,
+            "y": 751,
+            "w": 308,
+            "h": 125
+          },
+          "actions": {
+            "x": 42,
+            "y": 816,
+            "w": 296,
+            "h": 54
+          },
+          "actionArea": "1 / 1"
+        }
+      ],
+      "active": {
+        "tag": "BUTTON",
+        "label": "Assembly"
+      },
+      "touch": false
+    },
+    {
+      "name": "touch-390",
+      "body": {
+        "x": 13,
+        "y": 125,
+        "w": 364,
+        "h": 598
+      },
+      "overflow": false,
+      "scrollWidth": 354,
+      "clientWidth": 354,
+      "items": [
+        {
+          "box": {
+            "x": 29,
+            "y": 295,
+            "w": 322,
+            "h": 249
+          },
+          "caption": "山野环境声",
+          "captionBox": {
+            "x": 84,
+            "y": 439.5,
+            "w": 212,
+            "h": 20
+          },
+          "object": {
+            "x": 36,
+            "y": 304,
+            "w": 308,
+            "h": 125
+          },
+          "actions": {
+            "x": 36,
+            "y": 489,
+            "w": 308,
+            "h": 54
+          },
+          "actionArea": "3 / 1"
+        },
+        {
+          "box": {
+            "x": 29,
+            "y": 568,
+            "w": 322,
+            "h": 284
+          },
+          "caption": "品牌主张（e2e fixture）",
+          "captionBox": {
+            "x": 84,
+            "y": 747.5,
+            "w": 212,
+            "h": 20
+          },
+          "object": {
+            "x": 36,
+            "y": 577,
+            "w": 308,
+            "h": 160
+          },
+          "actions": {
+            "x": 36,
+            "y": 797,
+            "w": 308,
+            "h": 54
+          },
+          "actionArea": "3 / 1"
+        },
+        {
+          "box": {
+            "x": 29,
+            "y": 876,
+            "w": 322,
+            "h": 249
+          },
+          "caption": "参考图 B（e2e fixture）",
+          "captionBox": {
+            "x": 84,
+            "y": 1020.5,
+            "w": 212,
+            "h": 20
+          },
+          "object": {
+            "x": 36,
+            "y": 885,
+            "w": 308,
+            "h": 125
+          },
+          "actions": {
+            "x": 36,
+            "y": 1070,
+            "w": 308,
+            "h": 54
+          },
+          "actionArea": "3 / 1"
+        }
+      ],
+      "active": {
+        "tag": "BUTTON",
+        "label": "Assembly"
+      },
+      "touch": true
+    }
+  ],
+  "errors": [],
+  "requests": [
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:5286/api/rfs/canvas-5e26c422-466e-4994-9b57-34b8ec5cfcd2/query"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:5286/api/rfs/canvas-5e26c422-466e-4994-9b57-34b8ec5cfcd2/query"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:5286/api/rfs/canvas-5e26c422-466e-4994-9b57-34b8ec5cfcd2/query"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:5286/api/rfs/canvas-5e26c422-466e-4994-9b57-34b8ec5cfcd2/query"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:5286/api/rfs/canvas-5e26c422-466e-4994-9b57-34b8ec5cfcd2/query"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:5286/api/rfs/canvas-5e26c422-466e-4994-9b57-34b8ec5cfcd2/query"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:5286/api/rfs/canvas-5e26c422-466e-4994-9b57-34b8ec5cfcd2/query"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:5286/api/rfs/canvas-5e26c422-466e-4994-9b57-34b8ec5cfcd2/query"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:5286/api/rfs/canvas-5e26c422-466e-4994-9b57-34b8ec5cfcd2/query"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:5286/api/rfs/canvas-5e26c422-466e-4994-9b57-34b8ec5cfcd2/query"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:5286/api/rfs/canvas-5e26c422-466e-4994-9b57-34b8ec5cfcd2/query"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:5286/api/rfs/canvas-5e26c422-466e-4994-9b57-34b8ec5cfcd2/query"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:5286/api/rfs/canvas-5e26c422-466e-4994-9b57-34b8ec5cfcd2/query"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:5286/api/rfs/canvas-5e26c422-466e-4994-9b57-34b8ec5cfcd2/query"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:5286/api/rfs/canvas-5e26c422-466e-4994-9b57-34b8ec5cfcd2/query"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:5286/api/rfs/canvas-5e26c422-466e-4994-9b57-34b8ec5cfcd2/query"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:5286/api/rfs/canvas-5e26c422-466e-4994-9b57-34b8ec5cfcd2/query"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:5286/api/rfs/canvas-5e26c422-466e-4994-9b57-34b8ec5cfcd2/query"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:5286/api/rfs/canvas-5e26c422-466e-4994-9b57-34b8ec5cfcd2/query"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:5286/api/rfs/canvas-5e26c422-466e-4994-9b57-34b8ec5cfcd2/query"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:5286/api/rfs/canvas-5e26c422-466e-4994-9b57-34b8ec5cfcd2/query"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:5286/api/rfs/canvas-5e26c422-466e-4994-9b57-34b8ec5cfcd2/query"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:5286/api/rfs/canvas-5e26c422-466e-4994-9b57-34b8ec5cfcd2/query"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:5286/api/rfs/canvas-5e26c422-466e-4994-9b57-34b8ec5cfcd2/query"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:5286/api/rfs/canvas-5e26c422-466e-4994-9b57-34b8ec5cfcd2/query"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:5286/api/rfs/canvas-5e26c422-466e-4994-9b57-34b8ec5cfcd2/query"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:5286/api/rfs/canvas-5e26c422-466e-4994-9b57-34b8ec5cfcd2/query"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:5286/api/rfs/canvas-5e26c422-466e-4994-9b57-34b8ec5cfcd2/query"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:5286/api/rfs/canvas-5e26c422-466e-4994-9b57-34b8ec5cfcd2/query"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:5286/api/rfs/canvas-5e26c422-466e-4994-9b57-34b8ec5cfcd2/query"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:5286/api/rfs/canvas-5e26c422-466e-4994-9b57-34b8ec5cfcd2/query"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:5286/api/rfs/canvas-5e26c422-466e-4994-9b57-34b8ec5cfcd2/query"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:5286/api/rfs/canvas-5e26c422-466e-4994-9b57-34b8ec5cfcd2/query"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:5286/api/rfs/canvas-5e26c422-466e-4994-9b57-34b8ec5cfcd2/query"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:5286/api/rfs/canvas-5e26c422-466e-4994-9b57-34b8ec5cfcd2/query"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:5286/api/rfs/canvas-5e26c422-466e-4994-9b57-34b8ec5cfcd2/query"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:5286/api/rfs/canvas-5e26c422-466e-4994-9b57-34b8ec5cfcd2/query"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:5286/api/rfs/canvas-5e26c422-466e-4994-9b57-34b8ec5cfcd2/query"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:5286/api/rfs/canvas-5e26c422-466e-4994-9b57-34b8ec5cfcd2/query"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:5286/api/rfs/canvas-5e26c422-466e-4994-9b57-34b8ec5cfcd2/query"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:5286/api/rfs/canvas-5e26c422-466e-4994-9b57-34b8ec5cfcd2/query"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:5286/api/rfs/canvas-5e26c422-466e-4994-9b57-34b8ec5cfcd2/query"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:5286/api/rfs/canvas-5e26c422-466e-4994-9b57-34b8ec5cfcd2/query"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:5286/api/rfs/canvas-5e26c422-466e-4994-9b57-34b8ec5cfcd2/query"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:5286/api/rfs/canvas-5e26c422-466e-4994-9b57-34b8ec5cfcd2/query"
+    }
+  ]
+}

@@ -1,0 +1,1 @@
+{"extends": "./apps/local-core/tsconfig.json", "compilerOptions": {"rootDir": ".", "paths": {"@local-creative-os/contracts": ["./packages/contracts/src/index.ts"]}}, "include": ["apps/local-core/src"]}

@@ -1,0 +1,117 @@
+{
+  "updated": "2026-09-26T19:24:00+08:00",
+  "scope": "navigation-batch1-through-batch3",
+  "complete": false,
+  "worktree": "E:\\TRAE项目\\LCOS0.1收口\\LCOS_GEN2_GUI_RECOVERY_20260926",
+  "base": "7dd479c",
+  "tests": {
+    "combined_files": 18,
+    "combined_passed": 70,
+    "tsc": "passed",
+    "workers": 2
+  },
+  "browser": {
+    "session": "lcos-nav-recovery",
+    "origin": "http://127.0.0.1:5286",
+    "canonical_mutated": false,
+    "verified": [
+      "search-real-response",
+      "where-full-binding",
+      "where-preserves-selection",
+      "real-pin-offscreen-click-arrival",
+      "1440-1024-resize"
+    ],
+    "console_errors": 0
+  },
+  "inventory_updates": [
+    {
+      "id": "NAV-04",
+      "status": "partially-implemented",
+      "evidence": "navigation-implementation.md"
+    },
+    {
+      "id": "NAV-05",
+      "status": "partially-implemented",
+      "evidence": "navigation-implementation.md"
+    },
+    {
+      "id": "NAV-06",
+      "status": "partially-implemented",
+      "evidence": "navigation-implementation.md"
+    },
+    {
+      "id": "NAV-07",
+      "status": "partially-implemented",
+      "evidence": "navigation-implementation.md"
+    },
+    {
+      "id": "NAV-09",
+      "status": "partially-implemented",
+      "evidence": "navigation-implementation.md"
+    },
+    {
+      "id": "NAV-10",
+      "status": "partially-implemented",
+      "evidence": "navigation-implementation.md"
+    },
+    {
+      "id": "NAV-12",
+      "status": "partially-implemented",
+      "evidence": "navigation-implementation.md"
+    },
+    {
+      "id": "NAV-14",
+      "status": "partially-implemented",
+      "evidence": "navigation-implementation.md"
+    }
+  ],
+  "not_implemented": [
+    "Launcher and ProjectShell long titles: root agent owner",
+    "Context root/child correction: professional surfaces agent owner",
+    "Rail multi-item/activeReceiver real browser evidence absent in current fixture",
+    "Pin non-live/cross-workspace media thumbnails",
+    "Search pagination unsupported by actual contract",
+    "Cross-workspace Where browser evidence",
+    "All-occluded fit feedback",
+    "Crowded locators and custom shape persistence",
+    "High-contrast/200% zoom exhaustive QA"
+  ],
+  "second_batch": {
+    "camera_true_caller": "useLcosCanvasProps -> LcosSpatialNavigator -> shell cameraRequest -> LcosCanvasCommands",
+    "minimap_changed": false,
+    "reset_center_drift": 0.00039287302142560876,
+    "search_window_gap_px": 8,
+    "escape_preserves_underlying_window": true,
+    "rail_preview": "existing useSpacePreviewScene + read-only SVG",
+    "rail_keyboard_reorder": "existing CAS intent, primary items"
+  },
+  "restarted_service_qa": {
+    "time": "2026-09-26T18:55:00+08:00",
+    "search_hits": 6,
+    "window_remained_after_escape": 1,
+    "zoom_before": 0.535912,
+    "zoom_after": 1,
+    "console_errors": 0,
+    "console_warnings": 0,
+    "screenshot": "navigation-restarted-service-qa.png"
+  },
+  "third_batch": {
+    "rail_overflow_management": "same canonical CAS owner, includes up/down/open/remove; focus follows moved item",
+    "receiver": "existing Glyth renderer + Chinese true collaboration projection",
+    "project_events": "existing shared SSE read-only watchProjectChanges; preserved conversation refcount and reader lifetime",
+    "pin_preview": "exact live image projection only; entity and view remain distinct; load failure falls back to type glyph",
+    "search_pagination": "unsupported by current CoreSearch contract; actual truncated feedback only",
+    "main_atlas": "root canvas uses ordinary switchWorksite; exact child uses existing child helper",
+    "browser_root_context_url": "/projects/lcos-gen2-dev/context",
+    "browser_root_return_button_count": 0,
+    "browser_atlas_after_root_count": 0,
+    "canonical_mutated": false,
+    "screenshots": [
+      "navigation-main-atlas-root.png",
+      "navigation-pin-real-preview.png"
+    ],
+    "rail_browser_fixture_present": false,
+    "console_errors": 0,
+    "console_warnings": 0
+  }
+}

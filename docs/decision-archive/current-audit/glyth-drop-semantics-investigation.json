@@ -1,0 +1,126 @@
+{
+  "date": "2026-09-26",
+  "readOnly": true,
+  "status": "draft implemented; durable semantics not reconciled; existing durable write/read/context chain inconsistent",
+  "items": [
+    {
+      "id": "GD01",
+      "severity": "P1",
+      "name": "Glyth 身体投送：旧长期映射与新草稿接法未明确合并",
+      "classification": "产品语义版本差异；当前 draft 实现保留，不擅自改变",
+      "evidence": [
+        {
+          "file": "E:\\TRAE项目\\LCOS0.1收口\\_cabin\\04_R系列与T5规划\\前端冲刺\\LCOS_Gen2_CollaborationRuntime_GlythUX_收敛总施工方案_V1_20260917.md",
+          "line": 825,
+          "finding": "§15 Glyth为交给Conversation；Composer明确为current draft；未说明durable弃用。"
+        },
+        {
+          "file": "E:\\TRAE项目\\LCOS0.1收口\\LCOS_GEN2_GUI_RECOVERY_20260926\\docs\\handoffs\\GEN2_Gate2-5_CollaborationMigration_20260917.md",
+          "line": 35,
+          "finding": "9/17交接明确owner=composer target+draft references。"
+        },
+        {
+          "file": "E:\\TRAE项目\\LCOS0.1收口\\_cabin\\04_R系列与T5规划\\前端冲刺\\LCOS_Gen2_BatchB_接口统一封口与下一轮总施工规划_20260917.md",
+          "line": 247,
+          "finding": "后续BatchB确认该CollaborationTarget方向保留。"
+        }
+      ],
+      "action": "采用9/17真实已接draft行为，不宣称长期保存；总审计明确旧durable入口是被替代、保留独立入口，还是同动作双层职责。不得先写relation倒逼产品决定。",
+      "verification": "区分投送后未发送、发送成功、重载、切换会话、再次续工五个状态；证明每步真正保存与发送了什么。"
+    },
+    {
+      "id": "GD02",
+      "severity": "P2",
+      "name": "成功反馈只证明加入草稿",
+      "classification": "可沿现有前端owner薄改",
+      "evidence": [
+        {
+          "file": "E:\\TRAE项目\\LCOS0.1收口\\LCOS_GEN2_GUI_RECOVERY_20260926\\huabu\\apps\\web\\src\\lcos\\LcosHostOverlay.tsx",
+          "line": 272,
+          "finding": "addEntityToDraft+openComposer，无持久化或发送请求。"
+        },
+        {
+          "file": "E:\\TRAE项目\\LCOS0.1收口\\LCOS_GEN2_GUI_RECOVERY_20260926\\huabu\\apps\\web\\src\\lcos\\drop\\dropCommitRouter.ts",
+          "line": 92,
+          "finding": "成功文案“引用已交给会话”易被理解为已发送/长期记住。"
+        }
+      ],
+      "action": "保留preview=execute与无二次选择；成功反馈准确写“已加入该会话的待发送引用”，不要假装已传给Agent或已持久化。根代理拥有该文件，本调查不改。",
+      "verification": "drop一次只加一次引用、不自动send；Composer能看到真实引用；失败与位置失效不显示success。"
+    },
+    {
+      "id": "GD03",
+      "severity": "P1",
+      "name": "旧长期绑定已有真实写入能力",
+      "classification": "已有Core能力，不等于已闭环",
+      "evidence": [
+        {
+          "file": "E:\\TRAE项目\\LCOS0.1收口\\LCOS_GEN2_GUI_RECOVERY_20260926\\apps\\web-gen2\\src\\backend\\assembly.ts",
+          "line": 49,
+          "finding": "CoreAssemblyClient.apply可调用真实assembly/apply。"
+        },
+        {
+          "file": "E:\\TRAE项目\\LCOS0.1收口\\LCOS_GEN2_GUI_RECOVERY_20260926\\apps\\local-core\\src\\assembly-apply-service.ts",
+          "line": 398,
+          "finding": "linked session artifact为source，view/note/scope/workspace为target；MutationSafety upsertRelation并返回ChangeSet。"
+        }
+      ],
+      "action": "不要造Glyth数组。是否启用由GD01裁定；就算启用也必须与GD04/GD05一起完成。artifact来源必须是真实artifactViewId，不能把artifactId当viewId。",
+      "verification": "真实链接会话；正确项目；重复绑定幂等；未linked或无artifact endpoint诚实失败；源对象不移动。"
+    },
+    {
+      "id": "GD04",
+      "severity": "P1",
+      "name": "长期映射写入身份与Reach读取身份不一致",
+      "classification": "现有后端owner缺口；本轮不改Core",
+      "evidence": [
+        {
+          "file": "E:\\TRAE项目\\LCOS0.1收口\\LCOS_GEN2_GUI_RECOVERY_20260926\\apps\\local-core\\src\\assembly-apply-service.ts",
+          "line": 465,
+          "finding": "source=conversationArtifactId；target type=view/note/scope/workspace。"
+        },
+        {
+          "file": "E:\\TRAE项目\\LCOS0.1收口\\LCOS_GEN2_GUI_RECOVERY_20260926\\apps\\local-core\\src\\conversation-identity-service.ts",
+          "line": 141,
+          "finding": "conversationKeys仅connectedId/conversationRef/sessionId，未添加artifactId；target仅getArtifact，无view/note/scope/workspace解析。"
+        }
+      ],
+      "action": "由原Core owner统一规范化真实端点；不能在前端补一个假bound列表掩盖。这个不一致不取决于Glyth投送最终采用临时还是长期。",
+      "verification": "实际Assembly绑定后的Reach立即和重载后均含同一实体；分别覆盖view/note/scope/workspace且项目不串。"
+    },
+    {
+      "id": "GD05",
+      "severity": "P1",
+      "name": "长期映射未证明进入续工Context bundle",
+      "classification": "现有后端owner缺口/待产品语义确认",
+      "evidence": [
+        {
+          "file": "E:\\TRAE项目\\LCOS0.1收口\\LCOS_GEN2_GUI_RECOVERY_20260926\\apps\\local-core\\src\\conversation-continuation-service.ts",
+          "line": 362,
+          "finding": "send只取options.orderedReferences；随后经provider resolver与attach receipts。"
+        },
+        {
+          "file": "E:\\TRAE项目\\LCOS0.1收口\\LCOS_GEN2_GUI_RECOVERY_20260926\\apps\\local-core\\src\\conversation-continuation-service.ts",
+          "line": 982,
+          "finding": "continuationBundleForRowV1仅按显式orderedReferences或journal row refs组装，没有读conversation_context relation。"
+        }
+      ],
+      "action": "不要把“relation写成功”当“下一次Agent拿到了”。若长期映射必须进入后续协作，应由现有Core context resolver定义与显式refs合并、顺序、去重和移除行为，不建前端第二上下文真值。",
+      "verification": "绑定→关闭Composer→重新续工；检查真实provider attach/send receipt是否包含材料，以及取消绑定后不再携带。"
+    },
+    {
+      "id": "GD06",
+      "severity": "P2",
+      "name": "设计证明与浏览器动作证明分开归档",
+      "classification": "验证缺项",
+      "evidence": [
+        {
+          "file": "E:\\TRAE项目\\LCOS0.1收口\\GUI全量对齐_20260926\\inventory-nodes.json",
+          "finding": "N31 对应Figma5101:1243与5344:999；外观接收动画不证明durable mapping。"
+        }
+      ],
+      "action": "目前标“draft链已接，长期语义与链路未闭环”，不标全完成。保留当前真实轻反馈、空间命中与来源不移动。",
+      "verification": "当前已跑的指针投送证明交互；未来长期链路需独立真实API/重载/send回执证据。"
+    }
+  ]
+}

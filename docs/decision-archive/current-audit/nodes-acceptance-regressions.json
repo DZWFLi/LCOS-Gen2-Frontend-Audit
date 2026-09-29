@@ -1,0 +1,67 @@
+{
+  "date": "2026-09-26",
+  "workingDirectory": "E:\\TRAE项目\\LCOS0.1收口\\LCOS_GEN2_GUI_RECOVERY_20260926\\huabu\\apps\\web",
+  "groups": [
+    {
+      "name": "首屏身份、项目隔离和实际caller",
+      "files": [
+        "E:\\TRAE项目\\LCOS0.1收口\\LCOS_GEN2_GUI_RECOVERY_20260926\\huabu\\apps\\web\\src\\lcos\\useLcosCanvasProps.project.test.tsx",
+        "E:\\TRAE项目\\LCOS0.1收口\\LCOS_GEN2_GUI_RECOVERY_20260926\\huabu\\apps\\web\\src\\lcos\\lcosReferenceState.project.test.ts",
+        "E:\\TRAE项目\\LCOS0.1收口\\LCOS_GEN2_GUI_RECOVERY_20260926\\huabu\\apps\\web\\src\\lcos\\host\\CanvasHostBoundary.test.tsx",
+        "E:\\TRAE项目\\LCOS0.1收口\\LCOS_GEN2_GUI_RECOVERY_20260926\\huabu\\apps\\web\\src\\lcos\\nodes\\BoundNodeLoadingBody.test.tsx",
+        "E:\\TRAE项目\\LCOS0.1收口\\LCOS_GEN2_GUI_RECOVERY_20260926\\huabu\\apps\\web\\src\\lcos\\nodes\\createLcosNodePresentationSeam.test.tsx",
+        "E:\\TRAE项目\\LCOS0.1收口\\LCOS_GEN2_GUI_RECOVERY_20260926\\huabu\\apps\\web\\src\\lcos\\nodes\\NodeMaterialCaller.test.tsx"
+      ],
+      "purpose": "早读canonical身份/空绑定放行/失败重试/项目切换/已绑定不回原生白卡；Reader精确目标；Workflow exact scope+sourceNode，缺canvas与错scope不进入。"
+    },
+    {
+      "name": "真实材料、媒体和引用角标",
+      "files": [
+        "E:\\TRAE项目\\LCOS0.1收口\\LCOS_GEN2_GUI_RECOVERY_20260926\\huabu\\apps\\web\\src\\lcos\\nodes\\stageProjectedSources.test.ts",
+        "E:\\TRAE项目\\LCOS0.1收口\\LCOS_GEN2_GUI_RECOVERY_20260926\\huabu\\apps\\web\\src\\lcos\\nodes\\LcosSpeciesBodies.test.tsx",
+        "E:\\TRAE项目\\LCOS0.1收口\\LCOS_GEN2_GUI_RECOVERY_20260926\\huabu\\apps\\web\\src\\lcos\\nodes\\NodeColorPinMarkers.test.tsx",
+        "E:\\TRAE项目\\LCOS0.1收口\\LCOS_GEN2_GUI_RECOVERY_20260926\\huabu\\apps\\web\\src\\lcos\\nodes\\NodeReferenceMarker.test.tsx",
+        "E:\\TRAE项目\\LCOS0.1收口\\LCOS_GEN2_GUI_RECOVERY_20260926\\huabu\\apps\\web\\src\\lcos\\nodes\\source\\SourceMediaBehavior.test.tsx",
+        "E:\\TRAE项目\\LCOS0.1收口\\LCOS_GEN2_GUI_RECOVERY_20260926\\huabu\\apps\\web\\src\\lcos\\nodes\\source\\PdfSourcePreview.test.tsx",
+        "E:\\TRAE项目\\LCOS0.1收口\\LCOS_GEN2_GUI_RECOVERY_20260926\\huabu\\apps\\web\\src\\lcos\\ui\\source\\ImageSourceView.test.tsx",
+        "E:\\TRAE项目\\LCOS0.1收口\\LCOS_GEN2_GUI_RECOVERY_20260926\\huabu\\apps\\web\\src\\lcos\\ui\\source\\SourceViews.test.tsx"
+      ],
+      "purpose": "真实sourceRunId与MIME，不覆盖已编辑源；图片错误重试；audio/video机械与事件隔离；PDF真实src；Pin来自membership；取消引用不删节点。集合测试只证明已存在descriptor的消费端，不能证明普通集合生产。"
+    },
+    {
+      "name": "远中近密度连续性",
+      "files": [
+        "E:\\TRAE项目\\LCOS0.1收口\\LCOS_GEN2_GUI_RECOVERY_20260926\\huabu\\apps\\web\\src\\lcos\\ui\\source\\materialReadability.test.tsx",
+        "E:\\TRAE项目\\LCOS0.1收口\\LCOS_GEN2_GUI_RECOVERY_20260926\\huabu\\apps\\web\\src\\lcos\\ui\\source\\sourceTextLayout.test.tsx",
+        "E:\\TRAE项目\\LCOS0.1收口\\LCOS_GEN2_GUI_RECOVERY_20260926\\huabu\\apps\\web\\src\\lcos\\ui\\glyth\\GlythBodyView.test.tsx",
+        "E:\\TRAE项目\\LCOS0.1收口\\LCOS_GEN2_GUI_RECOVERY_20260926\\huabu\\apps\\web\\src\\lcos\\ui\\glyth\\glythPresence.test.ts",
+        "E:\\TRAE项目\\LCOS0.1收口\\LCOS_GEN2_GUI_RECOVERY_20260926\\huabu\\apps\\web\\src\\lcos\\nodes\\glythGeometry.test.ts"
+      ],
+      "purpose": "单一density下真实句子/不伪摘要/屏幕字号边界；Glyth连续尺寸、不改变世界几何；真实状态外观仍保留。"
+    },
+    {
+      "name": "Glyth状态动作与单一工作窗",
+      "files": [
+        "E:\\TRAE项目\\LCOS0.1收口\\LCOS_GEN2_GUI_RECOVERY_20260926\\huabu\\apps\\web\\src\\lcos\\navigation\\GlythStateActions.test.tsx",
+        "E:\\TRAE项目\\LCOS0.1收口\\LCOS_GEN2_GUI_RECOVERY_20260926\\huabu\\apps\\web\\src\\lcos\\navigation\\focusConversationSection.test.ts"
+      ],
+      "purpose": "ready继续/打开；运行查看进度；真pending回答与复核；同一WorkView，不新建窗口系统。"
+    },
+    {
+      "name": "多人消费同一会话SSE",
+      "files": [
+        "E:\\TRAE项目\\LCOS0.1收口\\LCOS_GEN2_GUI_RECOVERY_20260926\\huabu\\apps\\web\\src\\lcos\\collaboration\\collaborationSessionStore.test.ts"
+      ],
+      "purpose": "watch/unwatch引用计数；同项目多会话；最后消费者才关SSE；保留导航agent后加的project监听生命周期。"
+    }
+  ],
+  "sharedPackageFiles": [
+    "E:\\TRAE项目\\LCOS0.1收口\\LCOS_GEN2_GUI_RECOVERY_20260926\\apps\\web-gen2\\test\\node-command-model.test.ts",
+    "E:\\TRAE项目\\LCOS0.1收口\\LCOS_GEN2_GUI_RECOVERY_20260926\\apps\\web-gen2\\test\\glyth-presentation.test.ts"
+  ],
+  "limits": [
+    "ordinary collection producer/target/expand not complete",
+    "real video/PDF/web fixture E2E not complete",
+    "durable Glyth mapping not complete"
+  ]
+}

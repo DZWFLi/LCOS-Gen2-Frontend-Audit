@@ -1,0 +1,56 @@
+[
+  {
+    "width": 1440,
+    "geometry": {
+      "count": 24,
+      "overlaps": 0,
+      "outside": 0,
+      "missed": []
+    },
+    "target": "nav12-test-01",
+    "request": "nav12-test-01",
+    "node": {
+      "x": 1316,
+      "y": 350,
+      "width": 100,
+      "height": 60
+    },
+    "selected": 24
+  },
+  {
+    "width": 390,
+    "geometry": {
+      "count": 24,
+      "overlaps": 0,
+      "outside": 0,
+      "missed": []
+    },
+    "target": "nav12-test-16",
+    "request": "nav12-test-16",
+    "node": {
+      "x": 266,
+      "y": 380,
+      "width": 100,
+      "height": 60
+    },
+    "selected": 24
+  },
+  {
+    "width": 320,
+    "geometry": {
+      "count": 24,
+      "overlaps": 0,
+      "outside": 0,
+      "missed": []
+    },
+    "target": "nav12-test-23",
+    "request": "nav12-test-23",
+    "node": {
+      "x": 196,
+      "y": 24,
+      "width": 100,
+      "height": 60
+    },
+    "selected": 24
+  }
+]

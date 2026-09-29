@@ -1,0 +1,713 @@
+{
+  "date": "2026-09-26",
+  "domain": "装配、窗口、Reader、Context、Workflow、WorkView及T7",
+  "scopeNote": "源代码盘点，不等于逐状态浏览器验收；风险项目需复现。原话纠正：E:/Codex 项目/OS开发/docs/audit/GEN2_ContextWorkflow_原话回收与FigmaT5增量裁决_20260911.md",
+  "items": [
+    {
+      "id": "S01",
+      "name": "装配四来源、搜索与分页",
+      "status": "保留",
+      "severity": "无",
+      "figma": [
+        {
+          "nodeId": "5046:64"
+        },
+        {
+          "nodeId": "5102:1151"
+        },
+        {
+          "nodeId": "5346:1416"
+        }
+      ],
+      "productionPaths": [
+        "E:/TRAE项目/LCOS0.1收口/LCOS_GEN2_GUI_RECOVERY_20260926/huabu/apps/web/src/lcos/professional/AssemblyBody.tsx"
+      ],
+      "evidence": "真实服务端搜索、cursor、取消过期请求已接通。",
+      "browserVerified": false
+    },
+    {
+      "id": "S02",
+      "name": "装配瀑布流与预览",
+      "status": "部分接通",
+      "severity": "P2",
+      "figma": [
+        {
+          "nodeId": "5346:1666"
+        },
+        {
+          "nodeId": "5346:1885"
+        },
+        {
+          "nodeId": "5202:369"
+        },
+        {
+          "nodeId": "5202:678"
+        }
+      ],
+      "productionPaths": [
+        "E:/TRAE项目/LCOS0.1收口/LCOS_GEN2_GUI_RECOVERY_20260926/huabu/apps/web/src/lcos/professional/AssemblyBody.tsx",
+        "E:/TRAE项目/LCOS0.1收口/LCOS_GEN2_GUI_RECOVERY_20260926/huabu/apps/web/src/lcos/ui/professional/professional-assembly.css"
+      ],
+      "evidence": "真实媒体、CSS columns已有；失效封面、窄窗与大量素材待实测。",
+      "browserVerified": false
+    },
+    {
+      "id": "S03",
+      "name": "装配当前目标跟随",
+      "status": "待复现风险",
+      "severity": "P1",
+      "figma": [
+        {
+          "nodeId": "5289:1960"
+        },
+        {
+          "nodeId": "5289:2307"
+        }
+      ],
+      "productionPaths": [
+        "E:/TRAE项目/LCOS0.1收口/LCOS_GEN2_GUI_RECOVERY_20260926/huabu/apps/web/src/lcos/professional/AssemblyBody.tsx",
+        "E:/TRAE项目/LCOS0.1收口/LCOS_GEN2_GUI_RECOVERY_20260926/huabu/apps/web/src/lcos/shell/LcosProjectShell.tsx"
+      ],
+      "evidence": "打开后切现场未查到目标同步；须区分显式锁定和当前现场跟随，防止投到旧现场。",
+      "browserVerified": false
+    },
+    {
+      "id": "S04",
+      "name": "装配Drop、批量取用和逐项回执",
+      "status": "保留",
+      "severity": "无",
+      "figma": [
+        {
+          "nodeId": "5289:2659"
+        },
+        {
+          "nodeId": "5346:1885"
+        }
+      ],
+      "productionPaths": [
+        "E:/TRAE项目/LCOS0.1收口/LCOS_GEN2_GUI_RECOVERY_20260926/huabu/apps/web/src/lcos/professional/AssemblyBody.tsx"
+      ],
+      "evidence": "真实acquireDrop/applySources及部分成功回执已接通，不能删减反馈。",
+      "browserVerified": false
+    },
+    {
+      "id": "S05",
+      "name": "装配集合跨视图取用",
+      "status": "部分接通",
+      "severity": "P2",
+      "figma": [
+        {
+          "nodeId": "5333:96"
+        },
+        {
+          "nodeId": "5334:46"
+        },
+        {
+          "nodeId": "5346:1416"
+        },
+        {
+          "nodeId": "5346:1666"
+        },
+        {
+          "nodeId": "5346:1885"
+        }
+      ],
+      "productionPaths": [
+        "E:/TRAE项目/LCOS0.1收口/LCOS_GEN2_GUI_RECOVERY_20260926/huabu/apps/web/src/lcos/professional/AssemblyBody.tsx"
+      ],
+      "evidence": "进入和Portal入口已接；与节点及当前会话语义并表。",
+      "browserVerified": false
+    },
+    {
+      "id": "S06",
+      "name": "专业窗口浮动、停靠和分组",
+      "status": "保留",
+      "severity": "无",
+      "figma": [
+        {
+          "nodeId": "5388:27165"
+        },
+        {
+          "nodeId": "5387:331"
+        },
+        {
+          "nodeId": "5103:1331"
+        }
+      ],
+      "productionPaths": [
+        "E:/TRAE项目/LCOS0.1收口/LCOS_GEN2_GUI_RECOVERY_20260926/huabu/apps/web/src/lcos/professional/ProfessionalWindowStage.tsx"
+      ],
+      "evidence": "统一window/region机械已实现，禁止引入第二套。",
+      "browserVerified": false
+    },
+    {
+      "id": "S07",
+      "name": "拖窗期间实时避让",
+      "status": "需修复",
+      "severity": "P1",
+      "figma": [
+        {
+          "nodeId": "5388:27165"
+        }
+      ],
+      "productionPaths": [
+        "E:/TRAE项目/LCOS0.1收口/LCOS_GEN2_GUI_RECOVERY_20260926/huabu/apps/web/src/lcos/professional/ProfessionalWindowStage.tsx"
+      ],
+      "evidence": "纯位移只改DOM，其他HUD占用矩形可能到pointerup才更新；在原发布器同步发布。",
+      "browserVerified": false
+    },
+    {
+      "id": "S08",
+      "name": "窄屏与多窗布局",
+      "status": "待复现风险",
+      "severity": "P1",
+      "figma": [
+        {
+          "nodeId": "5388:27165"
+        }
+      ],
+      "productionPaths": [
+        "E:/TRAE项目/LCOS0.1收口/LCOS_GEN2_GUI_RECOVERY_20260926/huabu/apps/web/src/lcos/professional/professionalWindowStageLayout.ts"
+      ],
+      "evidence": "最小高度和窗口数量可能导致溢出，验证3至6窗口和小高度。",
+      "browserVerified": false
+    },
+    {
+      "id": "S09",
+      "name": "Reader身份、修订、只读与返回",
+      "status": "保留",
+      "severity": "无",
+      "figma": [
+        {
+          "nodeId": "5388:27411"
+        },
+        {
+          "nodeId": "5046:65"
+        },
+        {
+          "nodeId": "5046:66"
+        }
+      ],
+      "productionPaths": [
+        "E:/TRAE项目/LCOS0.1收口/LCOS_GEN2_GUI_RECOVERY_20260926/huabu/apps/web/src/lcos/professional/ArtifactReaderBody.tsx"
+      ],
+      "evidence": "真实Artifact/revision/FileRecord与返回链保留。",
+      "browserVerified": false
+    },
+    {
+      "id": "S10",
+      "name": "Reader实际内容缩放",
+      "status": "需修复",
+      "severity": "P1",
+      "figma": [
+        {
+          "nodeId": "5388:27411"
+        }
+      ],
+      "productionPaths": [
+        "E:/TRAE项目/LCOS0.1收口/LCOS_GEN2_GUI_RECOVERY_20260926/huabu/apps/web/src/lcos/professional/ArtifactReaderBody.tsx",
+        "E:/TRAE项目/LCOS0.1收口/LCOS_GEN2_GUI_RECOVERY_20260926/huabu/apps/web/src/lcos/ui/professional/ReaderContentView.tsx"
+      ],
+      "evidence": "按钮更改zoom，真实Markdown/image分支未消费；不得叠加两套缩放。",
+      "browserVerified": false
+    },
+    {
+      "id": "S11",
+      "name": "双Reader与内容页签",
+      "status": "缺生产调用",
+      "severity": "P1",
+      "figma": [
+        {
+          "nodeId": "5121:1522"
+        }
+      ],
+      "productionPaths": [
+        "E:/TRAE项目/LCOS0.1收口/LCOS_GEN2_GUI_RECOVERY_20260926/huabu/apps/web/src/lcos/ui/professional/ReaderGroupView.tsx",
+        "E:/TRAE项目/LCOS0.1收口/LCOS_GEN2_GUI_RECOVERY_20260926/huabu/apps/web/src/lcos/ui/professional/ReaderContentTabsView.tsx"
+      ],
+      "evidence": "组件存在不代表挂入生产；沿现有窗口分组接线。",
+      "browserVerified": false
+    },
+    {
+      "id": "S12",
+      "name": "阅读位置恢复跨度",
+      "status": "需补证",
+      "severity": "P2",
+      "figma": [
+        {
+          "nodeId": "5388:27411"
+        }
+      ],
+      "productionPaths": [
+        "E:/TRAE项目/LCOS0.1收口/LCOS_GEN2_GUI_RECOVERY_20260926/huabu/apps/web/src/lcos/professional/ArtifactReaderBody.tsx",
+        "E:/TRAE项目/LCOS0.1收口/LCOS_GEN2_GUI_RECOVERY_20260926/huabu/apps/web/src/lcos/shell/lcosShellStore.ts"
+      ],
+      "evidence": "当前仅内存，不把刷新后恢复冒充已实现。",
+      "browserVerified": false
+    },
+    {
+      "id": "S13",
+      "name": "Reader媒体种类覆盖",
+      "status": "缺少部分LCOS调用",
+      "severity": "P1",
+      "figma": [
+        {
+          "nodeId": "5051:4365"
+        },
+        {
+          "nodeId": "5051:4623"
+        },
+        {
+          "nodeId": "5051:4770"
+        },
+        {
+          "nodeId": "5122:3070"
+        },
+        {
+          "nodeId": "5122:3305"
+        },
+        {
+          "nodeId": "5122:3442"
+        },
+        {
+          "nodeId": "5122:3582"
+        }
+      ],
+      "productionPaths": [
+        "E:/TRAE项目/LCOS0.1收口/LCOS_GEN2_GUI_RECOVERY_20260926/huabu/apps/web/src/lcos/professional/ArtifactReaderBody.tsx"
+      ],
+      "evidence": "PDF/音频/视频/网页/HTML需核对并复用Huabu已有renderer，不能声称底层不存在。",
+      "browserVerified": false
+    },
+    {
+      "id": "S14",
+      "name": "Reader选区引用归属",
+      "status": "待复现风险",
+      "severity": "P1",
+      "figma": [
+        {
+          "nodeId": "5388:27411"
+        }
+      ],
+      "productionPaths": [
+        "E:/TRAE项目/LCOS0.1收口/LCOS_GEN2_GUI_RECOVERY_20260926/huabu/apps/web/src/lcos/professional/ArtifactReaderBody.tsx"
+      ],
+      "evidence": "window.getSelection未约束本Reader；跨窗口文字不能引用为当前材料。",
+      "browserVerified": false
+    },
+    {
+      "id": "S15",
+      "name": "Context真实现场、集合进入和返回",
+      "status": "保留",
+      "severity": "无",
+      "figma": [
+        {
+          "nodeId": "5388:21602"
+        },
+        {
+          "nodeId": "5139:2885"
+        },
+        {
+          "nodeId": "5144:675"
+        }
+      ],
+      "productionPaths": [
+        "E:/TRAE项目/LCOS0.1收口/LCOS_GEN2_GUI_RECOVERY_20260926/huabu/apps/web/src/lcos/surfaces/context/ContextWorksite.tsx",
+        "E:/TRAE项目/LCOS0.1收口/LCOS_GEN2_GUI_RECOVERY_20260926/huabu/apps/web/src/lcos/navigation/childWorksiteNavigation.ts"
+      ],
+      "evidence": "后续原话允许点击正文进入，不能按旧V3改成只准双击。",
+      "browserVerified": false
+    },
+    {
+      "id": "S16",
+      "name": "Context光幕开合与注意力",
+      "status": "部分接通",
+      "severity": "P1",
+      "figma": [
+        {
+          "nodeId": "5388:24294"
+        },
+        {
+          "nodeId": "5139:4194"
+        },
+        {
+          "nodeId": "5139:182"
+        },
+        {
+          "nodeId": "5140:376"
+        }
+      ],
+      "productionPaths": [
+        "E:/TRAE项目/LCOS0.1收口/LCOS_GEN2_GUI_RECOVERY_20260926/huabu/apps/web/src/lcos/surfaces/context/ContextAtlasStage.tsx",
+        "E:/TRAE项目/LCOS0.1收口/LCOS_GEN2_GUI_RECOVERY_20260926/huabu/apps/web/src/lcos/ui/context/ContextAtlasView.tsx"
+      ],
+      "evidence": "开合、Esc已接；旧工具条与HUD前后层缺协调。",
+      "browserVerified": false
+    },
+    {
+      "id": "S17",
+      "name": "Atlas分页与真实搜索",
+      "status": "需修复",
+      "severity": "P1",
+      "figma": [
+        {
+          "nodeId": "5388:24294"
+        }
+      ],
+      "productionPaths": [
+        "E:/TRAE项目/LCOS0.1收口/LCOS_GEN2_GUI_RECOVERY_20260926/huabu/apps/web/src/lcos/surfaces/context/ContextAtlasStage.tsx"
+      ],
+      "evidence": "单次getWarehouse忽略nextCursor，第51项之后的集合可能消失。",
+      "browserVerified": false
+    },
+    {
+      "id": "S18",
+      "name": "Atlas时间/性质组织和邻域焦点",
+      "status": "部分缺失",
+      "severity": "P1",
+      "figma": [
+        {
+          "nodeId": "5161:687"
+        },
+        {
+          "nodeId": "5161:2133"
+        },
+        {
+          "nodeId": "5333:96"
+        }
+      ],
+      "productionPaths": [
+        "E:/TRAE项目/LCOS0.1收口/LCOS_GEN2_GUI_RECOVERY_20260926/huabu/apps/web/src/lcos/surfaces/context/ContextAtlasStage.tsx",
+        "E:/TRAE项目/LCOS0.1收口/LCOS_GEN2_GUI_RECOVERY_20260926/huabu/apps/web/src/lcos/surfaces/context/contextAtlasSemantics.ts"
+      ],
+      "evidence": "目前unclassified且组织恒未指定；只能消费真实时间/性质事实。",
+      "browserVerified": false
+    },
+    {
+      "id": "S19",
+      "name": "集合文件夹旧白卡污染",
+      "status": "需修复",
+      "severity": "P2",
+      "figma": [
+        {
+          "nodeId": "5333:96"
+        },
+        {
+          "nodeId": "5388:24294"
+        }
+      ],
+      "productionPaths": [
+        "E:/TRAE项目/LCOS0.1收口/LCOS_GEN2_GUI_RECOVERY_20260926/huabu/apps/web/src/lcos/ui/context/ContextCollectionView.tsx",
+        "E:/TRAE项目/LCOS0.1收口/LCOS_GEN2_GUI_RECOVERY_20260926/huabu/apps/web/src/lcos/ui/families/lcos-families.css"
+      ],
+      "evidence": "同family命中旧白背景/边框/内边距/阴影，形成多一层卡。",
+      "browserVerified": false
+    },
+    {
+      "id": "S20",
+      "name": "集合合并、拆分、删除壳和拖用",
+      "status": "缺少部分入口",
+      "severity": "P1",
+      "figma": [
+        {
+          "nodeId": "5341:675"
+        },
+        {
+          "nodeId": "5341:854"
+        },
+        {
+          "nodeId": "5341:1391"
+        }
+      ],
+      "productionPaths": [
+        "E:/TRAE项目/LCOS0.1收口/LCOS_GEN2_GUI_RECOVERY_20260926/huabu/apps/web/src/lcos/surfaces/context/ContextAtlasStage.tsx"
+      ],
+      "evidence": "需复用真实集合命令；删壳与删成员分开，不照抄旧V3层级模型。",
+      "browserVerified": false
+    },
+    {
+      "id": "S21",
+      "name": "时间轨真实数据与定位",
+      "status": "保留",
+      "severity": "无",
+      "figma": [
+        {
+          "nodeId": "5388:25701"
+        },
+        {
+          "nodeId": "5156:504"
+        },
+        {
+          "nodeId": "5156:1871"
+        },
+        {
+          "nodeId": "5156:3249"
+        }
+      ],
+      "productionPaths": [
+        "E:/TRAE项目/LCOS0.1收口/LCOS_GEN2_GUI_RECOVERY_20260926/huabu/apps/web/src/lcos/surfaces/context/TemporalRail.tsx"
+      ],
+      "evidence": "索引、定位预览、滚轮、键盘和多目标已有。",
+      "browserVerified": false
+    },
+    {
+      "id": "S22",
+      "name": "时间轨范围与失败重试",
+      "status": "需修复",
+      "severity": "P1",
+      "figma": [
+        {
+          "nodeId": "5388:25701"
+        }
+      ],
+      "productionPaths": [
+        "E:/TRAE项目/LCOS0.1收口/LCOS_GEN2_GUI_RECOVERY_20260926/huabu/apps/web/src/lcos/surfaces/context/TemporalRail.tsx",
+        "E:/TRAE项目/LCOS0.1收口/LCOS_GEN2_GUI_RECOVERY_20260926/huabu/apps/web/src/lcos/surfaces/context/ContextWorksite.tsx"
+      ],
+      "evidence": "最终裁决为child内；现在无child限制，retry也未从caller接入。",
+      "browserVerified": false
+    },
+    {
+      "id": "S23",
+      "name": "Workflow真实现场与跨视图入口",
+      "status": "部分接通",
+      "severity": "P2",
+      "figma": [
+        {
+          "nodeId": "5388:22998"
+        },
+        {
+          "nodeId": "5140:1765"
+        },
+        {
+          "nodeId": "5140:3012"
+        },
+        {
+          "nodeId": "5140:4300"
+        },
+        {
+          "nodeId": "5340:146"
+        }
+      ],
+      "productionPaths": [
+        "E:/TRAE项目/LCOS0.1收口/LCOS_GEN2_GUI_RECOVERY_20260926/huabu/apps/web/src/lcos/surfaces/workflow/WorkflowWorksite.tsx",
+        "E:/TRAE项目/LCOS0.1收口/LCOS_GEN2_GUI_RECOVERY_20260926/huabu/apps/web/src/lcos/shell/LcosProjectShell.tsx"
+      ],
+      "evidence": "Main与Workflow有手牌；Main的Context Atlas对等入口待补。",
+      "browserVerified": false
+    },
+    {
+      "id": "S24",
+      "name": "手牌空白关闭",
+      "status": "需修复",
+      "severity": "P1",
+      "figma": [
+        {
+          "nodeId": "5140:3012"
+        },
+        {
+          "nodeId": "5343:831"
+        }
+      ],
+      "productionPaths": [
+        "E:/TRAE项目/LCOS0.1收口/LCOS_GEN2_GUI_RECOVERY_20260926/huabu/apps/web/src/lcos/ui/workflow/WorkflowHandView.tsx",
+        "E:/TRAE项目/LCOS0.1收口/LCOS_GEN2_GUI_RECOVERY_20260926/huabu/apps/web/src/lcos/ui/workflow/workflow-hand.css"
+      ],
+      "evidence": "缺DismissPlane，空白可能穿到画布；保留Esc并测试Drop不受损。",
+      "browserVerified": false
+    },
+    {
+      "id": "S25",
+      "name": "Workflow卡池分页与搜索",
+      "status": "需修复",
+      "severity": "P1",
+      "figma": [
+        {
+          "nodeId": "5335:110"
+        },
+        {
+          "nodeId": "5140:3012"
+        }
+      ],
+      "productionPaths": [
+        "E:/TRAE项目/LCOS0.1收口/LCOS_GEN2_GUI_RECOVERY_20260926/huabu/apps/web/src/lcos/surfaces/workflow/WorkflowCardPool.tsx"
+      ],
+      "evidence": "一次getWarehouse和本地title筛选，无法搜页外对象。",
+      "browserVerified": false
+    },
+    {
+      "id": "S26",
+      "name": "手牌轻预览与区域/现场进入",
+      "status": "部分缺失",
+      "severity": "P1",
+      "figma": [
+        {
+          "nodeId": "5344:752"
+        },
+        {
+          "nodeId": "5344:999"
+        },
+        {
+          "nodeId": "5335:110"
+        }
+      ],
+      "productionPaths": [
+        "E:/TRAE项目/LCOS0.1收口/LCOS_GEN2_GUI_RECOVERY_20260926/huabu/apps/web/src/lcos/surfaces/workflow/WorkflowCardPool.tsx"
+      ],
+      "evidence": "双击进入已接；单击只有摘要，区域定位分支缺失。",
+      "browserVerified": false
+    },
+    {
+      "id": "S27",
+      "name": "取用到当前会话与续工",
+      "status": "需修复",
+      "severity": "P1",
+      "figma": [
+        {
+          "nodeId": "5170:896"
+        },
+        {
+          "nodeId": "5170:2235"
+        },
+        {
+          "nodeId": "5352:1377"
+        },
+        {
+          "nodeId": "5352:1502"
+        },
+        {
+          "nodeId": "5352:1707"
+        }
+      ],
+      "productionPaths": [
+        "E:/TRAE项目/LCOS0.1收口/LCOS_GEN2_GUI_RECOVERY_20260926/huabu/apps/web/src/lcos/surfaces/workflow/WorkflowCardPool.tsx"
+      ],
+      "evidence": "有当前receiver仍要求重新选择；复用既有会话owner。",
+      "browserVerified": false
+    },
+    {
+      "id": "S28",
+      "name": "手牌扇形/网格和高数量密度",
+      "status": "需修复",
+      "severity": "P2",
+      "figma": [
+        {
+          "nodeId": "5140:3012"
+        },
+        {
+          "nodeId": "5343:630"
+        }
+      ],
+      "productionPaths": [
+        "E:/TRAE项目/LCOS0.1收口/LCOS_GEN2_GUI_RECOVERY_20260926/huabu/apps/web/src/lcos/ui/workflow/workflow-hand.css"
+      ],
+      "evidence": "旧选择器被lane包装绕过，多量仍旋转横向滚动。",
+      "browserVerified": false
+    },
+    {
+      "id": "S29",
+      "name": "真实会话、继续/委派/分支和等待输入",
+      "status": "保留机制，需改呈现",
+      "severity": "P2",
+      "figma": [
+        {
+          "nodeId": "5289:6378"
+        },
+        {
+          "nodeId": "5278:229"
+        },
+        {
+          "nodeId": "5279:281"
+        },
+        {
+          "nodeId": "5280:669"
+        },
+        {
+          "nodeId": "5286:1259"
+        }
+      ],
+      "productionPaths": [
+        "E:/TRAE项目/LCOS0.1收口/LCOS_GEN2_GUI_RECOVERY_20260926/huabu/apps/web/src/lcos/professional/ConversationWorkViewBody.tsx",
+        "E:/TRAE项目/LCOS0.1收口/LCOS_GEN2_GUI_RECOVERY_20260926/huabu/apps/web/src/lcos/professional/WaitingInputSection.tsx"
+      ],
+      "evidence": "真实projection、timeline、SSE、四续工和capability已接；不能为变简洁删除语义。",
+      "browserVerified": false
+    },
+    {
+      "id": "S30",
+      "name": "会话切换隔离与恢复入口",
+      "status": "需修复",
+      "severity": "P1",
+      "figma": [
+        {
+          "nodeId": "5287:1539"
+        },
+        {
+          "nodeId": "5289:6378"
+        }
+      ],
+      "productionPaths": [
+        "E:/TRAE项目/LCOS0.1收口/LCOS_GEN2_GUI_RECOVERY_20260926/huabu/apps/web/src/lcos/professional/ProfessionalWindowStage.tsx",
+        "E:/TRAE项目/LCOS0.1收口/LCOS_GEN2_GUI_RECOVERY_20260926/huabu/apps/web/src/lcos/professional/ConversationWorkViewBody.tsx"
+      ],
+      "evidence": "body无target key且diagnostics无请求隔离，迟到结果可能串会话；恢复动作藏在Diagnostics。",
+      "browserVerified": false
+    },
+    {
+      "id": "S31",
+      "name": "结果回流、归档和恢复",
+      "status": "保留机制，需补视觉",
+      "severity": "P2",
+      "figma": [
+        {
+          "nodeId": "5122:2949"
+        },
+        {
+          "nodeId": "5122:3718"
+        },
+        {
+          "nodeId": "5122:3876"
+        },
+        {
+          "nodeId": "5287:1539"
+        }
+      ],
+      "productionPaths": [
+        "E:/TRAE项目/LCOS0.1收口/LCOS_GEN2_GUI_RECOVERY_20260926/huabu/apps/web/src/lcos/professional/ArtifactReturnSection.tsx",
+        "E:/TRAE项目/LCOS0.1收口/LCOS_GEN2_GUI_RECOVERY_20260926/huabu/apps/web/src/lcos/professional/ArchiveBody.tsx",
+        "E:/TRAE项目/LCOS0.1收口/LCOS_GEN2_GUI_RECOVERY_20260926/huabu/apps/web/src/lcos/professional/RecoverySection.tsx"
+      ],
+      "evidence": "真实review/accept/reject/retry/restore存在，媒体比较和用户文案不足。",
+      "browserVerified": false
+    },
+    {
+      "id": "S32",
+      "name": "Portal、T7工具与历史专业页",
+      "status": "部分接通/部分预留",
+      "severity": "P1",
+      "figma": [
+        {
+          "nodeId": "5348:1151"
+        },
+        {
+          "nodeId": "5281:1172"
+        },
+        {
+          "nodeId": "5282:1079"
+        },
+        {
+          "nodeId": "5287:1838"
+        },
+        {
+          "nodeId": "5300:3344"
+        }
+      ],
+      "productionPaths": [
+        "E:/TRAE项目/LCOS0.1收口/LCOS_GEN2_GUI_RECOVERY_20260926/huabu/apps/web/src/lcos/professional/PortalPreviewBody.tsx",
+        "E:/TRAE项目/LCOS0.1收口/LCOS_GEN2_GUI_RECOVERY_20260926/huabu/apps/web/src/lcos/professional/ProfessionalWindowStage.tsx"
+      ],
+      "evidence": "Portal真实六态和局部缩放已有；三个工具返回不可用；桌面P1预留不能当Web现有故障。",
+      "browserVerified": false
+    }
+  ]
+}

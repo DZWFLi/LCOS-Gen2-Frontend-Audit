@@ -1,0 +1,97 @@
+{
+  "date": "2026-09-26",
+  "report": "nodes-implementation.md",
+  "tests": {
+    "domainFiles": 15,
+    "domainTests": 58,
+    "additionalReaderRegression": 1,
+    "typecheck": "passed",
+    "browserEvidence": [
+      "nodes-media-main.png",
+      ".playwright-cli/page-2026-09-26T06-35-52-036Z.yml"
+    ]
+  },
+  "updates": [
+    {
+      "id": "N01",
+      "status": "保留唯一junction；Video/Web补真实caller，未绑定仍native"
+    },
+    {
+      "id": "N02",
+      "status": "几何内字号适配与4档文本密度完成"
+    },
+    {
+      "id": "N05",
+      "status": "PDF真实首页完成；Office/PPT仍缺"
+    },
+    {
+      "id": "N06",
+      "status": "实际src contain与load/error/retry完成，真实Main已见"
+    },
+    {
+      "id": "N07",
+      "status": "实际audio播放/seek/metadata及真实采样波形；浏览器播放已见"
+    },
+    {
+      "id": "N08",
+      "status": "video真实caller与原生控件完成，真实E2E待样本"
+    },
+    {
+      "id": "N09",
+      "status": "web真实caller与preview API完成，真实E2E待样本"
+    },
+    {
+      "id": "N12",
+      "status": "sourceRunId来源透传并保留媒体；审核状态仍缺真实producer"
+    },
+    {
+      "id": "N14",
+      "status": "canonical Pin membership角标完成，已与导航target语义统一"
+    },
+    {
+      "id": "N15",
+      "status": "canonical draft引用角标完成，不等同selection"
+    },
+    {
+      "id": "N17",
+      "status": "正确folder消费端完成，普通集合producer缺口"
+    },
+    {
+      "id": "N18",
+      "status": "展开owner仍缺，未造第二系统"
+    },
+    {
+      "id": "N19",
+      "status": "Assembly无collection目标；已告主代理，不造假的Drop成功"
+    },
+    {
+      "id": "N21",
+      "status": "Main workflow书册去白卡并保留导航，未造封面"
+    },
+    {
+      "id": "N22",
+      "status": "多Workspace显式选择，单Workspace保留child navigation"
+    },
+    {
+      "id": "N26",
+      "status": "4档信息变化已接唯一density resolver"
+    },
+    {
+      "id": "N28",
+      "status": "当前geometry保持，文字集合只内部适配"
+    },
+    {
+      "id": "N40",
+      "status": "真实source双击Reader保留；media/button手势不误开"
+    },
+    {
+      "id": "N41",
+      "status": "video/pdf真实bytes staging、generated note host、CAS/ownership保留"
+    }
+  ],
+  "limitations": [
+    "无视频/PDF/Web真实端到端样本",
+    "普通集合target和展开owner缺失",
+    "完整Glyth续工近场由主代理续修"
+  ]
+}

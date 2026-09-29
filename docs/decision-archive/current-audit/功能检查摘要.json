@@ -1,0 +1,674 @@
+[
+  {
+    "id": "NAV-01",
+    "name": "项目启动器：真实项目封面、最近/全部/归档",
+    "status": "部分接通，有明确偏差",
+    "priority": "P1",
+    "document": "inventory-navigation.md"
+  },
+  {
+    "id": "NAV-02",
+    "name": "项目创建/打开、键盘与焦点",
+    "status": "部分接通，有明确偏差",
+    "priority": "P1",
+    "document": "inventory-navigation.md"
+  },
+  {
+    "id": "NAV-03",
+    "name": "主画布/上下文/工作流共享壳与材质",
+    "status": "部分接通，有明确偏差",
+    "priority": "P1",
+    "document": "inventory-navigation.md"
+  },
+  {
+    "id": "NAV-04",
+    "name": "HUD缩放、resize、窗口避让",
+    "status": "部分接通，有明确偏差",
+    "priority": "P1",
+    "document": "inventory-navigation.md"
+  },
+  {
+    "id": "NAV-05",
+    "name": "底部常驻三视图 Dock",
+    "status": "部分接通，有明确偏差",
+    "priority": "P2",
+    "document": "inventory-navigation.md"
+  },
+  {
+    "id": "NAV-06",
+    "name": "灵动岛：静息、按Pin增长、搜索展开",
+    "status": "部分接通，有明确偏差",
+    "priority": "P1",
+    "document": "inventory-navigation.md"
+  },
+  {
+    "id": "NAV-07",
+    "name": "搜索→位置解析→子现场/多投影",
+    "status": "部分接通，有明确偏差",
+    "priority": "P1",
+    "document": "inventory-navigation.md"
+  },
+  {
+    "id": "NAV-08",
+    "name": "搜索键盘和局部查找归属",
+    "status": "部分接通，有明确偏差",
+    "priority": "P1",
+    "document": "inventory-navigation.md"
+  },
+  {
+    "id": "NAV-09",
+    "name": "已知对象的在哪里/聚焦",
+    "status": "部分接通，有明确偏差",
+    "priority": "P1",
+    "document": "inventory-navigation.md"
+  },
+  {
+    "id": "NAV-10",
+    "name": "Search/Where/Pin同槽和Esc栈",
+    "status": "部分接通，有明确偏差",
+    "priority": "P1",
+    "document": "inventory-navigation.md"
+  },
+  {
+    "id": "NAV-11",
+    "name": "ColorPin分组、节点本地角标、身份连续",
+    "status": "部分接通，有明确偏差",
+    "priority": "P1",
+    "document": "inventory-navigation.md"
+  },
+  {
+    "id": "NAV-12",
+    "name": "画外动态浮标：出现、变形、点击直达、到达",
+    "status": "部分接通，有明确偏差",
+    "priority": "P1",
+    "document": "inventory-navigation.md"
+  },
+  {
+    "id": "NAV-13",
+    "name": "相机胶囊、适配视野、100%与减弱运动",
+    "status": "部分接通，有明确偏差",
+    "priority": "P1",
+    "document": "inventory-navigation.md"
+  },
+  {
+    "id": "NAV-14",
+    "name": "Railway长度、图标底座、溢出、身份",
+    "status": "部分接通，有明确偏差",
+    "priority": "P1",
+    "document": "inventory-navigation.md"
+  },
+  {
+    "id": "NAV-15",
+    "name": "Railway悬停真预览、可进入操作区",
+    "status": "部分接通，有明确偏差",
+    "priority": "P1",
+    "document": "inventory-navigation.md"
+  },
+  {
+    "id": "NAV-16",
+    "name": "Railway接收、排序、管理的可操作性",
+    "status": "部分接通，有明确偏差",
+    "priority": "P1",
+    "document": "inventory-navigation.md"
+  },
+  {
+    "id": "NAV-17",
+    "name": "Arc角包、更多菜单与多窗口共存",
+    "status": "部分接通，有明确偏差",
+    "priority": "P1",
+    "document": "inventory-navigation.md"
+  },
+  {
+    "id": "NAV-18",
+    "name": "Composer引用条和工具按钮生产接线",
+    "status": "部分接通，有明确偏差",
+    "priority": "P1",
+    "document": "inventory-navigation.md"
+  },
+  {
+    "id": "NAV-19",
+    "name": "近场输入定位、多窗口、语音状态",
+    "status": "部分接通，有明确偏差",
+    "priority": "P1",
+    "document": "inventory-navigation.md"
+  },
+  {
+    "id": "NAV-20",
+    "name": "通用Drop来源：画布节点、右拖携带、装配",
+    "status": "部分接通，有明确偏差",
+    "priority": "P1",
+    "document": "inventory-navigation.md"
+  },
+  {
+    "id": "NAV-21",
+    "name": "Drop接收反馈、真实回执、Glyth输入锚点",
+    "status": "部分接通，有明确偏差",
+    "priority": "P1",
+    "document": "inventory-navigation.md"
+  },
+  {
+    "id": "NAV-22",
+    "name": "共享反馈、disabled、长文与运动族",
+    "status": "部分接通，有明确偏差",
+    "priority": "P2",
+    "document": "inventory-navigation.md"
+  },
+  {
+    "id": "NAV-23",
+    "name": "项目级系统入口与能力不被视觉隐藏",
+    "status": "待跨域补证",
+    "priority": "P1",
+    "document": "inventory-navigation.md"
+  },
+  {
+    "id": "N01",
+    "name": "物种唯一生产接缝与原生机械保留",
+    "status": "已接入，需全物种回归",
+    "priority": "无缺陷/保留",
+    "document": "inventory-nodes.md"
+  },
+  {
+    "id": "N02",
+    "name": "大字文本 / 近场阅读表面",
+    "status": "已接，但内容颗粒度和字号自适应偏差",
+    "priority": "P1",
+    "document": "inventory-nodes.md"
+  },
+  {
+    "id": "N03",
+    "name": "原生自由文本原位编辑 / 托管材料只读差异",
+    "status": "入口机制已区分，需完整交互补证",
+    "priority": "P1",
+    "document": "inventory-nodes.md"
+  },
+  {
+    "id": "N04",
+    "name": "同对象文本 / 大纲 / 导图三读法",
+    "status": "未找到LCOS生产body分派；不能算已落地",
+    "priority": "P1",
+    "document": "inventory-nodes.md"
+  },
+  {
+    "id": "N05",
+    "name": "文档 / PDF / 演示封面物种",
+    "status": "纸感已接，媒体页预览信息不足",
+    "priority": "P1",
+    "document": "inventory-nodes.md"
+  },
+  {
+    "id": "N06",
+    "name": "图像主图 / 缩略图与真实比例",
+    "status": "已接，固定cover裁剪与错误处理需修",
+    "priority": "P1",
+    "document": "inventory-nodes.md"
+  },
+  {
+    "id": "N07",
+    "name": "音频波形、时长、播放与scrub",
+    "status": "装饰波形已接，真实媒体操作未接",
+    "priority": "P1",
+    "document": "inventory-nodes.md"
+  },
+  {
+    "id": "N08",
+    "name": "视频节点与帧/片段识别",
+    "status": "缺专用画布物种，仍通用卡",
+    "priority": "P1",
+    "document": "inventory-nodes.md"
+  },
+  {
+    "id": "N09",
+    "name": "网页 / 链接物种与站点身份",
+    "status": "缺专用画布物种，仍通用卡",
+    "priority": "P1",
+    "document": "inventory-nodes.md"
+  },
+  {
+    "id": "N10",
+    "name": "未知文件与源缺失反馈",
+    "status": "降级存在，错误态body没有接状态槽",
+    "priority": "P1",
+    "document": "inventory-nodes.md"
+  },
+  {
+    "id": "N11",
+    "name": "生成中对象与运行状态机",
+    "status": "注册形态存在，运行事实未充分进入body",
+    "priority": "P1",
+    "document": "inventory-nodes.md"
+  },
+  {
+    "id": "N12",
+    "name": "生成结果Draft、Current与来源",
+    "status": "真实来源字段在seam丢失",
+    "priority": "P1",
+    "document": "inventory-nodes.md"
+  },
+  {
+    "id": "N13",
+    "name": "技能、决策、提示对象的独立形态",
+    "status": "若干物种退为通用卡",
+    "priority": "P1",
+    "document": "inventory-nodes.md"
+  },
+  {
+    "id": "N14",
+    "name": "节点角标与ColorPin真实颜色成员",
+    "status": "假常驻角标；未绑定真实ColorPin",
+    "priority": "P1",
+    "document": "inventory-nodes.md"
+  },
+  {
+    "id": "N15",
+    "name": "引用独立于选中，节点静默标识",
+    "status": "引用真值与手势已接，节点反馈未接",
+    "priority": "P1",
+    "document": "inventory-nodes.md"
+  },
+  {
+    "id": "N16",
+    "name": "关系活边、目标容差与远近权重",
+    "status": "机械保留，视觉与当前关系producer需补证",
+    "priority": "P2",
+    "document": "inventory-nodes.md"
+  },
+  {
+    "id": "N17",
+    "name": "集合主画布压缩文件夹",
+    "status": "主画布没有采用正确文件夹",
+    "priority": "P1",
+    "document": "inventory-nodes.md"
+  },
+  {
+    "id": "N18",
+    "name": "集合展开、收起与自动排布",
+    "status": "未找到当前节点展开生产操作",
+    "priority": "P1",
+    "document": "inventory-nodes.md"
+  },
+  {
+    "id": "N19",
+    "name": "集合收纳drop与多集合共享成员",
+    "status": "通用Assembly投放存在；集合本体目标/状态未证明",
+    "priority": "P1",
+    "document": "inventory-nodes.md"
+  },
+  {
+    "id": "N20",
+    "name": "集合图标、颜色、外形身份",
+    "status": "设计有要求，节点身份配置与显示未接",
+    "priority": "P2",
+    "document": "inventory-nodes.md"
+  },
+  {
+    "id": "N21",
+    "name": "工作流集合书册在Main的形态",
+    "status": "专用face已接，但外层仍套卡且没有封面数据",
+    "priority": "P1",
+    "document": "inventory-nodes.md"
+  },
+  {
+    "id": "N22",
+    "name": "子现场入口及来源返回",
+    "status": "真实导航已接，节点外形仍泛化",
+    "priority": "P1",
+    "document": "inventory-nodes.md"
+  },
+  {
+    "id": "N23",
+    "name": "门户只读预览、局部缩放和打开",
+    "status": "真实scene预览已接，需保留",
+    "priority": "P2",
+    "document": "inventory-nodes.md"
+  },
+  {
+    "id": "N24",
+    "name": "门户提升/投递生命周期",
+    "status": "未在当前Portal body找到完整组合能力",
+    "priority": "P1",
+    "document": "inventory-nodes.md"
+  },
+  {
+    "id": "N25",
+    "name": "Colony轮廓、剥离与取消",
+    "status": "原T1有细规格，精确当前Figma专帧未查到；代码未见生产呈现",
+    "priority": "P1",
+    "document": "inventory-nodes.md"
+  },
+  {
+    "id": "N26",
+    "name": "远/中/近四档节点信息层级",
+    "status": "唯一density已接，表现层只部分消费",
+    "priority": "P1",
+    "document": "inventory-nodes.md"
+  },
+  {
+    "id": "N27",
+    "name": "节点11态与原位轻反馈",
+    "status": "选择机械保留，其余状态呈现有漏接",
+    "priority": "P1",
+    "document": "inventory-nodes.md"
+  },
+  {
+    "id": "N28",
+    "name": "拖动、resize、中断及内容尺寸",
+    "status": "Huabu机械保留，LCOSbody固定像素布局有风险",
+    "priority": "P1",
+    "document": "inventory-nodes.md"
+  },
+  {
+    "id": "N29",
+    "name": "GLYTH本体与真实基本状态",
+    "status": "已采用donor，六用户态基本接通",
+    "priority": "P2",
+    "document": "inventory-nodes.md"
+  },
+  {
+    "id": "N30",
+    "name": "GLYTH缩放接管与身体命中",
+    "status": "二段硬切替代连续takeover",
+    "priority": "P1",
+    "document": "inventory-nodes.md"
+  },
+  {
+    "id": "N31",
+    "name": "投送材料给GLYTH的命中与就近草稿",
+    "status": "语义接口已接，空间命中有过期风险",
+    "priority": "P1",
+    "document": "inventory-nodes.md"
+  },
+  {
+    "id": "N32",
+    "name": "GLYTH原位续工入口与Composer内展开",
+    "status": "生产路径逼用户先开大工作窗",
+    "priority": "P1",
+    "document": "inventory-nodes.md"
+  },
+  {
+    "id": "N33",
+    "name": "续工四种模式及不支持时显式改选",
+    "status": "真实四action与capabilities已接，形态和比较层次偏差",
+    "priority": "P1",
+    "document": "inventory-nodes.md"
+  },
+  {
+    "id": "N34",
+    "name": "续工确认来源、提交快照与草稿分离",
+    "status": "意图ID保留存在，近场确认UI未对稿",
+    "priority": "P1",
+    "document": "inventory-nodes.md"
+  },
+  {
+    "id": "N35",
+    "name": "创建伴身种子与四阶段可见回执",
+    "status": "缺GLYTH伴身呈现",
+    "priority": "P1",
+    "document": "inventory-nodes.md"
+  },
+  {
+    "id": "N36",
+    "name": "分支创建完成、来源尾迹与精选继承完成",
+    "status": "有限reaction接口有，真实调用未接",
+    "priority": "P1",
+    "document": "inventory-nodes.md"
+  },
+  {
+    "id": "N37",
+    "name": "续工失败、未知与取消恢复",
+    "status": "真实恢复section存在，未落回近场状态",
+    "priority": "P1",
+    "document": "inventory-nodes.md"
+  },
+  {
+    "id": "N38",
+    "name": "焦点薄光边、处理边缘色散和减少动态",
+    "status": "有选中/注意光边，无处理种子色散caller",
+    "priority": "P2",
+    "document": "inventory-nodes.md"
+  },
+  {
+    "id": "N39",
+    "name": "节点原位空白、重命名、删除/撤销与多选",
+    "status": "原生机械和Arc存在，需逐项真实验证",
+    "priority": "P2",
+    "document": "inventory-nodes.md"
+  },
+  {
+    "id": "N40",
+    "name": "源到Reader/WorkView提升与恢复连续性",
+    "status": "真实双击入口已接，source-revision选择有待核验",
+    "priority": "P1",
+    "document": "inventory-nodes.md"
+  },
+  {
+    "id": "N41",
+    "name": "素材装配到画布后的内容真实性",
+    "status": "部分真实staging已接；不能只看Figma布景完成",
+    "priority": "P2",
+    "document": "inventory-nodes.md"
+  },
+  {
+    "id": "S01",
+    "name": "装配四来源、搜索与分页",
+    "status": "保留",
+    "priority": "无",
+    "document": "inventory-surfaces.md"
+  },
+  {
+    "id": "S02",
+    "name": "装配瀑布流与预览",
+    "status": "部分接通",
+    "priority": "P2",
+    "document": "inventory-surfaces.md"
+  },
+  {
+    "id": "S03",
+    "name": "装配当前目标跟随",
+    "status": "待复现风险",
+    "priority": "P1",
+    "document": "inventory-surfaces.md"
+  },
+  {
+    "id": "S04",
+    "name": "装配Drop、批量取用和逐项回执",
+    "status": "保留",
+    "priority": "无",
+    "document": "inventory-surfaces.md"
+  },
+  {
+    "id": "S05",
+    "name": "装配集合跨视图取用",
+    "status": "部分接通",
+    "priority": "P2",
+    "document": "inventory-surfaces.md"
+  },
+  {
+    "id": "S06",
+    "name": "专业窗口浮动、停靠和分组",
+    "status": "保留",
+    "priority": "无",
+    "document": "inventory-surfaces.md"
+  },
+  {
+    "id": "S07",
+    "name": "拖窗期间实时避让",
+    "status": "需修复",
+    "priority": "P1",
+    "document": "inventory-surfaces.md"
+  },
+  {
+    "id": "S08",
+    "name": "窄屏与多窗布局",
+    "status": "待复现风险",
+    "priority": "P1",
+    "document": "inventory-surfaces.md"
+  },
+  {
+    "id": "S09",
+    "name": "Reader身份、修订、只读与返回",
+    "status": "保留",
+    "priority": "无",
+    "document": "inventory-surfaces.md"
+  },
+  {
+    "id": "S10",
+    "name": "Reader实际内容缩放",
+    "status": "需修复",
+    "priority": "P1",
+    "document": "inventory-surfaces.md"
+  },
+  {
+    "id": "S11",
+    "name": "双Reader与内容页签",
+    "status": "缺生产调用",
+    "priority": "P1",
+    "document": "inventory-surfaces.md"
+  },
+  {
+    "id": "S12",
+    "name": "阅读位置恢复跨度",
+    "status": "需补证",
+    "priority": "P2",
+    "document": "inventory-surfaces.md"
+  },
+  {
+    "id": "S13",
+    "name": "Reader媒体种类覆盖",
+    "status": "缺少部分LCOS调用",
+    "priority": "P1",
+    "document": "inventory-surfaces.md"
+  },
+  {
+    "id": "S14",
+    "name": "Reader选区引用归属",
+    "status": "待复现风险",
+    "priority": "P1",
+    "document": "inventory-surfaces.md"
+  },
+  {
+    "id": "S15",
+    "name": "Context真实现场、集合进入和返回",
+    "status": "保留",
+    "priority": "无",
+    "document": "inventory-surfaces.md"
+  },
+  {
+    "id": "S16",
+    "name": "Context光幕开合与注意力",
+    "status": "部分接通",
+    "priority": "P1",
+    "document": "inventory-surfaces.md"
+  },
+  {
+    "id": "S17",
+    "name": "Atlas分页与真实搜索",
+    "status": "需修复",
+    "priority": "P1",
+    "document": "inventory-surfaces.md"
+  },
+  {
+    "id": "S18",
+    "name": "Atlas时间/性质组织和邻域焦点",
+    "status": "部分缺失",
+    "priority": "P1",
+    "document": "inventory-surfaces.md"
+  },
+  {
+    "id": "S19",
+    "name": "集合文件夹旧白卡污染",
+    "status": "需修复",
+    "priority": "P2",
+    "document": "inventory-surfaces.md"
+  },
+  {
+    "id": "S20",
+    "name": "集合合并、拆分、删除壳和拖用",
+    "status": "缺少部分入口",
+    "priority": "P1",
+    "document": "inventory-surfaces.md"
+  },
+  {
+    "id": "S21",
+    "name": "时间轨真实数据与定位",
+    "status": "保留",
+    "priority": "无",
+    "document": "inventory-surfaces.md"
+  },
+  {
+    "id": "S22",
+    "name": "时间轨范围与失败重试",
+    "status": "需修复",
+    "priority": "P1",
+    "document": "inventory-surfaces.md"
+  },
+  {
+    "id": "S23",
+    "name": "Workflow真实现场与跨视图入口",
+    "status": "部分接通",
+    "priority": "P2",
+    "document": "inventory-surfaces.md"
+  },
+  {
+    "id": "S24",
+    "name": "手牌空白关闭",
+    "status": "需修复",
+    "priority": "P1",
+    "document": "inventory-surfaces.md"
+  },
+  {
+    "id": "S25",
+    "name": "Workflow卡池分页与搜索",
+    "status": "需修复",
+    "priority": "P1",
+    "document": "inventory-surfaces.md"
+  },
+  {
+    "id": "S26",
+    "name": "手牌轻预览与区域/现场进入",
+    "status": "部分缺失",
+    "priority": "P1",
+    "document": "inventory-surfaces.md"
+  },
+  {
+    "id": "S27",
+    "name": "取用到当前会话与续工",
+    "status": "需修复",
+    "priority": "P1",
+    "document": "inventory-surfaces.md"
+  },
+  {
+    "id": "S28",
+    "name": "手牌扇形/网格和高数量密度",
+    "status": "需修复",
+    "priority": "P2",
+    "document": "inventory-surfaces.md"
+  },
+  {
+    "id": "S29",
+    "name": "真实会话、继续/委派/分支和等待输入",
+    "status": "保留机制，需改呈现",
+    "priority": "P2",
+    "document": "inventory-surfaces.md"
+  },
+  {
+    "id": "S30",
+    "name": "会话切换隔离与恢复入口",
+    "status": "需修复",
+    "priority": "P1",
+    "document": "inventory-surfaces.md"
+  },
+  {
+    "id": "S31",
+    "name": "结果回流、归档和恢复",
+    "status": "保留机制，需补视觉",
+    "priority": "P2",
+    "document": "inventory-surfaces.md"
+  },
+  {
+    "id": "S32",
+    "name": "Portal、T7工具与历史专业页",
+    "status": "部分接通/部分预留",
+    "priority": "P1",
+    "document": "inventory-surfaces.md"
+  }
+]

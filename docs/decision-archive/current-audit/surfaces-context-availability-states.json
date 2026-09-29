@@ -1,0 +1,213 @@
+{
+  "note": "Actual isolated fixture responses without interception; no Core writes.",
+  "states": [
+    {
+      "width": 1440,
+      "phase": "initial",
+      "geometry": {
+        "search": {
+          "x": 182,
+          "y": 162.5,
+          "width": 280,
+          "height": 37
+        },
+        "close": {
+          "x": 1259,
+          "y": 159,
+          "width": 44,
+          "height": 44
+        },
+        "safeTop": "84px",
+        "overlap": false,
+        "searchHit": true,
+        "closeHit": true
+      },
+      "atlasWidth": 1440,
+      "atlasScrollWidth": 1440,
+      "gridColumns": "248px 248px 248px",
+      "unavailable": [
+        {
+          "title": "施工主线",
+          "reason": "现场画布尚未就绪"
+        },
+        {
+          "title": "Workflow · 行动现场",
+          "reason": "现场画布尚未就绪"
+        },
+        {
+          "title": "Context · 理解现场",
+          "reason": "现场画布尚未就绪"
+        }
+      ],
+      "canvas": 1,
+      "errors": []
+    },
+    {
+      "width": 1024,
+      "phase": "initial",
+      "geometry": {
+        "search": {
+          "x": 227,
+          "y": 162.5,
+          "width": 280,
+          "height": 37
+        },
+        "close": {
+          "x": 753,
+          "y": 159,
+          "width": 44,
+          "height": 44
+        },
+        "safeTop": "84px",
+        "overlap": false,
+        "searchHit": true,
+        "closeHit": true
+      },
+      "atlasWidth": 1024,
+      "atlasScrollWidth": 1024,
+      "gridColumns": "248px 248px",
+      "unavailable": [
+        {
+          "title": "施工主线",
+          "reason": "现场画布尚未就绪"
+        },
+        {
+          "title": "Workflow · 行动现场",
+          "reason": "现场画布尚未就绪"
+        },
+        {
+          "title": "Context · 理解现场",
+          "reason": "现场画布尚未就绪"
+        }
+      ],
+      "canvas": 1,
+      "errors": []
+    },
+    {
+      "width": 390,
+      "phase": "scrolled",
+      "geometry": {
+        "search": {
+          "x": 18,
+          "y": 139.5,
+          "width": 240.234375,
+          "height": 37
+        },
+        "close": {
+          "x": 328,
+          "y": 136,
+          "width": 44,
+          "height": 44
+        },
+        "safeTop": "136px",
+        "overlap": false,
+        "searchHit": true,
+        "closeHit": true
+      }
+    },
+    {
+      "width": 390,
+      "phase": "initial",
+      "geometry": {
+        "search": {
+          "x": 18,
+          "y": 139.5,
+          "width": 240.234375,
+          "height": 37
+        },
+        "close": {
+          "x": 328,
+          "y": 136,
+          "width": 44,
+          "height": 44
+        },
+        "safeTop": "136px",
+        "overlap": false,
+        "searchHit": true,
+        "closeHit": true
+      },
+      "atlasWidth": 390,
+      "atlasScrollWidth": 390,
+      "gridColumns": "248px",
+      "unavailable": [
+        {
+          "title": "施工主线",
+          "reason": "现场画布尚未就绪"
+        },
+        {
+          "title": "Workflow · 行动现场",
+          "reason": "现场画布尚未就绪"
+        },
+        {
+          "title": "Context · 理解现场",
+          "reason": "现场画布尚未就绪"
+        }
+      ],
+      "canvas": 1,
+      "errors": []
+    },
+    {
+      "width": 320,
+      "phase": "scrolled",
+      "geometry": {
+        "search": {
+          "x": 18,
+          "y": 139.5,
+          "width": 170.234375,
+          "height": 37
+        },
+        "close": {
+          "x": 258,
+          "y": 136,
+          "width": 44,
+          "height": 44
+        },
+        "safeTop": "136px",
+        "overlap": false,
+        "searchHit": true,
+        "closeHit": true
+      }
+    },
+    {
+      "width": 320,
+      "phase": "initial",
+      "geometry": {
+        "search": {
+          "x": 18,
+          "y": 139.5,
+          "width": 170.234375,
+          "height": 37
+        },
+        "close": {
+          "x": 258,
+          "y": 136,
+          "width": 44,
+          "height": 44
+        },
+        "safeTop": "136px",
+        "overlap": false,
+        "searchHit": true,
+        "closeHit": true
+      },
+      "atlasWidth": 320,
+      "atlasScrollWidth": 320,
+      "gridColumns": "248px",
+      "unavailable": [
+        {
+          "title": "施工主线",
+          "reason": "现场画布尚未就绪"
+        },
+        {
+          "title": "Workflow · 行动现场",
+          "reason": "现场画布尚未就绪"
+        },
+        {
+          "title": "Context · 理解现场",
+          "reason": "现场画布尚未就绪"
+        }
+      ],
+      "canvas": 1,
+      "errors": []
+    }
+  ]
+}

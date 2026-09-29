@@ -1,0 +1,1292 @@
+{
+  "date": "2026-09-26",
+  "scope": "仅S项关联，不把关联等同于实现完成；桌面预留单列。",
+  "sources": [
+    "adoption/GEN2_Figma_T7前端入口_视觉交付与T5回传包_20260911.md",
+    "adoption/GEN2_Figma_集合跨视图与工作流取用_实际交付_20260911.md",
+    "GEN2_ContextWorkflow_原话回收与FigmaT5增量裁决_20260911.md"
+  ],
+  "mappings": [
+    {
+      "nodeId": "5103:1275",
+      "inventoryIds": [
+        "S06",
+        "S08"
+      ],
+      "disposition": "历史外壳；采用最终统一窗口稿，保留停靠/窄屏语义",
+      "basis": "T4专业窗口原卡BP-02；ProfessionalWindowStage已接同一window owner",
+      "structureEvidence": "E:\\Codex 项目\\OS开发\\exports\\LCOS_Figma_全设计包_20260913\\pages\\5095-49\\frames\\5103-1275\\nodes-000.json",
+      "visibleTextSample": [
+        "LCOS",
+        "/  NORTH · 向外",
+        "分享",
+        "主画布",
+        "上下文",
+        "工作流",
+        "−       80%       +"
+      ]
+    },
+    {
+      "nodeId": "5103:1662",
+      "inventoryIds": [
+        "S15",
+        "S32"
+      ],
+      "disposition": "部分/后续待接：关系与演进专业体未找到完整独立caller",
+      "basis": "最终ContextWorkflow原话裁决区分Context worksite、Atlas、child；旧关系/演进稿不代表整套Context",
+      "structureEvidence": "E:\\Codex 项目\\OS开发\\exports\\LCOS_Figma_全设计包_20260913\\pages\\5095-49\\frames\\5103-1662\\nodes-000.json",
+      "visibleTextSample": [
+        "向外 · 上下文",
+        "把相关材料放在一起，保留它们的来处。",
+        "让人物成为空间的尺度。",
+        "光线研究",
+        "来源",
+        "创意简报.pdf",
+        "访谈节选",
+        "山脊侧光.jpg"
+      ]
+    },
+    {
+      "nodeId": "5115:1417",
+      "inventoryIds": [
+        "S03",
+        "S04",
+        "S07"
+      ],
+      "disposition": "部分：显式画布取用与避让采用原交互，仍需整体验证",
+      "basis": "T4 Assembly原卡当前target与semantic source/apply；不是给装配增加第二canvas",
+      "structureEvidence": "E:\\Codex 项目\\OS开发\\exports\\LCOS_Figma_全设计包_20260913\\pages\\5095-49\\frames\\5115-1417\\nodes-000.json",
+      "visibleTextSample": [
+        "创意简报.pdf",
+        "6 页 · 项目材料",
+        "风格提炼",
+        "已装备给 Glyth",
+        "恢复浮动",
+        "拖出材料，继续在画布工作",
+        "返回原视野",
+        "已聚焦到可见画布"
+      ]
+    },
+    {
+      "nodeId": "5121:1817",
+      "inventoryIds": [
+        "S05",
+        "S20"
+      ],
+      "disposition": "部分：呼出/抽取与集合跨视图取用合并页13，编辑入口未全部接通",
+      "basis": "页13采用说明：首次投放承接成员与位置，已有投影仅定位",
+      "structureEvidence": "E:\\Codex 项目\\OS开发\\exports\\LCOS_Figma_全设计包_20260913\\pages\\5095-49\\frames\\5121-1817\\nodes-000.json",
+      "visibleTextSample": [
+        "光线研究",
+        "从集合中抽出一个现场",
+        "进入选中现场",
+        "向外主视觉 · 8 个对象 · 今天 14:32",
+        "林间漫射",
+        "山脊侧光",
+        "海岸风",
+        "地形观察"
+      ]
+    },
+    {
+      "nodeId": "5122:2219",
+      "inventoryIds": [
+        "S03",
+        "S04",
+        "S07"
+      ],
+      "disposition": "部分：显式画布取用与避让采用原交互，仍需整体验证",
+      "basis": "T4 Assembly原卡当前target与semantic source/apply；不是给装配增加第二canvas",
+      "structureEvidence": "E:\\Codex 项目\\OS开发\\exports\\LCOS_Figma_全设计包_20260913\\pages\\5095-49\\frames\\5122-2219\\nodes-000.json",
+      "visibleTextSample": [
+        "项目装配 / 本轮参考",
+        "本轮参考",
+        "项目材料",
+        "山脊侧光",
+        "林间漫射",
+        "当前操作目标",
+        "参考会加入这次输入，原材料仍在画布。",
+        "完成选择"
+      ]
+    },
+    {
+      "nodeId": "5122:2539",
+      "inventoryIds": [
+        "S15",
+        "S32"
+      ],
+      "disposition": "部分/后续待接：关系与演进专业体未找到完整独立caller",
+      "basis": "最终ContextWorkflow原话裁决区分Context worksite、Atlas、child；旧关系/演进稿不代表整套Context",
+      "structureEvidence": "E:\\Codex 项目\\OS开发\\exports\\LCOS_Figma_全设计包_20260913\\pages\\5095-49\\frames\\5122-2539\\nodes-000.json",
+      "visibleTextSample": [
+        "NORTH / 创作现场",
+        "向外 · 上下文",
+        "把相关材料放在一起，保留它们的来处。",
+        "让人物成为空间的尺度。",
+        "来源",
+        "创意简报.pdf",
+        "访谈节选",
+        "山脊侧光.jpg"
+      ]
+    },
+    {
+      "nodeId": "5122:2803",
+      "inventoryIds": [
+        "S23",
+        "S26",
+        "S32"
+      ],
+      "disposition": "部分：Workflow真实现场存在，步骤/分支专业体仍待补接",
+      "basis": "T4 Workflow WorkView census与最终原话：真实region/child不是手牌本身",
+      "structureEvidence": "E:\\Codex 项目\\OS开发\\exports\\LCOS_Figma_全设计包_20260913\\pages\\5095-49\\frames\\5122-2803\\nodes-000.json",
+      "visibleTextSample": [
+        "参考材料",
+        "NORTH / 创作现场",
+        "向外 · 主视觉制作",
+        "参考、能力与结果，共同构成这条行动路径。",
+        "审阅结果",
+        "风格提炼",
+        "正在生成方向 02",
+        "结果落回原现场"
+      ]
+    },
+    {
+      "nodeId": "5122:4001",
+      "inventoryIds": [
+        "S23",
+        "S24",
+        "S28"
+      ],
+      "disposition": "历史手牌；以九面及页13纠正，保留扇形/网格/开合语义",
+      "basis": "WorkflowHandOverlay真实caller；第一批已补空白关闭，密度后续",
+      "structureEvidence": "E:\\Codex 项目\\OS开发\\exports\\LCOS_Figma_全设计包_20260913\\pages\\5095-49\\frames\\5122-4001\\nodes-000.json",
+      "visibleTextSample": [
+        "打开工作现场",
+        "光线提炼",
+        "读取 → 归纳 → 回填",
+        "人物研究",
+        "材料 → 比较 → 整理",
+        "结果整理",
+        "结果 → 取舍 → 归档",
+        "进入主视觉制作"
+      ]
+    },
+    {
+      "nodeId": "5285:1160",
+      "inventoryIds": [
+        "S32",
+        "S04"
+      ],
+      "disposition": "P0浏览器收件专项；完整入口/未知结果交互待接，不能算全部实现",
+      "basis": "T7交付153状态：BrowserCapture13态；ProfessionalWindowStage capture-inbox当前不可用，Assembly有真实Capture来源",
+      "structureEvidence": "E:\\Codex 项目\\OS开发\\exports\\LCOS_Figma_全设计包_20260913\\pages\\5277-602\\frames\\5285-1160\\nodes-000.json",
+      "visibleTextSample": [
+        "未读取受限内容。",
+        "查看权限",
+        "收件结果尚未确认",
+        "请核对原操作，避免重复收下。",
+        "核对结果",
+        "添加到 LCOS",
+        "仅在用户主动调用时读取。",
+        "正在核对原操作"
+      ]
+    },
+    {
+      "nodeId": "5286:1139",
+      "inventoryIds": [
+        "S32",
+        "S29"
+      ],
+      "disposition": "权限范围专项；不能用Waiting输入或普通确定按钮替代",
+      "basis": "T7 PermissionRequestBody8态；须沿用真实source scope与授权owner，当前专业窗口没有独立完整permission body",
+      "structureEvidence": "E:\\Codex 项目\\OS开发\\exports\\LCOS_Figma_全设计包_20260913\\pages\\5277-602\\frames\\5286-1139\\nodes-000.json",
+      "visibleTextSample": [
+        "获取最新请求",
+        "访问范围发生变化",
+        "请重新阅读最新范围，原选择未沿用。",
+        "正在提交你的决定",
+        "等待回执，不重复提交。",
+        "权限决定尚未提交成功",
+        "保留你的选择，请重新核对请求。",
+        "核对请求"
+      ]
+    },
+    {
+      "nodeId": "5289:1327",
+      "inventoryIds": [
+        "S27",
+        "S29"
+      ],
+      "disposition": "部分：真实接收者/会话存在，列表及窄屏/减弱动态需端到端验证",
+      "basis": "T7当前receiver11态；WorkflowCardPool接收者lane与Composer既有receiver owner",
+      "structureEvidence": "E:\\Codex 项目\\OS开发\\exports\\LCOS_Figma_全设计包_20260913\\pages\\5277-602\\frames\\5289-1327\\nodes-000.json",
+      "visibleTextSample": [
+        "声音收集",
+        "候选视觉",
+        "交付备选",
+        "灵感集",
+        "3 份材料",
+        "3 项",
+        "山野 · 品牌探索",
+        "−     100%     +"
+      ]
+    },
+    {
+      "nodeId": "5289:1639",
+      "inventoryIds": [
+        "S29",
+        "S32"
+      ],
+      "disposition": "部分：动作根据真实capability呈现，禁止伪造支持",
+      "basis": "ConversationWorkViewBody continuation capability与CoreCollaborationClient真实命令",
+      "structureEvidence": "E:\\Codex 项目\\OS开发\\exports\\LCOS_Figma_全设计包_20260913\\pages\\5277-602\\frames\\5289-1639\\nodes-000.json",
+      "visibleTextSample": [
+        "声音收集",
+        "候选视觉",
+        "交付备选",
+        "灵感集",
+        "3 份材料",
+        "3 项",
+        "山野 · 品牌探索",
+        "−     100%     +"
+      ]
+    },
+    {
+      "nodeId": "5289:3008",
+      "inventoryIds": [
+        "S09",
+        "S32"
+      ],
+      "disposition": "来源专项；Reader身份链存在，全部来源范围视图待其他来源组并证",
+      "basis": "T7 Source identity10态；ArtifactReaderBody精确artifact/revision/FileRecord而非外观推断身份",
+      "structureEvidence": "E:\\Codex 项目\\OS开发\\exports\\LCOS_Figma_全设计包_20260913\\pages\\5277-602\\frames\\5289-3008\\nodes-000.json",
+      "visibleTextSample": [
+        "声音收集",
+        "候选视觉",
+        "交付备选",
+        "灵感集",
+        "3 份材料",
+        "3 项",
+        "山野 · 品牌探索",
+        "−     100%     +"
+      ]
+    },
+    {
+      "nodeId": "5289:3330",
+      "inventoryIds": [
+        "S15",
+        "S16",
+        "S32"
+      ],
+      "disposition": "仅入口示例，不代表完整Context；合并06/07/13/九面",
+      "basis": "20260911最终原话回收明确A08/A09只能证明Composer能进入，不能替代特殊视图",
+      "structureEvidence": "E:\\Codex 项目\\OS开发\\exports\\LCOS_Figma_全设计包_20260913\\pages\\5277-602\\frames\\5289-3330\\nodes-000.json",
+      "visibleTextSample": []
+    },
+    {
+      "nodeId": "5289:4929",
+      "inventoryIds": [
+        "S23",
+        "S26",
+        "S32"
+      ],
+      "disposition": "仅入口示例，不代表完整Workflow；合并06/07/13/九面",
+      "basis": "20260911最终原话回收明确三现场独立，卡池为选择预览层",
+      "structureEvidence": "E:\\Codex 项目\\OS开发\\exports\\LCOS_Figma_全设计包_20260913\\pages\\5277-602\\frames\\5289-4929\\nodes-000.json",
+      "visibleTextSample": []
+    },
+    {
+      "nodeId": "5290:1800",
+      "inventoryIds": [
+        "S32",
+        "S29"
+      ],
+      "disposition": "权限范围专项；不能用Waiting输入或普通确定按钮替代",
+      "basis": "T7 PermissionRequestBody8态；须沿用真实source scope与授权owner，当前专业窗口没有独立完整permission body",
+      "structureEvidence": "E:\\Codex 项目\\OS开发\\exports\\LCOS_Figma_全设计包_20260913\\pages\\5277-602\\frames\\5290-1800\\nodes-000.json",
+      "visibleTextSample": [
+        "声音收集",
+        "候选视觉",
+        "交付备选",
+        "灵感集",
+        "3 份材料",
+        "3 项",
+        "山野 · 品牌探索",
+        "−     100%     +"
+      ]
+    },
+    {
+      "nodeId": "5290:2116",
+      "inventoryIds": [
+        "S29",
+        "S30"
+      ],
+      "disposition": "生产已接，第二批补旧响应隔离/读取重试/选项可访问状态",
+      "basis": "WaitingInputSection readPendingInput+answerInput，同一Run，回执后共享projection refresh",
+      "structureEvidence": "E:\\Codex 项目\\OS开发\\exports\\LCOS_Figma_全设计包_20260913\\pages\\5277-602\\frames\\5290-2116\\nodes-000.json",
+      "visibleTextSample": [
+        "声音收集",
+        "候选视觉",
+        "交付备选",
+        "灵感集",
+        "3 份材料",
+        "3 项",
+        "山野 · 品牌探索",
+        "−     100%     +"
+      ]
+    },
+    {
+      "nodeId": "5290:2437",
+      "inventoryIds": [
+        "S30",
+        "S31"
+      ],
+      "disposition": "部分：真实恢复owner存在，完整状态与显眼恢复入口尚待施工",
+      "basis": "RecoverySection.allowedActions与collaboration.recover；未知结果核对原operation，不新建或补发",
+      "structureEvidence": "E:\\Codex 项目\\OS开发\\exports\\LCOS_Figma_全设计包_20260913\\pages\\5277-602\\frames\\5290-2437\\nodes-000.json",
+      "visibleTextSample": [
+        "声音收集",
+        "候选视觉",
+        "交付备选",
+        "灵感集",
+        "3 份材料",
+        "3 项",
+        "山野 · 品牌探索",
+        "−     100%     +"
+      ]
+    },
+    {
+      "nodeId": "5290:2774",
+      "inventoryIds": [
+        "S30",
+        "S31"
+      ],
+      "disposition": "部分：真实恢复owner存在，完整状态与显眼恢复入口尚待施工",
+      "basis": "RecoverySection.allowedActions与collaboration.recover；未知结果核对原operation，不新建或补发",
+      "structureEvidence": "E:\\Codex 项目\\OS开发\\exports\\LCOS_Figma_全设计包_20260913\\pages\\5277-602\\frames\\5290-2774\\nodes-000.json",
+      "visibleTextSample": [
+        "声音收集",
+        "候选视觉",
+        "交付备选",
+        "灵感集",
+        "3 份材料",
+        "3 项",
+        "山野 · 品牌探索",
+        "−     100%     +"
+      ]
+    },
+    {
+      "nodeId": "5290:3111",
+      "inventoryIds": [
+        "S30",
+        "S31"
+      ],
+      "disposition": "部分：真实恢复owner存在，完整状态与显眼恢复入口尚待施工",
+      "basis": "RecoverySection.allowedActions与collaboration.recover；未知结果核对原operation，不新建或补发",
+      "structureEvidence": "E:\\Codex 项目\\OS开发\\exports\\LCOS_Figma_全设计包_20260913\\pages\\5277-602\\frames\\5290-3111\\nodes-000.json",
+      "visibleTextSample": [
+        "声音收集",
+        "候选视觉",
+        "交付备选",
+        "灵感集",
+        "3 份材料",
+        "3 项",
+        "山野 · 品牌探索",
+        "−     100%     +"
+      ]
+    },
+    {
+      "nodeId": "5291:2038",
+      "inventoryIds": [
+        "S30",
+        "S31"
+      ],
+      "disposition": "部分：真实恢复owner存在，完整状态与显眼恢复入口尚待施工",
+      "basis": "RecoverySection.allowedActions与collaboration.recover；未知结果核对原operation，不新建或补发",
+      "structureEvidence": "E:\\Codex 项目\\OS开发\\exports\\LCOS_Figma_全设计包_20260913\\pages\\5277-602\\frames\\5291-2038\\nodes-000.json",
+      "visibleTextSample": [
+        "声音收集",
+        "候选视觉",
+        "交付备选",
+        "灵感集",
+        "3 份材料",
+        "3 项",
+        "山野 · 品牌探索",
+        "−     100%     +"
+      ]
+    },
+    {
+      "nodeId": "5291:2375",
+      "inventoryIds": [
+        "S30",
+        "S31"
+      ],
+      "disposition": "部分：真实恢复owner存在，完整状态与显眼恢复入口尚待施工",
+      "basis": "RecoverySection.allowedActions与collaboration.recover；未知结果核对原operation，不新建或补发",
+      "structureEvidence": "E:\\Codex 项目\\OS开发\\exports\\LCOS_Figma_全设计包_20260913\\pages\\5277-602\\frames\\5291-2375\\nodes-000.json",
+      "visibleTextSample": [
+        "声音收集",
+        "候选视觉",
+        "交付备选",
+        "灵感集",
+        "3 份材料",
+        "3 项",
+        "山野 · 品牌探索",
+        "−     100%     +"
+      ]
+    },
+    {
+      "nodeId": "5291:2712",
+      "inventoryIds": [
+        "S30",
+        "S31"
+      ],
+      "disposition": "部分：真实恢复owner存在，完整状态与显眼恢复入口尚待施工",
+      "basis": "RecoverySection.allowedActions与collaboration.recover；未知结果核对原operation，不新建或补发",
+      "structureEvidence": "E:\\Codex 项目\\OS开发\\exports\\LCOS_Figma_全设计包_20260913\\pages\\5277-602\\frames\\5291-2712\\nodes-000.json",
+      "visibleTextSample": [
+        "声音收集",
+        "候选视觉",
+        "交付备选",
+        "灵感集",
+        "3 份材料",
+        "3 项",
+        "山野 · 品牌探索",
+        "−     100%     +"
+      ]
+    },
+    {
+      "nodeId": "5291:3049",
+      "inventoryIds": [
+        "S30",
+        "S31"
+      ],
+      "disposition": "部分：真实恢复owner存在，完整状态与显眼恢复入口尚待施工",
+      "basis": "RecoverySection.allowedActions与collaboration.recover；未知结果核对原operation，不新建或补发",
+      "structureEvidence": "E:\\Codex 项目\\OS开发\\exports\\LCOS_Figma_全设计包_20260913\\pages\\5277-602\\frames\\5291-3049\\nodes-000.json",
+      "visibleTextSample": [
+        "声音收集",
+        "候选视觉",
+        "交付备选",
+        "灵感集",
+        "3 份材料",
+        "3 项",
+        "山野 · 品牌探索",
+        "−     100%     +"
+      ]
+    },
+    {
+      "nodeId": "5291:3386",
+      "inventoryIds": [
+        "S30",
+        "S31"
+      ],
+      "disposition": "部分：真实恢复owner存在，完整状态与显眼恢复入口尚待施工",
+      "basis": "RecoverySection.allowedActions与collaboration.recover；未知结果核对原operation，不新建或补发",
+      "structureEvidence": "E:\\Codex 项目\\OS开发\\exports\\LCOS_Figma_全设计包_20260913\\pages\\5277-602\\frames\\5291-3386\\nodes-000.json",
+      "visibleTextSample": [
+        "声音收集",
+        "候选视觉",
+        "交付备选",
+        "灵感集",
+        "3 份材料",
+        "3 项",
+        "山野 · 品牌探索",
+        "−     100%     +"
+      ]
+    },
+    {
+      "nodeId": "5291:3723",
+      "inventoryIds": [
+        "S30",
+        "S32"
+      ],
+      "disposition": "部分：Work View诊断存在，runtime-doctor独立窗口尚不可用",
+      "basis": "ConversationWorkViewBody.readDiagnostics；第二批Abort隔离；Stage.runtime-doctor占位",
+      "structureEvidence": "E:\\Codex 项目\\OS开发\\exports\\LCOS_Figma_全设计包_20260913\\pages\\5277-602\\frames\\5291-3723\\nodes-000.json",
+      "visibleTextSample": [
+        "声音收集",
+        "候选视觉",
+        "交付备选",
+        "灵感集",
+        "3 份材料",
+        "3 项",
+        "山野 · 品牌探索",
+        "−     100%     +"
+      ]
+    },
+    {
+      "nodeId": "5291:4140",
+      "inventoryIds": [
+        "S32"
+      ],
+      "disposition": "桌面P1/能力预留：不计作Web当前全部缺失，不冒充已实现",
+      "basis": "T7交付明确Tray/Companion/QuickCapture/CurrentAppCapture/DesktopNotification/ConnectorDetail预留；未新增Core能力",
+      "structureEvidence": "E:\\Codex 项目\\OS开发\\exports\\LCOS_Figma_全设计包_20260913\\pages\\5277-602\\frames\\5291-4140\\nodes-000.json",
+      "visibleTextSample": [
+        "显示 Glyth",
+        "打开 LCOS",
+        "退出 LCOS",
+        "山野探索 · 需要你补充",
+        "本机未连接",
+        "正在恢复连接",
+        "连接需要修复",
+        "检查连接"
+      ]
+    },
+    {
+      "nodeId": "5292:2479",
+      "inventoryIds": [
+        "S32"
+      ],
+      "disposition": "桌面P1/能力预留：不计作Web当前全部缺失，不冒充已实现",
+      "basis": "T7交付明确Tray/Companion/QuickCapture/CurrentAppCapture/DesktopNotification/ConnectorDetail预留；未新增Core能力",
+      "structureEvidence": "E:\\Codex 项目\\OS开发\\exports\\LCOS_Figma_全设计包_20260913\\pages\\5277-602\\frames\\5292-2479\\nodes-000.json",
+      "visibleTextSample": [
+        "状态尚未确认",
+        "请核对当前任务。",
+        "核对任务",
+        "山脊",
+        "品牌研究.pdf",
+        "继续山野的夜色方向…",
+        "快速收下",
+        "收起"
+      ]
+    },
+    {
+      "nodeId": "5292:2794",
+      "inventoryIds": [
+        "S32"
+      ],
+      "disposition": "桌面P1/能力预留：不计作Web当前全部缺失，不冒充已实现",
+      "basis": "T7交付明确Tray/Companion/QuickCapture/CurrentAppCapture/DesktopNotification/ConnectorDetail预留；未新增Core能力",
+      "structureEvidence": "E:\\Codex 项目\\OS开发\\exports\\LCOS_Figma_全设计包_20260913\\pages\\5277-602\\frames\\5292-2794\\nodes-000.json",
+      "visibleTextSample": [
+        "已完成项保留。",
+        "查看未完成项",
+        "这次没有完成",
+        "输入内容仍在。",
+        "收件结果尚未确认",
+        "先核对原操作，不重复提交。",
+        "核对原操作",
+        "正在核对原操作"
+      ]
+    },
+    {
+      "nodeId": "5292:2964",
+      "inventoryIds": [
+        "S32"
+      ],
+      "disposition": "桌面P1/能力预留：不计作Web当前全部缺失，不冒充已实现",
+      "basis": "T7交付明确Tray/Companion/QuickCapture/CurrentAppCapture/DesktopNotification/ConnectorDetail预留；未新增Core能力",
+      "structureEvidence": "E:\\Codex 项目\\OS开发\\exports\\LCOS_Figma_全设计包_20260913\\pages\\5277-602\\frames\\5292-2964\\nodes-000.json",
+      "visibleTextSample": [
+        "选择发给当前会话，或收下稍后整理。",
+        "给当前会话",
+        "收下稍后整理",
+        "没有完成捕获",
+        "未发送任何未经确认的内容。",
+        "捕获结果尚未确认",
+        "先核对原请求。",
+        "核对请求"
+      ]
+    },
+    {
+      "nodeId": "5292:3077",
+      "inventoryIds": [
+        "S32"
+      ],
+      "disposition": "桌面P1/能力预留：不计作Web当前全部缺失，不冒充已实现",
+      "basis": "T7交付明确Tray/Companion/QuickCapture/CurrentAppCapture/DesktopNotification/ConnectorDetail预留；未新增Core能力",
+      "structureEvidence": "E:\\Codex 项目\\OS开发\\exports\\LCOS_Figma_全设计包_20260913\\pages\\5277-602\\frames\\5292-3077\\nodes-000.json",
+      "visibleTextSample": [
+        "当前状态已更新，无需重复操作。",
+        "这条提醒已过期",
+        "先查看任务的最新状态。",
+        "原目标暂时找不到",
+        "可以打开项目继续查找。",
+        "打开项目",
+        "本机暂未连接",
+        "连接恢复后再读取最新状态。"
+      ]
+    },
+    {
+      "nodeId": "5292:3296",
+      "inventoryIds": [
+        "S32"
+      ],
+      "disposition": "桌面P1/能力预留：不计作Web当前全部缺失，不冒充已实现",
+      "basis": "T7交付明确Tray/Companion/QuickCapture/CurrentAppCapture/DesktopNotification/ConnectorDetail预留；未新增Core能力",
+      "structureEvidence": "E:\\Codex 项目\\OS开发\\exports\\LCOS_Figma_全设计包_20260913\\pages\\5277-602\\frames\\5292-3296\\nodes-000.json",
+      "visibleTextSample": [
+        "需要检查来源与宿主版本。",
+        "检查来源状态",
+        "来源已停用",
+        "停止新扫描；已导入材料仍然保留。",
+        "来源操作未完成",
+        "请查看本次操作的具体原因。",
+        "来源状态尚未确认",
+        "读取状态失败，不代表安装失败。"
+      ]
+    },
+    {
+      "nodeId": "5295:2814",
+      "inventoryIds": [
+        "S32",
+        "S04"
+      ],
+      "disposition": "P0浏览器收件专项；完整入口/未知结果交互待接，不能算全部实现",
+      "basis": "T7交付153状态：BrowserCapture13态；ProfessionalWindowStage capture-inbox当前不可用，Assembly有真实Capture来源",
+      "structureEvidence": "E:\\Codex 项目\\OS开发\\exports\\LCOS_Figma_全设计包_20260913\\pages\\5277-602\\frames\\5295-2814\\nodes-000.json",
+      "visibleTextSample": []
+    },
+    {
+      "nodeId": "5295:2841",
+      "inventoryIds": [
+        "S32"
+      ],
+      "disposition": "桌面P1/能力预留：不计作Web当前全部缺失，不冒充已实现",
+      "basis": "T7交付明确Tray/Companion/QuickCapture/CurrentAppCapture/DesktopNotification/ConnectorDetail预留；未新增Core能力",
+      "structureEvidence": "E:\\Codex 项目\\OS开发\\exports\\LCOS_Figma_全设计包_20260913\\pages\\5277-602\\frames\\5295-2841\\nodes-000.json",
+      "visibleTextSample": []
+    },
+    {
+      "nodeId": "5295:2860",
+      "inventoryIds": [
+        "S32"
+      ],
+      "disposition": "桌面P1/能力预留：不计作Web当前全部缺失，不冒充已实现",
+      "basis": "T7交付明确Tray/Companion/QuickCapture/CurrentAppCapture/DesktopNotification/ConnectorDetail预留；未新增Core能力",
+      "structureEvidence": "E:\\Codex 项目\\OS开发\\exports\\LCOS_Figma_全设计包_20260913\\pages\\5277-602\\frames\\5295-2860\\nodes-000.json",
+      "visibleTextSample": []
+    },
+    {
+      "nodeId": "5295:2878",
+      "inventoryIds": [
+        "S32"
+      ],
+      "disposition": "桌面P1/能力预留：不计作Web当前全部缺失，不冒充已实现",
+      "basis": "T7交付明确Tray/Companion/QuickCapture/CurrentAppCapture/DesktopNotification/ConnectorDetail预留；未新增Core能力",
+      "structureEvidence": "E:\\Codex 项目\\OS开发\\exports\\LCOS_Figma_全设计包_20260913\\pages\\5277-602\\frames\\5295-2878\\nodes-000.json",
+      "visibleTextSample": []
+    },
+    {
+      "nodeId": "5295:2910",
+      "inventoryIds": [
+        "S32"
+      ],
+      "disposition": "桌面P1/能力预留：不计作Web当前全部缺失，不冒充已实现",
+      "basis": "T7交付明确Tray/Companion/QuickCapture/CurrentAppCapture/DesktopNotification/ConnectorDetail预留；未新增Core能力",
+      "structureEvidence": "E:\\Codex 项目\\OS开发\\exports\\LCOS_Figma_全设计包_20260913\\pages\\5277-602\\frames\\5295-2910\\nodes-000.json",
+      "visibleTextSample": []
+    },
+    {
+      "nodeId": "5295:2942",
+      "inventoryIds": [
+        "S32"
+      ],
+      "disposition": "桌面P1/能力预留：不计作Web当前全部缺失，不冒充已实现",
+      "basis": "T7交付明确Tray/Companion/QuickCapture/CurrentAppCapture/DesktopNotification/ConnectorDetail预留；未新增Core能力",
+      "structureEvidence": "E:\\Codex 项目\\OS开发\\exports\\LCOS_Figma_全设计包_20260913\\pages\\5277-602\\frames\\5295-2942\\nodes-000.json",
+      "visibleTextSample": []
+    },
+    {
+      "nodeId": "5295:2955",
+      "inventoryIds": [
+        "S32"
+      ],
+      "disposition": "桌面P1/能力预留：不计作Web当前全部缺失，不冒充已实现",
+      "basis": "T7交付明确Tray/Companion/QuickCapture/CurrentAppCapture/DesktopNotification/ConnectorDetail预留；未新增Core能力",
+      "structureEvidence": "E:\\Codex 项目\\OS开发\\exports\\LCOS_Figma_全设计包_20260913\\pages\\5277-602\\frames\\5295-2955\\nodes-000.json",
+      "visibleTextSample": []
+    },
+    {
+      "nodeId": "5295:3032",
+      "inventoryIds": [
+        "S01",
+        "S02",
+        "S04",
+        "S32"
+      ],
+      "disposition": "部分：Assembly真实收件/回执已接，跨端入口需验收",
+      "basis": "AssemblyBody四来源+apply逐项回执；窄窗CSS columns降级，仍复用同一artifact/source身份",
+      "structureEvidence": "E:\\Codex 项目\\OS开发\\exports\\LCOS_Figma_全设计包_20260913\\pages\\5277-602\\frames\\5295-3032\\nodes-000.json",
+      "visibleTextSample": [
+        "山野 · 品牌探索",
+        "返回"
+      ]
+    },
+    {
+      "nodeId": "5295:3097",
+      "inventoryIds": [
+        "S30",
+        "S31"
+      ],
+      "disposition": "部分：真实恢复owner存在，完整状态与显眼恢复入口尚待施工",
+      "basis": "RecoverySection.allowedActions与collaboration.recover；未知结果核对原operation，不新建或补发",
+      "structureEvidence": "E:\\Codex 项目\\OS开发\\exports\\LCOS_Figma_全设计包_20260913\\pages\\5277-602\\frames\\5295-3097\\nodes-000.json",
+      "visibleTextSample": [
+        "山野 · 品牌探索",
+        "返回"
+      ]
+    },
+    {
+      "nodeId": "5295:3149",
+      "inventoryIds": [
+        "S32",
+        "S29"
+      ],
+      "disposition": "权限范围专项；不能用Waiting输入或普通确定按钮替代",
+      "basis": "T7 PermissionRequestBody8态；须沿用真实source scope与授权owner，当前专业窗口没有独立完整permission body",
+      "structureEvidence": "E:\\Codex 项目\\OS开发\\exports\\LCOS_Figma_全设计包_20260913\\pages\\5277-602\\frames\\5295-3149\\nodes-000.json",
+      "visibleTextSample": [
+        "山野 · 品牌探索",
+        "返回"
+      ]
+    },
+    {
+      "nodeId": "5295:3180",
+      "inventoryIds": [
+        "S27",
+        "S29"
+      ],
+      "disposition": "部分：真实接收者/会话存在，列表及窄屏/减弱动态需端到端验证",
+      "basis": "T7当前receiver11态；WorkflowCardPool接收者lane与Composer既有receiver owner",
+      "structureEvidence": "E:\\Codex 项目\\OS开发\\exports\\LCOS_Figma_全设计包_20260913\\pages\\5277-602\\frames\\5295-3180\\nodes-000.json",
+      "visibleTextSample": [
+        "山野 · 品牌探索",
+        "返回"
+      ]
+    },
+    {
+      "nodeId": "5295:3207",
+      "inventoryIds": [
+        "S30",
+        "S32"
+      ],
+      "disposition": "部分：Work View诊断存在，runtime-doctor独立窗口尚不可用",
+      "basis": "ConversationWorkViewBody.readDiagnostics；第二批Abort隔离；Stage.runtime-doctor占位",
+      "structureEvidence": "E:\\Codex 项目\\OS开发\\exports\\LCOS_Figma_全设计包_20260913\\pages\\5277-602\\frames\\5295-3207\\nodes-000.json",
+      "visibleTextSample": [
+        "山野 · 品牌探索",
+        "返回"
+      ]
+    },
+    {
+      "nodeId": "5295:3247",
+      "inventoryIds": [
+        "S01",
+        "S02",
+        "S04",
+        "S32"
+      ],
+      "disposition": "部分：Assembly真实收件/回执已接，跨端入口需验收",
+      "basis": "AssemblyBody四来源+apply逐项回执；窄窗CSS columns降级，仍复用同一artifact/source身份",
+      "structureEvidence": "E:\\Codex 项目\\OS开发\\exports\\LCOS_Figma_全设计包_20260913\\pages\\5277-602\\frames\\5295-3247\\nodes-000.json",
+      "visibleTextSample": [
+        "声音收集",
+        "候选视觉",
+        "交付备选",
+        "灵感集",
+        "3 份材料",
+        "3 项",
+        "山野 · 品牌探索",
+        "−     100%     +"
+      ]
+    },
+    {
+      "nodeId": "5300:3968",
+      "inventoryIds": [
+        "S27",
+        "S29"
+      ],
+      "disposition": "部分：真实接收者/会话存在，列表及窄屏/减弱动态需端到端验证",
+      "basis": "T7当前receiver11态；WorkflowCardPool接收者lane与Composer既有receiver owner",
+      "structureEvidence": "E:\\Codex 项目\\OS开发\\exports\\LCOS_Figma_全设计包_20260913\\pages\\5277-602\\frames\\5300-3968\\nodes-000.json",
+      "visibleTextSample": [
+        "声音收集",
+        "候选视觉",
+        "交付备选",
+        "灵感集",
+        "3 份材料",
+        "3 项",
+        "山野 · 品牌探索",
+        "−     100%     +"
+      ]
+    },
+    {
+      "nodeId": "5304:3611",
+      "inventoryIds": [
+        "S32",
+        "S04"
+      ],
+      "disposition": "P0浏览器收件专项；完整入口/未知结果交互待接，不能算全部实现",
+      "basis": "T7交付153状态：BrowserCapture13态；ProfessionalWindowStage capture-inbox当前不可用，Assembly有真实Capture来源",
+      "structureEvidence": "E:\\Codex 项目\\OS开发\\exports\\LCOS_Figma_全设计包_20260913\\pages\\5277-602\\frames\\5304-3611\\nodes-000.json",
+      "visibleTextSample": []
+    },
+    {
+      "nodeId": "5304:3633",
+      "inventoryIds": [
+        "S32",
+        "S04"
+      ],
+      "disposition": "P0浏览器收件专项；完整入口/未知结果交互待接，不能算全部实现",
+      "basis": "T7交付153状态：BrowserCapture13态；ProfessionalWindowStage capture-inbox当前不可用，Assembly有真实Capture来源",
+      "structureEvidence": "E:\\Codex 项目\\OS开发\\exports\\LCOS_Figma_全设计包_20260913\\pages\\5277-602\\frames\\5304-3633\\nodes-000.json",
+      "visibleTextSample": []
+    },
+    {
+      "nodeId": "5306:4393",
+      "inventoryIds": [
+        "S32"
+      ],
+      "disposition": "桌面P1/能力预留：不计作Web当前全部缺失，不冒充已实现",
+      "basis": "T7交付明确Tray/Companion/QuickCapture/CurrentAppCapture/DesktopNotification/ConnectorDetail预留；未新增Core能力",
+      "structureEvidence": "E:\\Codex 项目\\OS开发\\exports\\LCOS_Figma_全设计包_20260913\\pages\\5277-602\\frames\\5306-4393\\nodes-000.json",
+      "visibleTextSample": []
+    },
+    {
+      "nodeId": "5345:869",
+      "inventoryIds": [
+        "S27",
+        "S29"
+      ],
+      "disposition": "跨组：草稿引用/移除/替换与输入保留归既有Composer owner；当前任务取用已接，完整替换链待主代理并证",
+      "basis": "页13采用说明与B05-B07/B18-B19结构；useLcosReferenceStore引用身份，不创建新内容节点",
+      "structureEvidence": "E:\\Codex 项目\\OS开发\\exports\\LCOS_Figma_全设计包_20260913\\pages\\5332-2\\frames\\5345-869\\nodes-000.json",
+      "visibleTextSample": [
+        "让风景成为视觉语言。",
+        "山野探索",
+        "山野探索  ⌄",
+        "山野主视觉",
+        "沿用这个工作流，探索更克制的山野视觉。",
+        "已加入草稿 · 未发送",
+        "移除引用",
+        "替换"
+      ]
+    },
+    {
+      "nodeId": "5345:1190",
+      "inventoryIds": [
+        "S27",
+        "S29"
+      ],
+      "disposition": "跨组：草稿引用/移除/替换与输入保留归既有Composer owner；当前任务取用已接，完整替换链待主代理并证",
+      "basis": "页13采用说明与B05-B07/B18-B19结构；useLcosReferenceStore引用身份，不创建新内容节点",
+      "structureEvidence": "E:\\Codex 项目\\OS开发\\exports\\LCOS_Figma_全设计包_20260913\\pages\\5332-2\\frames\\5345-1190\\nodes-000.json",
+      "visibleTextSample": [
+        "让风景成为视觉语言。",
+        "山野探索",
+        "山野探索  ⌄",
+        "山野主视觉",
+        "沿用这个工作流，探索更克制的山野视觉。",
+        "引用已移除 · 输入保留",
+        "移除引用",
+        "替换"
+      ]
+    },
+    {
+      "nodeId": "5345:1441",
+      "inventoryIds": [
+        "S27",
+        "S29"
+      ],
+      "disposition": "跨组：草稿引用/移除/替换与输入保留归既有Composer owner；当前任务取用已接，完整替换链待主代理并证",
+      "basis": "页13采用说明与B05-B07/B18-B19结构；useLcosReferenceStore引用身份，不创建新内容节点",
+      "structureEvidence": "E:\\Codex 项目\\OS开发\\exports\\LCOS_Figma_全设计包_20260913\\pages\\5332-2\\frames\\5345-1441\\nodes-000.json",
+      "visibleTextSample": [
+        "让风景成为视觉语言。",
+        "山野探索",
+        "山野探索  ⌄",
+        "研究到主张",
+        "沿用这个工作流，探索更克制的山野视觉。",
+        "引用已替换 · 未发送",
+        "移除引用",
+        "替换"
+      ]
+    },
+    {
+      "nodeId": "5345:1692",
+      "inventoryIds": [
+        "S27",
+        "S29",
+        "S30"
+      ],
+      "disposition": "跨组：提交/拒绝/未知回执归真实Composer命令，不能凭本组静态预览宣称完成",
+      "basis": "页13B08-B11/B17/B20-B21原动作：未确认核对原发送、不重复提交；B20/B21只画到提交等待",
+      "structureEvidence": "E:\\Codex 项目\\OS开发\\exports\\LCOS_Figma_全设计包_20260913\\pages\\5332-2\\frames\\5345-1692\\nodes-000.json",
+      "visibleTextSample": [
+        "山野探索",
+        "山野探索  ⌄",
+        "山野主视觉",
+        "沿用这个工作流，探索更克制的山野视觉。",
+        "正在提交 · 核对引用",
+        "移除引用",
+        "替换",
+        "查看提交状态"
+      ]
+    },
+    {
+      "nodeId": "5345:1950",
+      "inventoryIds": [
+        "S27",
+        "S29",
+        "S30"
+      ],
+      "disposition": "跨组：提交/拒绝/未知回执归真实Composer命令，不能凭本组静态预览宣称完成",
+      "basis": "页13B08-B11/B17/B20-B21原动作：未确认核对原发送、不重复提交；B20/B21只画到提交等待",
+      "structureEvidence": "E:\\Codex 项目\\OS开发\\exports\\LCOS_Figma_全设计包_20260913\\pages\\5332-2\\frames\\5345-1950\\nodes-000.json",
+      "visibleTextSample": [
+        "山野探索",
+        "山野探索  ⌄",
+        "山野主视觉",
+        "沿用这个工作流，探索更克制的山野视觉。",
+        "已发送 · 引用已采用",
+        "移除引用",
+        "替换",
+        "查看本次采用"
+      ]
+    },
+    {
+      "nodeId": "5345:2208",
+      "inventoryIds": [
+        "S27",
+        "S29",
+        "S30"
+      ],
+      "disposition": "跨组：提交/拒绝/未知回执归真实Composer命令，不能凭本组静态预览宣称完成",
+      "basis": "页13B08-B11/B17/B20-B21原动作：未确认核对原发送、不重复提交；B20/B21只画到提交等待",
+      "structureEvidence": "E:\\Codex 项目\\OS开发\\exports\\LCOS_Figma_全设计包_20260913\\pages\\5332-2\\frames\\5345-2208\\nodes-000.json",
+      "visibleTextSample": [
+        "山野探索",
+        "山野探索  ⌄",
+        "山野主视觉",
+        "沿用这个工作流，探索更克制的山野视觉。",
+        "未发送 · 引用不可用",
+        "移除引用",
+        "替换",
+        "选择其他工作流"
+      ]
+    },
+    {
+      "nodeId": "5345:2466",
+      "inventoryIds": [
+        "S27",
+        "S29",
+        "S30"
+      ],
+      "disposition": "跨组：提交/拒绝/未知回执归真实Composer命令，不能凭本组静态预览宣称完成",
+      "basis": "页13B08-B11/B17/B20-B21原动作：未确认核对原发送、不重复提交；B20/B21只画到提交等待",
+      "structureEvidence": "E:\\Codex 项目\\OS开发\\exports\\LCOS_Figma_全设计包_20260913\\pages\\5332-2\\frames\\5345-2466\\nodes-000.json",
+      "visibleTextSample": [
+        "山野探索",
+        "山野探索  ⌄",
+        "山野主视觉",
+        "沿用这个工作流，探索更克制的山野视觉。",
+        "发送结果尚未确认",
+        "移除引用",
+        "替换",
+        "核对这次发送"
+      ]
+    },
+    {
+      "nodeId": "5345:2724",
+      "inventoryIds": [
+        "S25",
+        "S26",
+        "S27"
+      ],
+      "disposition": "部分：刷新/不可用应消费真实对象，卡片不可用不允许伪进入",
+      "basis": "WorkflowCardPool真实Warehouse+exact workspace resolution；不可用原因保持，内容版本需跟既有owner",
+      "structureEvidence": "E:\\Codex 项目\\OS开发\\exports\\LCOS_Figma_全设计包_20260913\\pages\\5332-2\\frames\\5345-2724\\nodes-000.json",
+      "visibleTextSample": [
+        "山野探索",
+        "山野探索  ⌄",
+        "山野主视觉",
+        "沿用这个工作流，探索更克制的山野视觉。",
+        "内容已更新 · 需重新确认",
+        "移除引用",
+        "替换",
+        "重新预览并确认"
+      ]
+    },
+    {
+      "nodeId": "5345:2982",
+      "inventoryIds": [
+        "S25",
+        "S26",
+        "S27"
+      ],
+      "disposition": "部分：刷新/不可用应消费真实对象，卡片不可用不允许伪进入",
+      "basis": "WorkflowCardPool真实Warehouse+exact workspace resolution；不可用原因保持，内容版本需跟既有owner",
+      "structureEvidence": "E:\\Codex 项目\\OS开发\\exports\\LCOS_Figma_全设计包_20260913\\pages\\5332-2\\frames\\5345-2982\\nodes-000.json",
+      "visibleTextSample": [
+        "山野探索",
+        "山野探索  ⌄",
+        "山野主视觉",
+        "沿用这个工作流，探索更克制的山野视觉。",
+        "无法使用这个工作流",
+        "移除引用",
+        "替换",
+        "选择其他工作流"
+      ]
+    },
+    {
+      "nodeId": "5347:838",
+      "inventoryIds": [
+        "S26",
+        "S28"
+      ],
+      "disposition": "第二批轻预览三动作已接；窄屏/减弱动态需实屏复核",
+      "basis": "B03精确文本：用于当前会话/打开工作流现场/续接原会话/无明确来源会话/返回手牌",
+      "structureEvidence": "E:\\Codex 项目\\OS开发\\exports\\LCOS_Figma_全设计包_20260913\\pages\\5332-2\\frames\\5347-838\\nodes-000.json",
+      "visibleTextSample": [
+        "工作流",
+        "返回",
+        "用于当前会话",
+        "打开工作流现场",
+        "续接原会话",
+        "无明确来源会话"
+      ]
+    },
+    {
+      "nodeId": "5347:900",
+      "inventoryIds": [
+        "S27",
+        "S28"
+      ],
+      "disposition": "部分：窄屏草稿与焦点跨Composer协作；无新发送入口",
+      "basis": "页13N02与B05-B07同草稿owner，Keyboard focus与pointer preview分离",
+      "structureEvidence": "E:\\Codex 项目\\OS开发\\exports\\LCOS_Figma_全设计包_20260913\\pages\\5332-2\\frames\\5347-900\\nodes-000.json",
+      "visibleTextSample": [
+        "返回",
+        "山野探索  ⌄",
+        "山野主视觉",
+        "品牌研究.pdf",
+        "沿用这个工作流，探索更克制的山野视觉。",
+        "已加入草稿 · 未发送",
+        "移除引用",
+        "替换"
+      ]
+    },
+    {
+      "nodeId": "5347:1037",
+      "inventoryIds": [
+        "S02",
+        "S08"
+      ],
+      "disposition": "已接基本响应式；需真实窗口截图复核",
+      "basis": "Assembly专业CSS的container query单列与第一批compact window不改拓扑",
+      "structureEvidence": "E:\\Codex 项目\\OS开发\\exports\\LCOS_Figma_全设计包_20260913\\pages\\5332-2\\frames\\5347-1037\\nodes-000.json",
+      "visibleTextSample": [
+        "装配",
+        "收起"
+      ]
+    },
+    {
+      "nodeId": "5353:1605",
+      "inventoryIds": [
+        "S24",
+        "S28"
+      ],
+      "disposition": "已有reduced-motion分支；空白关闭已补，动作语义不因减弱动态改变",
+      "basis": "WorkflowHandView useReducedMotion及手牌CSS无旋转降级",
+      "structureEvidence": "E:\\Codex 项目\\OS开发\\exports\\LCOS_Figma_全设计包_20260913\\pages\\5332-2\\frames\\5353-1605\\nodes-000.json",
+      "visibleTextSample": [
+        "保留夜空的通透感，\n让山脊更清晰一些。",
+        "山野的另一种可能",
+        "让风景成为视觉语言。",
+        "研究到主张",
+        "关于声音",
+        "交付前检查",
+        "风景与故事",
+        "收起"
+      ]
+    },
+    {
+      "nodeId": "5353:1788",
+      "inventoryIds": [
+        "S26",
+        "S28"
+      ],
+      "disposition": "第二批轻预览三动作已接；窄屏/减弱动态需实屏复核",
+      "basis": "B03精确文本：用于当前会话/打开工作流现场/续接原会话/无明确来源会话/返回手牌",
+      "structureEvidence": "E:\\Codex 项目\\OS开发\\exports\\LCOS_Figma_全设计包_20260913\\pages\\5332-2\\frames\\5353-1788\\nodes-000.json",
+      "visibleTextSample": [
+        "保留夜空的通透感，\n让山脊更清晰一些。",
+        "山野的另一种可能",
+        "让风景成为视觉语言。",
+        "用于当前会话",
+        "打开工作流现场",
+        "续接原会话",
+        "无明确来源会话",
+        "返回手牌"
+      ]
+    },
+    {
+      "nodeId": "5353:2095",
+      "inventoryIds": [
+        "S27",
+        "S29"
+      ],
+      "disposition": "跨组：草稿引用/移除/替换与输入保留归既有Composer owner；当前任务取用已接，完整替换链待主代理并证",
+      "basis": "页13采用说明与B05-B07/B18-B19结构；useLcosReferenceStore引用身份，不创建新内容节点",
+      "structureEvidence": "E:\\Codex 项目\\OS开发\\exports\\LCOS_Figma_全设计包_20260913\\pages\\5332-2\\frames\\5353-2095\\nodes-000.json",
+      "visibleTextSample": [
+        "让风景成为视觉语言。",
+        "山野探索",
+        "山野探索  ⌄",
+        "山野主视觉",
+        "沿用这个工作流，探索更克制的山野视觉。",
+        "已加入草稿 · 未发送",
+        "移除引用",
+        "替换"
+      ]
+    },
+    {
+      "nodeId": "5354:1647",
+      "inventoryIds": [
+        "S04",
+        "S05",
+        "S20"
+      ],
+      "disposition": "部分/跨组：真实逐项回执存在，已有集合仅定位/原请求核对需Drop owner并证",
+      "basis": "页13采用说明16-17：首次成员与位置、已有投影定位、未知结果不二次提交",
+      "structureEvidence": "E:\\Codex 项目\\OS开发\\exports\\LCOS_Figma_全设计包_20260913\\pages\\5332-2\\frames\\5354-1647\\nodes-000.json",
+      "visibleTextSample": [
+        "森林的肌理",
+        "品牌研究.pdf",
+        "保留夜空的通透感，\n让山脊更清晰一些。",
+        "山野的另一种可能",
+        "让风景成为视觉语言。",
+        "正在核对原操作",
+        "等待结果；来源仍在。",
+        "查看状态"
+      ]
+    },
+    {
+      "nodeId": "5354:1792",
+      "inventoryIds": [
+        "S04",
+        "S05",
+        "S20"
+      ],
+      "disposition": "部分/跨组：真实逐项回执存在，已有集合仅定位/原请求核对需Drop owner并证",
+      "basis": "页13采用说明16-17：首次成员与位置、已有投影定位、未知结果不二次提交",
+      "structureEvidence": "E:\\Codex 项目\\OS开发\\exports\\LCOS_Figma_全设计包_20260913\\pages\\5332-2\\frames\\5354-1792\\nodes-000.json",
+      "visibleTextSample": [
+        "森林的肌理",
+        "品牌研究.pdf",
+        "保留夜空的通透感，\n让山脊更清晰一些。",
+        "山野的另一种可能",
+        "让风景成为视觉语言。",
+        "已定位已有集合",
+        "同一个集合，来源仍可返回。",
+        "返回来源"
+      ]
+    },
+    {
+      "nodeId": "5354:1937",
+      "inventoryIds": [
+        "S27",
+        "S29",
+        "S30"
+      ],
+      "disposition": "跨组：提交/拒绝/未知回执归真实Composer命令，不能凭本组静态预览宣称完成",
+      "basis": "页13B08-B11/B17/B20-B21原动作：未确认核对原发送、不重复提交；B20/B21只画到提交等待",
+      "structureEvidence": "E:\\Codex 项目\\OS开发\\exports\\LCOS_Figma_全设计包_20260913\\pages\\5332-2\\frames\\5354-1937\\nodes-000.json",
+      "visibleTextSample": [
+        "山野探索",
+        "山野探索  ⌄",
+        "山野主视觉",
+        "沿用这个工作流，探索更克制的山野视觉。",
+        "正在核对原发送",
+        "移除引用",
+        "替换",
+        "查看提交状态"
+      ]
+    },
+    {
+      "nodeId": "5358:1712",
+      "inventoryIds": [
+        "S27",
+        "S29"
+      ],
+      "disposition": "跨组：草稿引用/移除/替换与输入保留归既有Composer owner；当前任务取用已接，完整替换链待主代理并证",
+      "basis": "页13采用说明与B05-B07/B18-B19结构；useLcosReferenceStore引用身份，不创建新内容节点",
+      "structureEvidence": "E:\\Codex 项目\\OS开发\\exports\\LCOS_Figma_全设计包_20260913\\pages\\5332-2\\frames\\5358-1712\\nodes-000.json",
+      "visibleTextSample": [
+        "保留夜空的通透感，\n让山脊更清晰一些。",
+        "山野的另一种可能",
+        "让风景成为视觉语言。",
+        "研究到主张",
+        "关于声音",
+        "交付前检查",
+        "风景与故事",
+        "收起"
+      ]
+    },
+    {
+      "nodeId": "5358:1895",
+      "inventoryIds": [
+        "S27",
+        "S29"
+      ],
+      "disposition": "跨组：草稿引用/移除/替换与输入保留归既有Composer owner；当前任务取用已接，完整替换链待主代理并证",
+      "basis": "页13采用说明与B05-B07/B18-B19结构；useLcosReferenceStore引用身份，不创建新内容节点",
+      "structureEvidence": "E:\\Codex 项目\\OS开发\\exports\\LCOS_Figma_全设计包_20260913\\pages\\5332-2\\frames\\5358-1895\\nodes-000.json",
+      "visibleTextSample": [
+        "山野的另一种可能",
+        "让风景成为视觉语言。",
+        "研究到主张",
+        "替换引用",
+        "打开工作流现场",
+        "续接原会话",
+        "无明确来源会话",
+        "返回手牌"
+      ]
+    },
+    {
+      "nodeId": "5362:2142",
+      "inventoryIds": [
+        "S27",
+        "S29",
+        "S30"
+      ],
+      "disposition": "跨组：提交/拒绝/未知回执归真实Composer命令，不能凭本组静态预览宣称完成",
+      "basis": "页13B08-B11/B17/B20-B21原动作：未确认核对原发送、不重复提交；B20/B21只画到提交等待",
+      "structureEvidence": "E:\\Codex 项目\\OS开发\\exports\\LCOS_Figma_全设计包_20260913\\pages\\5332-2\\frames\\5362-2142\\nodes-000.json",
+      "visibleTextSample": [
+        "山野探索",
+        "山野探索  ⌄",
+        "研究到主张",
+        "沿用这个工作流，探索更克制的山野视觉。",
+        "正在提交 · 研究到主张",
+        "移除引用",
+        "替换",
+        "查看提交状态"
+      ]
+    },
+    {
+      "nodeId": "5362:2308",
+      "inventoryIds": [
+        "S27",
+        "S29",
+        "S30"
+      ],
+      "disposition": "跨组：提交/拒绝/未知回执归真实Composer命令，不能凭本组静态预览宣称完成",
+      "basis": "页13B08-B11/B17/B20-B21原动作：未确认核对原发送、不重复提交；B20/B21只画到提交等待",
+      "structureEvidence": "E:\\Codex 项目\\OS开发\\exports\\LCOS_Figma_全设计包_20260913\\pages\\5332-2\\frames\\5362-2308\\nodes-000.json",
+      "visibleTextSample": [
+        "山野探索",
+        "山野探索  ⌄",
+        "山野主视觉",
+        "沿用这个工作流，探索更克制的山野视觉。",
+        "正在提交 · 未附工作流",
+        "移除引用",
+        "替换",
+        "查看提交状态"
+      ]
+    }
+  ]
+}

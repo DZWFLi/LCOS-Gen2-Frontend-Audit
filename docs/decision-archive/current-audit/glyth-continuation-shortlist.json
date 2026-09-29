@@ -1,0 +1,164 @@
+{
+  "date": "2026-09-26",
+  "items": [
+    {
+      "id": "G01",
+      "priority": "P1",
+      "name": "原位继续无需先打开大工作窗",
+      "figma": [
+        "5243:50",
+        "5246:59",
+        "5249:104",
+        "5280:669"
+      ],
+      "caller": [
+        "navigation/LcosActionArc.tsx:267",
+        "composer/LcosComposerHost.tsx:97",
+        "professional/ConversationWorkViewBody.tsx:188"
+      ],
+      "available": "CoreCollaborationClient.readSession/readDiagnostics/send；shell.openComposer；既有messageId/continuationOperationId",
+      "fix": "复用WorkView的canSend+已确认operation准备同一近场Composer。operation读取失败呈现重读，不提示用户必须绕到工作窗。继续当前会话不创建新Run/新Glyth。",
+      "proof": "从真实Glyth Arc继续→读取→输入→send；不同会话/切项目期间异步结果不串目标；无operation或canSend=false诚实阻断。"
+    },
+    {
+      "id": "G02",
+      "priority": "P1",
+      "name": "Arc主动作跟随真实用户态",
+      "figma": [
+        "5243:50",
+        "5249:104",
+        "5279:147"
+      ],
+      "caller": [
+        "nodes/GlythNodeBody.tsx:48",
+        "navigation/LcosActionArc.tsx:140",
+        "apps/web-gen2/src/interaction/nodeCommandModel.ts:160"
+      ],
+      "available": "projection.userState/activity.pendingInputId/recentReturns/capabilities；readPendingInput+answerInput；readReviews+approve/retry；shell.openWindow",
+      "fix": "ready继续/打开；needs_user有pendingInput主动作回答，有pending_review主动作复核；working看进度/打开。More仍保留低频功能。扩既有shared command model，Arc与右键共用，禁止第二命令表。",
+      "proof": "相同Glyth状态切换时主动作正确；回答复用原Run，复核保留expectedBaseRevisionId；未知能力禁用并说明。"
+    },
+    {
+      "id": "G03",
+      "priority": "P1",
+      "name": "四种续工模式回到Composer渐进展开",
+      "figma": [
+        "5246:59",
+        "5249:415",
+        "5249:726",
+        "5249:1044",
+        "5249:1355"
+      ],
+      "caller": [
+        "professional/ConversationWorkViewBody.tsx:209",
+        "professional/ConversationWorkViewBody.tsx:300",
+        "professional/conversationContinuationActions.ts",
+        "composer/LcosComposerHost.tsx"
+      ],
+      "available": "resume/newSession(selected_context|blank_new)/fork；retainContinuationIntent；capabilities.canResume/canSelectedContext/canBlankNew/canFork；newSession input.checkout=shared|isolated",
+      "fix": "不要四个常驻黑pill占据工作窗；从More显式选模式，在现有Composer内显示继承范围与确认。不支持原生fork不能自动退精选新建。history/context/checkout三轴分开；目录能力没真实证据时不装作可选。",
+      "proof": "空白不带草稿refs；精选仅明确ordered refs；失败重试同operationId；只有确认后调用真实命令。"
+    },
+    {
+      "id": "G04",
+      "priority": "P1",
+      "name": "来源确认、提交快照与当前草稿分离",
+      "figma": [
+        "5249:1665",
+        "5249:1975",
+        "5280:239",
+        "5280:282",
+        "5280:325",
+        "5280:368"
+      ],
+      "caller": [
+        "composer/LcosComposerHost.tsx:159",
+        "professional/conversationContinuationActions.ts:16",
+        "professional/ConversationWorkViewBody.tsx:214"
+      ],
+      "available": "ReferenceStore ordered draft；retainContinuationIntent.orderedReferences；readDiagnostics.promptReceipts[messageId].orderedReferences/contextResolution；shell草稿key",
+      "fix": "在当前Composer增加可折叠真实引用确认，发送时保留本次snapshot；继续输入是另一个草稿。发送回执可从promptReceipts回显。新建session的RecoveryProjection未暴露operation-level orderedReferences，跨重启不能伪造完整提交清单。",
+      "proof": "发送过程中改草稿不改变已提交payload；失败重试稳定messageId；两个目标之间不会串草稿或把历史receipt当当前输入。"
+    },
+    {
+      "id": "G05",
+      "priority": "P1",
+      "name": "错误、离线、未知结果、恢复不拍成同一个error",
+      "figma": [
+        "5251:407",
+        "5251:674",
+        "5251:941",
+        "5253:509",
+        "5253:776",
+        "5252:453",
+        "5280:468",
+        "5280:618",
+        "5280:668"
+      ],
+      "caller": [
+        "composer/LcosComposerHost.tsx:72",
+        "ui/nearfield/composerViewTypes.ts",
+        "ui/nearfield/LcosComposerView.tsx",
+        "professional/RecoverySection.tsx:14"
+      ],
+      "available": "CollaborationProductErrorV1.code/retryable；readDiagnostics operations.status/steps/cancel/allowedActions/revision；recover(expectedRevision)；既有feedbackAction槽",
+      "fix": "把已提供的unknown/offline/reconciling/blocked视觉状态真正接入。unknown给核对原操作，不给直接新建；创建失败但外部已存在仅恢复绑定；取消需等确认。RecoverySection字典漏了现合约recover_external（仍写retry_external_create），产品按钮要用中文真实动作。",
+      "proof": "断网/timeout不会显示已失败或成功；重试不新operation；requiresFreshRead实际读取后使用最新revision；cancel未知不会提前移除。"
+    },
+    {
+      "id": "G06",
+      "priority": "P2",
+      "name": "伴身种子和创建阶段取代工程卡",
+      "figma": [
+        "5250:319",
+        "5250:593",
+        "5250:860",
+        "5250:1130"
+      ],
+      "caller": [
+        "nodes/GlythNodeBody.tsx:48",
+        "professional/ConversationWorkViewBody.tsx:240",
+        "professional/RecoverySection.tsx"
+      ],
+      "available": "readDiagnostics operation.status+steps+cancel；已有GlythBodyView；现有shell/presentation局部状态",
+      "fix": "现newSession只提交journal intent，不能把accepted receipt画成外部已创建。阶段可在原Glyth旁用非持久seed/轻提示表现，成功提交不要强制打开Diagnostics。无需新增Entity/Session/数据库；节点定位需等待真实投影。",
+      "proof": "正在创建不出现第二canonical会话；external已创建但bind失败不再create；projection未ready不声称能定位。"
+    },
+    {
+      "id": "G07",
+      "priority": "P2",
+      "name": "完成动效与轻来源尾迹接真实确认",
+      "figma": [
+        "5250:1397",
+        "5250:1670",
+        "5262:1078"
+      ],
+      "caller": [
+        "nodes/GlythNodeBody.tsx:153",
+        "ui/glyth/GlythBodyView.tsx",
+        "ui/glyth/glythPresence.ts:90"
+      ],
+      "available": "GlythBodyView.reaction {id,kind}；现presence已防remount重播；readDiagnostics确认stage或projection/recentReturns真实新id",
+      "fix": "生产body当前不传reaction。只对新确认的真实完成事件触发一次burst/bounce，之后收成来源轻标；不得按钮点击/drop release就庆祝。主稿没有真实source lineage字段时只显示能证实的mode/operation来源，不画编造关系。",
+      "proof": "一次完成一次动效；reload不重播；unknown/失败不成功动效；reduced-motion尊重现owner。"
+    },
+    {
+      "id": "G08",
+      "priority": "P1",
+      "name": "同会话多消费者共享订阅生命周期",
+      "figma": [
+        "5243:50",
+        "5280:669",
+        "5388:118"
+      ],
+      "caller": [
+        "collaboration/collaborationSessionStore.ts:113",
+        "collaboration/useCollaborationSession.ts",
+        "composer/LcosReceiverIdentity.tsx:12"
+      ],
+      "available": "现有project级SSE与CollaborationSessionStore",
+      "fix": "已修：Set改为同项目同会话消费者计数；每事件每会话只刷新一次；最后会话及Artifact订阅都退出才关SSE。保持同一个store和SSE owner。",
+      "proof": "已过12项回归（含8项facade约束）：3消费者逐个退出、同项目两会话、Artifact监听共用、重挂及跨项目同ID。"
+    }
+  ]
+}

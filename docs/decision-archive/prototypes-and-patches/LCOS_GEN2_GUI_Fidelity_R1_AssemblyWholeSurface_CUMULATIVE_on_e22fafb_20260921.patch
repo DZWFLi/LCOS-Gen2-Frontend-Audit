@@ -1,0 +1,2163 @@
+diff --git a/huabu/apps/web/src/lcos/professional/AssemblyBody.lifecycle.test.tsx b/huabu/apps/web/src/lcos/professional/AssemblyBody.lifecycle.test.tsx
+index 9a3fa61..fcb6332 100644
+--- a/huabu/apps/web/src/lcos/professional/AssemblyBody.lifecycle.test.tsx
++++ b/huabu/apps/web/src/lcos/professional/AssemblyBody.lifecycle.test.tsx
+@@ -225,12 +225,12 @@ it('opens a scene using the resolved real workspace canvas id', async () => {
+   const take = host.querySelector<HTMLButtonElement>(
+     '[data-lcos-assembly-more]',
+   );
+-  if (!take) throw new Error('取用 action missing');
++  if (!take) { throw new Error('取用 action missing'); }
+   await act(async () => take.click());
+   const open = [...host.querySelectorAll<HTMLButtonElement>('button')].find(
+     (button) => button.textContent?.includes('预览现场'),
+   );
+-  if (!open) throw new Error('现场 open action missing');
++  if (!open) { throw new Error('现场 open action missing'); }
+   await act(async () => open.click());
+ 
+   expect(mocks.openWindow).toHaveBeenCalledWith(
+@@ -335,7 +335,7 @@ it('offers every exact context scope workspace and opens the selected canvas', a
+   const take = host.querySelector<HTMLButtonElement>(
+     '[data-lcos-assembly-more]',
+   );
+-  if (!take) throw new Error('取用 action missing');
++  if (!take) { throw new Error('取用 action missing'); }
+   await act(async () => take.click());
+ 
+   const menuItems = [
+@@ -373,11 +373,11 @@ it('enters an exact context child workspace through the shared route, without gu
+   await render('project-a');
+   await act(async () => mocks.warehouse.mock.results[0]?.value);
+   const take = host.querySelector<HTMLButtonElement>('[data-lcos-assembly-more]');
+-  if (!take) throw new Error('取用 action missing');
++  if (!take) { throw new Error('取用 action missing'); }
+   await act(async () => take.click());
+   const enter = [...host.querySelectorAll<HTMLButtonElement>('[data-test-dropdown-item]')]
+     .find((button) => button.textContent?.includes('进入现场'));
+-  if (!enter) throw new Error('进入现场 action missing');
++  if (!enter) { throw new Error('进入现场 action missing'); }
+   await act(async () => enter.click());
+ 
+   expect(mocks.beginChildNavigation).toHaveBeenCalledWith(expect.objectContaining({
+@@ -395,3 +395,72 @@ function deferred<T>(): { promise: Promise<T>; resolve: (value: T) => void } {
+   });
+   return { promise, resolve };
+ }
++
++
++it('uses the canonical scope reference type when taking a workflow into the draft', async () => {
++  mocks.warehouse.mockResolvedValue({ items: [{ entityRef: { id: 'workflow-scope' }, kind: 'workflow', title: '工作流', usageCount: 0 }] });
++  mocks.workspaces.mockResolvedValue([]);
++  await render('project-a');
++  await act(async () => host.querySelector<HTMLButtonElement>('[data-lcos-assembly-add]')?.click());
++  expect(mocks.addReference).toHaveBeenCalledWith(expect.objectContaining({ entityType: 'scope', entityId: 'workflow-scope' }));
++  expect(mocks.apply).not.toHaveBeenCalled();
++});
++
++it('submits selected source identities once and retains only incomplete selections', async () => {
++  mocks.warehouse.mockResolvedValue({ items: [artifact('a', '材料 A'), artifact('b', '材料 B')] });
++  mocks.workspaces.mockResolvedValue([]);
++  const pending = deferred<unknown>();
++  mocks.apply.mockReturnValue(pending.promise);
++  await render('project-a');
++  await act(async () => {
++    host.querySelector<HTMLInputElement>('input[aria-label="选择 材料 A"]')?.click();
++    host.querySelector<HTMLInputElement>('input[aria-label="选择 材料 B"]')?.click();
++  });
++  const apply = host.querySelector<HTMLButtonElement>('[data-lcos-assembly-batch-apply]');
++  expect(apply).not.toBeNull();
++  await act(async () => { apply?.click(); apply?.click(); });
++  expect(mocks.apply).toHaveBeenCalledTimes(1);
++  expect(mocks.apply).toHaveBeenCalledWith('project-a', expect.objectContaining({
++    projectId: 'project-a', targetRef: { kind: 'main' },
++    sourceRefs: [{ kind: 'artifact', id: 'a' }, { kind: 'artifact', id: 'b' }],
++  }));
++  expect(apply?.disabled).toBe(true);
++  pending.resolve({ schemaVersion: 1, projectId: 'project-a', allApplied: false, results: [
++    { sourceRef: { kind: 'artifact', id: 'a' }, status: 'applied', channel: 'main', changeSetId: 'change-a' },
++    { sourceRef: { kind: 'artifact', id: 'b' }, status: 'failed', channel: 'error', message: '未落地' },
++  ] });
++  await act(async () => pending.promise);
++  expect(host.querySelector<HTMLInputElement>('input[aria-label="选择 材料 A"]')?.checked).toBe(false);
++  expect(host.querySelector<HTMLInputElement>('input[aria-label="选择 材料 B"]')?.checked).toBe(true);
++  expect(host.textContent).toContain('1 项落地');
++  expect(host.textContent).not.toContain('全部成功');
++});
++
++it('does not call an unconfirmed transport failure a failed write or retry it automatically', async () => {
++  mocks.warehouse.mockResolvedValue({ items: [artifact('a', '材料 A')] });
++  mocks.workspaces.mockResolvedValue([]);
++  mocks.apply.mockRejectedValue(new Error('连接中断'));
++  await render('project-a');
++  await act(async () => host.querySelector<HTMLButtonElement>('[data-lcos-assembly-drop]')?.click());
++  expect(host.textContent).toContain('未收到完整装配回执');
++  expect(host.textContent).toContain('尚未确认');
++  expect(host.textContent).not.toContain('投放失败 · 没有来源落地');
++  expect(mocks.apply).toHaveBeenCalledTimes(1);
++});
++
++it('does not reopen a source preview when its late result arrives after closing', async () => {
++  mocks.warehouse.mockResolvedValue({ items: [] });
++  mocks.workspaces.mockResolvedValue([]);
++  mocks.captureSnapshot.mockResolvedValue({ items: [{ id: 'capture-a', kind: 'web_page', source: { title: '原始网页', url: 'https://example.org/a' } }] });
++  const pending = deferred<unknown>();
++  mocks.capturePreview.mockReturnValue(pending.promise);
++  await render('project-a');
++  await act(async () => host.querySelector<HTMLButtonElement>('[data-lcos-assembly-source-tab="capture"]')?.click());
++  await act(async () => host.querySelector<HTMLButtonElement>('[data-lcos-assembly-preview-open="capture:capture-a"]')?.click());
++  expect(host.querySelector('[data-lcos-assembly-preview]')).not.toBeNull();
++  await act(async () => host.querySelector<HTMLButtonElement>('[data-lcos-assembly-preview-close]')?.click());
++  pending.resolve({ type: 'text', text: '已经关闭的旧内容' });
++  await act(async () => pending.promise);
++  expect(host.querySelector('[data-lcos-assembly-preview]')).toBeNull();
++  expect(host.textContent).not.toContain('已经关闭的旧内容');
++});
+diff --git a/huabu/apps/web/src/lcos/professional/AssemblyBody.tsx b/huabu/apps/web/src/lcos/professional/AssemblyBody.tsx
+index 17448e9..88faf45 100644
+--- a/huabu/apps/web/src/lcos/professional/AssemblyBody.tsx
++++ b/huabu/apps/web/src/lcos/professional/AssemblyBody.tsx
+@@ -12,11 +12,11 @@
+ 
+ import {
+   AssemblySourceBayController,
++  CoreArtifactClient,
+   assemblyCardViewV1,
+   isCoreAbortError,
+-  type AssemblySourceTabV1,
+ } from '@local-creative-os/web-gen2';
+-import { BookOpen, FileAudio, FileImage, FileText, FolderOpen, MessageCircle, PlusCircle, Search, Send } from 'lucide-react';
++import { BookOpen, FileAudio, FileImage, FileText, FolderOpen, MessageCircle, PlusCircle, Send } from 'lucide-react';
+ import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
+ import { useNavigate } from 'react-router-dom';
+ 
+@@ -27,17 +27,25 @@ import { LcosComposerHost } from '../composer/LcosComposerHost';
+ import { useLcosDropStore } from '../lcosDropState';
+ import { acquireDrop } from '../lcosRecognizers';
+ import { useLcosReferenceStore } from '../lcosReferenceState';
+-import { assemblySourceRefOf } from './assemblySourceRef';
+ import { beginChildWorksiteNavigation } from '../navigation/childWorksiteNavigation';
+ import { childSurfaceForItem, workspaceTargetsForItem } from '../navigation/workspaceTargets';
+ import { useLcosShellStore } from '../shell/lcosShellStore';
+ import { LcosSurfaceFeedback } from '../ui/LcosSurfaceFeedback';
+-import { lcosTokens } from '../ui/lcosTokens';
++import { LcosButton } from '../ui/primitives/LcosButton';
++import { AssemblyItemView } from '../ui/professional/AssemblyItemView';
+ import { AssemblyMasonryView } from '../ui/professional/AssemblyMasonryView';
+ import { AssemblyMaterialView } from '../ui/professional/AssemblyMaterialView';
++import { assemblyMaterialShape, captureMaterialShape, matchesAssemblyFilter, retainAssemblySelection,
++  toggleAssemblySelection, assemblyDate } from '../ui/professional/assemblyPresentation';
++import { AssemblyPreviewView } from '../ui/professional/AssemblyPreviewView';
++import { AssemblyReceiptView } from '../ui/professional/AssemblyReceiptView';
+ import { AssemblySourceTabsView } from '../ui/professional/AssemblySourceTabsView';
++import { AssemblyToolbarView } from '../ui/professional/AssemblyToolbarView';
++import { AssemblyArtifactMedia, AssemblyCaptureMedia, AssemblyResourceMedia } from './AssemblySourceMedia';
++import { assemblySourceRefOf } from './assemblySourceRef';
+ 
+ import type { LcosComposerTarget } from '../shell/lcosShellStore';
++import type { AssemblyMaterialFilter } from '../ui/professional/assemblyPresentation';
+ import type {
+   AssemblyApplyItemResultV1,
+   AssemblyApplyResultV1,
+@@ -50,6 +58,7 @@ import type {
+   WarehouseItemV1,
+ } from '@local-creative-os/contracts';
+ import type { Workspace } from '@local-creative-os/domain';
++import type { AssemblySourceTabV1 } from '@local-creative-os/web-gen2';
+ 
+ /**
+  * The body that opened a Composer intent is its only presentation owner.
+@@ -77,7 +86,7 @@ const FAMILY_LABEL: Readonly<Record<NonNullable<WarehouseItemV1['visualFamily']>
+   image: '图像',
+   video: '视频',
+   audio: '音频',
+-  pdf: 'PDF',
++  pdf: '文档',
+   ppt: '演示文稿',
+   markdown: '文本',
+   link: '链接',
+@@ -87,16 +96,9 @@ const FAMILY_LABEL: Readonly<Record<NonNullable<WarehouseItemV1['visualFamily']>
+ 
+ const TAB_LABEL: Readonly<Record<AssemblySourceTabV1, string>> = {
+   project: '项目',
+-  capture: 'Capture',
++  capture: '收件',
+   sources: '来源',
+-  skills: 'Skills',
+-};
+-
+-const TAB_OWNER_LABEL: Readonly<Record<AssemblySourceTabV1, string>> = {
+-  project: 'Project Warehouse',
+-  capture: 'Capture Space（系统级暂存）',
+-  sources: 'Resources / Sources',
+-  skills: 'Skills（分层只读）',
++  skills: '技能',
+ };
+ 
+ const EMPTY_TAB_TEXT: Readonly<Record<AssemblySourceTabV1, string>> = {
+@@ -108,7 +110,7 @@ const EMPTY_TAB_TEXT: Readonly<Record<AssemblySourceTabV1, string>> = {
+ 
+ const SKILL_SOURCE_LABEL: Readonly<Record<SkillCatalogEntryV1['source'], string>> = {
+   system: '系统',
+-  user: '项目',
++  user: '用户',
+   merged: '两层合并',
+ };
+ 
+@@ -117,9 +119,9 @@ function materialFamily(item: WarehouseItemV1): string {
+ }
+ 
+ function MaterialGlyph({ item }: { readonly item: WarehouseItemV1 }): React.JSX.Element {
+-  if (item.visualFamily === 'image') return <FileImage className="h-5 w-5" aria-hidden />;
+-  if (item.visualFamily === 'audio' || item.visualFamily === 'video') return <FileAudio className="h-5 w-5" aria-hidden />;
+-  if (item.kind === 'collection' || item.kind === 'scene' || item.kind === 'workflow' || item.kind === 'context') return <FolderOpen className="h-5 w-5" aria-hidden />;
++  if (item.visualFamily === 'image') { return <FileImage className="h-5 w-5" aria-hidden />; }
++  if (item.visualFamily === 'audio' || item.visualFamily === 'video') { return <FileAudio className="h-5 w-5" aria-hidden />; }
++  if (item.kind === 'collection' || item.kind === 'scene' || item.kind === 'workflow' || item.kind === 'context') { return <FolderOpen className="h-5 w-5" aria-hidden />; }
+   return <FileText className="h-5 w-5" aria-hidden />;
+ }
+ /** Assembly 的对象入口：会话保留会话工作视图，其余实体进入 Reader。 */
+@@ -157,7 +159,7 @@ export function assemblyWindowOf(item: WarehouseItemV1): AssemblyOpenTarget['bod
+ /** previewRef 目前无 Core producer；仅接受可直接作为 img src 的 URL，拒绝 opaque id。 */
+ export function previewUrlOf(item: WarehouseItemV1): string | undefined {
+   const value = item.previewRef?.trim();
+-  if (value === undefined || value === '') return undefined;
++  if (value === undefined || value === '') { return undefined; }
+   return /^(?:https?:\/\/|blob:|data:image\/)/i.test(value) ? value : undefined;
+ }
+ 
+@@ -210,10 +212,10 @@ const OUTCOME_LABEL: Readonly<Record<AssemblyOutcomeToneV1, string>> = {
+ };
+ 
+ export function assemblyOutcomeToneOf(result: AssemblyApplyItemResultV1): AssemblyOutcomeToneV1 {
+-  if (result.status === 'failed') return 'failed';
+-  if (result.status === 'applied') return 'applied';
+-  if (result.channel === 'already-member') return 'already-member';
+-  if (result.channel === 'unsupported') return 'unsupported';
++  if (result.status === 'failed') { return 'failed'; }
++  if (result.status === 'applied') { return 'applied'; }
++  if (result.channel === 'already-member') { return 'already-member'; }
++  if (result.channel === 'unsupported') { return 'unsupported'; }
+   return 'skipped';
+ }
+ 
+@@ -233,7 +235,7 @@ export function describeAssemblyApplyResultV1(result: AssemblyApplyResultV1): As
+   });
+ 
+   const counts = Object.fromEntries(OUTCOME_TONES.map((tone) => [tone, 0])) as Record<AssemblyOutcomeToneV1, number>;
+-  for (const line of lines) counts[line.tone] += 1;
++  for (const line of lines) { counts[line.tone] += 1; }
+   const total = lines.length;
+   const landed = counts.applied;
+ 
+@@ -245,13 +247,13 @@ export function describeAssemblyApplyResultV1(result: AssemblyApplyResultV1): As
+   ].filter((part): part is string => part !== undefined).join(' · ');
+ 
+   let tone: AssemblyApplyToneV1;
+-  if (total === 0) tone = 'skipped';
+-  else if (counts.failed > 0) tone = landed > 0 ? 'partial' : 'failed';
+-  else if (landed === total) tone = 'applied';
+-  else if (landed > 0) tone = 'partial';
+-  else if (counts['already-member'] === total) tone = 'already-present';
+-  else if (counts.unsupported === total) tone = 'unsupported';
+-  else tone = 'skipped';
++  if (total === 0) { tone = 'skipped'; }
++  else if (counts.failed > 0) { tone = landed > 0 ? 'partial' : 'failed'; }
++  else if (landed === total) { tone = 'applied'; }
++  else if (landed > 0) { tone = 'partial'; }
++  else if (counts['already-member'] === total) { tone = 'already-present'; }
++  else if (counts.unsupported === total) { tone = 'unsupported'; }
++  else { tone = 'skipped'; }
+ 
+   const headline = ((): string => {
+     switch (tone) {
+@@ -276,13 +278,13 @@ export function describeAssemblyApplyResultV1(result: AssemblyApplyResultV1): As
+ function targetLabel(target: AssemblyTargetRefV1): string {
+   switch (target.kind) {
+     case 'main':
+-      return 'Main';
++      return '主画布';
+     case 'conversation':
+       return '当前会话';
+     case 'context':
+-      return '当前 Context';
++      return '当前上下文';
+     case 'workflow':
+-      return '当前 Workflow';
++      return '当前工作流';
+     case 'workspace':
+     case 'scene':
+       return '当前工作现场';
+@@ -294,11 +296,11 @@ function targetLabel(target: AssemblyTargetRefV1): string {
+ function captureTitle(item: CaptureStagingItemV0): string {
+   const source = item.source as Readonly<Record<string, unknown>>;
+   const title = source['title'];
+-  if (typeof title === 'string' && title.trim() !== '') return title;
++  if (typeof title === 'string' && title.trim() !== '') { return title; }
+   const url = source['url'];
+-  if (typeof url === 'string' && url.trim() !== '') return url;
++  if (typeof url === 'string' && url.trim() !== '') { return url; }
+   const localPath = source['localPath'];
+-  if (typeof localPath === 'string' && localPath.trim() !== '') return localPath;
++  if (typeof localPath === 'string' && localPath.trim() !== '') { return localPath; }
+   return item.kind;
+ }
+ 
+@@ -321,6 +323,7 @@ interface AssemblyPreviewV1 {
+   readonly path?: string;
+   readonly error?: string;
+   readonly lines?: readonly { readonly label: string; readonly value: string }[];
++  readonly sourceLabel?: string;
+ }
+ export function AssemblyBody({
+   projectId,
+@@ -331,6 +334,7 @@ export function AssemblyBody({
+ }): React.JSX.Element {
+   const session = useMemo(() => createLcosCoreSession(), []);
+   const navigate = useNavigate();
++  const artifacts = useMemo(() => new CoreArtifactClient(session.http), [session]);
+   const activeSurface = useLcosShellStore((s) => s.activeSurface);
+   const activeWorkspaceId = useLcosShellStore((s) => s.activeWorkspaceId);
+   const openWindow = useLcosShellStore((s) => s.openWindow);
+@@ -358,7 +362,13 @@ export function AssemblyBody({
+   const [searchInput, setSearchInput] = useState('');
+   const [applyResult, setApplyResult] = useState<AssemblyApplyResultV1 | null>(null);
+   const [applyingKey, setApplyingKey] = useState<string | null>(null);
+-  const [activeItemKey, setActiveItemKey] = useState<string | null>(null);
++  const [selectedIds, setSelectedIds] = useState<readonly string[]>([]);
++  const [filter, setFilter] = useState<AssemblyMaterialFilter>('all');
++  const [localSearch, setLocalSearch] = useState('');
++  const [applyUnconfirmed, setApplyUnconfirmed] = useState(false);
++  const previewRetry = useRef<(() => void) | undefined>(undefined);
++  const previewOrigin = useRef<HTMLElement | null>(null);
++  const applyPending = useRef<number | null>(null);
+   const [preview, setPreview] = useState<AssemblyPreviewV1 | undefined>(undefined);
+ 
+   /**
+@@ -367,6 +377,7 @@ export function AssemblyBody({
+    * stale 的 Capture/Resource/Skill 预览绝不进入当前 Project/tab；Abort 也不得写 error 预览。
+    */
+   const previewGeneration = useRef(0);
++  const workspaceGeneration = useRef(0);
+   const invalidatePreview = useCallback((): void => {
+     previewGeneration.current += 1;
+   }, []);
+@@ -392,7 +403,9 @@ export function AssemblyBody({
+     setApplyResult(null);
+     setApplyingKey(null);
+     setPreview(undefined);
+-    setActiveItemKey(null);
++    setSelectedIds([]); setFilter('all'); setLocalSearch('');
++    applyPending.current = null;
++    setApplyUnconfirmed(false);
+     setSearchInput('');
+     setWorkspaces([]);
+     setWorkspaceError(false);
+@@ -403,26 +416,23 @@ export function AssemblyBody({
+     applyGeneration.current += 1;
+     setApplyResult(null);
+     setApplyingKey(null);
++    applyPending.current = null;
++    setApplyUnconfirmed(false);
+   }, [targetKey]);
+ 
+-  useEffect(() => {
+-    let active = true;
+-    void session.projects
+-      .getWorkspaces(projectId)
+-      .then((sites) => {
+-        if (!active) return;
+-        setWorkspaces(sites);
+-        setWorkspaceError(false);
+-      })
+-      .catch(() => {
+-        if (!active) return;
+-        // 现场信息是 Assembly 的旁路（用于 target 解析），失败不能打死材料浏览。
+-        setWorkspaceError(true);
+-      });
+-    return () => {
+-      active = false;
+-    };
++  const reloadWorkspaces = useCallback((): void => {
++    const generation = ++workspaceGeneration.current;
++    void session.projects.getWorkspaces(projectId).then((sites) => {
++      if (workspaceGeneration.current !== generation) { return; }
++      setWorkspaces(sites); setWorkspaceError(false);
++    }).catch(() => {
++      if (workspaceGeneration.current === generation) { setWorkspaceError(true); }
++    });
+   }, [projectId, session]);
++  useEffect(() => {
++    reloadWorkspaces();
++    return () => { workspaceGeneration.current += 1; };
++  }, [reloadWorkspaces]);
+ 
+   const tab: AssemblySourceTabV1 = bay?.tab ?? 'project';
+ 
+@@ -430,6 +440,8 @@ export function AssemblyBody({
+     // 切 source tab：旧 tab 的预览完成不再属于当前上下文。
+     invalidatePreview();
+     setPreview(undefined);
++    setSelectedIds([]); setFilter('all'); setLocalSearch('');
++    previewRetry.current = undefined;
+     controller.selectTab(next);
+     controller.loadTab(next);
+   };
+@@ -437,7 +449,7 @@ export function AssemblyBody({
+   const addToComposer = (item: WarehouseItemV1): void => {
+     // 加入统一 Composer 草稿（reference store draft；Selection≠Reference）
+     useLcosReferenceStore.getState().addEntityToDraft({
+-      entityType: item.kind,
++      entityType: assemblyCardViewV1(item, new Set()).refEntityType,
+       entityId: item.entityRef.id,
+       ...(item.title === undefined ? {} : { displayLabel: item.title }),
+     });
+@@ -459,50 +471,40 @@ export function AssemblyBody({
+     });
+   };
+ 
+-  const applySource = useCallback((sourceRef: AssemblySourceRefV1, refreshTab?: AssemblySourceTabV1): void => {
+-    // canonical mutation 用 invocation 时刻捕获的 project/target 发出：已发出的写入
+-    // 不会因为之后切了 project/target 就被 Abort 假装没发生（不做假的事务语义）。
++  const applySources = useCallback((sourceRefs: readonly AssemblySourceRefV1[], refreshTab?: AssemblySourceTabV1): void => {
++    if (sourceRefs.length === 0 || applyPending.current !== null) { return; }
+     const invocationProjectId = projectId;
+     const invocationTarget = targetRef;
+-    applyGeneration.current += 1;
+-    const generation = applyGeneration.current;
++    const generation = ++applyGeneration.current;
++    applyPending.current = generation;
+     const isCurrentContext = (): boolean => applyGeneration.current === generation;
+-
+-    setApplyingKey(`${sourceRef.kind}:${sourceRef.id}`);
+-    setApplyResult(null);
+-    void session.assembly
+-      .apply(invocationProjectId, {
+-        schemaVersion: 1,
+-        projectId: invocationProjectId,
+-        sourceRefs: [sourceRef],
+-        targetRef: invocationTarget,
+-      })
+-      .then((result) => {
+-        // 旧 context 的回执不得写进当前 applyResult，也不得刷新当前 Source Bay。
+-        if (!isCurrentContext()) return;
+-        setApplyResult(result);
+-        // canonical result refresh：只重读真的会被 apply 改变的那一路（Capture 物化后 resolved 变化）。
+-        if (refreshTab !== undefined) void controller.refreshApplied([refreshTab]);
+-      })
+-      .catch((error: unknown) => {
+-        if (!isCurrentContext()) return;
+-        setApplyResult({
+-          schemaVersion: 1,
+-          projectId: invocationProjectId,
+-          results: [{
+-            sourceRef,
+-            status: 'failed',
+-            channel: 'error',
+-            message: error instanceof Error ? error.message : String(error),
+-          }],
+-          allApplied: false,
+-        });
+-      })
+-      .finally(() => {
+-        if (!isCurrentContext()) return;
+-        setApplyingKey(null);
+-      });
++    setApplyingKey(sourceRefs.length === 1 ? `${sourceRefs[0]!.kind}:${sourceRefs[0]!.id}` : 'selection');
++    setApplyResult(null); setApplyUnconfirmed(false);
++    void session.assembly.apply(invocationProjectId, {
++      schemaVersion: 1, projectId: invocationProjectId, sourceRefs, targetRef: invocationTarget,
++    }).then((result) => {
++      if (!isCurrentContext()) { return; }
++      setApplyResult(result);
++      // Keep incomplete sources selected. Existing Core result, not an inferred success count.
++      const completed = new Set(result.results.filter((line) => line.status === 'applied' || (line.status === 'skipped' && line.channel === 'already-member'))
++        .map((line) => `${line.sourceRef.kind}:${line.sourceRef.id}`));
++      setSelectedIds((current) => current.filter((id) => !completed.has(id)));
++      if (refreshTab !== undefined) { void controller.refreshApplied([refreshTab]); }
++    }).catch((error: unknown) => {
++      if (!isCurrentContext()) { return; }
++      // The write may already have happened. Never auto-retry an unconfirmed mutation.
++      setApplyUnconfirmed(true);
++      setApplyResult({ schemaVersion: 1, projectId: invocationProjectId, allApplied: false,
++        results: sourceRefs.map((sourceRef) => ({ sourceRef, status: 'failed', channel: 'error',
++          message: error instanceof Error ? error.message : String(error) })) });
++    }).finally(() => {
++      if (!isCurrentContext()) { return; }
++      applyPending.current = null; setApplyingKey(null);
++    });
+   }, [controller, projectId, session, targetRef]);
++  const applySource = useCallback((sourceRef: AssemblySourceRefV1, refreshTab?: AssemblySourceTabV1): void => {
++    applySources([sourceRef], refreshTab);
++  }, [applySources]);
+ 
+   const beginAssemblyDrag = (
+     event: React.DragEvent<HTMLDivElement>,
+@@ -534,9 +536,9 @@ export function AssemblyBody({
+   };
+ 
+   const enterChildWorkspace = (item: WarehouseItemV1, workspace: Workspace): void => {
+-    if (workspace.canvasId === undefined) return;
++    if (workspace.canvasId === undefined) { return; }
+     const targetSurface = childSurfaceForItem(item, workspace);
+-    if (targetSurface === undefined) return;
++    if (targetSurface === undefined) { return; }
+     beginChildWorksiteNavigation({
+       projectId,
+       sourceSurface: activeSurface,
+@@ -554,6 +556,9 @@ export function AssemblyBody({
+   const beginPreview = (subjectKey: string, title: string, kind: AssemblyPreviewKindV1): number => {
+     previewGeneration.current += 1;
+     const generation = previewGeneration.current;
++    // A retry originates inside the preview; preserve the original material control.
++    if (typeof document !== 'undefined' && document.activeElement instanceof HTMLElement
++      && !document.activeElement.closest('[data-lcos-assembly-preview]')) { previewOrigin.current = document.activeElement; }
+     setPreview({ status: 'loading', subjectKey, title, kind });
+     return generation;
+   };
+@@ -562,34 +567,37 @@ export function AssemblyBody({
+   const previewCapture = (item: CaptureStagingItemV0): void => {
+     const subjectKey = `capture:${item.id}`;
+     const title = captureTitle(item);
++    previewRetry.current = () => previewCapture(item);
+     const generation = beginPreview(subjectKey, title, 'unknown');
+     void controller.previewCapture(item.id)
+       .then((value) => {
+-        if (!isPreviewCurrent(generation)) return;
++        if (!isPreviewCurrent(generation)) { return; }
+         setPreview({
+           status: 'ready',
+           subjectKey,
+           title,
+           kind: value.type,
++          sourceLabel: `收件 · ${assemblyDate(item.capturedAt)}`,
+           ...(value.text === undefined ? {} : { text: value.text }),
+           ...(value.dataUrl === undefined ? {} : { dataUrl: value.dataUrl }),
+-          ...(value.url === undefined ? {} : { url: value.url }),
++          ...(value.url === undefined ? (typeof item.source['url'] === 'string' ? { url: item.source['url'] } : {}) : { url: value.url }),
+           ...(value.path === undefined ? {} : { path: value.path }),
+         });
+       })
+       .catch((error: unknown) => {
+         // AbortError 不是「预览失败」——不得把取消写成 error 预览。
+-        if (isAbortLikeV1(error) || !isPreviewCurrent(generation)) return;
++        if (isAbortLikeV1(error) || !isPreviewCurrent(generation)) { return; }
+         setPreview({ status: 'error', subjectKey, title, kind: 'unknown', error: error instanceof Error ? error.message : String(error) });
+       });
+   };
+ 
+   const previewResource = (resourceId: string, title: string): void => {
+     const subjectKey = `resource:${resourceId}`;
++    previewRetry.current = () => previewResource(resourceId, title);
+     const generation = beginPreview(subjectKey, title, 'descriptor');
+     void controller.readResourceDescriptor(resourceId)
+       .then((descriptor: ResourceDescriptorV0) => {
+-        if (!isPreviewCurrent(generation)) return;
++        if (!isPreviewCurrent(generation)) { return; }
+         setPreview({
+           status: 'ready',
+           subjectKey,
+@@ -607,21 +615,22 @@ export function AssemblyBody({
+         });
+       })
+       .catch((error: unknown) => {
+-        if (isAbortLikeV1(error) || !isPreviewCurrent(generation)) return;
++        if (isAbortLikeV1(error) || !isPreviewCurrent(generation)) { return; }
+         setPreview({ status: 'error', subjectKey, title, kind: 'descriptor', error: error instanceof Error ? error.message : String(error) });
+       });
+   };
+ 
+   const previewSkill = (entry: SkillCatalogEntryV1): void => {
+     const subjectKey = `skill:${entry.id}`;
++    previewRetry.current = () => previewSkill(entry);
+     const generation = beginPreview(subjectKey, entry.name, 'skill');
+     void controller.readSkill(entry.id)
+       .then((value) => {
+-        if (!isPreviewCurrent(generation)) return;
++        if (!isPreviewCurrent(generation)) { return; }
+         setPreview({ status: 'ready', subjectKey, title: entry.name, kind: 'skill', text: value.content });
+       })
+       .catch((error: unknown) => {
+-        if (isAbortLikeV1(error) || !isPreviewCurrent(generation)) return;
++        if (isAbortLikeV1(error) || !isPreviewCurrent(generation)) { return; }
+         setPreview({ status: 'error', subjectKey, title: entry.name, kind: 'skill', error: error instanceof Error ? error.message : String(error) });
+       });
+   };
+@@ -632,476 +641,182 @@ export function AssemblyBody({
+   );
+ 
+   const summary = applyResult === null ? undefined : describeAssemblyApplyResultV1(applyResult);
+-  // Composer intent 的起点决定唯一 presentation host。Assembly 发起的引用草稿
+-  // 留在 Assembly；ConversationWorkView 不得再把同一 intent 二次挂载。
+   const assemblyOwnsComposer = assemblyComposerOwnsTarget(composerOpen, composerTarget);
+-  return (
+-    <div
+-      data-lcos-assembly
+-      data-lcos-assembly-target={targetRef.kind}
+-      data-lcos-assembly-target-id={'id' in targetRef ? targetRef.id : ''}
+-      className="lcos-assembly-body"
+-    >
+-      {/* Source Bay tab：四路共用同一个 Assembly region；切 tab 只换数据源，不换窗口。
+-          注意：这里刻意不使用 role=tab —— R2-4 的不变量是「role=tab 只属于显式窗口组」。 */}
+-      <AssemblySourceTabsView
+-        items={(['project', 'capture', 'sources', 'skills'] as const).map((key) => ({ key, label: TAB_LABEL[key] }))}
+-        value={tab}
+-        onSelect={selectTab}
+-        context={<span>{TAB_OWNER_LABEL[tab]} · 投放到{targetLabel(targetRef)}</span>}
+-      />
+-
+-      {/* Project Warehouse：canonical 搜索 + 分页 */}
+-      {tab === 'project' && (
+-        <div data-lcos-assembly-source-panel="project" className="flex flex-col gap-3">
+-          <form
+-            className="flex items-center gap-2"
+-            onSubmit={(event) => {
+-              event.preventDefault();
+-              controller.setWarehouseSearch(searchInput);
+-            }}
+-          >
+-            <label className="flex flex-1 items-center gap-2 rounded-xl px-3 py-2" style={{ background: lcosTokens.color.raised }}>
+-              <Search className="h-4 w-4 shrink-0" style={{ color: lcosTokens.color.muted }} aria-hidden />
+-              <input
+-                value={searchInput}
+-                onChange={(e) => setSearchInput(e.target.value)}
+-                placeholder="搜索仓库（服务端 canonical search）"
+-                data-lcos-assembly-search
+-                className="w-full bg-transparent text-sm outline-none"
+-                style={{ color: lcosTokens.color.text }}
+-              />
+-            </label>
+-            <button type="submit" className="min-h-11 rounded-full px-3 text-xs" style={{ background: lcosTokens.color.raised, color: lcosTokens.color.text }}>
+-              搜索
+-            </button>
+-            {(bay?.warehouseSearch ?? '') !== '' && (
+-              <button
+-                type="button"
+-                onClick={() => { setSearchInput(''); controller.setWarehouseSearch(''); }}
+-                className="min-h-11 rounded-full px-3 text-xs"
+-                style={{ color: lcosTokens.color.muted }}
+-              >
+-                清除
+-              </button>
+-            )}
+-          </form>
+-          <span className="text-xs" style={{ color: lcosTokens.color.muted }}>
+-            {bay?.warehouse?.items.length ?? 0} 项
+-            {bay?.warehouse?.totalApprox === undefined ? '' : ` · 约 ${bay.warehouse.totalApprox} 项`}
+-          </span>
+-
+-          {bay?.warehouseStatus === 'loading' && (
+-            <div className="py-10"><LcosSurfaceFeedback presentation="loading" message="正在读取项目仓库…" /></div>
+-          )}
+-          {bay?.warehouseStatus === 'error' && (
+-            <div className="py-10" data-lcos-assembly-error="project">
+-              <LcosSurfaceFeedback presentation="error" message={`仓库读取失败（${bay.warehouseErrorCode ?? 'read_error'}）`} onAction={() => controller.reloadWarehouse()} />
+-            </div>
+-          )}
+-          {workspaceError && bay?.warehouseStatus === 'loaded' && (
+-            <div className="flex items-center gap-2 py-2 text-xs" style={{ color: lcosTokens.color.muted }}>
+-              <span>现场信息读取失败，材料仍可使用。</span>
+-              <button
+-                type="button"
+-                data-lcos-assembly-workspace-retry
+-                onClick={() => {
+-                  void session.projects.getWorkspaces(projectId)
+-                    .then((sites) => { setWorkspaces(sites); setWorkspaceError(false); })
+-                    .catch(() => setWorkspaceError(true));
+-                }}
+-                className="min-h-11 rounded-full px-3"
+-              >
+-                重试读取现场
+-              </button>
+-            </div>
+-          )}
+-
+-          {bay?.warehouseStatus === 'loaded' && (bay.warehouse?.items.length ?? 0) === 0 && (
+-            <div className="py-10"><LcosSurfaceFeedback presentation="empty" message={EMPTY_TAB_TEXT.project} /></div>
+-          )}
+-
+-          {bay?.warehouseStatus === 'loaded' && (bay.warehouse?.items.length ?? 0) > 0 && (
+-            <>
+-              <div className="max-h-[52vh] overflow-y-auto pr-1">
+-                <AssemblyMasonryView>
+-                  {bay.warehouse!.items.map((item) => {
+-                    const card = assemblyCardViewV1(item, referencedKeySet);
+-                    const itemKey = `${item.kind}:${item.entityRef.id}`;
+-                    const previewUrl = previewUrlOf(item);
+-                    return (
+-                      <div
+-                        key={itemKey}
+-                        data-lcos-assembly-item={item.entityRef.id}
+-                        data-lcos-assembly-item-kind={item.kind}
+-                        data-lcos-assembly-item-species={card.species}
+-                        data-lcos-assembly-visual-family={item.visualFamily ?? item.kind}
+-                        draggable
+-                        onDragStart={(event) => beginAssemblyDrag(event, item.entityRef.id, assemblySourceRefOf(item))}
+-                        onDragEnd={finishAssemblyDrag}
+-                        className="group lcos-assembly-item"
+-                        data-visual-active={activeItemKey === itemKey}
+-                        data-referenced={card.referenced}
+-                        onMouseEnter={() => setActiveItemKey(itemKey)}
+-                        onMouseLeave={() => setActiveItemKey((current) => current === itemKey ? null : current)}
+-                      >
+-                        <AssemblyMaterialView
+-                          title={item.title ?? '未命名'}
+-                          familyLabel={materialFamily(item)}
+-                          {...(previewUrl === undefined ? {} : { previewUrl })}
+-                          fallbackGlyph={<MaterialGlyph item={item} />}
+-                        />
+-                        <div className="flex items-start justify-between gap-2">
+-                          <span className="min-w-0 text-sm font-medium" style={{ color: lcosTokens.color.text }}>
+-                            {item.title ?? '未命名'}
+-                          </span>
+-                          <span
+-                            className="shrink-0 rounded-full px-2 py-0.5 text-[10px]"
+-                            style={{ background: lcosTokens.color.raised, color: lcosTokens.color.muted }}
+-                            data-lcos-assembly-kind={item.kind}
+-                          >
+-                            {KIND_LABEL[item.kind] ?? item.kind}
+-                          </span>
+-                        </div>
+-                        <div className="flex items-center gap-1 text-[10px]" style={{ color: lcosTokens.color.muted }}>
+-                          {card.subtitle !== undefined ? <span>{card.subtitle}</span> : null}
+-                          {item.usageCount > 0 ? <span>· 使用 {item.usageCount}</span> : null}
+-                          {card.referenced ? <span>· 已在草稿</span> : null}
+-                        </div>
+-                        <div className="flex items-center gap-1 text-[10px]" style={{ color: lcosTokens.color.muted }}>
+-                          {item.updatedAt ? <span>{new Date(item.updatedAt).toLocaleDateString()}</span> : null}
+-                          {item.usedHere ? <span>· 已在此处</span> : null}
+-                        </div>
+-                        <button
+-                          type="button"
+-                          data-lcos-assembly-more
+-                          aria-expanded={activeItemKey === itemKey}
+-                          onClick={() => setActiveItemKey((current) => current === itemKey ? null : itemKey)}
+-                          className="self-start rounded-full px-2 py-1 text-xs"
+-                          style={{ color: lcosTokens.color.info }}
+-                        >
+-                          取用
+-                        </button>
+-                        <div data-lcos-assembly-actions className={`${activeItemKey === itemKey ? 'flex' : 'hidden'} items-center gap-1 group-focus-within:flex`}>
+-                          <button type="button" onClick={() => addToComposer(item)} title="加入 Composer 草稿" data-lcos-assembly-add className="flex items-center gap-1 rounded-full px-2 py-1 text-xs" style={{ color: lcosTokens.color.text }} >
+-                            <PlusCircle className="h-3.5 w-3.5" aria-hidden /> 草稿
+-                          </button>
+-                          {(() => {
+-                            if (item.kind === 'context' || item.kind === 'workflow' || item.kind === 'collection') {
+-                              const targets = workspaceTargetsForItem(item, workspaces);
+-                              if (targets.length > 0) {
+-                                return (
+-                                  <DropdownMenu trigger={
+-                                    <button type="button" className="min-h-11 rounded-full px-2 py-1 text-xs" style={{ color: lcosTokens.color.info }}>选择现场预览</button>
+-                                  }>
+-                                    {targets.map((workspace) => (
+-                                      <DropdownMenuSubmenu key={String(workspace.id)} label={`${workspace.name}${workspace.canvasId ? '' : ' · 画布尚未就绪'}`}>
+-                                        <DropdownMenuItem disabled={!workspace.canvasId}
+-                                          title={workspace.canvasId ? `预览 ${workspace.name}` : '现场画布尚未就绪'}
+-                                          onClick={() => { if (workspace.canvasId) openWindow('portal-preview', `预览现场 · ${workspace.name}`, workspace.canvasId, 'canvas'); }}>
+-                                          预览现场
+-                                        </DropdownMenuItem>
+-                                        <DropdownMenuItem disabled={!workspace.canvasId}
+-                                          title={workspace.canvasId ? `进入 ${workspace.name}` : '现场画布尚未就绪'}
+-                                          onClick={() => enterChildWorkspace(item, workspace)}>
+-                                          进入现场
+-                                        </DropdownMenuItem>
+-                                      </DropdownMenuSubmenu>
+-                                    ))}
+-                                  </DropdownMenu>
+-                                );
+-                              }
+-                            }
+-                            const openTarget = assemblyOpenTargetOf(item, workspaces);
+-                            if (openTarget.bodyKey === 'unavailable') {
+-                              return <span data-lcos-assembly-unavailable className="rounded-full px-2 py-1 text-xs" style={{ color: lcosTokens.color.muted }}>{workspaceError && (item.kind === 'scene' || item.kind === 'context' || item.kind === 'workflow' || item.kind === 'collection') ? '现场信息读取失败，请重试' : openTarget.label}</span>;
+-                            }
+-                            return (
+-                              <button
+-                                type="button"
+-                                onClick={() => openWindow(openTarget.bodyKey, `${openTarget.label} · ${item.title ?? '材料'}`, openTarget.target, openTarget.targetKind)}
+-                                title={openTarget.label}
+-                                className="flex items-center gap-1 rounded-full px-2 py-1 text-xs"
+-                                style={{ color: lcosTokens.color.info }}
+-                              >
+-                                {openTarget.bodyKey === 'conversation' ? <MessageCircle className="h-3.5 w-3.5" aria-hidden /> : <BookOpen className="h-3.5 w-3.5" aria-hidden />} {openTarget.label}
+-                              </button>
+-                            );
+-                          })()}
+-                          <button
+-                            type="button"
+-                            disabled={applyingKey !== null}
+-                            onClick={() => applySource(assemblySourceRefOf(item))}
+-                            title={`投放到${targetLabel(targetRef)}（真实 apply 回执）`}
+-                            data-lcos-assembly-drop
+-                            className="ml-auto flex items-center gap-1 rounded-full px-2 py-1 text-xs font-medium"
+-                            style={{ background: lcosTokens.color.inverse, color: lcosTokens.color.textOnInverse, minHeight: 32 }}
+-                          >
+-                            <Send className="h-3.5 w-3.5" aria-hidden /> 投放
+-                          </button>
+-                        </div>
+-                      </div>
+-                    );
+-                  })}
+-                </AssemblyMasonryView>
+-              </div>
+-              {bay.warehouseNextCursor !== undefined && (
+-                <button
+-                  type="button"
+-                  data-lcos-assembly-page-more
+-                  disabled={bay.warehouseLoadingMore}
+-                  onClick={() => controller.loadMoreWarehouse()}
+-                  className="self-center rounded-full px-4 py-2 text-xs"
+-                  style={{ background: lcosTokens.color.raised, color: lcosTokens.color.text, minHeight: 36 }}
+-                >
+-                  {bay.warehouseLoadingMore ? '读取中…' : '加载更多'}
+-                </button>
+-              )}
+-            </>
+-          )}
+-        </div>
+-      )}
+-      {/* Capture Space（system-level staging） */}
+-      {tab === 'capture' && (
+-        <div data-lcos-assembly-source-panel="capture" className="flex flex-col gap-2">
+-          {bay?.captureStatus === 'loading' && (
+-            <div className="py-10"><LcosSurfaceFeedback presentation="loading" message="正在读取暂存区…" /></div>
+-          )}
+-          {bay?.captureStatus === 'error' && (
+-            <div className="py-10" data-lcos-assembly-error="capture">
+-              <LcosSurfaceFeedback presentation="error" message={`暂存区读取失败（${bay.captureErrorCode ?? 'read_error'}）`} onAction={() => controller.reloadCapture()} />
+-            </div>
+-          )}
+-          {bay?.captureStatus === 'loaded' && (bay.captureItems?.length ?? 0) === 0 && (
+-            <div className="py-10"><LcosSurfaceFeedback presentation="empty" message={EMPTY_TAB_TEXT.capture} /></div>
+-          )}
+-          {bay?.captureStatus === 'loaded' && (bay.captureItems?.length ?? 0) > 0 && bay.captureItems!.map((item) => (
+-            <div
+-              key={item.id}
+-              data-lcos-assembly-capture-item={item.id}
+-              draggable
+-              onDragStart={(event) => beginAssemblyDrag(event, item.id, { kind: 'capture', id: item.id })}
+-              onDragEnd={finishAssemblyDrag}
+-              className="flex flex-col gap-1.5 rounded-2xl p-3"
+-              style={{ background: lcosTokens.color.surface, border: `1px solid ${lcosTokens.color.borderSubtle}` }}
+-            >
+-              <div className="flex items-center justify-between gap-2">
+-                <span className="min-w-0 truncate text-sm font-medium" style={{ color: lcosTokens.color.text }}>{captureTitle(item)}</span>
+-                <span className="shrink-0 rounded-full px-2 py-0.5 text-[10px]" style={{ background: lcosTokens.color.raised, color: lcosTokens.color.muted }}>{item.kind}</span>
+-              </div>
+-              <div className="flex items-center gap-1 text-[10px]" style={{ color: lcosTokens.color.muted }}>
+-                <span>{new Date(item.capturedAt).toLocaleString()}</span>
+-                {item.resolvedProjectId === undefined
+-                  ? <span>· 未物化</span>
+-                  : <span>· 已物化到 {item.resolvedProjectId === projectId ? '本项目' : item.resolvedProjectId}</span>}
+-              </div>
+-              <div className="flex items-center gap-1">
+-                <button type="button" data-lcos-assembly-preview-open={`capture:${item.id}`} onClick={() => previewCapture(item)} className="min-h-11 rounded-full px-2 py-1 text-xs" style={{ color: lcosTokens.color.info }}>预览</button>
+-                <button
+-                  type="button"
+-                  disabled={applyingKey !== null}
+-                  onClick={() => applySource({ kind: 'capture', id: item.id }, 'capture')}
+-                  title={`物化并投放到${targetLabel(targetRef)}（幂等：已物化则复用既有产物）`}
+-                  data-lcos-assembly-drop
+-                  className="ml-auto flex items-center gap-1 rounded-full px-2 py-1 text-xs font-medium"
+-                  style={{ background: lcosTokens.color.inverse, color: lcosTokens.color.textOnInverse, minHeight: 32 }}
+-                >
+-                  <Send className="h-3.5 w-3.5" aria-hidden /> 投放
+-                </button>
+-              </div>
+-            </div>
+-          ))}
+-        </div>
+-      )}
+-
+-      {/* Resources / Sources */}
+-      {tab === 'sources' && (
+-        <div data-lcos-assembly-source-panel="sources" className="flex flex-col gap-2">
+-          {bay?.resourceStatus === 'loading' && (
+-            <div className="py-10"><LcosSurfaceFeedback presentation="loading" message="正在读取来源…" /></div>
+-          )}
+-          {bay?.resourceStatus === 'error' && (
+-            <div className="py-10" data-lcos-assembly-error="sources">
+-              <LcosSurfaceFeedback presentation="error" message={`来源读取失败（${bay.resourceErrorCode ?? 'read_error'}）`} onAction={() => controller.reloadResources()} />
+-            </div>
+-          )}
+-          {bay?.resourceStatus === 'loaded' && (bay.resources?.length ?? 0) === 0 && (
+-            <div className="py-10"><LcosSurfaceFeedback presentation="empty" message={EMPTY_TAB_TEXT.sources} /></div>
+-          )}
+-          {bay?.resourceStatus === 'loaded' && (bay.resources?.length ?? 0) > 0 && bay.resources!.map((resource) => (
+-            <div
+-              key={resource.resourceId}
+-              data-lcos-assembly-resource-item={resource.resourceId}
+-              draggable
+-              onDragStart={(event) => beginAssemblyDrag(event, resource.resourceId, { kind: 'resource', id: resource.resourceId })}
+-              onDragEnd={finishAssemblyDrag}
+-              className="flex flex-col gap-1.5 rounded-2xl p-3"
+-              style={{ background: lcosTokens.color.surface, border: `1px solid ${lcosTokens.color.borderSubtle}` }}
+-            >
+-              <div className="flex items-center justify-between gap-2">
+-                <span className="min-w-0 truncate text-sm font-medium" style={{ color: lcosTokens.color.text }}>{resource.title}</span>
+-                <span className="shrink-0 rounded-full px-2 py-0.5 text-[10px]" style={{ background: lcosTokens.color.raised, color: lcosTokens.color.muted }}>{resource.sourceKind}</span>
+-              </div>
+-              <div className="flex items-center gap-1 text-[10px]" style={{ color: lcosTokens.color.muted }}>
+-                <span>理解：{resource.status}</span>
+-                <span>· 分析器 {resource.analyzerVersion}</span>
+-              </div>
+-              <div className="flex items-center gap-1">
+-                <button type="button" data-lcos-assembly-preview-open={`resource:${resource.resourceId}`} onClick={() => previewResource(resource.resourceId, resource.title)} className="min-h-11 rounded-full px-2 py-1 text-xs" style={{ color: lcosTokens.color.info }}>预览</button>
+-                <button
+-                  type="button"
+-                  disabled={applyingKey !== null}
+-                  onClick={() => applySource({ kind: 'resource', id: resource.resourceId })}
+-                  title={`经 canonical descriptor 投放到${targetLabel(targetRef)}`}
+-                  data-lcos-assembly-drop
+-                  className="ml-auto flex items-center gap-1 rounded-full px-2 py-1 text-xs font-medium"
+-                  style={{ background: lcosTokens.color.inverse, color: lcosTokens.color.textOnInverse, minHeight: 32 }}
+-                >
+-                  <Send className="h-3.5 w-3.5" aria-hidden /> 投放
+-                </button>
+-              </div>
+-            </div>
+-          ))}
+-        </div>
+-      )}
+-
+-      {/* Skills（分层只读） */}
+-      {tab === 'skills' && (
+-        <div data-lcos-assembly-source-panel="skills" className="flex flex-col gap-2">
+-          <div data-lcos-assembly-skill-admission="read-only" className="rounded-xl px-3 py-2 text-[11px]" style={{ background: lcosTokens.color.raised, color: lcosTokens.color.muted }}>
+-            v0.15 技能只读：可以浏览、阅读与预览，但不能投放（usage-binding 延后到 0.2）。Assembly 不复制 Skill package，也不伪造绑定。
+-          </div>
+-          {bay?.skillStatus === 'loading' && (
+-            <div className="py-10"><LcosSurfaceFeedback presentation="loading" message="正在读取技能…" /></div>
+-          )}
+-          {bay?.skillStatus === 'error' && (
+-            <div className="py-10" data-lcos-assembly-error="skills">
+-              <LcosSurfaceFeedback presentation="error" message={`技能读取失败（${bay.skillErrorCode ?? 'read_error'}）`} onAction={() => controller.reloadSkills()} />
+-            </div>
+-          )}
+-          {bay?.skillStatus === 'loaded' && (bay.skills?.length ?? 0) === 0 && (
+-            <div className="py-10"><LcosSurfaceFeedback presentation="empty" message={EMPTY_TAB_TEXT.skills} /></div>
+-          )}
+-          {bay?.skillStatus === 'loaded' && (bay.skills?.length ?? 0) > 0 && bay.skills!.map((entry) => (
+-            <div
+-              key={entry.id}
+-              data-lcos-assembly-skill-item={entry.id}
+-              className="flex flex-col gap-1.5 rounded-2xl p-3"
+-              style={{ background: lcosTokens.color.surface, border: `1px solid ${lcosTokens.color.borderSubtle}` }}
+-            >
+-              <div className="flex items-center justify-between gap-2">
+-                <span className="min-w-0 truncate text-sm font-medium" style={{ color: lcosTokens.color.text }}>{entry.name}</span>
+-                <span className="shrink-0 rounded-full px-2 py-0.5 text-[10px]" style={{ background: lcosTokens.color.raised, color: lcosTokens.color.muted }}>{SKILL_SOURCE_LABEL[entry.source]}</span>
+-              </div>
+-              {entry.description !== '' && (
+-                <div className="text-[11px]" style={{ color: lcosTokens.color.muted }}>{entry.description}</div>
+-              )}
+-              <div className="flex items-center gap-1">
+-                <button type="button" data-lcos-assembly-preview-open={`skill:${entry.id}`} onClick={() => previewSkill(entry)} className="min-h-11 rounded-full px-2 py-1 text-xs" style={{ color: lcosTokens.color.info }}>阅读</button>
+-                <span data-lcos-assembly-skill-apply="unavailable" className="ml-auto rounded-full px-2 py-1 text-[10px]" style={{ color: lcosTokens.color.muted }}>
+-                  不可投放
+-                </span>
+-              </div>
+-            </div>
+-          ))}
+-        </div>
+-      )}
+-
+-      <style>{`@media (hover: none), (pointer: coarse) { [data-lcos-assembly-actions] { display: flex; } }`}</style>
+-
+-      {/* 预览：capture payload / resource descriptor / skill 正文 */}
+-      {preview !== undefined && (
+-        <div
+-          data-lcos-assembly-preview={preview.status}
+-          data-lcos-assembly-preview-subject={preview.subjectKey}
+-          className="flex flex-col gap-2 rounded-xl px-3 py-2"
+-          style={{ background: lcosTokens.color.surface, border: `1px solid ${lcosTokens.color.borderSubtle}` }}
+-        >
+-          <div className="flex items-center justify-between gap-2">
+-            <span className="min-w-0 truncate text-xs font-semibold" style={{ color: lcosTokens.color.text }}>{preview.title}</span>
+-            <button type="button" data-lcos-assembly-preview-close onClick={() => setPreview(undefined)} className="min-h-11 shrink-0 rounded-full px-3 text-xs" style={{ color: lcosTokens.color.muted }}>关闭预览</button>
+-          </div>
+-          {preview.status === 'loading' && (
+-            <span className="text-[11px]" style={{ color: lcosTokens.color.muted }}>正在读取预览…</span>
+-          )}
+-          {preview.status === 'error' && (
+-            <span className="text-[11px]" style={{ color: lcosTokens.color.danger }}>预览读取失败{preview.error === undefined ? '' : `（${preview.error}）`}</span>
+-          )}
+-          {preview.status === 'ready' && preview.kind === 'image' && preview.dataUrl !== undefined && (
+-            <img src={preview.dataUrl} alt="" className="max-h-64 w-full rounded-xl object-contain" />
+-          )}
+-          {preview.status === 'ready' && preview.kind === 'image' && preview.dataUrl === undefined && (
+-            <span className="text-[11px]" style={{ color: lcosTokens.color.muted }}>这张图像没有可读内容</span>
+-          )}
+-          {preview.status === 'ready' && preview.text !== undefined && (
+-            <pre className="max-h-64 overflow-y-auto whitespace-pre-wrap text-[11px]" style={{ color: lcosTokens.color.text }}>{preview.text}</pre>
+-          )}
+-          {preview.status === 'ready' && preview.url !== undefined && (
+-            <span className="break-all text-[11px]" style={{ color: lcosTokens.color.info }}>{preview.url}</span>
+-          )}
+-          {preview.status === 'ready' && preview.path !== undefined && (
+-            <span className="break-all text-[11px]" style={{ color: lcosTokens.color.muted }}>{preview.path}</span>
+-          )}
+-          {preview.status === 'ready' && preview.lines !== undefined && (
+-            <div className="flex flex-col gap-1">
+-              {preview.lines.map((line) => (
+-                <div key={line.label} className="flex items-start gap-2 text-[11px]">
+-                  <span className="w-16 shrink-0" style={{ color: lcosTokens.color.muted }}>{line.label}</span>
+-                  <span className="min-w-0 break-words" style={{ color: lcosTokens.color.text }}>{line.value}</span>
+-                </div>
+-              ))}
+-            </div>
+-          )}
+-        </div>
+-      )}
+-
+-      {/* 逐项 apply 回执 */}
+-      {summary !== undefined && (
+-        <div
+-          data-lcos-assembly-receipt
+-          data-lcos-assembly-outcome={summary.tone}
+-          className="rounded-xl px-3 py-2"
+-          style={{
+-                // 只有真正失败才用 danger；已存在/跳过/不支持是「没有落地」，不是错误。
+-                background: summary.tone === 'applied'
+-                  ? 'rgba(84,116,100,0.08)'
+-                  : summary.tone === 'failed'
+-                    ? 'rgba(194,91,78,0.08)'
+-                    : 'rgba(176,138,72,0.10)',
+-                color: summary.tone === 'applied'
+-                  ? lcosTokens.color.accent
+-                  : summary.tone === 'failed'
+-                    ? lcosTokens.color.danger
+-                    : lcosTokens.color.pinAmber,
+-              }}
+-        >
+-          {summary.lines.map((line) => (
+-            <div key={line.key} data-lcos-assembly-outcome-line={line.tone} className="flex items-center justify-between gap-2 py-0.5 text-xs">
+-              <span>
+-                {line.label}
+-                {line.detail === undefined ? '' : ` · ${line.detail}`}
+-              </span>
+-              {line.changeSetId !== undefined && <span className="shrink-0 text-[10px] opacity-70">已记录变更 {line.changeSetId.slice(0, 8)}</span>}
+-            </div>
+-          ))}
+-          <div className="text-[11px]">{summary.headline}</div>
+-        </div>
+-      )}
+-
+-      {/* Assembly 取用后的 Composer 仍是同一个 near-field 组件；它不创建第二份
+-          draft/store/Run truth，只把当前 SourceRef 交给现有 receiver/workspace gate。 */}
+-      {assemblyOwnsComposer && composerTarget !== null && (
+-        <section data-lcos-assembly-composer className="mt-1">
+-          <LcosComposerHost
+-            projectId={projectId}
+-            {...(composerTarget.workspaceId === undefined ? {} : { workspaceId: composerTarget.workspaceId })}
+-            anchor={composerTarget.anchor}
+-            open
+-            inline
+-            onClose={closeComposer}
+-          />
+-        </section>
+-      )}
++  const warehouseItems = bay?.warehouse?.items ?? [];
++  const captureItems = bay?.captureItems ?? [];
++  const resources = bay?.resources ?? [];
++  const skills = bay?.skills ?? [];
++  const query = localSearch.trim().toLocaleLowerCase();
++  const projectVisible = warehouseItems.filter((item) => matchesAssemblyFilter(assemblyMaterialShape(item), filter));
++  const captureVisible = captureItems.filter((item) => matchesAssemblyFilter(captureMaterialShape(item.kind), filter)
++    && (!query || captureTitle(item).toLocaleLowerCase().includes(query)));
++  const resourcesVisible = resources.filter((item) => !query || item.title.toLocaleLowerCase().includes(query));
++  const skillsVisible = skills.filter((item) => !query || `${item.name} ${item.description}`.toLocaleLowerCase().includes(query));
++  const availableRefs = useMemo(() => tab === 'project' ? (bay?.warehouse?.items ?? []).map(assemblySourceRefOf)
++    : tab === 'capture' ? (bay?.captureItems ?? []).map((item): AssemblySourceRefV1 => ({ kind: 'capture', id: item.id }))
++      : tab === 'sources' ? (bay?.resources ?? []).map((item): AssemblySourceRefV1 => ({ kind: 'resource', id: item.resourceId })) : [],
++    [tab, bay?.warehouse?.items, bay?.captureItems, bay?.resources]);
++  useEffect(() => {
++    const ids = new Set(availableRefs.map((ref) => `${ref.kind}:${ref.id}`));
++    setSelectedIds((current) => retainAssemblySelection(current, ids));
++  }, [availableRefs]);
++  useEffect(() => () => { invalidatePreview(); applyGeneration.current += 1; }, [invalidatePreview]);
++  const selectedRefs = availableRefs.filter((ref) => selectedIds.includes(`${ref.kind}:${ref.id}`));
++  const count = tab === 'project' ? projectVisible.length : tab === 'capture' ? captureVisible.length : tab === 'sources' ? resourcesVisible.length : skillsVisible.length;
++  const closePreview = (): void => {
++    invalidatePreview(); setPreview(undefined); previewRetry.current = undefined;
++    const origin = previewOrigin.current;
++    requestAnimationFrame(() => {
++      if (!origin?.isConnected) { return; }
++      // Hover actions are initially visibility:hidden after the preview loses focus.
++      // Focus the persistent take control first so :focus-within reveals the original action.
++      origin.closest('.lcos-assembly-item')?.querySelector<HTMLButtonElement>('[data-lcos-assembly-more]')?.focus({ preventScroll: true });
++      origin.focus({ preventScroll: true });
++    });
++  };
++  const toggleSelected = (source: AssemblySourceRefV1): void => {
++    setSelectedIds((current) => toggleAssemblySelection(current, `${source.kind}:${source.id}`));
++  };
++  const renderOpenAction = (item: WarehouseItemV1): React.JSX.Element => {
++    if (item.kind === 'context' || item.kind === 'workflow' || item.kind === 'collection') {
++      const targets = workspaceTargetsForItem(item, workspaces);
++      if (targets.length > 0) { return <DropdownMenu trigger={<LcosButton appearance="oreo" variant="ghost">选择现场预览</LcosButton>}>
++        {targets.map((workspace) => <DropdownMenuSubmenu key={String(workspace.id)} label={`${workspace.name}${workspace.canvasId ? '' : ' · 画布尚未就绪'}`}>
++          <DropdownMenuItem disabled={!workspace.canvasId} onClick={() => {
++            if (workspace.canvasId) { openWindow('portal-preview', `预览现场 · ${workspace.name}`, workspace.canvasId, 'canvas'); }
++          }}>预览现场</DropdownMenuItem>
++          <DropdownMenuItem disabled={!workspace.canvasId} onClick={() => enterChildWorkspace(item, workspace)}>进入现场</DropdownMenuItem>
++        </DropdownMenuSubmenu>)}
++      </DropdownMenu>; }
++    }
++    if (item.kind === 'resource') { return <LcosButton appearance="oreo" variant="ghost" onClick={() => previewResource(item.entityRef.id, item.title)}>预览来源</LcosButton>; }
++    const destination = assemblyOpenTargetOf(item, workspaces);
++    if (destination.bodyKey === 'unavailable') { return <span data-lcos-assembly-unavailable>{workspaceError && ['scene','context','workflow','collection'].includes(item.kind) ? '现场信息读取失败，请重试' : destination.label}</span>; }
++    return <LcosButton appearance="oreo" variant="ghost" onClick={() => openWindow(destination.bodyKey, `${destination.label} · ${item.title}`, destination.target, destination.targetKind)}>
++      {destination.bodyKey === 'conversation' ? <MessageCircle size={16} aria-hidden /> : <BookOpen size={16} aria-hidden />}{destination.label}
++    </LcosButton>;
++  };
++  const status = tab === 'project' ? bay?.warehouseStatus : tab === 'capture' ? bay?.captureStatus : tab === 'sources' ? bay?.resourceStatus : bay?.skillStatus;
++  const errorCode = tab === 'project' ? bay?.warehouseErrorCode : tab === 'capture' ? bay?.captureErrorCode : tab === 'sources' ? bay?.resourceErrorCode : bay?.skillErrorCode;
++  const reload = (): void => {
++    if (tab === 'project') { controller.reloadWarehouse(); }
++    else if (tab === 'capture') { controller.reloadCapture(); }
++    else if (tab === 'sources') { controller.reloadResources(); }
++    else { controller.reloadSkills(); }
++  };
++  return <div data-lcos-assembly data-lcos-assembly-target={targetRef.kind}
++    data-lcos-assembly-target-id={'id' in targetRef ? targetRef.id : ''} className="lcos-assembly-body">
++    {/* Hidden rather than unmounted so closing preview restores exact card focus and scroll. */}
++    <div className="lcos-assembly-browse" hidden={preview !== undefined}>
++      <div className="lcos-assembly-head">
++        <AssemblyToolbarView query={tab === 'project' ? searchInput : localSearch}
++          placeholder={tab === 'project' ? '搜索项目材料' : tab === 'capture' ? '查找当前收件' : tab === 'sources' ? '查找已载入来源' : '查找技能'}
++          localSearch={tab !== 'project'} onQueryChange={tab === 'project' ? setSearchInput : setLocalSearch}
++          onSearch={() => { if (tab === 'project') { controller.setWarehouseSearch(searchInput); } }}
++          onClear={() => { if (tab === 'project') { setSearchInput(''); controller.setWarehouseSearch(''); } else { setLocalSearch(''); } }}
++          filter={filter} onFilterChange={setFilter} showFilters={tab === 'project' || tab === 'capture'} />
++        <AssemblySourceTabsView items={(['project','capture','sources','skills'] as const).map((key) => ({ key, label: TAB_LABEL[key] }))}
++          value={tab} onSelect={selectTab} />
++      </div>
++      <div className="lcos-assembly-result-meta"><span role="status">{status === 'loading' ? '正在读取材料…' : `${count} 项`}
++        {tab === 'project' && bay?.warehouse?.totalApprox !== undefined ? ` · 项目约 ${bay.warehouse.totalApprox} 项` : ''}
++        {filter !== 'all' ? ' · 已载入内容筛选' : ''}
++        <span className="lcos-assembly-target-inline"> · 取用到 <strong>{targetLabel(targetRef)}</strong>{tab === 'capture' ? ' · 保留原始来源' : ''}</span></span>
++        <LcosButton appearance="oreo" variant="ghost" onClick={reload} disabled={status === 'loading'} aria-label="刷新当前来源">刷新</LcosButton></div>
++      <div className="lcos-assembly-scroll" data-lcos-assembly-source-panel={tab}>
++        {status === 'loading' || status === 'idle' || status === undefined ? <div className="lcos-assembly-loading">
++          <LcosSurfaceFeedback presentation="loading" message="正在读取材料…" />
++          <div className="lcos-assembly-skeletons" aria-hidden><i /><i /><i /><i /></div>
++        </div> : null}
++        {status === 'error' ? <div className="lcos-assembly-empty" data-lcos-assembly-error={tab}>
++          <LcosSurfaceFeedback presentation="error" message={`材料读取失败（${errorCode ?? 'read_error'}）`} onAction={reload} actionLabel="重新读取" /></div> : null}
++        {workspaceError && status === 'loaded' && tab === 'project' ? <div className="lcos-assembly-inline-notice">
++          <span>现场信息读取失败，材料仍可使用。</span><LcosButton appearance="oreo" variant="ghost" data-lcos-assembly-workspace-retry onClick={reloadWorkspaces}>重试读取现场</LcosButton></div> : null}
++        {status === 'loaded' && count === 0 ? <div className="lcos-assembly-empty"><LcosSurfaceFeedback presentation="empty"
++          message={filter !== 'all' || query || (tab === 'project' && bay?.warehouseSearch) ? '没有匹配材料，换个条件再试。' : EMPTY_TAB_TEXT[tab]} /></div> : null}
++        {tab === 'skills' ? <p data-lcos-assembly-skill-admission="read-only" className="lcos-assembly-inline-notice">技能目录只读，可阅读与预览；当前不提供投放或自动执行。</p> : null}
++        {status === 'loaded' ? <AssemblyMasonryView label={`${TAB_LABEL[tab]}材料`}>
++          {tab === 'project' ? projectVisible.map((item) => {
++            const source = assemblySourceRefOf(item);
++            const sourceKey = `${source.kind}:${source.id}`;
++            const card = assemblyCardViewV1(item, referencedKeySet);
++            const shape = assemblyMaterialShape(item);
++            const previewUrl = previewUrlOf(item);
++            const mediaProps = { title: item.title ?? '未命名', familyLabel: materialFamily(item), shape,
++              fallbackGlyph: <MaterialGlyph item={item} />, referenced: card.referenced,
++              ...(previewUrl === undefined ? {} : { previewUrl }),
++              ...(item.aspectRatio === undefined ? {} : { aspectRatio: item.aspectRatio }) };
++            return <AssemblyItemView key={`${projectId}:${item.kind}:${item.entityRef.id}`} title={item.title ?? '未命名'}
++              data-lcos-assembly-item={item.entityRef.id} data-lcos-assembly-item-kind={item.kind}
++              data-lcos-assembly-material-shape={shape}
++              data-lcos-assembly-item-species={card.species} data-lcos-assembly-visual-family={item.visualFamily ?? item.kind}
++              draggable onDragStart={(event) => beginAssemblyDrag(event, item.entityRef.id, source)} onDragEnd={finishAssemblyDrag}
++              selected={selectedIds.includes(sourceKey)} onSelect={() => toggleSelected(source)} referenced={card.referenced}
++              hideCaption={shape === 'context' || shape === 'workflow'} identity={<span data-lcos-assembly-kind={item.kind}>{materialFamily(item)}</span>}
++              subtitle={item.usedHere ? '已在此处' : item.usageCount > 0 ? `${item.usageCount} 处使用` : (card.subtitle && Object.prototype.hasOwnProperty.call(FAMILY_LABEL, card.subtitle) ? FAMILY_LABEL[card.subtitle as keyof typeof FAMILY_LABEL] : card.subtitle)}
++              actions={<><LcosButton appearance="oreo" variant="ghost" data-lcos-assembly-add onClick={() => addToComposer(item)} title="加入当前草稿，不会自动执行"><PlusCircle size={16} aria-hidden />草稿</LcosButton>
++                {renderOpenAction(item)}<LcosButton appearance="oreo" variant="secondary" data-lcos-assembly-drop disabled={applyingKey !== null}
++                  onClick={() => applySource(source)}><Send size={16} aria-hidden />放入{targetLabel(targetRef)}</LcosButton></>}>
++              {item.kind === 'artifact' && !mediaProps.previewUrl && (shape === 'image' || shape === 'text')
++                ? <AssemblyArtifactMedia key={`${projectId}:${item.entityRef.id}:${item.updatedAt ?? ''}`} client={artifacts} projectId={projectId} artifactId={item.entityRef.id} {...mediaProps} />
++                : <AssemblyMaterialView {...mediaProps} {...(shape === 'workflow' ? { onUse: () => addToComposer(item) } : {})} />}
++            </AssemblyItemView>;
++          }) : null}
++          {tab === 'capture' ? captureVisible.map((item) => {
++            const title = captureTitle(item); const shape = captureMaterialShape(item.kind);
++            const source = { kind: 'capture' as const, id: item.id };
++            const mediaProps = { title, shape, familyLabel: shape === 'image' ? '图片' : shape === 'text' ? '文字' : shape === 'link' ? '网页来源' : '收件材料', fallbackGlyph: <FileText size={24} aria-hidden /> };
++            return <AssemblyItemView key={`${projectId}:capture:${item.id}`} title={title} data-lcos-assembly-capture-item={item.id}
++              data-lcos-assembly-material-shape={shape}
++              draggable onDragStart={(event) => beginAssemblyDrag(event, item.id, source)} onDragEnd={finishAssemblyDrag}
++              selected={selectedIds.includes(`capture:${item.id}`)} onSelect={() => toggleSelected(source)}
++              identity={assemblyDate(item.capturedAt)} subtitle={item.resolvedProjectId ? '已保留项目产物' : '待整理'}
++              actions={<><LcosButton appearance="oreo" variant="ghost" data-lcos-assembly-preview-open={`capture:${item.id}`} onClick={() => previewCapture(item)}>预览</LcosButton>
++                {item.resolvedArtifactId && item.resolvedProjectId === projectId ? <LcosButton appearance="oreo" variant="ghost" onClick={() => openWindow('reader', title, item.resolvedArtifactId)}>阅读已有产物</LcosButton> : null}
++                <LcosButton appearance="oreo" variant="secondary" data-lcos-assembly-drop disabled={applyingKey !== null} onClick={() => applySource(source, 'capture')}>放入{targetLabel(targetRef)}</LcosButton></>}>
++              {shape === 'image' || shape === 'text' ? <AssemblyCaptureMedia client={session.captureSpace} captureId={item.id} {...mediaProps} /> : <AssemblyMaterialView {...mediaProps} />}
++            </AssemblyItemView>;
++          }) : null}
++          {tab === 'sources' ? resourcesVisible.map((item) => {
++            const source = { kind: 'resource' as const, id: item.resourceId };
++            return <AssemblyItemView key={item.resourceId} title={item.title} data-lcos-assembly-resource-item={item.resourceId}
++              data-lcos-assembly-material-shape="link"
++              draggable onDragStart={(event) => beginAssemblyDrag(event, item.resourceId, source)} onDragEnd={finishAssemblyDrag}
++              selected={selectedIds.includes(`resource:${item.resourceId}`)} onSelect={() => toggleSelected(source)} identity="外部来源"
++              actions={<><LcosButton appearance="oreo" variant="ghost" data-lcos-assembly-preview-open={`resource:${item.resourceId}`} onClick={() => previewResource(item.resourceId, item.title)}>预览来源</LcosButton>
++                <LcosButton appearance="oreo" variant="secondary" data-lcos-assembly-drop disabled={applyingKey !== null} onClick={() => applySource(source)}>放入{targetLabel(targetRef)}</LcosButton></>}>
++              <AssemblyResourceMedia client={session.resources} projectId={projectId} resourceId={item.resourceId} title={item.title} shape="link" familyLabel="来源描述" fallbackGlyph={<FolderOpen size={24} aria-hidden />} />
++            </AssemblyItemView>;
++          }) : null}
++          {tab === 'skills' ? skillsVisible.map((entry) => <AssemblyItemView key={`${entry.source}:${entry.id}`} title={entry.name}
++            data-lcos-assembly-skill-item={entry.id} data-lcos-assembly-material-shape="skill" identity={SKILL_SOURCE_LABEL[entry.source]}
++            actions={<><LcosButton appearance="oreo" variant="ghost" data-lcos-assembly-preview-open={`skill:${entry.id}`} onClick={() => previewSkill(entry)}>阅读</LcosButton>
++              <span data-lcos-assembly-skill-apply="unavailable">不可投放</span></>}>
++            <AssemblyMaterialView title={entry.name} shape="skill" familyLabel="技能" fallbackGlyph={<BookOpen size={24} aria-hidden />}
++              {...(entry.description ? { excerpt: entry.description } : {})} />
++          </AssemblyItemView>) : null}
++        </AssemblyMasonryView> : null}
++        {tab === 'project' && status === 'loaded' && bay?.warehouseNextCursor !== undefined ? <div className="lcos-assembly-pagination">
++          {bay.warehouseErrorCode ? <p role="status">下一页尚未读取，当前材料仍可使用。</p> : null}
++          <LcosButton appearance="oreo" variant="secondary" data-lcos-assembly-page-more disabled={bay.warehouseLoadingMore}
++            onClick={() => controller.loadMoreWarehouse()}>{bay.warehouseLoadingMore ? '读取中…' : bay.warehouseErrorCode ? '重试加载更多' : '加载更多'}</LcosButton>
++        </div> : null}
++      </div>
++      {selectedRefs.length > 0 ? <div className="lcos-assembly-selection-bar" data-lcos-assembly-selection>
++        <span>已选择 <strong>{selectedRefs.length}</strong> 项</span><LcosButton appearance="oreo" variant="ghost" onClick={() => setSelectedIds([])}>取消选择</LcosButton>
++        <LcosButton appearance="oreo" variant="secondary" data-lcos-assembly-batch-apply disabled={applyingKey !== null}
++          onClick={() => applySources(selectedRefs, tab === 'capture' ? 'capture' : undefined)}>{applyingKey === 'selection' ? '正在装配…' : `放入${targetLabel(targetRef)}`}</LcosButton>
++      </div> : <p className="lcos-assembly-browse-hint">拖到目标处使用，也可以用「取用」选择操作。</p>}
+     </div>
+-  );
++    {preview ? <AssemblyPreviewView preview={preview} onClose={closePreview} onRetry={() => previewRetry.current?.()} /> : null}
++    {applyingKey !== null ? <div className="lcos-assembly-apply-feedback"><LcosSurfaceFeedback presentation="loading" message="正在提交装配，请等待真实回执…" /></div> : null}
++    {summary ? <AssemblyReceiptView summary={applyUnconfirmed ? { ...summary, tone: 'unconfirmed', headline: '未收到完整装配回执',
++      lines: summary.lines.map((line) => ({ ...line, tone: 'unconfirmed', label: '尚未确认' })) } : summary}
++      notice={applyUnconfirmed ? <p>请求可能已到达目标，请先核对原操作。不会自动重发。</p> : undefined}
++      onClose={() => { setApplyResult(null); setApplyUnconfirmed(false); }} /> : null}
++    {assemblyOwnsComposer && composerTarget !== null ? <section data-lcos-assembly-composer>
++      <LcosComposerHost projectId={projectId} {...(composerTarget.workspaceId === undefined ? {} : { workspaceId: composerTarget.workspaceId })}
++        anchor={composerTarget.anchor} open inline onClose={closeComposer} />
++    </section> : null}
++  </div>;
+ }
+diff --git a/huabu/apps/web/src/lcos/professional/AssemblySourceMedia.tsx b/huabu/apps/web/src/lcos/professional/AssemblySourceMedia.tsx
+new file mode 100644
+index 0000000..b62e433
+--- /dev/null
++++ b/huabu/apps/web/src/lcos/professional/AssemblySourceMedia.tsx
+@@ -0,0 +1,88 @@
++import { useCallback, useEffect, useRef, useState } from 'react';
++
++import { LcosButton } from '../ui/primitives/LcosButton';
++import { AssemblyMaterialView } from '../ui/professional/AssemblyMaterialView';
++
++import type { AssemblyMaterialViewProps } from '../ui/professional/AssemblyMaterialView';
++import type { CoreArtifactClient, CoreCaptureSpaceClient, CoreResourceClient } from '@local-creative-os/web-gen2';
++
++type Media = { readonly image?: Blob | string; readonly text?: string };
++type Loader = (signal: AbortSignal) => Promise<Media>;
++
++/** Visible-only transient preview. Canonical identities and content still belong to Core. */
++function DeferredMedia({ load, ...props }: AssemblyMaterialViewProps & { readonly load: Loader }): React.JSX.Element {
++  const host = useRef<HTMLDivElement>(null);
++  const [visible, setVisible] = useState(false);
++  const [attempt, setAttempt] = useState(0);
++  const [media, setMedia] = useState<{ readonly image?: string; readonly text?: string }>({});
++  const [state, setState] = useState<'waiting' | 'loading' | 'ready' | 'error'>('waiting');
++  useEffect(() => {
++    if (!host.current) { return; }
++    if (typeof IntersectionObserver !== 'function') { setVisible(true); return; }
++    const observer = new IntersectionObserver((entries) => {
++      if (entries.some((entry) => entry.isIntersecting)) { setVisible(true); observer.disconnect(); }
++    }, { rootMargin: '160px' });
++    observer.observe(host.current);
++    return () => observer.disconnect();
++  }, []);
++  useEffect(() => {
++    if (!visible) { return; }
++    const controller = new AbortController();
++    let objectUrl: string | undefined;
++    setMedia({}); setState('loading');
++    void load(controller.signal).then((value) => {
++      if (controller.signal.aborted) { return; }
++      if (value.image instanceof Blob) { objectUrl = URL.createObjectURL(value.image); }
++      const image = typeof value.image === 'string' ? value.image : objectUrl;
++      setMedia({ ...(image === undefined ? {} : { image }),
++        ...(value.text !== undefined ? { text: value.text } : {}) });
++      setState('ready');
++    }).catch(() => { if (!controller.signal.aborted) { setState('error'); } });
++    return () => { controller.abort(); if (objectUrl) { URL.revokeObjectURL(objectUrl); } };
++  }, [visible, load, attempt]);
++  return <div ref={host} data-lcos-assembly-media-load={state}>
++    <AssemblyMaterialView {...props} {...(media.image ? { previewUrl: media.image } : {})}
++      {...(media.text === undefined ? {} : { excerpt: media.text.slice(0, 1200) })}
++      feedback={state === 'loading' ? <span className="lcos-assembly-media-loading" role="status">正在读取…</span>
++        : state === 'error' ? <LcosButton appearance="oreo" variant="ghost" className="lcos-assembly-media-retry" onClick={() => setAttempt((value) => value + 1)}>预览未读取 · 重试</LcosButton> : undefined} />
++  </div>;
++}
++
++/** Same revision/FileRecord channel as ArtifactReaderBody. No guessed asset URL or fixture cover. */
++export function AssemblyArtifactMedia({ client, projectId, artifactId, ...props }: AssemblyMaterialViewProps & {
++  readonly client: CoreArtifactClient; readonly projectId: string; readonly artifactId: string;
++}): React.JSX.Element {
++  const load = useCallback(async (signal: AbortSignal): Promise<Media> => {
++    const [detail, revisions] = await Promise.all([client.getArtifactDetail(artifactId), client.listArtifactRevisions(artifactId)]);
++    if (signal.aborted) { return {}; }
++    if (String(detail.artifact.projectId) !== projectId) { throw new Error('材料不属于当前项目'); }
++    const revisionId = detail.currentRevisionId ?? detail.revisions[0]?.id;
++    const revision = revisions.find((entry) => String(entry.id) === String(revisionId) && String(entry.artifactId) === artifactId);
++    if (!revision) { return {}; }
++    if (detail.artifact.kind === 'image') { return { image: await client.getFileRecordContent(projectId, String(revision.fileRecordId), signal) }; }
++    if (detail.artifact.kind === 'markdown') { return { text: await client.getFileRecordText(projectId, String(revision.fileRecordId), signal) }; }
++    return {};
++  }, [client, artifactId, projectId]);
++  return <DeferredMedia {...props} load={load} />;
++}
++
++export function AssemblyCaptureMedia({ client, captureId, ...props }: AssemblyMaterialViewProps & {
++  readonly client: CoreCaptureSpaceClient; readonly captureId: string;
++}): React.JSX.Element {
++  const load = useCallback(async (signal: AbortSignal): Promise<Media> => {
++    const preview = await client.preview(captureId, signal);
++    return { ...(preview.type === 'image' && preview.dataUrl ? { image: preview.dataUrl } : {}),
++      ...(preview.type === 'text' && preview.text !== undefined ? { text: preview.text } : {}) };
++  }, [client, captureId]);
++  return <DeferredMedia {...props} load={load} />;
++}
++
++export function AssemblyResourceMedia({ client, projectId, resourceId, ...props }: AssemblyMaterialViewProps & {
++  readonly client: CoreResourceClient; readonly projectId: string; readonly resourceId: string;
++}): React.JSX.Element {
++  const load = useCallback(async (signal: AbortSignal): Promise<Media> => {
++    const descriptor = await client.descriptor(projectId, resourceId, signal);
++    return descriptor.understanding.summary ? { text: descriptor.understanding.summary } : {};
++  }, [client, projectId, resourceId]);
++  return <DeferredMedia {...props} load={load} />;
++}
+diff --git a/huabu/apps/web/src/lcos/professional/ProfessionalWindowStage.tsx b/huabu/apps/web/src/lcos/professional/ProfessionalWindowStage.tsx
+index 56f233f..954b54d 100644
+--- a/huabu/apps/web/src/lcos/professional/ProfessionalWindowStage.tsx
++++ b/huabu/apps/web/src/lcos/professional/ProfessionalWindowStage.tsx
+@@ -56,7 +56,7 @@ interface ProfessionalRegionEntry {
+ }
+ 
+ function preferredWidthFor(window: LcosWindow): number {
+-  return window.bodyKey === 'reader' ? 1120 : window.bodyKey === 'assembly' ? 640 : 520;
++  return window.bodyKey === 'reader' ? 1120 : window.bodyKey === 'assembly' ? 644 : 520;
+ }
+ 
+ function currentViewport(): ProfessionalRectV1 {
+@@ -375,6 +375,7 @@ export function ProfessionalWindowStage({ projectId }: ProfessionalWindowStagePr
+         // 显式分组的目标：前一个区域（2 个区域时即“另一个”）；不存在则按钮 disabled。
+         const groupTarget = regionIndex > 0 ? regionEntries[regionIndex - 1] : undefined;
+         const docked = region.layout === 'docked-right';
++        const isAssembly = activeWindow.bodyKey === 'assembly';
+         return (
+           <div
+             key={region.id}
+@@ -391,8 +392,9 @@ export function ProfessionalWindowStage({ projectId }: ProfessionalWindowStagePr
+             style={{
+               ...(placement === undefined
+                 ? {
+-                    right: region.layout === 'docked-right' ? 0 : 24,
+-                    top: region.layout === 'docked-right' ? 0 : 88,
++                    right: region.layout === 'docked-right' ? 0 : isAssembly && viewport.width >= 1280 ? 96 : 24,
++                    top: region.layout === 'docked-right' ? 0 : isAssembly && viewport.height >= 768 ? 120 : 88,
++                    ...(isAssembly && viewport.height >= 788 ? { height: 648 } : {}),
+                     width: `min(${preferredWidth}px, calc(100vw - 48px))`,
+                   }
+                 : {
+@@ -406,7 +408,7 @@ export function ProfessionalWindowStage({ projectId }: ProfessionalWindowStagePr
+               border: '1px solid var(--lcos-window-border)',
+               boxShadow: 'var(--lcos-window-shadow)',
+               background: lcosTokens.color.surface,
+-              borderRadius: region.layout === 'docked-right' ? 0 : 16,
++              borderRadius: region.layout === 'docked-right' ? 0 : isAssembly ? 18 : 16,
+               overflow: 'hidden',
+               zIndex: isGlobalActive ? 2 : 1,
+             }}
+diff --git a/huabu/apps/web/src/lcos/ui/professional/AssemblyItemView.tsx b/huabu/apps/web/src/lcos/ui/professional/AssemblyItemView.tsx
+new file mode 100644
+index 0000000..d0a55b2
+--- /dev/null
++++ b/huabu/apps/web/src/lcos/ui/professional/AssemblyItemView.tsx
+@@ -0,0 +1,46 @@
++import { useId, useState } from 'react';
++
++import moreIcon from '../nearfield/assets/more.svg';
++import { LcosButton } from '../primitives/LcosButton';
++import './professional-assembly.css';
++
++import type { HTMLAttributes, ReactNode } from 'react';
++
++export interface AssemblyItemViewProps extends Omit<HTMLAttributes<HTMLDivElement>, 'title' | 'children'> {
++  readonly title: string;
++  readonly identity?: ReactNode;
++  readonly subtitle?: ReactNode;
++  readonly children: ReactNode;
++  readonly actions: ReactNode;
++  readonly referenced?: boolean;
++  readonly selected?: boolean;
++  readonly onSelect?: () => void;
++  readonly hideCaption?: boolean;
++}
++/** GEN1 identity/reference separation; C02 actions reveal without changing masonry height. */
++export function AssemblyItemView({ title, identity, subtitle, children, actions, referenced = false,
++  selected = false, onSelect, hideCaption = false, className, ...rest }: AssemblyItemViewProps): React.JSX.Element {
++  const [expanded, setExpanded] = useState(false);
++  const id = useId();
++  return <div {...rest} className={`lcos-assembly-item ${className ?? ''}`} data-selected={selected}
++    data-referenced={referenced} data-visual-active={expanded} onKeyDownCapture={(event) => {
++      rest.onKeyDownCapture?.(event);
++      if (!event.defaultPrevented && event.key === 'Escape' && expanded) {
++        event.preventDefault(); event.stopPropagation(); setExpanded(false);
++        event.currentTarget.querySelector<HTMLButtonElement>('[data-lcos-assembly-more]')?.focus();
++      }
++    }}>
++    <div className="lcos-assembly-item-object">{children}</div>
++    {onSelect ? <label className="lcos-assembly-select" title={`选择 ${title}`} onPointerDown={(event) => event.stopPropagation()}>
++      <input type="checkbox" aria-label={`选择 ${title}`} checked={selected} onChange={onSelect} />
++    </label> : null}
++    {!hideCaption ? <div className="lcos-assembly-item-caption"><strong title={title}>{title}</strong>
++      <span>{identity}{subtitle ? <>{identity ? ' · ' : ''}{subtitle}</> : null}</span></div> : null}
++    {referenced ? <span className="lcos-assembly-draft-mark">已在草稿</span> : null}
++    <LcosButton variant="ghost" data-lcos-assembly-more aria-label={`取用 ${title}`} aria-expanded={expanded}
++      aria-controls={id} className="lcos-assembly-more" onClick={() => setExpanded((current) => !current)}>
++      <img src={moreIcon} alt="" width={18} height={18} /><span>取用</span>
++    </LcosButton>
++    <div id={id} data-lcos-assembly-actions className="lcos-assembly-item-actions">{actions}</div>
++  </div>;
++}
+diff --git a/huabu/apps/web/src/lcos/ui/professional/AssemblyMaterialView.tsx b/huabu/apps/web/src/lcos/ui/professional/AssemblyMaterialView.tsx
+index 556ded2..12b06a7 100644
+--- a/huabu/apps/web/src/lcos/ui/professional/AssemblyMaterialView.tsx
++++ b/huabu/apps/web/src/lcos/ui/professional/AssemblyMaterialView.tsx
+@@ -1,61 +1,59 @@
+ import { useState } from 'react';
+ 
++import { ContextCollectionFace } from '../context/ContextCollectionFace';
++import { LcosButton } from '../primitives/LcosButton';
++import { WorkflowTaskCardFace } from '../workflow/WorkflowTaskCardFace';
++import { Gen1TextDocument } from './donor/Gen1TextDocument';
+ import './professional-assembly.css';
+ 
++import type { ContextCollectionOrganization } from '../context/ContextCollectionFace';
++import type { AssemblyMaterialShape } from './assemblyPresentation';
+ import type { ReactNode } from 'react';
++
+ export interface AssemblyMaterialViewProps {
+   readonly title: string;
+   readonly familyLabel: string;
+   readonly previewUrl?: string;
++  readonly secondaryPreviewUrl?: string;
+   readonly fallbackGlyph: ReactNode;
+-  /** Actual readable preview supplied by its owner, never generated from a title. */
+   readonly excerpt?: string;
+   readonly feedback?: ReactNode;
++  readonly shape?: AssemblyMaterialShape;
++  readonly organization?: ContextCollectionOrganization;
++  readonly aspectRatio?: number;
++  readonly referenced?: boolean;
++  readonly onUse?: () => void;
+ }
+-
+-/**
+- * GEN1 WarehouseObject: content + identity + optional references stay separate.
+- * Lovart contributes reference-only hierarchy, NOT copied commercial source/assets.
+- */
+-export function AssemblyMaterialView({
+-  title,
+-  familyLabel,
+-  previewUrl,
+-  fallbackGlyph,
+-  excerpt,
+-  feedback,
++/** C01 object bodies reuse the adopted folder and workflow faces, not generic information cards. */
++export function AssemblyMaterialView({ title, familyLabel, previewUrl, secondaryPreviewUrl, fallbackGlyph,
++  excerpt, feedback, shape = 'file', organization = '未指定', aspectRatio, referenced = false, onUse,
+ }: AssemblyMaterialViewProps): React.JSX.Element {
+-  // Rendering failure only, not a new availability owner. A new URL gets a fresh attempt.
+   const [failedUrl, setFailedUrl] = useState<string | null>(null);
+-  const hasPreview = previewUrl !== undefined && previewUrl !== '' && failedUrl !== previewUrl;
+-  return (
+-    <div
+-      data-lcos-assembly-material
+-      aria-label={`${title} · ${familyLabel}`}
+-      data-preview-available={hasPreview}
+-      className="lcos-assembly-material-view"
+-    >
+-      {hasPreview ? (
+-        <img
+-          src={previewUrl}
+-          alt={title}
+-          draggable={false}
+-          decoding="async"
+-          onError={() => setFailedUrl(previewUrl ?? null)}
+-          className="lcos-assembly-preview-image"
+-        />
+-      ) : excerpt !== undefined && excerpt !== '' ? (
+-        <p className="lcos-assembly-preview-excerpt">{excerpt}</p>
+-      ) : (
+-        <div className="lcos-assembly-preview-unavailable">
+-          <span aria-hidden="true" className="lcos-assembly-material-glyph">{fallbackGlyph}</span>
+-          <span className="lcos-assembly-preview-reason">
+-            <span>{familyLabel}</span>
+-            <small>{failedUrl === previewUrl && failedUrl !== null ? '预览读取失败，材料身份仍保留' : '暂无真实预览'}</small>
+-          </span>
+-        </div>
+-      )}
+-      {feedback}
+-    </div>
+-  );
++  const [attempt, setAttempt] = useState(0);
++  const hasPreview = Boolean(previewUrl) && failedUrl !== previewUrl;
++  const ratio = typeof aspectRatio === 'number' && Number.isFinite(aspectRatio) && aspectRatio > 0 ? aspectRatio : undefined;
++  return <div data-lcos-assembly-material data-shape={shape} aria-label={`${title} · ${familyLabel}`}
++    data-preview-available={hasPreview} className="lcos-assembly-material-view">
++    {shape === 'context' ? <div className="lcos-context-collection lcos-assembly-context" data-rendition="装配" data-organization={organization}>
++      <ContextCollectionFace title={title} organization={organization} rendition="装配"
++        {...(previewUrl ? { previewUrl } : {})} {...(secondaryPreviewUrl ? { secondaryPreviewUrl } : {})}
++        unspecifiedGlyph={fallbackGlyph} />
++    </div> : shape === 'workflow' ? <div className="lcos-workflow-task-card lcos-assembly-workflow" data-state={referenced ? '草稿中' : '静息'}>
++      <WorkflowTaskCardFace title={title} summary={familyLabel} state={referenced ? '草稿中' : '静息'}
++        {...(previewUrl ? { previewUrl } : {})} {...(onUse ? { onUse } : {})} />
++    </div> : <div className={`lcos-assembly-material-body is-${shape}`} style={ratio ? { aspectRatio: ratio } : undefined}>
++      {hasPreview ? <img key={`${previewUrl}:${attempt}`} src={previewUrl} alt={title} draggable={false} decoding="async"
++        onError={() => setFailedUrl(previewUrl ?? null)} className="lcos-assembly-preview-image" />
++        : excerpt !== undefined ? <div className="lcos-assembly-preview-excerpt">{excerpt === '' ? <span className="lcos-assembly-empty-text">空文本</span> : <Gen1TextDocument text={excerpt} />}</div>
++          : <div className="lcos-assembly-preview-unavailable">
++            <span aria-hidden="true" className="lcos-assembly-material-glyph">{fallbackGlyph}</span>
++            <span className="lcos-assembly-preview-reason"><span>{familyLabel}</span>
++              <small>{failedUrl === previewUrl && failedUrl !== null ? '预览读取失败' : '暂无真实预览'}</small></span>
++            {failedUrl !== null && failedUrl === previewUrl ? <LcosButton appearance="oreo" variant="ghost" onClick={() => {
++              setFailedUrl(null); setAttempt((current) => current + 1);
++            }}>重试预览</LcosButton> : null}
++          </div>}
++    </div>}
++    {feedback}
++  </div>;
+ }
+diff --git a/huabu/apps/web/src/lcos/ui/professional/AssemblyPreviewView.tsx b/huabu/apps/web/src/lcos/ui/professional/AssemblyPreviewView.tsx
+new file mode 100644
+index 0000000..d5a7e86
+--- /dev/null
++++ b/huabu/apps/web/src/lcos/ui/professional/AssemblyPreviewView.tsx
+@@ -0,0 +1,55 @@
++import { useEffect, useRef } from 'react';
++
++import { LcosSurfaceFeedback } from '../LcosSurfaceFeedback';
++import { LcosButton } from '../primitives/LcosButton';
++import { safeAssemblyLink } from './assemblyPresentation';
++import { Gen1ImageZoomStage } from './donor/Gen1ImageZoomStage';
++import { Gen1TextDocument } from './donor/Gen1TextDocument';
++import './professional-assembly.css';
++
++export interface AssemblyPreviewPresentation {
++  readonly status: 'loading' | 'ready' | 'error';
++  readonly subjectKey: string;
++  readonly title: string;
++  readonly kind: 'text' | 'image' | 'url' | 'local_path' | 'descriptor' | 'skill' | 'unknown';
++  readonly text?: string;
++  readonly dataUrl?: string;
++  readonly url?: string;
++  readonly path?: string;
++  readonly error?: string;
++  readonly lines?: readonly { readonly label: string; readonly value: string }[];
++  readonly sourceLabel?: string;
++}
++export function AssemblyPreviewView({ preview, onClose, onRetry }: {
++  readonly preview: AssemblyPreviewPresentation;
++  readonly onClose: () => void;
++  readonly onRetry: () => void;
++}): React.JSX.Element {
++  const back = useRef<HTMLButtonElement>(null);
++  // User-opened drill-in: focus once, not again when an async result arrives.
++  useEffect(() => { back.current?.focus({ preventScroll: true }); }, [preview.subjectKey]);
++  const link = safeAssemblyLink(preview.url);
++  return <section className="lcos-assembly-preview" data-lcos-assembly-preview={preview.subjectKey}
++    aria-label={`预览 ${preview.title}`} onKeyDownCapture={(event) => {
++      if (event.key === 'Escape') { event.stopPropagation(); event.preventDefault(); onClose(); }
++    }}>
++    <header><LcosButton appearance="oreo" ref={back} variant="ghost" onClick={onClose} data-lcos-assembly-preview-close>返回材料</LcosButton>
++      <span>{preview.kind === 'skill' ? '技能阅读' : '来源预览'}</span></header>
++    <div className="lcos-assembly-preview-heading"><h2>{preview.title}</h2>
++      {preview.sourceLabel ? <p>{preview.sourceLabel}</p> : null}</div>
++    <div className="lcos-assembly-preview-content" aria-busy={preview.status === 'loading'}>
++      {preview.status === 'loading' ? <LcosSurfaceFeedback presentation="loading" message="正在读取预览…" />
++        : preview.status === 'error' ? <LcosSurfaceFeedback presentation="error" message={preview.error ?? '预览读取失败'} onAction={onRetry} actionLabel="重试读取" />
++        : <>
++          {preview.dataUrl ? <Gen1ImageZoomStage src={preview.dataUrl} alt={preview.title} /> : null}
++          {preview.text !== undefined ? <Gen1TextDocument text={preview.text} /> : null}
++          {link ? <a className="lcos-assembly-source-link" href={link} target="_blank" rel="noopener noreferrer">{preview.url}</a> : preview.url ? <p className="lcos-assembly-source-link">{preview.url}</p> : null}
++          {preview.path ? <p className="lcos-assembly-source-link">{preview.path}</p> : null}
++          {preview.lines ? <dl className="lcos-assembly-descriptor">{preview.lines.map((line) => <div key={line.label}><dt>{line.label}</dt><dd>{line.value}</dd></div>)}</dl> : null}
++          {!preview.dataUrl && preview.text === undefined && !preview.url && !preview.path && !preview.lines?.length
++            ? <LcosSurfaceFeedback presentation="empty" message="当前来源没有可显示的预览，身份仍保留。" /> : null}
++        </>}
++    </div>
++    <footer>原始来源与身份保持不变。这里的缩放只作用于图片，不移动画布。</footer>
++  </section>;
++}
+diff --git a/huabu/apps/web/src/lcos/ui/professional/AssemblyReceiptView.tsx b/huabu/apps/web/src/lcos/ui/professional/AssemblyReceiptView.tsx
+new file mode 100644
+index 0000000..f64ac57
+--- /dev/null
++++ b/huabu/apps/web/src/lcos/ui/professional/AssemblyReceiptView.tsx
+@@ -0,0 +1,24 @@
++import { LcosButton } from '../primitives/LcosButton';
++import './professional-assembly.css';
++
++import type { ReactNode } from 'react';
++export interface AssemblyReceiptPresentation {
++  readonly tone: string;
++  readonly headline: string;
++  readonly lines: readonly { readonly key: string; readonly tone: string; readonly label: string; readonly detail?: string; readonly changeSetId?: string }[];
++}
++/** Read the existing per-item result; a skipped or unsupported source never turns green. */
++export function AssemblyReceiptView({ summary, onClose, notice }: {
++  readonly summary: AssemblyReceiptPresentation;
++  readonly onClose: () => void;
++  readonly notice?: ReactNode;
++}): React.JSX.Element {
++  return <section className="lcos-assembly-receipt" data-lcos-assembly-receipt data-lcos-assembly-outcome={summary.tone}>
++    <header><strong role="status" aria-live="polite">{summary.headline}</strong>
++      <LcosButton appearance="oreo" variant="ghost" onClick={onClose} aria-label="收起装配回执">收起</LcosButton></header>
++    {notice}
++    <details><summary>查看 {summary.lines.length} 项结果</summary><ul>{summary.lines.map((line) => <li key={line.key}
++      data-lcos-assembly-outcome-line={line.tone}><span>{line.label}{line.detail ? ` · ${line.detail}` : ''}</span>
++      {line.changeSetId ? <small title={line.changeSetId}>已记录变更 {line.changeSetId.slice(0, 8)}</small> : null}</li>)}</ul></details>
++  </section>;
++}
+diff --git a/huabu/apps/web/src/lcos/ui/professional/AssemblySourceTabsView.tsx b/huabu/apps/web/src/lcos/ui/professional/AssemblySourceTabsView.tsx
+index 735f0ec..48e758d 100644
+--- a/huabu/apps/web/src/lcos/ui/professional/AssemblySourceTabsView.tsx
++++ b/huabu/apps/web/src/lcos/ui/professional/AssemblySourceTabsView.tsx
+@@ -1,5 +1,4 @@
+ import { LcosButton } from '../primitives/LcosButton';
+-
+ import './professional-assembly.css';
+ 
+ import type { ReactNode } from 'react';
+@@ -24,10 +23,12 @@ export function AssemblySourceTabsView<Key extends string>({
+   context,
+ }: AssemblySourceTabsViewProps<Key>): React.JSX.Element {
+   return (
+-    <div data-lcos-assembly-source-tabs className="lcos-assembly-source-tabs" aria-label="Assembly 来源">
++    <div data-lcos-assembly-source-tabs className="lcos-assembly-source-tabs" aria-label="装配来源">
+       <div className="lcos-assembly-source-buttons" role="group" aria-label="材料来源">
+         {items.map((item) => (
+           <LcosButton
++            appearance="oreo"
++            variant="ghost"
+             key={item.key}
+             type="button"
+             data-lcos-assembly-source-tab={item.key}
+diff --git a/huabu/apps/web/src/lcos/ui/professional/AssemblyToolbarView.tsx b/huabu/apps/web/src/lcos/ui/professional/AssemblyToolbarView.tsx
+new file mode 100644
+index 0000000..63c229f
+--- /dev/null
++++ b/huabu/apps/web/src/lcos/ui/professional/AssemblyToolbarView.tsx
+@@ -0,0 +1,58 @@
++import { useId, useRef, useEffect } from 'react';
++
++import { LcosButton } from '../primitives/LcosButton';
++import { ASSEMBLY_FILTERS } from './assemblyPresentation';
++import './professional-assembly.css';
++
++import type { AssemblyMaterialFilter } from './assemblyPresentation';
++
++export interface AssemblyToolbarViewProps {
++  readonly query: string;
++  readonly placeholder: string;
++  readonly onQueryChange: (query: string) => void;
++  readonly onSearch: () => void;
++  readonly onClear: () => void;
++  readonly filter: AssemblyMaterialFilter;
++  readonly onFilterChange: (filter: AssemblyMaterialFilter) => void;
++  readonly showFilters?: boolean;
++  readonly localSearch?: boolean;
++}
++/** C01 search + P0-04 material filter. Native disclosure keeps focus/Escape inside this body. */
++export function AssemblyToolbarView({ query, placeholder, onQueryChange, onSearch, onClear, filter,
++  onFilterChange, showFilters = true, localSearch = false }: AssemblyToolbarViewProps): React.JSX.Element {
++  const id = useId();
++  const disclosure = useRef<HTMLDetailsElement>(null);
++  useEffect(() => {
++    const closeOutside = (event: PointerEvent): void => {
++      if (disclosure.current?.open && event.target instanceof Node && !disclosure.current.contains(event.target)) { disclosure.current.open = false; }
++    };
++    document.addEventListener('pointerdown', closeOutside);
++    return () => document.removeEventListener('pointerdown', closeOutside);
++  }, []);
++  return <div className="lcos-assembly-toolbar">
++    <form role="search" aria-label={placeholder} onSubmit={(event) => { event.preventDefault(); onSearch(); }}>
++      <label className="lcos-assembly-search-field" htmlFor={id}>
++        <input id={id} type="search" enterKeyHint="search" autoComplete="off" data-lcos-assembly-search value={query}
++          onChange={(event) => onQueryChange(event.target.value)} placeholder={placeholder} aria-label={placeholder} />
++      </label>
++      {!localSearch ? <LcosButton appearance="oreo" variant="secondary" type="submit" className="lcos-assembly-search-submit">搜索</LcosButton> : null}
++      {query !== '' ? <LcosButton appearance="oreo" variant="ghost" onClick={onClear} aria-label="清除搜索">清除</LcosButton> : null}
++    </form>
++    {showFilters ? <details ref={disclosure} className="lcos-assembly-filter" data-lcos-assembly-filter onKeyDownCapture={(event) => {
++      if (event.key !== 'Escape' || !event.currentTarget.open) { return; }
++      event.preventDefault(); event.stopPropagation(); event.currentTarget.open = false;
++      event.currentTarget.querySelector('summary')?.focus();
++    }}>
++      <summary>筛选{filter === 'all' ? '' : ` · ${ASSEMBLY_FILTERS.find((entry) => entry.value === filter)?.label}`}</summary>
++      <div className="lcos-assembly-filter-popover" role="group" aria-label="材料类型">
++        <span>材料类型 <small>当前已读取内容</small></span>
++        <div>{ASSEMBLY_FILTERS.map((entry) => <LcosButton appearance="oreo" key={entry.value} variant="secondary"
++          aria-pressed={filter === entry.value} onClick={(event) => {
++            onFilterChange(entry.value);
++            const disclosure = event.currentTarget.closest('details');
++            if (disclosure) { disclosure.open = false; disclosure.querySelector('summary')?.focus(); }
++          }}>{entry.label}</LcosButton>)}</div>
++      </div>
++    </details> : null}
++  </div>;
++}
+diff --git a/huabu/apps/web/src/lcos/ui/professional/assemblyPresentation.test.ts b/huabu/apps/web/src/lcos/ui/professional/assemblyPresentation.test.ts
+new file mode 100644
+index 0000000..cfc6ab3
+--- /dev/null
++++ b/huabu/apps/web/src/lcos/ui/professional/assemblyPresentation.test.ts
+@@ -0,0 +1,53 @@
++import { describe, expect, it } from 'vitest';
++
++import { assemblyDate, assemblyMaterialShape, captureMaterialShape, matchesAssemblyFilter,
++  retainAssemblySelection, safeAssemblyLink, toggleAssemblySelection } from './assemblyPresentation';
++
++describe('Assembly donor presentation helpers', () => {
++  it.each([
++    ['context', 'context'], ['collection', 'context'], ['workflow', 'workflow'],
++    ['scene', 'context'], ['conversation', 'conversation'], ['note', 'text'],
++  ] as const)('preserves the native body family for %s', (kind, expected) => {
++    expect(assemblyMaterialShape({ kind })).toBe(expected);
++  });
++  it.each([
++    ['image', 'image'], ['markdown', 'text'], ['pdf', 'document'], ['ppt', 'document'],
++    ['audio', 'audio'], ['video', 'video'], ['link', 'link'], ['file', 'file'], ['archive', 'file'],
++  ] as const)('maps the existing visual family %s', (visualFamily, expected) => {
++    expect(assemblyMaterialShape({ kind: 'artifact', visualFamily })).toBe(expected);
++  });
++  it('keeps unknown capture kinds honest instead of fabricating a picture', () => {
++    expect(captureMaterialShape('future-source')).toBe('file');
++    expect(captureMaterialShape('web_image')).toBe('image');
++    expect(captureMaterialShape('web_selection')).toBe('text');
++    expect(captureMaterialShape('web_page')).toBe('link');
++  });
++  it('filters local loaded material families without a second source of truth', () => {
++    expect(matchesAssemblyFilter('document', 'text')).toBe(true);
++    expect(matchesAssemblyFilter('workflow', 'collection')).toBe(true);
++    expect(matchesAssemblyFilter('audio', 'media')).toBe(true);
++    expect(matchesAssemblyFilter('image', 'collection')).toBe(false);
++    expect(matchesAssemblyFilter('skill', 'all')).toBe(true);
++  });
++  it('preserves identity and avoids unnecessary selection replacement', () => {
++    const selected = ['artifact:a', 'capture:b'];
++    expect(retainAssemblySelection(selected, new Set(selected))).toBe(selected);
++    expect(retainAssemblySelection(selected, new Set(['capture:b']))).toEqual(['capture:b']);
++    expect(toggleAssemblySelection(selected, 'artifact:a')).toEqual(['capture:b']);
++    expect(toggleAssemblySelection(selected, 'resource:c')).toEqual([...selected, 'resource:c']);
++    expect(selected).toEqual(['artifact:a', 'capture:b']);
++  });
++  it.each(['javascript:alert(1)', 'data:text/html,test', 'file:///etc/passwd', '//example.org', 'not a URL'])('does not create an external link for %s', (value) => {
++    expect(safeAssemblyLink(value)).toBeUndefined();
++  });
++  it('keeps an original HTTP source navigable', () => {
++    expect(safeAssemblyLink('https://example.org/source?q=1')).toBe('https://example.org/source?q=1');
++    expect(safeAssemblyLink('http://example.org')).toBe('http://example.org/');
++    expect(safeAssemblyLink()).toBeUndefined();
++  });
++  it('does not fabricate a capture date when source metadata is absent or invalid', () => {
++    expect(assemblyDate()).toBe('');
++    expect(assemblyDate('not a date')).toBe('');
++    expect(assemblyDate('2026-09-20T12:00:00Z')).not.toBe('');
++  });
++});
+diff --git a/huabu/apps/web/src/lcos/ui/professional/assemblyPresentation.ts b/huabu/apps/web/src/lcos/ui/professional/assemblyPresentation.ts
+new file mode 100644
+index 0000000..abd0923
+--- /dev/null
++++ b/huabu/apps/web/src/lcos/ui/professional/assemblyPresentation.ts
+@@ -0,0 +1,59 @@
++import type { WarehouseItemV1 } from '@local-creative-os/contracts';
++
++export type AssemblyMaterialFilter = 'all' | 'image' | 'text' | 'media' | 'collection';
++export type AssemblyMaterialShape = 'image' | 'text' | 'document' | 'video' | 'audio' | 'link' | 'file' | 'context' | 'workflow' | 'conversation' | 'skill';
++export const ASSEMBLY_FILTERS: readonly { readonly value: AssemblyMaterialFilter; readonly label: string }[] = [
++  { value: 'all', label: '全部' }, { value: 'image', label: '图片' },
++  { value: 'text', label: '文字' }, { value: 'media', label: '影音' },
++  { value: 'collection', label: '集合' },
++];
++
++/** GEN1 Warehouse itemIcon taxonomy, projected onto the existing Figma material bodies. */
++export function assemblyMaterialShape(item: Pick<WarehouseItemV1, 'kind' | 'visualFamily'>): AssemblyMaterialShape {
++  if (item.kind === 'context' || item.kind === 'collection' || item.kind === 'scene') { return 'context'; }
++  if (item.kind === 'workflow') { return 'workflow'; }
++  if (item.kind === 'conversation') { return 'conversation'; }
++  if (item.kind === 'note') { return 'text'; }
++  switch (item.visualFamily) {
++    case 'image': return 'image';
++    case 'markdown': return 'text';
++    case 'pdf': case 'ppt': return 'document';
++    case 'audio': return 'audio';
++    case 'video': return 'video';
++    case 'link': return 'link';
++    default: return 'file';
++  }
++}
++export function captureMaterialShape(kind: string): AssemblyMaterialShape {
++  switch (kind) {
++    case 'image': case 'web_image': case 'clipboard_image': case 'screenshot': return 'image';
++    case 'text': case 'web_selection': case 'clipboard_text': return 'text';
++    case 'url': case 'web_link': case 'web_page': return 'link';
++    case 'conversation_snapshot': return 'conversation';
++    default: return 'file';
++  }
++}
++export function matchesAssemblyFilter(shape: AssemblyMaterialShape, filter: AssemblyMaterialFilter): boolean {
++  return filter === 'all' || (filter === 'image' && shape === 'image')
++    || (filter === 'text' && (shape === 'text' || shape === 'document'))
++    || (filter === 'media' && (shape === 'video' || shape === 'audio'))
++    || (filter === 'collection' && (shape === 'context' || shape === 'workflow'));
++}
++/** GEN1 CaptureWorkspace selection pruning; local UI selection, never membership truth. */
++export function retainAssemblySelection(selected: readonly string[], available: ReadonlySet<string>): readonly string[] {
++  const next = selected.filter((id) => available.has(id));
++  return next.length === selected.length ? selected : next;
++}
++export function toggleAssemblySelection(selected: readonly string[], id: string): readonly string[] {
++  return selected.includes(id) ? selected.filter((candidate) => candidate !== id) : [...selected, id];
++}
++export function safeAssemblyLink(value?: string): string | undefined {
++  if (!value) { return undefined; }
++  try { const url = new URL(value); return url.protocol === 'https:' || url.protocol === 'http:' ? url.href : undefined; }
++  catch { return undefined; }
++}
++export function assemblyDate(value?: string): string {
++  if (!value) { return ''; }
++  const date = new Date(value);
++  return Number.isNaN(date.valueOf()) ? '' : date.toLocaleString('zh-CN', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false });
++}
+diff --git a/huabu/apps/web/src/lcos/ui/professional/professional-assembly.css b/huabu/apps/web/src/lcos/ui/professional/professional-assembly.css
+index 5366855..4cc6540 100644
+--- a/huabu/apps/web/src/lcos/ui/professional/professional-assembly.css
++++ b/huabu/apps/web/src/lcos/ui/professional/professional-assembly.css
+@@ -1,91 +1,241 @@
+ @import '../primitives/oreo-controls.css';
+ 
+-/* Figma C01 5346:1416. Current Source Bay + CSS columns retained; Lovart is behavior-only evidence. */
++/* C01/C02 5346:1416 / 5346:1666 + N03 5347:1037.
++   Existing Source Bay, CSS masonry, Oreo controls, Context/Workflow faces and GEN1 viewers.
++   Lovart is a layout/interaction reference; no proprietary source or sample content is shipped. */
+ .lcos-assembly-body {
+-  container-type: inline-size;
+-  box-sizing: border-box;
+-  min-inline-size: 0;
+-  inline-size: 100%;
+-  display: flex;
+-  flex-direction: column;
+-  gap: 16px;
+-  padding: 24px 32px;
+-  color: var(--gen2-text);
+-  background: var(--gen2-surface);
+-  font-family: 'Noto Sans SC', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
++  container: lcos-assembly / size;
++  --lcos-control-font-size:14px; --lcos-control-font-weight:500;
++  display:flex; flex-direction:column; min-inline-size:0; min-block-size:0; inline-size:100%; block-size:100%;
++  box-sizing:border-box; overflow:hidden; padding:0;
++  color:var(--gen2-text); background:transparent;
++  font:400 13px/1.5 'Noto Sans SC',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+ }
+-.lcos-assembly-source-tabs { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; min-inline-size: 0; }
+-.lcos-assembly-source-buttons { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+-.lcos-assembly-source-buttons button {
+-  min-inline-size: 44px;
+-  min-block-size: 44px;
+-  padding: 8px 12px;
+-  border: 0;
+-  border-radius: var(--lcos-radius-control, 8px);
+-  color: var(--gen2-muted);
+-  background: transparent;
+-  font: inherit;
+-  font-size: 12px;
+-  line-height: 18px;
+-  cursor: pointer;
+-  transition: background 120ms ease, color 120ms ease;
++.lcos-assembly-body *, .lcos-assembly-body *::before, .lcos-assembly-body *::after { box-sizing:border-box; }
++.lcos-assembly-body [hidden] { display:none !important; }
++.lcos-assembly-body :is(button,input,summary) { font:inherit; }
++.lcos-assembly-body :is(button,summary) { cursor:pointer; }
++.lcos-assembly-body :is(button,input,summary,a):focus-visible { outline:2px solid var(--gen2-accent); outline-offset:2px; }
++.lcos-assembly-body button:disabled { opacity:.42; cursor:not-allowed; }
++.lcos-assembly-body .lcos-btn:not([data-lcos-control-skin='oreo']) {
++  display:inline-flex; align-items:center; justify-content:center; gap:6px; min-block-size:44px;
++  border:.5px solid var(--gen2-border); border-radius:8px; padding:6px 12px; margin:0;
++  background:var(--gen2-surface); color:var(--gen2-text); font:400 12px/20px 'Noto Sans SC',sans-serif;
++  white-space:nowrap; transition:background 150ms ease,box-shadow 150ms ease; flex:0 0 auto;
+ }
+-.lcos-assembly-source-buttons button:hover:not(:disabled) { background: var(--gen2-raised); color: var(--gen2-text); }
+-.lcos-assembly-source-buttons button[aria-pressed='true'] { background: var(--lcos-color-bg-inverse); color: var(--lcos-color-text-on-inverse); }
+-.lcos-assembly-source-buttons button:disabled { opacity: 0.45; cursor: not-allowed; }
+-.lcos-assembly-target-context { flex: 1 1 100%; min-inline-size: 0; overflow-wrap: anywhere; font-size: 11px; line-height: 18px; color: var(--gen2-muted); }
+-.lcos-assembly-body [data-lcos-assembly-source-panel] { min-inline-size: 0; }
+-.lcos-assembly-body form { flex-wrap: wrap; }
+-.lcos-assembly-body form label { min-inline-size: 120px; }
+-.lcos-assembly-body [data-lcos-assembly-search] { min-inline-size: 0; inline-size: 100%; font-size: 14px; line-height: 20px; }
+-.lcos-assembly-masonry { column-width: 216px; column-gap: 24px; inline-size: 100%; }
+-.lcos-assembly-item {
+-  display: flex;
+-  flex-direction: column;
+-  gap: 8px;
+-  break-inside: avoid;
+-  box-sizing: border-box;
+-  position: relative;
+-  margin-block-end: 24px;
+-  min-inline-size: 0;
+-  padding: 10px;
+-  border: 1px solid transparent;
+-  border-radius: var(--lcos-radius-medium, 16px);
+-  background: transparent;
+-  color: var(--gen2-text);
+-  transition: border-color 120ms ease, box-shadow 120ms ease;
++.lcos-assembly-body .lcos-btn--ghost:not([data-lcos-control-skin='oreo']) { border-color:transparent; background:transparent; }
++.lcos-assembly-body .lcos-btn:not([data-lcos-control-skin='oreo']):hover:not(:disabled) { background:var(--gen2-raised); }
++.lcos-assembly-body .lcos-btn svg { width:16px; height:16px; flex:0 0 auto; }
++.lcos-assembly-body .lcos-btn:not([data-lcos-control-skin='oreo'])[aria-pressed='true'] { background:var(--gen2-text); color:var(--gen2-surface); }
++.lcos-assembly-head {
++  display:flex; align-items:center; gap:8px; flex:0 0 auto; min-inline-size:0;
++  padding:21px 31px 0; position:relative; z-index:5;
+ }
+-.lcos-assembly-item:hover, .lcos-assembly-item:focus-within, .lcos-assembly-item[data-visual-active='true'] {
+-  border-color: var(--lcos-color-border-subtle, var(--gen2-border));
+-  box-shadow: var(--lcos-shadow-default);
++/* Four real Source Bay channels are a product extension: keep them subordinate so the
++   Figma 5346:1609 300×44 search baseline and waterfall y-position remain intact. */
++.lcos-assembly-source-tabs { display:flex; align-items:center; flex:1 1 0; min-inline-size:0; margin-left:auto; overflow:hidden; }
++.lcos-assembly-source-buttons { display:flex; align-items:center; gap:4px; overflow-x:auto; padding:0; scrollbar-width:none; }
++.lcos-assembly-source-buttons::-webkit-scrollbar { display:none; }
++.lcos-assembly-source-buttons .lcos-btn { --oreo-ink:var(--gen2-muted); min-inline-size:52px; padding:0; color:var(--gen2-muted); }
++.lcos-assembly-source-buttons .lcos-btn[aria-pressed='true'] { --oreo-fill:var(--gen2-text); --oreo-ink:var(--gen2-surface); }
++.lcos-assembly-target-context { min-inline-size:0; overflow-wrap:anywhere; color:var(--gen2-muted); font-size:11px; line-height:18px; }
++.lcos-assembly-target-context strong,.lcos-assembly-target-inline strong { color:var(--gen2-text); font-weight:500; }
++.lcos-assembly-browse { display:flex; flex-direction:column; min-block-size:0; min-inline-size:0; flex:1; }
++.lcos-assembly-toolbar { display:flex; align-items:center; flex:0 0 auto; gap:8px; min-inline-size:0; padding:0; position:relative; z-index:5; }
++.lcos-assembly-toolbar form { display:flex; align-items:center; gap:8px; flex:1 1 auto; min-inline-size:0; }
++/* Figma 5346:1609 is an overridden Button/Secondary instance: 300×44, r8, 0.5px inside border.
++   The production field stays a native input; the wrapper must not add a second outline. */
++.lcos-assembly-search-field { display:flex; align-items:center; min-inline-size:0; flex:0 0 300px; inline-size:300px; max-inline-size:300px; block-size:44px; padding:0; border:0; border-radius:8px; background:transparent; }
++.lcos-assembly-search-field:focus-within { box-shadow:none; }
++.lcos-assembly-search-field input { min-inline-size:0; inline-size:100%; }
++/* Enter remains the canonical form submit. The extra submit face is not present in C01. */
++.lcos-assembly-search-submit { position:absolute !important; inline-size:1px !important; block-size:1px !important; min-inline-size:1px !important; min-block-size:1px !important; padding:0 !important; overflow:hidden; clip-path:inset(50%); white-space:nowrap; }
++.lcos-assembly-filter { flex:0 0 auto; }
++.lcos-assembly-filter > summary { display:flex; align-items:center; justify-content:center; min-block-size:44px; min-inline-size:44px; padding:6px 10px; border:0; border-radius:8px; list-style:none; font-size:12px; color:var(--gen2-muted); }
++.lcos-assembly-filter > summary::-webkit-details-marker { display:none; }
++.lcos-assembly-filter[open] > summary,.lcos-assembly-filter > summary:hover { background:var(--gen2-raised); color:var(--gen2-text); }
++.lcos-assembly-filter-popover { position:absolute; top:calc(100% + 8px); right:32px; width:min(360px,calc(100% - 64px)); padding:16px; border:.5px solid var(--gen2-border); border-radius:16px; background:var(--gen2-surface); box-shadow:var(--lcos-glass-shadow,0 4px 16px #28303a16); animation:lcos-assembly-enter 180ms ease both; }
++.lcos-assembly-filter-popover > span { display:block; font-size:13px; margin-block-end:12px; }
++.lcos-assembly-filter-popover small { margin-inline-start:8px; font-size:10px; color:var(--gen2-muted); }
++.lcos-assembly-filter-popover > div { display:flex; flex-wrap:wrap; gap:8px; }
++.lcos-assembly-filter-popover .lcos-btn { min-inline-size:72px; }
++/* C01: search ends at local y=114; first material starts at local y=130. Keep metadata light. */
++.lcos-assembly-result-meta { display:flex; align-items:center; justify-content:space-between; gap:8px; padding:0 32px; min-block-size:16px; block-size:16px; flex:0 0 16px; color:var(--gen2-muted); font-size:10px; line-height:16px; }
++.lcos-assembly-result-meta .lcos-btn { color:var(--gen2-muted); min-block-size:16px; block-size:16px; font-size:10px; }
++.lcos-assembly-result-meta .lcos-btn > .lcos-oreo-face { min-block-size:16px; padding:0 4px; background:transparent; }
++.lcos-assembly-target-inline { white-space:nowrap; }
++/* At 644px initial width this yields x=28/338 inside the body: C01 Context x728,
++   Workflow x1040 after its 2px optical inset. Wider windows may naturally add columns. */
++.lcos-assembly-scroll { flex:1; min-block-size:0; min-inline-size:0; overflow:auto; overscroll-behavior:contain; scrollbar-gutter:stable; padding:0 20px 12px 27px; }
++.lcos-assembly-masonry { column-count:2; column-width:auto; column-gap:24px; inline-size:100%; }
++.lcos-assembly-item { display:inline-flex; vertical-align:top; flex-direction:column; position:relative; min-inline-size:0; inline-size:100%; gap:8px; padding:0; margin-block-end:24px; break-inside:avoid; border:0; border-radius:16px; color:var(--gen2-text); transition:background 150ms ease,border-color 150ms ease,box-shadow 150ms ease; }
++.lcos-assembly-item:hover,.lcos-assembly-item:focus-within,.lcos-assembly-item[data-visual-active='true'] { z-index:4; }
++.lcos-assembly-item[data-visual-active='true'] { background:color-mix(in srgb,var(--gen2-surface) 96%,transparent); box-shadow:inset 0 0 0 .5px var(--gen2-border),0 8px 20px color-mix(in srgb,var(--gen2-text) 6%,transparent); }
++.lcos-assembly-item[data-selected='true'] { box-shadow:inset 0 0 0 1px var(--gen2-accent); }
++.lcos-assembly-item[draggable='true'] .lcos-assembly-item-object { cursor:grab; }
++.lcos-assembly-item[draggable='true']:active .lcos-assembly-item-object { cursor:grabbing; }
++.lcos-assembly-item-object { position:relative; min-inline-size:0; inline-size:100%; }
++.lcos-assembly-material-view { position:relative; width:100%; min-width:0; }
++/* Assembly uses the already-frozen cross-view faces. Desktop C01 scales only their rendition,
++   never their internal geometry or entity identity. N03 returns to the full-size masters. */
++@container lcos-assembly (min-width:551px) {
++ .lcos-assembly-material-view[data-shape='context'] { block-size:219.6px; }
++ .lcos-assembly-material-view[data-shape='workflow'] { block-size:265.68px; }
++ .lcos-assembly-context { margin:0; transform:scale(.9); transform-origin:top left; }
++ .lcos-assembly-workflow { margin-left:2px; transform:scale(.82); transform-origin:top left; }
++ .lcos-assembly-item[data-lcos-assembly-material-shape='context']:hover .lcos-assembly-context,
++ .lcos-assembly-item[data-lcos-assembly-material-shape='context']:focus-within .lcos-assembly-context { transform:translateY(-10px) scale(.9); }
+ }
+-.lcos-assembly-item[data-referenced='true']::before { content: ''; position: absolute; inset-inline-start: 3px; inset-block-start: 14px; inline-size: 2px; block-size: 18px; border-radius: 1px; background: var(--gen2-accent); }
+-.lcos-assembly-material-view { inline-size: 100%; min-inline-size: 0; }
+-.lcos-assembly-preview-image { display: block; inline-size: 100%; block-size: auto; border-radius: 12px; }
+-.lcos-assembly-preview-excerpt { margin: 0; padding: 16px; border-radius: 2px; background: var(--lcos-main-paper, var(--gen2-surface)); font-size: 14px; line-height: 23px; white-space: pre-wrap; overflow-wrap: anywhere; }
+-.lcos-assembly-preview-unavailable { display: flex; align-items: center; gap: 12px; padding: 12px 2px; min-block-size: 48px; color: var(--gen2-muted); }
+-.lcos-assembly-material-glyph { inline-size: 24px; block-size: 24px; display: inline-flex; flex: 0 0 auto; }
+-.lcos-assembly-preview-reason { display: flex; flex-direction: column; gap: 4px; font-size: 12px; line-height: 18px; }
+-.lcos-assembly-preview-reason small { font-size: 10px; line-height: 16px; }
+-.lcos-assembly-item [data-lcos-assembly-actions] { flex-wrap: wrap; }
+-.lcos-assembly-item [data-lcos-assembly-actions] button, .lcos-assembly-item [data-lcos-assembly-more] { min-block-size: 44px; }
+-.lcos-assembly-item [data-lcos-assembly-more] { opacity: 0.75; transition: opacity 120ms ease; }
+-.lcos-assembly-item:hover [data-lcos-assembly-more], .lcos-assembly-item:focus-within [data-lcos-assembly-more] { opacity: 1; }
+-.lcos-assembly-body :is(button, a, input):focus-visible { outline: 2px solid var(--gen2-accent); outline-offset: 2px; }
+-.lcos-assembly-body [data-lcos-assembly-preview] { overflow-wrap: anywhere; }
+-@container (max-width: 460px) {
+-  .lcos-assembly-masonry { column-count: 1; }
++.lcos-assembly-material-body { position:relative; overflow:hidden; width:100%; border-radius:12px; background:var(--gen2-raised); }
++.lcos-assembly-material-body.is-image { min-height:120px; }
++.lcos-assembly-material-body.is-video { aspect-ratio:16 / 10; }
++.lcos-assembly-material-body:is(.is-document,.is-text,.is-skill) { min-height:160px; background:var(--gen2-surface); border:.5px solid var(--gen2-border); border-radius:3px 12px 12px 3px; }
++.lcos-assembly-material-body.is-document { aspect-ratio:3 / 4; box-shadow:2px 3px 0 var(--gen2-raised); }
++.lcos-assembly-material-body.is-audio { min-height:116px; border-radius:24px; }
++.lcos-assembly-material-body.is-conversation { min-height:136px; border-radius:20px 20px 20px 4px; background:color-mix(in srgb,var(--gen2-accent) 7%,var(--gen2-surface)); }
++.lcos-assembly-material-body.is-link { min-height:132px; border:.5px solid var(--gen2-border); border-radius:10px; }
++.lcos-assembly-material-body.is-file { min-height:124px; }
++.lcos-assembly-preview-image { display:block; width:100%; height:auto; }
++.lcos-assembly-material-body[style] .lcos-assembly-preview-image,.lcos-assembly-material-body:is(.is-video,.is-document) .lcos-assembly-preview-image { height:100%; object-fit:cover; }
++.lcos-assembly-preview-excerpt { max-height:234px; overflow:hidden; margin:0; padding:20px; font-size:14px; line-height:23px; overflow-wrap:anywhere; }
++.lcos-assembly-preview-excerpt .lcos-gen1-reader-document { padding:0; }
++.lcos-assembly-preview-excerpt .lcos-gen1-reader-document :is(p,h1,h2,h3) { margin-block:0 8px; font:inherit; white-space:pre-wrap; }
++.lcos-assembly-preview-excerpt .lcos-gen1-reader-document :is(h1,h2,h3) { font-size:17px; font-weight:500; line-height:25px; }
++.lcos-assembly-preview-unavailable { display:flex; align-items:flex-start; flex-direction:column; gap:12px; padding:24px 20px; color:var(--gen2-muted); }
++.lcos-assembly-material-glyph { width:28px; height:28px; display:inline-flex; }
++.lcos-assembly-material-glyph svg { width:24px; height:24px; }
++.lcos-assembly-preview-reason { display:flex; flex-direction:column; gap:4px; font-size:12px; }
++.lcos-assembly-preview-reason small { font-size:10px; }
++.lcos-assembly-item-caption { min-width:0; display:flex; flex-direction:column; gap:4px; padding:0 2px; }
++.lcos-assembly-item-caption > strong { font:500 13px/20px 'Noto Sans SC',sans-serif; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
++.lcos-assembly-item-caption > span { font-size:10px; color:var(--gen2-muted); overflow-wrap:anywhere; }
++.lcos-assembly-select { position:absolute; top:8px; left:8px; display:grid; place-items:center; width:44px; height:44px; border-radius:12px; background:color-mix(in srgb,var(--gen2-surface) 94%,transparent); opacity:0; transition:opacity 150ms ease; cursor:pointer; z-index:3; }
++.lcos-assembly-select input { width:17px; height:17px; accent-color:var(--gen2-accent); cursor:pointer; margin:0; }
++.lcos-assembly-item:hover .lcos-assembly-select,.lcos-assembly-item:focus-within .lcos-assembly-select,.lcos-assembly-item[data-selected='true'] .lcos-assembly-select { opacity:1; }
++.lcos-assembly-body .lcos-assembly-more { position:absolute; top:8px; right:8px; padding:0; width:44px; height:44px; border-radius:12px; background:color-mix(in srgb,var(--gen2-surface) 94%,transparent); opacity:0; z-index:3; }
++.lcos-assembly-more > span { position:absolute; width:1px; height:1px; clip-path:inset(50%); overflow:hidden; }
++.lcos-assembly-item:hover .lcos-assembly-more,.lcos-assembly-item:focus-within .lcos-assembly-more,.lcos-assembly-item[data-visual-active='true'] .lcos-assembly-more { opacity:1; }
++.lcos-assembly-item-actions { position:absolute; left:8px; right:8px; bottom:8px; z-index:5; display:flex; flex-wrap:wrap; align-items:center; gap:4px; min-height:44px; padding:0; opacity:0; visibility:hidden; pointer-events:none; transition:opacity 150ms ease; }
++.lcos-assembly-item-actions > * { display:none !important; pointer-events:auto; }
++/* C02 shows one primary take action. Secondary actions remain behind the existing 取用 disclosure. */
++.lcos-assembly-item:hover .lcos-assembly-item-actions,.lcos-assembly-item:focus-within .lcos-assembly-item-actions { opacity:1; visibility:visible; }
++.lcos-assembly-item:hover .lcos-assembly-item-actions > [data-lcos-assembly-drop],
++.lcos-assembly-item:focus-within .lcos-assembly-item-actions > [data-lcos-assembly-drop] { display:inline-flex !important; }
++.lcos-assembly-item:is([data-lcos-assembly-capture-item],[data-lcos-assembly-resource-item],[data-lcos-assembly-skill-item]):hover .lcos-assembly-item-actions > :first-child,
++.lcos-assembly-item:is([data-lcos-assembly-capture-item],[data-lcos-assembly-resource-item],[data-lcos-assembly-skill-item]):focus-within .lcos-assembly-item-actions > :first-child { display:inline-flex !important; }
++.lcos-assembly-item[data-visual-active='true'] .lcos-assembly-item-actions { top:48px; bottom:auto; opacity:1; visibility:visible; padding:8px; border:.5px solid var(--gen2-border); border-radius:12px; background:var(--gen2-surface); box-shadow:0 4px 16px rgb(40 48 58 / 8%); }
++.lcos-assembly-item[data-visual-active='true'] .lcos-assembly-item-actions > * { display:inline-flex !important; }
++.lcos-assembly-item[data-lcos-assembly-material-shape='context']:not([data-visual-active='true']) .lcos-assembly-item-actions { left:31px; right:auto; top:194px; bottom:auto; inline-size:173px; }
++.lcos-assembly-item[data-lcos-assembly-material-shape='context']:not([data-visual-active='true']) .lcos-assembly-item-actions [data-lcos-assembly-drop] { inline-size:173px; }
++.lcos-assembly-body .lcos-assembly-item-actions .lcos-btn { --lcos-control-font-size:12px; font-size:12px; }
++.lcos-assembly-item-actions .lcos-oreo-face { padding-inline:8px; }
++.lcos-assembly-item-actions [data-lcos-assembly-drop] { --lcos-control-font-size:14px; }
++.lcos-assembly-body .lcos-oreo-label { display:inline-flex; align-items:center; gap:4px; }
++.lcos-assembly-filter [aria-pressed='true'] { --oreo-fill:var(--gen2-text); --oreo-ink:var(--gen2-surface); }
++.lcos-assembly-item-actions > [data-lcos-assembly-unavailable] { font-size:10px; color:var(--gen2-muted); max-width:100%; overflow-wrap:anywhere; }
++.lcos-assembly-draft-mark { position:absolute; top:10px; left:52px; padding:3px 8px; border-radius:8px; color:var(--gen2-accent); background:var(--gen2-surface); font-size:10px; pointer-events:none; }
++/* Actual shared face geometry, not a screenshot and not scale() on the window or text. */
++.lcos-assembly-context { width:248px; height:244px; max-width:100%; margin:0; }
++.lcos-assembly-workflow { width:224px; height:324px; margin:0; }
++.lcos-assembly-context,.lcos-assembly-workflow { transition:transform 180ms cubic-bezier(.22,1,.36,1); }
++.lcos-assembly-workflow .lcos-workflow-task-use { font-size:12px; }
++.lcos-assembly-media-loading { position:absolute; inset:auto 8px 8px; width:max-content; max-width:calc(100% - 16px); padding:4px 8px; border-radius:8px; background:var(--gen2-surface); color:var(--gen2-muted); font-size:10px; }
++.lcos-assembly-body .lcos-assembly-media-retry { font-size:11px; width:100%; }
++.lcos-assembly-empty { padding:40px 0; min-height:210px; display:flex; align-items:center; justify-content:center; }
++.lcos-assembly-loading { position:relative; min-height:300px; }
++.lcos-assembly-loading > [data-lcos-family] { position:absolute; top:8px; left:12px; z-index:1; }
++.lcos-assembly-skeletons { columns:2; column-gap:24px; }
++.lcos-assembly-skeletons i { display:block; break-inside:avoid; height:190px; margin-bottom:24px; border-radius:12px; background:var(--gen2-raised); opacity:.65; }
++.lcos-assembly-skeletons i:nth-child(even) { height:260px; }
++.lcos-assembly-inline-notice { display:flex; align-items:center; flex-wrap:wrap; gap:8px; color:var(--gen2-muted); font-size:11px; line-height:18px; padding:8px 0; margin:0 0 8px; }
++.lcos-assembly-pagination { display:flex; flex-direction:column; align-items:center; gap:8px; padding:8px 0 16px; color:var(--gen2-muted); font-size:11px; }
++.lcos-assembly-browse-hint { margin:0; padding:12px 32px 16px; flex:0 0 auto; font-size:10px; color:var(--gen2-muted); }
++.lcos-assembly-selection-bar { display:flex; flex-wrap:wrap; align-items:center; gap:8px; padding:10px 24px; border-top:.5px solid var(--gen2-border); background:var(--gen2-surface); flex:0 0 auto; }
++.lcos-assembly-selection-bar > span { flex:1; white-space:nowrap; }
++.lcos-assembly-selection-bar > [data-lcos-assembly-batch-apply] { --oreo-fill:var(--gen2-text); --oreo-ink:var(--gen2-surface); }
++.lcos-assembly-selection-bar > [data-lcos-assembly-batch-apply]:hover:not(:disabled) { --oreo-fill:var(--gen2-accent); }
++.lcos-assembly-preview { display:flex; flex-direction:column; min-height:0; min-width:0; flex:1; }
++.lcos-assembly-preview > header { display:flex; align-items:center; justify-content:space-between; padding:4px 24px; flex:0 0 auto; color:var(--gen2-muted); font-size:11px; }
++.lcos-assembly-preview-heading { padding:8px 32px 12px; flex:0 0 auto; }
++.lcos-assembly-preview-heading h2 { font:500 21px/30px 'Noto Sans SC',sans-serif; margin:0; overflow-wrap:anywhere; }
++.lcos-assembly-preview-heading p { font-size:11px; color:var(--gen2-muted); margin:6px 0 0; }
++.lcos-assembly-preview-content { flex:1; min-height:0; padding:8px 32px 20px; overflow:auto; overscroll-behavior:contain; }
++.lcos-assembly-preview-content .lcos-image-zoom-stage { min-height:250px; height:340px; max-height:50vh; border-radius:12px; }
++.lcos-assembly-preview-content .lcos-gen1-reader-document { padding:4px 0; color:var(--gen2-text); }
++.lcos-assembly-preview-content .lcos-gen1-reader-document p { font-size:16px; line-height:25px; }
++.lcos-assembly-preview-content .lcos-gen1-reader-document h2 { font-size:27px; line-height:42px; }
++.lcos-assembly-preview > footer { padding:12px 32px 16px; color:var(--gen2-muted); font-size:10px; flex:0 0 auto; }
++.lcos-assembly-source-link { display:block; overflow-wrap:anywhere; color:var(--gen2-accent); font-size:12px; padding:12px 0; }
++.lcos-assembly-descriptor { margin:16px 0; }
++.lcos-assembly-descriptor > div { display:grid; grid-template-columns:80px minmax(0,1fr); gap:12px; padding:10px 0; border-bottom:.5px solid var(--gen2-border); }
++.lcos-assembly-descriptor dt { font-size:12px; color:var(--gen2-muted); }
++.lcos-assembly-descriptor dd { margin:0; overflow-wrap:anywhere; }
++.lcos-assembly-receipt { flex:0 0 auto; max-height:32%; overflow:auto; margin:8px 24px 12px; padding:8px 12px; border-radius:16px; background:color-mix(in srgb,var(--lcos-pin-amber,#b08a48) 8%,var(--gen2-surface)); color:var(--gen2-text); border:.5px solid var(--gen2-border); }
++.lcos-assembly-receipt[data-lcos-assembly-outcome='applied'] { background:color-mix(in srgb,var(--gen2-accent) 8%,var(--gen2-surface)); }
++.lcos-assembly-receipt[data-lcos-assembly-outcome='failed'] { background:color-mix(in srgb,var(--lcos-color-danger,#c25b4e) 8%,var(--gen2-surface)); }
++.lcos-assembly-receipt > header { display:flex; align-items:center; justify-content:space-between; gap:8px; }
++.lcos-assembly-receipt strong { font-weight:500; font-size:12px; overflow-wrap:anywhere; }
++.lcos-assembly-receipt > p,.lcos-assembly-receipt summary { font-size:11px; color:var(--gen2-muted); }
++.lcos-assembly-receipt summary { min-height:32px; padding:8px 0; }
++.lcos-assembly-receipt ul { list-style:none; margin:0; padding:0; }
++.lcos-assembly-receipt li { display:flex; flex-direction:column; gap:4px; margin:6px 0; overflow-wrap:anywhere; font-size:11px; }
++.lcos-assembly-receipt small { color:var(--gen2-muted); font-size:10px; }
++.lcos-assembly-apply-feedback { padding:8px 24px; }
++.lcos-assembly-body [data-lcos-assembly-composer] { flex:0 0 auto; max-height:45%; overflow:auto; padding:8px 24px; }
++/* Body scroll is owned once. Stage still owns geometry/docking/grouping and all resize handles. */
++[data-lcos-window-body='assembly'] { min-height:0 !important; overflow:hidden; display:flex; flex-direction:column; }
++@keyframes lcos-assembly-enter { from { opacity:0; transform:translateY(4px); } to { opacity:1; transform:none; } }
++@container lcos-assembly (max-width:550px) {
++ .lcos-assembly-head { flex-wrap:wrap; padding:14px 16px 0; gap:6px; }
++ .lcos-assembly-toolbar { flex-basis:100%; order:2; }
++ .lcos-assembly-source-tabs { order:1; inline-size:100%; overflow:hidden; }
++ .lcos-assembly-source-buttons { inline-size:100%; justify-content:space-between; }
++ .lcos-assembly-toolbar form { flex-basis:auto; inline-size:100%; }
++ .lcos-assembly-search-field { flex:1 1 auto; inline-size:auto; max-inline-size:none; }
++ .lcos-assembly-search-submit { display:none !important; }
++ .lcos-assembly-filter { margin-top:0; }
++ .lcos-assembly-filter-popover { right:16px; width:calc(100% - 32px); }
++ .lcos-assembly-result-meta { block-size:20px; min-block-size:20px; flex-basis:20px; padding-inline:16px; }
++ .lcos-assembly-target-inline { display:none; }
++ .lcos-assembly-scroll { padding:0 16px 12px; }
++ .lcos-assembly-masonry { column-count:1; column-width:auto; }
++ .lcos-assembly-item { display:flex; width:min(290px,100%); margin-inline:auto; }
++ .lcos-assembly-context { width:248px; height:244px; margin-inline:auto; transform:none; }
++ .lcos-assembly-workflow { width:224px; height:324px; margin-inline:auto; transform:none; }
++ .lcos-assembly-browse-hint { padding-inline:16px; }
++ .lcos-assembly-selection-bar { padding-inline:16px; }
++ .lcos-assembly-preview-heading,.lcos-assembly-preview-content,.lcos-assembly-preview > footer { padding-inline:18px; }
++ .lcos-assembly-preview > header { padding-inline:10px; }
++ .lcos-assembly-preview-content .lcos-image-zoom-stage { height:280px; }
++ .lcos-assembly-receipt { margin-inline:16px; }
++ .lcos-assembly-skeletons { columns:1; }
+ }
+-@media (max-width: 480px) {
+-  .lcos-assembly-body { padding-inline: 16px; }
++@container lcos-assembly (max-width:380px) {
++ .lcos-assembly-source-buttons .lcos-btn { min-width:52px; }
++ .lcos-assembly-context { max-width:none; }
++ .lcos-assembly-item-actions { gap:2px; }
++ .lcos-assembly-item-actions .lcos-oreo-face { padding-inline:6px; }
++ .lcos-assembly-selection-bar { gap:4px; }
++ .lcos-assembly-selection-bar > span { flex-basis:100%; }
+ }
+-@media (hover: none), (pointer: coarse) {
+-  .lcos-assembly-item [data-lcos-assembly-more] { opacity: 1; }
+-  .lcos-assembly-item [data-lcos-assembly-actions] { display: flex; }
++@media (hover:none), (pointer:coarse) {
++ .lcos-assembly-body .lcos-assembly-more,.lcos-assembly-select,.lcos-assembly-item-actions { opacity:1; visibility:visible; }
++ .lcos-assembly-item-actions > [data-lcos-assembly-drop], .lcos-assembly-item-actions > :first-child { display:inline-flex !important; }
+ }
+-@media (prefers-reduced-motion: reduce) {
+-  .lcos-assembly-item, .lcos-assembly-item [data-lcos-assembly-more], .lcos-assembly-source-buttons button { transition: none; }
++@media (prefers-reduced-motion:reduce) {
++ .lcos-assembly-body *, .lcos-assembly-body *::before { animation:none !important; transition:none !important; }
++ .lcos-assembly-item:hover .lcos-assembly-context { transform:scale(.9); }
++ @container lcos-assembly (max-width:550px) { .lcos-assembly-item:hover .lcos-assembly-context { transform:none; } }
+ }
+-@media (forced-colors: active) {
+-  .lcos-assembly-item, .lcos-assembly-source-buttons button { border: 1px solid ButtonText; }
++@media (forced-colors:active) {
++ .lcos-assembly-item,.lcos-assembly-filter-popover,.lcos-assembly-material-body,.lcos-assembly-receipt { border:1px solid CanvasText; }
++ .lcos-assembly-item[data-selected='true'] { outline:2px solid Highlight; }
++}
++
++@container lcos-assembly (max-height:380px) {
++ .lcos-assembly-browse { overflow:auto; overscroll-behavior:contain; display:block; }
++ .lcos-assembly-scroll { overflow:visible; padding-bottom:16px; }
++ .lcos-assembly-browse-hint { display:none; }
++ .lcos-assembly-filter-popover { position:fixed; top:auto; right:16px; width:min(340px,calc(100% - 32px)); }
++ .lcos-assembly-selection-bar { position:sticky; bottom:0; }
+ }

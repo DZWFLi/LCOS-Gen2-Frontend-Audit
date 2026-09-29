@@ -1,0 +1,138 @@
+{
+  "states": [
+    {
+      "name": "grouped-390",
+      "regions": [
+        {
+          "id": "region-reader-21ff38c5-8f63-4cef-a954-2fd57ac1f7cb",
+          "activeWindowId": "reader-21ff38c5-8f63-4cef-a954-2fd57ac1f7cb",
+          "text": "阅读 · 参考图（e2e fixture）阅读 · 品牌主张（e2e fixture）参考图（e2e fixture）image · 受管 Artifactrevision · current归档−58%＋复位参考图（e2e fixture）image/png加入引用摘录为引用对比：上一版 → 当前回到来源草稿引用 0"
+        }
+      ],
+      "windows": [
+        "reader-21ff38c5-8f63-4cef-a954-2fd57ac1f7cb",
+        "reader-7ccd86bd-dda2-4ada-92cb-3ba5e659e983"
+      ],
+      "revisions": [],
+      "visibleRegions": 1
+    },
+    {
+      "name": "split-original-390",
+      "regions": [
+        {
+          "id": "region-reader-7ccd86bd-dda2-4ada-92cb-3ba5e659e983",
+          "activeWindowId": "reader-7ccd86bd-dda2-4ada-92cb-3ba5e659e983",
+          "text": "阅读 · 参考图（e2e fixture）阅读 · 品牌主张（e2e fixture）品牌主张（e2e fixture）other · 受管 Artifactrevision · current归档越过边界，\n看见下一座山。\n阅读缩放−100%＋重置加入引用摘录为引用对比：上一版 → 当前回到来源草稿引用 0"
+        },
+        {
+          "id": "region-reader-21ff38c5-8f63-4cef-a954-2fd57ac1f7cb",
+          "activeWindowId": "reader-21ff38c5-8f63-4cef-a954-2fd57ac1f7cb",
+          "text": "阅读 · 参考图（e2e fixture）阅读 · 品牌主张（e2e fixture）参考图（e2e fixture）image · 受管 Artifactrevision · current归档−58%＋复位参考图（e2e fixture）image/png加入引用摘录为引用对比：上一版 → 当前回到来源草稿引用 0"
+        }
+      ],
+      "windows": [
+        "reader-21ff38c5-8f63-4cef-a954-2fd57ac1f7cb",
+        "reader-7ccd86bd-dda2-4ada-92cb-3ba5e659e983"
+      ],
+      "revisions": [],
+      "visibleRegions": 1
+    },
+    {
+      "name": "regroup-390",
+      "regions": [
+        {
+          "id": "region-reader-7ccd86bd-dda2-4ada-92cb-3ba5e659e983",
+          "activeWindowId": "reader-7ccd86bd-dda2-4ada-92cb-3ba5e659e983",
+          "text": "阅读 · 品牌主张（e2e fixture）阅读 · 参考图（e2e fixture）参考图（e2e fixture）image · 受管 Artifactrevision · current归档−100%＋复位参考图（e2e fixture）image/png加入引用摘录为引用对比：上一版 → 当前回到来源草稿引用 0"
+        }
+      ],
+      "windows": [
+        "reader-21ff38c5-8f63-4cef-a954-2fd57ac1f7cb",
+        "reader-7ccd86bd-dda2-4ada-92cb-3ba5e659e983"
+      ],
+      "revisions": [],
+      "visibleRegions": 1
+    },
+    {
+      "name": "restored-1440",
+      "regions": [
+        {
+          "id": "region-reader-7ccd86bd-dda2-4ada-92cb-3ba5e659e983",
+          "activeWindowId": "reader-7ccd86bd-dda2-4ada-92cb-3ba5e659e983",
+          "text": "阅读 · 品牌主张（e2e fixture）品牌主张（e2e fixture）other · 受管 Artifactrevision · current归档越过边界，\n看见下一座山。\n阅读缩放−100%＋重置加入引用摘录为引用对比：上一版 → 当前回到来源草稿引用 0"
+        },
+        {
+          "id": "region-reader-21ff38c5-8f63-4cef-a954-2fd57ac1f7cb",
+          "activeWindowId": "reader-21ff38c5-8f63-4cef-a954-2fd57ac1f7cb",
+          "text": "阅读 · 参考图（e2e fixture）参考图（e2e fixture）image · 受管 Artifactrevision · current归档−100%＋复位参考图（e2e fixture）image/png加入引用摘录为引用对比：上一版 → 当前回到来源草稿引用 0"
+        }
+      ],
+      "windows": [],
+      "revisions": [],
+      "visibleRegions": 2
+    }
+  ],
+  "errors": [],
+  "nonGetRequests": [
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:5286/api/rfs/canvas-5e26c422-466e-4994-9b57-34b8ec5cfcd2/query"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:5286/api/rfs/canvas-5e26c422-466e-4994-9b57-34b8ec5cfcd2/query"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:5286/api/rfs/canvas-5e26c422-466e-4994-9b57-34b8ec5cfcd2/query"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:5286/api/rfs/canvas-5e26c422-466e-4994-9b57-34b8ec5cfcd2/query"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:5286/api/rfs/canvas-5e26c422-466e-4994-9b57-34b8ec5cfcd2/query"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:5286/api/rfs/canvas-5e26c422-466e-4994-9b57-34b8ec5cfcd2/query"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:5286/api/rfs/canvas-5e26c422-466e-4994-9b57-34b8ec5cfcd2/query"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:5286/api/rfs/canvas-5e26c422-466e-4994-9b57-34b8ec5cfcd2/query"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:5286/api/rfs/canvas-5e26c422-466e-4994-9b57-34b8ec5cfcd2/query"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:5286/api/rfs/canvas-5e26c422-466e-4994-9b57-34b8ec5cfcd2/query"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:5286/api/rfs/canvas-5e26c422-466e-4994-9b57-34b8ec5cfcd2/query"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:5286/api/rfs/canvas-5e26c422-466e-4994-9b57-34b8ec5cfcd2/query"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:5286/api/rfs/canvas-5e26c422-466e-4994-9b57-34b8ec5cfcd2/query"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:5286/api/rfs/canvas-5e26c422-466e-4994-9b57-34b8ec5cfcd2/query"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:5286/api/rfs/canvas-5e26c422-466e-4994-9b57-34b8ec5cfcd2/query"
+    }
+  ]
+}

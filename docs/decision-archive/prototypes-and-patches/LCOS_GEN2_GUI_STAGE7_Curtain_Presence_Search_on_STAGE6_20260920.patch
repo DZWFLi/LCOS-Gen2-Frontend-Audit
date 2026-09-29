@@ -1,0 +1,1240 @@
+diff --git a/docs/construction/GUI_STAGE7_DONOR_LEDGER_20260920.md b/docs/construction/GUI_STAGE7_DONOR_LEDGER_20260920.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..5e2e880ce553b458ebc921d88e805ecc14875d40
+--- /dev/null
++++ b/docs/construction/GUI_STAGE7_DONOR_LEDGER_20260920.md
+@@ -0,0 +1,21 @@
++# Stage7 · 实际采用账本
++
++采用方式与验收状态分列。不是用更激进的措辞替代源码。
++
++| 来源 / exact范围 | 采用方式与 target | 生产 caller / 保留owner | 当前证明 |
++|---|---|---|---|
++| GEN1 `features/ui/ObjectOrbit.tsx@3e99769` 的 AnimatePresence 组合、spring400/25、exit .2 | THIN_ADAPT → `presentationMotion.ts`、`ContextAtlasView`、`WorkflowHandView` | ContextWorksite atlasOpen / Workflow handOpen 原owner | 源码有接入；真实Motion未运行 |
++| GEN1 `SurfaceComponentShelf.tsx` 焦点边界，Stage6已收编 | CURRENT_DONOR_REUSED → `useDescendantFocus` | Collection / TaskCard 的localfocus，不改Selection | pose纯测试；完整Motion焦点未运行 |
++| CURRENT `WorkflowCardPool.tsx@802b7a5` 标题过滤 | DIRECT_LIFT + 函数提取 → `filterWorkflowTitles` | 当前CardPool查询/草稿owner未变 | 6项已执行Node过滤测试 |
++| Figma `5388:25501–25503`、`5140:4159–4161` | FIGMA_EXACT paints → `LightCurtainBackdrop` / CSS | Atlas / Hand 原宿主，仅装饰图层 | 真实无Motion React背景 / 多宽度几何24项 |
++| Figma `5388:25504` / `5392:4924` | FIGMA_EXACT + 响应式适配 → Atlas layout / native blank control | onClose / 唯一有效目标的既有 onEnterSurface | CSS位置/原生空白点击已测；完整场景未通过 |
++| Figma `5156:3080` / `5156:3081–3127` | KEYFRAME_SAMPLE_ADAPT → `temporalFocusProfile` | TemporalRailView；不发明时间或camera | 47宽度比对；既定y不变；Motion帧待测 |
++| d3 fisheye1d | 停止用于当前轨道纵向warp；原模块/测试/完整许可保留 | 当前TemporalView仅复用原基本刻度长度helper | 不再记为“轨道已d3真实动效复刻” |
++| Huabu wheel / Portal scene / cache | CURRENT_DONOR_REUSED，延续Stage6 | 原接口原owner；本轮无新导航 mutation | 本轮owner源码比较；整机未测 |
++
++## 没有采用/不能声称的部分
++
++- 没有取得完整 Motion 可执行包，因此不声称运行了 Motion。
++- 没有再次整包移植 Spatial / Lovart / TapNow；此次优先修已证实底线缺陷。
++- 原 HTML 没有恢复到原件，不将“读过合同”写成“已跑过HTML”。
++- Figma焦点表的线性插值与卡池阈值是公开标记的展示适配，不冒充 donor 原始算法或 Figma 精确动效参数。
+diff --git a/docs/handoffs/GEN2_GUI_STAGE7_FIDELITY_CORRECTIONS_20260920.md b/docs/handoffs/GEN2_GUI_STAGE7_FIDELITY_CORRECTIONS_20260920.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..b893e50ffd8444c0a55f63713162516df5eddb6e
+--- /dev/null
++++ b/docs/handoffs/GEN2_GUI_STAGE7_FIDELITY_CORRECTIONS_20260920.md
+@@ -0,0 +1,152 @@
++# LCOS GEN2 · Stage7 源码修正与底线对照
++
++日期：2026-09-20
++范围：后半线 Context / Atlas / Workflow Hand / Temporal 的呈现修正与累计交付。
++状态：**修正代码候选；真实 Motion、原 HTML 完整对照与生产整机验收尚未通过。**
++
++## 1. 先说结论
++
++Stage4–6 不是已经严格复刻好的完整设计。此次回查确认了前包的明确偏差：光幕颜色、退出生命周期、卡池搜索被误删、时间轨鱼眼方向。Stage7 修正这些问题，而不是把此前的“组件有了”继续写成“底线达成”。
++
++本地继续负责前半线 Shell / Main / Glyth / Reader / Assembly / Conversation 的 donor 替换。本包不修改其业务容器、不写 Core / Canvas / Selection / Pointer / navigation / safeRect / LOD 真值。
++
++出生点仍是 `frontend-reconstruction-v2@802b7a537ffe81a6e09c522cd45539a22a8a42da`。本轮开始通过 GitHub 连接器核过该 ref；没有创建、推送或合并用户远端提交。
++
++## 2. 这次确切改了什么
++
++| 原偏差 | 已写入的修正 | 证据层级 |
++|---|---|---|
++| Atlas / Hand 光幕是自写白色渐变 | 使用 Figma 原渐变、底部辉光、两种雾层透明度；去掉原稿没有的整屏 backdrop blur | 实际无 Motion 的 React 背景组件已运行；整页未验收 |
++| open=false 立即卸载，exit 没机会执行 | 收编 GEN1 ObjectOrbit 的持久 AnimatePresence 组合方式；当前 project 内保持 key；退出中 inert，换 project 不保留旧项目画面 | 代码已接现有生产 owner；实际 Motion 未执行 |
++| Atlas 只点小箭头，空白收回不完整 | 复用既有 onClose；原生空白按钮；明确唯一合法目标时整块激活，原菜单与图片重试独立 | 空白按钮实际 React 运行；整块 Motion 宿主待本地 |
++| Stage5 因“去 SaaS”删掉工作流搜索 | 恢复 802 原来的 trim / lower-case / title-includes 过滤与输入；多卡进入可滚动卡池 | 过滤纯函数已执行；真实仓库请求未运行 |
++| 时间鱼眼纵向拉开刻度，不符合焦点稿 | 5156:3080 保持 y=13+11*i，向内增加宽度；焦点44×3，右边固定；离开恢复，reduced-motion 不凸起 | 47条宽度与实际导出表数值核验；真实 Motion 帧未运行 |
++| 键盘只变描边，注意姿态没有一致输入 | 沿用 GEN1 的后代 focus/blur guard，接同一展示 pose 与 spring | 展示输入纯测试；完整焦点交接待整机 |
++
++### 光幕与布局
++
++- Atlas：`5388:25501–25503`，雾色 `rgb(238,243,239)`、opacity .38；底部高690（900高视口），顶部210。
++- Hand：`5140:4159–4161`，同色雾层 opacity .12；底光幕约33vh。
++- 渐变停止点、色值、底部890×18 / blur12的辉光直接来自 Figma 读取，不用 ColorPin 替代。
++- 1440 的 Atlas 几何夹具中，三列首项位置为 `(240,218) / (562,218) / (884,218)`，第二行 y504。1280保持三列，1152/1024两列，390一列；字体不整体缩放。
++- 窄屏重排与“第6张起进入网格卡池”的阈值是本轮展示适配，不宣称 Figma 提供了同一数值规则。20+卡的本地真实 Motion 脚本使用24项明确 fixture。
++
++### 时间轨的 donor 纠偏
++
++此前接入 d3 fisheye 的公式本身存在，但把它用来改 tick 的 y，违反 Figma 焦点稿的固定纵向节距。Stage7 **停止在 TemporalRailView 调用该纵向 warp**，不再把“确实用了 donor”当成视觉正确的依据。
++
++`temporalFocusProfile.ts` 保存实际导出刻度的宽度增量采样；相邻采样之间做线性插值，时间过渡仍交给项目现有 Motion。它是 **Figma 关键姿态采样适配**，不是取得了 Figma 的原始连续算法，也不是新的时间分组服务。中心之外的浮点误差以 1e-5 容差核验。
++
++旧 `fisheye1d` 和原测试保留为兼容历史，不再登记为当前时间轨的生产动效采用。随源码补全原始 BSD 许可，不删除原有来源记录。
++
++## 3. 实际 donor 采用与保留边界
++
++- **GEN1 ObjectOrbit.tsx @3e99769**：取 persistent AnimatePresence + open conditional 组合、spring 400/25、退出 .2 easeOut；不搬 GEN1 overlay store、命令或 camera。属于 THIN_ADAPT，不是整份组件原样复制。
++- **CURRENT WorkflowCardPool.tsx @802b7a5**：恢复原有标题过滤代码；提取成 `filterWorkflowTitles` 以便普通测试。没有新建 Search 服务或另一个草稿 Store。
++- **GEN1 SurfaceComponentShelf 焦点边界**：复用 Stage6 已收编的 `useDescendantFocus`，没有再写第二份全局监听。
++- **Figma exact**：光幕 paints、刻度 keyframe、Atlas 容器位置。组件的几何/资产并不是由 donor skin 反向决定。
++- **Motion**：生产代码继续 import 项目已有 `motion/react`；没有自造 spring/RAF；本轮没有安装或更换生产依赖。
++- **Huabu**：既有空间内核、Portal scene cache/viewport、wheel 隔离继续保留。本轮没有新增 Portal 导航或相机 owner。
++
++账本见同包 `DONOR_LEDGER.md`。没有新声称大段 Spatial / Lovart 原码已移植。
++
++## 4. 原 HTML 底线如何处理
++
++实际读到的是用户上传 Figma 合同包中的原件：
++
++`03_ContextWorkflow产品语义裁决.md`
++
++其中明确：Context 呼出伴随光幕与 focus，轻点空白收起；集合进入真实 child；Workflow 卡多时进入 Card Pool / Search，不能要求线性轮转20张卡；单击轻预览、双击/Enter打开，与取用/续接分开；不能把 HTML 定时器/模拟数据当生产语义。
++
++**未取得并运行该文件引用的完整 HTML 原件：**
++
++`LCOS_GlobalHUD_Navigator_ContextWorkflow_Prototype_V2_ThreeVideoIntegrated_20260910.html`
++
++本轮通过 Files 搜索原名/简称仍未恢复到该原件。搜索无结果不等于文件不存在，也不等于交互要求可以忽略。因此本包只把能从已读原合同确认的底线落实，**不写“原 HTML 交互全部达成”**。完整对应表见 `BOTTOM_LINE_AUDIT.md`。
++
++## 5. 实际检查，连同失败一并交付
++
++| 检查 | 实际结果 | 不代表什么 |
++|---|---|---|
++| Node 纯函数 | 23/23，通过 | 不代表生产请求/导航/回执 |
++| 严格 TypeScript | 8个纯TS模块，通过 | 不含 React 类型链接，不是整仓 typecheck |
++| TS/TSX / CSS 解析 | 37个文件，0语法错误 | 不等于 lint / build |
++| 原 owner 源码回归 | 5/5，通过 | AST/源码对比，不是整机行为证明 |
++| 无 Motion 的实际 React 背景组件 + CSS 几何夹具 | 24/24，通过 | 不是整个 Atlas/Hand；不是动画测试 |
++| 实际 Motion 运行脚本 | **退出1，BLOCKED_DEPENDENCIES，0用例执行** | 未以 probe/mock替代，不得标为通过 |
++| Vitest 文件 | 已增加，**未执行** | 不能计入23项Node结果 |
++| 原 HTML 原件运行对照 | **未执行，原件未恢复** | 不用合同摘要假装原型运行证据 |
++| 完整 repo / Core / ReactFlow / Motion / Golden Path | **未执行** | 不是可直接合并的验收完成件 |
++
++环境：Node22.16、TS5.8.3；无Motion React背景检查用沙箱可取得的真实 React19.1.1，Chromium + Python Playwright。目标仓库记录 React19.2.8 / TS6，版本不等价。
++
++真实 Motion 脚本解析本地 workspace 的 `motion/react` 失败。官方包下载/本地缓存寻找未取得完整可执行依赖；连接器读到的第三方旧版压缩长行是截断文本，没有拿来假装运行引擎。失败日志完整保留在 `EVIDENCE/real-motion/results.json`。
++
++背景截图有“几何夹具，不是完整场景或 Motion 验证”的明确标签，不能充当 Figma 整页复刻截图。本轮没有原速动效录像，不用静态帧生成 MP4 充数。
++
++## 6. 累计补丁修复了旧应用缺陷
++
++恢复 Stage4→6 时发现 Stage4 的 `WorkflowWorksite.tsx` 旧上下文误写 `</div>`，真实802源码为 `</button>`。因此不能宣称旧四包无需任何修正即可顺序普通 apply。
++
++此次只修复该旧上下文匹配，保留原补丁目标文本；重建 post-Stage6 文件子集，并与随包31个完整文件逐字节一致。六个原有文件均已核 GitHub exact blob。
++
++新累计 patch 是**从六个经核原始文件到当前完整子集工作树的 Git diff**，不是旧 patch 字符串拼接。Stage7 增量由同一 post-Stage6 父树生成。两份都进行普通 fresh `git apply --check` / apply / 结果比对，无 `--recount`。
++
++这仍是源码子集验证，**不是已 clone 完整仓库的构建验收**。具体退出码与文件数见 `EVIDENCE/patch-verification.json`。
++
++## 7. 本地应用方式
++
++### 已有 Stage6
++
++只应用本次增量：
++
++```bash
++git apply --check LCOS_GEN2_GUI_STAGE7_Curtain_Presence_Search_on_STAGE6_20260920.patch
++git apply LCOS_GEN2_GUI_STAGE7_Curtain_Presence_Search_on_STAGE6_20260920.patch
++```
++
++### 未应用后半线 Stage4–6
++
++在独立 GUI 工作树，从本包声明的出生点/与其兼容的本地前半线结果应用：
++
++```bash
++git apply --check LCOS_GEN2_GUI_STAGE4-7_CUMULATIVE_802b7a5_20260920.patch
++git apply LCOS_GEN2_GUI_STAGE4-7_CUMULATIVE_802b7a5_20260920.patch
++```
++
++累计版与各阶段补丁二选一，**不要重复应用**。如果本地已改这六个 container，按 hunk 合并，不用 FULL_FILES 覆盖新工作。只有Stage4/5时继续用所需增量或在独立树重放，不能盲套累计版。
++
++累计版只含后半线，不包含 Stage1–3 / REWORK01–02，不是全仓快照。生产需要本地前半线已提供的 `motion/react` 依赖；本包不改 package.json 或 lockfile。
++
++## 8. 可在本地直接执行的真实引擎检查
++
++先使用现有 package manager 安装/恢复项目自身依赖，不换版本来迁就测试：
++
++```bash
++cd huabu
++pnpm --filter @huabu/web typecheck
++pnpm --filter @huabu/web lint
++pnpm --filter @huabu/web test
++pnpm --filter @huabu/web build
++pnpm --filter @huabu/web test:e2e
++```
++
++再从仓库根目录：
++
++```bash
++node scripts/e2e/gui-stage7/run.mjs /absolute/path/to/gui-stage7-evidence
++```
++
++此脚本不安装依赖，不 mock Motion；真实浏览器使用实际 View 与明示 fixture，不冒充 Core。检查持续运动、退出保留、inert、快速反转、键盘关注、整块集合激活、24卡可达、时间轨内凸与wheel、Portal场景保留、五档尺寸、reduced-motion。缺依赖/selector/失败请求/断言失败均非零退出。脚本本身需要本地运行结果，未计为本轮通过。
++
++## 9. 未关闭项
++
++- 原 HTML 原件的全交互逐项对照；Figma 整面并排/overlay/diff。
++- 真实 Motion 连续帧、reverse、中断、相机移动预算、多实例性能。
++- Temporal 真实时间分组与组目标预览；当前 wrapper 仍为空态。
++- Workflow 单击预览 / 打开 / 续接各自真实 producer；此包只保留实际草稿取用。
++- Atlas 拆/合/删、集合拖到Main的实际接线和恢复。
++- Workflow Collection 的跨视图生产 caller；Portal打开/放大的真实owner回调。
++- 真实 child 返回、safeRect避让、Core回执、reload与协作，及完整九面回归。
++
++**上述项目都仍属于底线，不因为记了 INFRA_WIRING_REQUIRED 就算完成。** GUI 该交的呈现/适配继续补；真正的语义owner由Infra接入；最终由真实应用运行证明。
+diff --git a/huabu/apps/web/src/lcos/surfaces/context/ContextAtlasStage.tsx b/huabu/apps/web/src/lcos/surfaces/context/ContextAtlasStage.tsx
+index 4964d62ba06fdfb400778e9604799a8bfa2ac402..3aa5a94825ff5426615cb9e575243a661855cfda 100644
+--- a/huabu/apps/web/src/lcos/surfaces/context/ContextAtlasStage.tsx
++++ b/huabu/apps/web/src/lcos/surfaces/context/ContextAtlasStage.tsx
+@@ -6,6 +6,7 @@
+ 
+ import { CoreAssemblyClient, HttpError } from '@local-creative-os/web-gen2';
+ import { ArrowRight, X } from 'lucide-react';
++import { useIsPresent } from 'motion/react';
+ import { useEffect, useMemo, useRef, useState } from 'react';
+ 
+ import { DropdownMenu, DropdownMenuItem } from '@/components/Common/DropdownMenu';
+@@ -17,6 +18,7 @@ import { useLcosReferenceStore } from '../../lcosReferenceState';
+ import { workspaceTargetsForItem } from '../../navigation/workspaceTargets';
+ import { LcosSurfaceFeedback } from '../../ui/LcosSurfaceFeedback';
+ import { lcosTokens } from '../../ui/lcosTokens';
++import { ContextAtlasView } from '../../ui/context/ContextAtlasView';
+ import { ContextCollectionView } from '../../ui/context/ContextCollectionView';
+ import '../../ui/context/context-spatial.css';
+ 
+@@ -37,7 +39,8 @@ export function ContextAtlasStage({ projectId, workspaces, onClose, onEnterSurfa
+   const [state, setState] = useState<'loading' | 'ready' | 'error'>('loading');
+   const [errorDetail, setErrorDetail] = useState<string | undefined>(undefined);
+   const requestSequence = useRef(0);
+-  useCloseOnEscape(true, onClose);
++  const present = useIsPresent();
++  useCloseOnEscape(present, onClose);
+ 
+   useEffect(() => {
+     const sequence = requestSequence.current + 1;
+@@ -72,35 +75,38 @@ export function ContextAtlasStage({ projectId, workspaces, onClose, onEnterSurfa
+   const focusOnCanvas = (item: WarehouseItemV1): boolean => onEnterSurface(item);
+   const projected = (item: WarehouseItemV1): boolean => canAtlasLocate(item, useLcosReferenceStore.getState().nodeEntityRefs.values());
+ 
+-  const kindLabel = (item: WarehouseItemV1): string => item.kind === 'scene' ? '现场' : item.kind === 'collection' ? '集合' : 'Context';
++  const kindLabel = (item: WarehouseItemV1): string => item.kind === 'scene' ? '现场' : item.kind === 'collection' ? '集合' : '上下文';
+ 
+   return (
+-    <div data-lcos-context-atlas className="lcos-atlas-light-curtain">
+-      <div className="lcos-atlas-light-curtain-inner">
+-        <div className="lcos-atlas-light-curtain-head">
++    <ContextAtlasView onClose={onClose} header={<>
+           <span>{items.length} 个集合</span>
+-          <button type="button" aria-label="收回 Atlas" onClick={onClose} className="lcos-atlas-close">
++          <button type="button" aria-label="收回集合总览" onClick={onClose} className="lcos-atlas-close">
+             <X className="h-[22px] w-[22px]" aria-hidden />
+           </button>
+-        </div>
+-
+-        {state === 'loading' && <div className="py-16"><LcosSurfaceFeedback presentation="loading" message="正在读取 Atlas…" /></div>}
++        </>}>
++        {state === 'loading' && <div className="py-16"><LcosSurfaceFeedback presentation="loading" message="正在读取集合…" /></div>}
+         {state === 'error' && (
+-          <div className="py-16"><LcosSurfaceFeedback presentation="error" message={`Atlas 读取失败${errorDetail ? `（${errorDetail}）` : ''}`} /></div>
++          <div className="py-16"><LcosSurfaceFeedback presentation="error" message={`集合读取失败${errorDetail ? `（${errorDetail}）` : ''}`} /></div>
+         )}
+ 
+-        {state === 'ready' && (
++        {state === 'ready' && items.length === 0 ? <LcosSurfaceFeedback presentation="empty" message="还没有集合" /> : null}
++        {state === 'ready' && items.length > 0 && (
+           <div className="lcos-atlas-grid">
+             {groups.map((group) => (
+               <section key={group.key} style={{ display: 'contents' }}>
+                 <div style={{ display: 'contents' }}>
+                   {group.list.map((item) => {
+                     const childTargets = workspaceTargetsForItem(item, workspaces);
++                    const soleTarget = childTargets.length === 1 ? childTargets[0] : undefined;
++                    const activate = soleTarget?.canvasId
++                      ? () => { onEnterSurface(item, soleTarget); }
++                      : childTargets.length === 0 && projected(item) ? () => { focusOnCanvas(item); } : undefined;
+                     return (
+                       <ContextCollectionView
+                         key={`${item.kind}:${item.entityRef.id}`}
+                         title={item.title ?? '未命名'}
+                         organization="未指定"
++                        {...(activate === undefined ? {} : { onActivate: activate, activationLabel: soleTarget?.canvasId ? `进入集合 · ${item.title ?? '未命名'}` : `定位集合 · ${item.title ?? '未命名'}` })}
+                         {...(item.previewRef === undefined ? {} : { previewUrl: item.previewRef })}
+                         disabled={!projected(item) && childTargets.length === 0}
+                         action={<span style={{ color: projected(item) || childTargets.length > 0 ? lcosTokens.color.info : lcosTokens.color.muted }}>
+@@ -126,7 +132,6 @@ export function ContextAtlasStage({ projectId, workspaces, onClose, onEnterSurfa
+             ))}
+           </div>
+         )}
+-      </div>
+-    </div>
++    </ContextAtlasView>
+   );
+ }
+diff --git a/huabu/apps/web/src/lcos/surfaces/context/ContextWorksite.tsx b/huabu/apps/web/src/lcos/surfaces/context/ContextWorksite.tsx
+index c3f17d44f2de62d4d072c8b4981b7a642097859a..e07fa31787f076db9aa212fa6c3c1f2b3df0c87d 100644
+--- a/huabu/apps/web/src/lcos/surfaces/context/ContextWorksite.tsx
++++ b/huabu/apps/web/src/lcos/surfaces/context/ContextWorksite.tsx
+@@ -3,6 +3,7 @@
+ // 不是全局 overlay；child canvas 复用同一 Huabu kernel（Portal/Surface 机制 Wave 8 精化）。
+ 
+ import { Layers } from 'lucide-react';
++import { AnimatePresence } from 'motion/react';
+ import { useState } from 'react';
+ import { useNavigate } from 'react-router-dom';
+ 
+@@ -94,7 +95,7 @@ export function ContextWorksite({
+         data-lcos-context-instrument="atlas"
+         onClick={() => setAtlasOpen(true)}
+         className="lcos-context-instrument-trigger"
+-        aria-label="打开集合总览 Atlas"
++        aria-label="打开集合总览"
+         title="集合总览"
+       >
+         <Layers className="h-4 w-4" aria-hidden />
+@@ -102,14 +103,17 @@ export function ContextWorksite({
+ 
+       <TemporalRail />
+ 
+-      {atlasOpen && (
+-        <ContextAtlasStage
+-          projectId={projectId}
+-          workspaces={workspaces}
+-          onClose={() => setAtlasOpen(false)}
+-          onEnterSurface={enterItem}
+-        />
+-      )}
++      <AnimatePresence key={projectId} initial={false} mode="sync">
++        {atlasOpen && (
++          <ContextAtlasStage
++            key="context-atlas"
++            projectId={projectId}
++            workspaces={workspaces}
++            onClose={() => setAtlasOpen(false)}
++            onEnterSurface={enterItem}
++          />
++        )}
++      </AnimatePresence>
+     </div>
+   );
+ }
+diff --git a/huabu/apps/web/src/lcos/surfaces/workflow/WorkflowCardPool.tsx b/huabu/apps/web/src/lcos/surfaces/workflow/WorkflowCardPool.tsx
+index 31446b4fb621c192480be7a76ccb3abfcbbc128b..3416051f58df70fce2bb77e2c8fceed9d7e9d5a6 100644
+--- a/huabu/apps/web/src/lcos/surfaces/workflow/WorkflowCardPool.tsx
++++ b/huabu/apps/web/src/lcos/surfaces/workflow/WorkflowCardPool.tsx
+@@ -4,6 +4,7 @@
+ 
+ 
+ import { CoreAssemblyClient, HttpError } from '@local-creative-os/web-gen2';
++import { Search } from 'lucide-react';
+ import { useEffect, useMemo, useState } from 'react';
+ 
+ 
+@@ -12,6 +13,7 @@ import { createLcosCoreSession } from '../../app/lcosCoreClient';
+ import { useLcosReferenceStore } from '../../lcosReferenceState';
+ import { sameEntityRef } from '../../referenceBridge';
+ import { LcosSurfaceFeedback } from '../../ui/LcosSurfaceFeedback';
++import { filterWorkflowTitles } from '../../ui/workflow/filterWorkflowTitles';
+ import { WorkflowTaskCardView, type WorkflowTaskCardVisualState } from '../../ui/workflow/WorkflowTaskCardView';
+ 
+ import type { WarehouseItemV1 } from '@local-creative-os/contracts';
+@@ -22,6 +24,7 @@ export function WorkflowCardPool({ projectId }: { readonly projectId: string }):
+   const [items, setItems] = useState<readonly WarehouseItemV1[]>([]);
+   const [state, setState] = useState<'loading' | 'ready' | 'error'>('loading');
+   const [errorDetail, setErrorDetail] = useState<string | undefined>(undefined);
++  const [query, setQuery] = useState('');
+   // 草稿引用 = 真实 presentation state（Selection ≠ Reference）；用于卡面「草稿中」
+   const draftRefs = useLcosReferenceStore((s) => s.draft.orderedEntityRefs);
+ 
+@@ -47,7 +50,7 @@ export function WorkflowCardPool({ projectId }: { readonly projectId: string }):
+     };
+   }, [projectId, assembly]);
+ 
+-  const filtered = items;
++  const filtered = useMemo(() => filterWorkflowTitles(items, query), [items, query]);
+ 
+   /**
+    * 7 状态里生产可达的三种（其余 悬停/键盘焦点 由 CSS 表达；预览/已选目标 归属 R5）：
+@@ -61,14 +64,18 @@ export function WorkflowCardPool({ projectId }: { readonly projectId: string }):
+   };
+ 
+   return (
+-    <div data-lcos-workflow-pool className="lcos-workflow-hand-pool">
++    <div data-lcos-workflow-pool className="lcos-workflow-hand-pool" data-has-search="true">
++      <label className="lcos-workflow-hand-search">
++        <Search size={18} aria-hidden />
++        <input type="search" aria-label="搜索工作流" placeholder="搜索工作流" value={query} onChange={(event) => setQuery(event.target.value)} />
++      </label>
+       {state === 'loading' && <div className="py-8"><LcosSurfaceFeedback presentation="loading" message="读取卡池…" /></div>}
+       {state === 'error' && (
+         <div className="py-8"><LcosSurfaceFeedback presentation="error" message={`卡池读取失败${errorDetail ? `（${errorDetail}）` : ''}`} /></div>
+       )}
+       {state === 'ready' && filtered.length === 0 && (
+         <div className="py-8">
+-          <LcosSurfaceFeedback presentation="empty" message="还没有工作流卡片" />
++          <LcosSurfaceFeedback presentation="empty" message={query.trim() ? '没有匹配项' : '还没有工作流卡片'} />
+         </div>
+       )}
+ 
+diff --git a/huabu/apps/web/src/lcos/surfaces/workflow/WorkflowWorksite.tsx b/huabu/apps/web/src/lcos/surfaces/workflow/WorkflowWorksite.tsx
+index 42222ecefd30010c04708e29ce66b9f88b34b4a9..bd4274e19b10d23cd5a5e5d870a7a4b513a8b5a7 100644
+--- a/huabu/apps/web/src/lcos/surfaces/workflow/WorkflowWorksite.tsx
++++ b/huabu/apps/web/src/lcos/surfaces/workflow/WorkflowWorksite.tsx
+@@ -9,7 +9,7 @@ import { useCloseOnEscape } from '@/hooks/useCloseOnEscape';
+ 
+ import { WorkflowCardPool } from './WorkflowCardPool';
+ import { LcosWorksiteStage } from '../../shell/LcosWorksiteStage';
+-import '../../ui/workflow/workflow-hand.css';
++import { WorkflowHandView } from '../../ui/workflow/WorkflowHandView';
+ 
+ import type { LcosSurfaceKey } from '../../shell/lcosShellStore';
+ 
+@@ -29,19 +29,15 @@ export interface WorkflowHandOverlayProps {
+ /** 可由 Main / Workflow 现场共同呼出的手牌；不拥有 Canvas 或业务 truth。 */
+ export function WorkflowHandOverlay({ projectId, open, onClose }: WorkflowHandOverlayProps): React.JSX.Element | null {
+   useCloseOnEscape(open, onClose);
+-  if (!open) return null;
+   return (
+-    <div data-lcos-workflow-hand className="lcos-workflow-hand-stage">
+-      <div className="lcos-workflow-hand-shell">
+-        <div className="lcos-workflow-hand-head">
+-          <span>工作流</span>
+-          <button type="button" aria-label="收回手牌" onClick={onClose} className="lcos-workflow-hand-close">
+-            <X className="h-[22px] w-[22px]" aria-hidden />
+-          </button>
+-        </div>
+-        <WorkflowCardPool projectId={projectId} />
+-      </div>
+-    </div>
++    <WorkflowHandView key={projectId} open={open} header={<>
++      <span>工作流</span>
++      <button type="button" aria-label="收回手牌" onClick={onClose} className="lcos-workflow-hand-close">
++        <X className="h-[22px] w-[22px]" aria-hidden />
++      </button>
++    </>}>
++      <WorkflowCardPool projectId={projectId} />
++    </WorkflowHandView>
+   );
+ }
+ 
+diff --git a/huabu/apps/web/src/lcos/ui/context/ContextAtlasView.tsx b/huabu/apps/web/src/lcos/ui/context/ContextAtlasView.tsx
+new file mode 100644
+index 0000000000000000000000000000000000000000..508094aa8f0fd74d352254fee6cd3fb23e0d232a
+--- /dev/null
++++ b/huabu/apps/web/src/lcos/ui/context/ContextAtlasView.tsx
+@@ -0,0 +1,41 @@
++import { motion, useIsPresent, useReducedMotion } from 'motion/react';
++
++import { LightCurtainBackdrop, LightCurtainDismissPlane } from '../spatial/LightCurtainBackdrop';
++import { PRESENTATION_EXIT } from '../spatial/presentationMotion';
++
++import './context-spatial.css';
++import type { ReactNode } from 'react';
++
++export interface ContextAtlasViewProps {
++  readonly header: ReactNode;
++  readonly children: ReactNode;
++  readonly onClose: () => void;
++}
++
++/** Kept alive by ContextWorksite's existing-state conditional inside AnimatePresence. */
++export function ContextAtlasView({ header, children, onClose }: ContextAtlasViewProps): React.JSX.Element {
++  const present = useIsPresent();
++  const reduced = Boolean(useReducedMotion());
++  return (
++    <motion.div
++      data-lcos-context-atlas
++      data-presentation-present={present ? 'true' : 'false'}
++      className="lcos-atlas-light-curtain"
++      role="region"
++      aria-label="集合总览"
++      aria-hidden={!present || undefined}
++      inert={!present || undefined}
++      initial={reduced ? false : { opacity: 0 }}
++      animate={{ opacity: 1 }}
++      exit={{ opacity: 0 }}
++      transition={reduced ? { duration: 0 } : PRESENTATION_EXIT}
++    >
++      <LightCurtainBackdrop kind="atlas" />
++      <LightCurtainDismissPlane disabled={!present} onClose={onClose} />
++      <div className="lcos-atlas-light-curtain-inner">
++        <div className="lcos-atlas-light-curtain-head">{header}</div>
++        {children}
++      </div>
++    </motion.div>
++  );
++}
+diff --git a/huabu/apps/web/src/lcos/ui/context/ContextCollectionView.tsx b/huabu/apps/web/src/lcos/ui/context/ContextCollectionView.tsx
+index fd54ce4a6b4a0e3f1e5d37370a03b29bd2b27645..9bb3daa3e51d837aa1c023ef8c3608c06c5165df 100644
+--- a/huabu/apps/web/src/lcos/ui/context/ContextCollectionView.tsx
++++ b/huabu/apps/web/src/lcos/ui/context/ContextCollectionView.tsx
+@@ -2,6 +2,7 @@ import { Layers3 } from 'lucide-react';
+ import { motion, useReducedMotion } from 'motion/react';
+ import { PreviewMedia } from '../spatial/PreviewMedia';
+ import { useDescendantFocus } from '../spatial/useDescendantFocus';
++import { PRESENTATION_EXIT, PRESENTATION_SPRING, presentationPose } from '../spatial/presentationMotion';
+ 
+ import type { ReactNode } from 'react';
+ 
+@@ -22,6 +23,9 @@ export interface ContextCollectionViewProps {
+   readonly disabledReason?: string;
+   readonly active?: boolean;
+   readonly action?: ReactNode;
++  /** Existing owner activation only; absent when the destination is ambiguous/unavailable. */
++  readonly onActivate?: () => void;
++  readonly activationLabel?: string;
+ }
+ 
+ function OrganizationGlyph({ organization }: { readonly organization: ContextCollectionOrganization }): React.JSX.Element {
+@@ -40,8 +44,10 @@ export function ContextCollectionView({
+   disabledReason,
+   active = false,
+   action,
++  onActivate,
++  activationLabel,
+ }: ContextCollectionViewProps): React.JSX.Element {
+-  const reducedMotion = useReducedMotion();
++  const reducedMotion = Boolean(useReducedMotion());
+   const focus = useDescendantFocus();
+   const label = organization === '未指定' ? '组织未标注' : `按${organization}组织`;
+   return (
+@@ -61,10 +67,13 @@ export function ContextCollectionView({
+         data-rendition={rendition}
+         className="lcos-context-collection"
+         initial={reducedMotion ? false : { opacity: 0, y: 36, scale: 0.96 }}
+-        animate={{ opacity: 1, y: !reducedMotion && !disabled && focus.focused ? -8 : 0, scale: !reducedMotion && !disabled && focus.focused ? 1.025 : 1 }}
++        animate={presentationPose(reducedMotion, focus.focused, disabled)}
++        exit={{ opacity: 0, y: reducedMotion ? 0 : 36, scale: reducedMotion ? 1 : 0.96, transition: reducedMotion ? { duration: 0 } : PRESENTATION_EXIT }}
+         whileHover={reducedMotion || disabled ? undefined : { y: -8, scale: 1.025 }}
+-        transition={reducedMotion ? { duration: 0 } : { type: 'spring', stiffness: 400, damping: 25 }}
++        transition={reducedMotion ? { duration: 0 } : PRESENTATION_SPRING}
+       >
++        {onActivate && !disabled ? <button type="button" className="lcos-context-collection-hit"
++          aria-label={activationLabel ?? `进入集合 · ${title}`} onClick={onActivate} /> : null}
+         <div className="lcos-context-collection-back" aria-hidden />
+         <div className="lcos-context-collection-tab" aria-hidden />
+         <div className="lcos-context-collection-cover cover-a">
+diff --git a/huabu/apps/web/src/lcos/ui/context/D3_FISHEYE_LICENSE.txt b/huabu/apps/web/src/lcos/ui/context/D3_FISHEYE_LICENSE.txt
+new file mode 100644
+index 0000000000000000000000000000000000000000..04bbb2c7c1c9ccba1f1bf01111b1d0a28a740a09
+--- /dev/null
++++ b/huabu/apps/web/src/lcos/ui/context/D3_FISHEYE_LICENSE.txt
+@@ -0,0 +1,26 @@
++Copyright (c) 2012-2015, Michael Bostock
++All rights reserved.
++
++Redistribution and use in source and binary forms, with or without
++modification, are permitted provided that the following conditions are met:
++
++* Redistributions of source code must retain the above copyright notice, this
++  list of conditions and the following disclaimer.
++
++* Redistributions in binary form must reproduce the above copyright notice,
++  this list of conditions and the following disclaimer in the documentation
++  and/or other materials provided with the distribution.
++
++* The name Michael Bostock may not be used to endorse or promote products
++  derived from this software without specific prior written permission.
++
++THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
++AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
++IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
++DISCLAIMED. IN NO EVENT SHALL MICHAEL BOSTOCK BE LIABLE FOR ANY DIRECT,
++INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
++BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
++DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
++OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
++NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
++EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+diff --git a/huabu/apps/web/src/lcos/ui/context/TemporalRailView.tsx b/huabu/apps/web/src/lcos/ui/context/TemporalRailView.tsx
+index 9a328cd892f07ddb1c230b83eb38f7050eebe24b..e912f86ad7201bfeecbb8479665c7732dd20f9f8 100644
+--- a/huabu/apps/web/src/lcos/ui/context/TemporalRailView.tsx
++++ b/huabu/apps/web/src/lcos/ui/context/TemporalRailView.tsx
+@@ -1,7 +1,7 @@
+ import { motion, useReducedMotion } from 'motion/react';
+ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+ 
+-import { fisheye1d, temporalTickLength } from './temporalFisheye';
++import { temporalFocusTick } from './temporalFocusProfile';
+ import {
+   nextEnabledTemporalIndex,
+   temporalRatioToY,
+@@ -12,6 +12,7 @@ import {
+   TEMPORAL_TOP_PADDING,
+ } from './temporalNavigation';
+ import { bindTemporalWheel } from './temporalWheel';
++import { PRESENTATION_SPRING } from '../spatial/presentationMotion';
+ import './context-spatial.css';
+ 
+ export interface TemporalRailItemView {
+@@ -171,19 +172,14 @@ export function TemporalRailView({
+       {sorted.length > 0 ? <div className="lcos-temporal-ticks" aria-hidden>
+         {Array.from({ length: temporalTickCount(railHeight) }, (_, index) => {
+           const baseY = TEMPORAL_TOP_PADDING + index * TEMPORAL_TICK_STEP;
+-          const y = focusY === null || reducedMotion ? baseY : fisheye1d({
+-            value: baseY, focus: focusY, min: TEMPORAL_TOP_PADDING,
+-            max: Math.max(TEMPORAL_TOP_PADDING, railHeight - TEMPORAL_BOTTOM_PADDING), distortion: 3,
+-          });
+-          return <i key={index} style={{ top: y, width: temporalTickLength(index) }} />;
++          const face = temporalFocusTick(index, focusY, reducedMotion === true);
++          return <motion.i key={index} initial={false} data-temporal-tick={index}
++            style={{ top: baseY }} animate={face}
++            transition={reducedMotion ? { duration: 0 } : PRESENTATION_SPRING} />;
+         })}
+       </div> : null}
+       {sorted.map((item) => {
+         const baseY = temporalRatioToY(item.ratio, railHeight);
+-        const y = focusY === null || reducedMotion ? baseY : fisheye1d({
+-          value: baseY, focus: focusY, min: TEMPORAL_TOP_PADDING,
+-          max: Math.max(TEMPORAL_TOP_PADDING, railHeight - TEMPORAL_BOTTOM_PADDING), distortion: 3,
+-        });
+         const preview = previewItem?.id === item.id;
+         return <motion.button
+           key={item.id}
+@@ -195,11 +191,16 @@ export function TemporalRailView({
+           disabled={item.disabled}
+           tabIndex={item.id === tabId ? 0 : -1}
+           className="lcos-temporal-item"
+-          style={{ top: y - 12 }}
+-          animate={{ x: !reducedMotion && preview ? -12 : 0, scale: !reducedMotion && preview ? 1.1 : 1 }}
+-          transition={reducedMotion ? { duration: 0 } : { type: 'spring', stiffness: 400, damping: 25 }}
++          style={{ top: baseY - 12 }}
++          initial={false}
++          animate={{ x: 0, scale: 1 }}
++          transition={reducedMotion ? { duration: 0 } : PRESENTATION_SPRING}
+           onPointerEnter={() => { if (item.disabled !== true) setPreview(item); }}
+-          onFocus={() => { setRovingId(item.id); setPreview(item); }}
++          onFocus={() => {
++            setRovingId(item.id);
++            setPreview(item);
++            if (!reducedMotion) setFocusY(baseY);
++          }}
+           onClick={() => { if (item.disabled !== true) onActivate?.(item); }}
+           aria-label={item.label}
+           aria-current={activeId === item.id ? 'true' : undefined}
+diff --git a/huabu/apps/web/src/lcos/ui/context/context-spatial.css b/huabu/apps/web/src/lcos/ui/context/context-spatial.css
+index 7f8525131f3d9760e69ca602cdf52fc250a1b03d..c383bab259e17be8a05799a173daa5ad15836b35 100644
+--- a/huabu/apps/web/src/lcos/ui/context/context-spatial.css
++++ b/huabu/apps/web/src/lcos/ui/context/context-spatial.css
+@@ -1,15 +1,9 @@
+ /* Stage5 deep fidelity: Figma 5388:24294 / 5333:96 / 5388:25701 / 5348:1151. */
+-.lcos-atlas-light-curtain {
+-  position: fixed; inset: 0; z-index: 40; overflow: auto;
+-  background: linear-gradient(180deg, rgba(250,250,250,.64), rgba(250,250,250,.94));
+-  backdrop-filter: blur(7px); -webkit-backdrop-filter: blur(7px);
+-}
+-.lcos-atlas-light-curtain::after {
+-  content: ''; position: fixed; left: 0; right: 0; bottom: 0; height: min(690px, calc(100vh - 210px)); pointer-events: none;
+-  background: radial-gradient(ellipse at 50% 100%, rgba(255,255,255,.99), rgba(255,255,255,.50) 58%, transparent 80%);
+-}
+-.lcos-atlas-light-curtain-inner { position: relative; z-index: 1; width: min(892px, calc(100vw - 96px)); margin: 0 auto; padding: 122px 0 96px; }
+-.lcos-atlas-light-curtain-head { display: flex; align-items: center; justify-content: space-between; margin: 0 -58px 24px; color: var(--gen2-muted); font-size: 12px; line-height: 19px; }
++.lcos-atlas-light-curtain { position:fixed; inset:0; z-index:40; overflow:auto; background:transparent; }
++.lcos-atlas-light-curtain-inner { position:relative; z-index:1; width:min(892px,calc(100vw - 96px)); margin:0 auto; padding:159px 0 100px; transform:translateX(-34px); pointer-events:none; }
++.lcos-atlas-light-curtain-head { display:flex; align-items:center; justify-content:space-between; height:44px; margin:0 -58px 15px; color:var(--gen2-muted); font-size:12px; line-height:19px; }
++.lcos-atlas-light-curtain-head > button { pointer-events:auto; position:absolute; left:calc(100% + 127px); }
++.lcos-atlas-grid .lcos-context-collection-slot, .lcos-atlas-light-curtain-inner [data-lcos-family='surface-feedback'] { pointer-events:auto; }
+ .lcos-atlas-close { width: 44px; height: 44px; display: grid; place-items: center; border: 0; background: transparent; border-radius: 12px; color: var(--gen2-muted); }
+ .lcos-atlas-close:hover,.lcos-atlas-close:focus-visible { background: rgba(255,255,255,.70); outline: 2px solid var(--gen2-accent); outline-offset: 2px; }
+ .lcos-atlas-grid { display: grid; grid-template-columns: repeat(3,248px); gap: 42px 74px; justify-content: center; align-items: start; }
+@@ -20,9 +14,9 @@
+ .lcos-context-collection-slot[data-disabled='true'] { opacity: .65; }
+ .lcos-context-collection { position: relative; width: 248px; height: 244px; color: var(--gen2-text); outline: none; }
+ .lcos-context-collection-back { box-sizing:border-box; position:absolute; left:18px; top:38px; width:212px; height:164px; border-radius:18px; background:var(--gen2-surface); border:1px solid var(--gen2-surface); box-shadow:0 0 1px rgba(40,48,58,.10),0 4px 12px rgba(40,48,58,.08); }
+-.lcos-context-collection[data-rendition='总览'] .lcos-context-collection-back { transform:rotate(3deg); }
++.lcos-context-collection[data-rendition='总览'] .lcos-context-collection-back { transform:rotate(3deg); transform-origin:0 0; }
+ .lcos-context-collection-tab { position:absolute; left:30px; top:24px; width:82px; height:36px; border-radius:10px; background:var(--lcos-collection-pocket-bg,#def7f9); }
+-.lcos-context-collection-cover { position:absolute; overflow:hidden; background:var(--gen2-raised); border-radius:12px; box-shadow:0 3px 10px rgba(40,48,58,.06); transform-origin:center; }
++.lcos-context-collection-cover { position:absolute; overflow:hidden; background:var(--gen2-raised); border-radius:12px; box-shadow:0 3px 10px rgba(40,48,58,.06); transform-origin:0 0; }
+ .lcos-context-collection-cover img { width:100%; height:100%; display:block; object-fit:cover; }
+ .lcos-context-collection-cover.cover-a { left:31px; width:108px; height:133px; transform:rotate(6deg); }
+ .lcos-context-collection-cover.cover-b { left:109px; width:104px; height:128px; transform:rotate(-5deg); }
+@@ -50,7 +44,7 @@
+ 
+ .lcos-temporal-rail:focus-visible { outline:2px solid color-mix(in srgb,var(--gen2-accent) 55%,transparent); outline-offset:4px; border-radius:14px; }
+ .lcos-temporal-ticks { position:absolute; inset:0; pointer-events:none; }
+-.lcos-temporal-ticks i { position:absolute; right:17px; height:1px; border-radius:1px; background:#a8b8ac; transform:translateY(-.5px); }
++.lcos-temporal-ticks i { position:absolute; right:17px; height:1px; border-radius:1px; background:#a8b8ac; }
+ .lcos-temporal-item { position:absolute; right:8px; width:42px; height:24px; border:0; border-radius:10px; background:transparent; padding:0; color:var(--gen2-text); }
+ .lcos-temporal-item > i { position:absolute; right:9px; top:11px; width:8px; height:2px; border-radius:2px; background:#789082; transition:width 150ms ease,background 150ms ease; }
+ .lcos-temporal-item > span { pointer-events:none; position:absolute; right:42px; top:50%; min-width:0; max-width:180px; transform:translateY(-50%); padding:6px 8px; border:1px solid var(--lcos-color-border-subtle); border-radius:9px; background:rgba(255,255,255,.94); box-shadow:0 4px 14px rgba(40,48,58,.08); color:var(--gen2-text); font-size:11px; line-height:16px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; opacity:0; visibility:hidden; transition:opacity 100ms ease,visibility 0s linear 100ms; }
+@@ -90,7 +84,7 @@
+   .lcos-portal-footer-copy,.lcos-portal-preview-view[data-has-retry='true'][data-has-zoom='true'] .lcos-portal-footer-copy { top:305px; max-width:calc(100% - 40px); }
+ }
+ 
+-@media (max-width:1180px) { .lcos-atlas-grid { grid-template-columns:repeat(2,248px); } .lcos-atlas-light-curtain-inner { width:min(570px,calc(100vw - 72px)); } .lcos-atlas-light-curtain-head { margin-inline:0; } }
++@media (max-width:1180px) { .lcos-atlas-grid { grid-template-columns:repeat(2,248px); } .lcos-atlas-light-curtain-inner { width:min(570px,calc(100vw - 72px)); transform:none; } .lcos-atlas-light-curtain-head > button { position:static; } .lcos-atlas-light-curtain-head { margin-inline:0; } }
+ @media (max-width:720px) { .lcos-atlas-grid { grid-template-columns:248px; } .lcos-atlas-light-curtain-inner { width:calc(100vw - 36px); padding-top:92px; } .lcos-temporal-rail { right:12px; } }
+ @media (prefers-reduced-motion:reduce) {
+   .lcos-context-collection-slot { transition:none; }
+@@ -114,3 +108,12 @@
+ .lcos-temporal-item:focus-visible { outline:2px solid var(--gen2-accent); outline-offset:2px; }
+ 
+ .lcos-context-collection-cover .lcos-preview-media-message { justify-content:flex-start; padding-top:14px; gap:4px; }
++
++.lcos-atlas-light-curtain-inner > :not(.lcos-atlas-grid):not(.lcos-atlas-light-curtain-head) { pointer-events:auto; }
++
++/* A native sibling hit surface, not a clickable div enclosing nested buttons.
++   Image retry / destination menu remain independent real controls above it. */
++.lcos-context-collection-hit { position:absolute; left:12px; top:16px; width:224px; height:200px; padding:0; border:0; border-radius:18px; background:transparent; cursor:pointer; }
++.lcos-context-collection-hit:focus-visible { outline:none; }
++.lcos-context-collection:has(> .lcos-context-collection-hit) > :not(.lcos-context-collection-hit):not(.lcos-context-collection-action) { pointer-events:none; }
++.lcos-context-collection:has(> .lcos-context-collection-hit) .lcos-preview-media-message > button { pointer-events:auto; }
+diff --git a/huabu/apps/web/src/lcos/ui/context/temporalFisheye.ts b/huabu/apps/web/src/lcos/ui/context/temporalFisheye.ts
+index 0778b15218dfe8ad7da8df53a963756da0856a68..8fbd0051f1089e6e4a7c57668b625d2ba68bd1ff 100644
+--- a/huabu/apps/web/src/lcos/ui/context/temporalFisheye.ts
++++ b/huabu/apps/web/src/lcos/ui/context/temporalFisheye.ts
+@@ -1,7 +1,8 @@
+ /*
+  * 1D fisheye scale adapted from Mike Bostock's d3-plugins fisheye implementation.
+  * Original algorithm: d3/d3-plugins/fisheye/fisheye.js (BSD-3-Clause).
+- * LCOS keeps it presentation-only: it warps screen-space tick positions, never time truth.
++ * Historical presentation helper only. Stage7 TemporalRail no longer calls this warp:
++ * approved Figma 5156:3080 keeps vertical cadence fixed and expands widths inward.
+  */
+ export function fisheye1d(input: {
+   value: number;
+diff --git a/huabu/apps/web/src/lcos/ui/context/temporalFocusProfile.test.ts b/huabu/apps/web/src/lcos/ui/context/temporalFocusProfile.test.ts
+new file mode 100644
+index 0000000000000000000000000000000000000000..e80db0090a65a63da98f3c42215b761d61b201d8
+--- /dev/null
++++ b/huabu/apps/web/src/lcos/ui/context/temporalFocusProfile.test.ts
+@@ -0,0 +1,32 @@
++import { describe, expect, it } from 'vitest';
++
++import { temporalFocusTick } from './temporalFocusProfile';
++
++// Exact nearby Figma nodes 5156:3099–3111. No synthetic business records.
++describe('Figma 5156:3080 fixed-cadence inward focus', () => {
++  it('matches the measured center and its neighbours', () => {
++    for (const [index, width] of [[18, 23.721538543701172], [19, 13.666268348693848], [20, 24.324613571166992], [21, 24.4643497467041], [22, 30.97784996032715], [23, 36.065208435058594], [24, 44], [25, 36.065208435058594], [26, 30.97784996032715], [27, 37.46434783935547]] as const) {
++      expect(temporalFocusTick(index, 277, false).width).toBeCloseTo(width, 4);
++    }
++  });
++  it('renders the exact temporary focus face', () => expect(temporalFocusTick(24, 277, false)).toEqual({ width: 44, height: 3, backgroundColor: '#263f30' }));
++  it('never supplies vertical displacement', () => {
++    for (let index = 0; index < 47; index += 1) expect(temporalFocusTick(index, 277, false)).not.toHaveProperty('y');
++  });
++  it('has only one focused dark tick', () => expect(Array.from({ length: 47 }, (_, i) => temporalFocusTick(i, 277, false)).filter(x => x.height === 3)).toHaveLength(1));
++  it('restores the idle face on leave', () => expect(temporalFocusTick(24, null, false)).toEqual({ width: 14, height: 1, backgroundColor: '#a8b8ac' }));
++  it('disables the bump for reduced motion', () => expect(temporalFocusTick(24, 277, true)).toEqual(temporalFocusTick(24, null, false)));
++  it('ignores non-finite focus positions', () => {
++    for (const focus of [NaN, Infinity, -Infinity]) expect(temporalFocusTick(24, focus, false)).toEqual(temporalFocusTick(24, null, false));
++  });
++  it('interpolates measured widths between ticks', () => expect(temporalFocusTick(23, 271.5, false).width).toBeCloseTo(8 + (30 + 28.065208435058594) / 2, 4));
++  it('keeps the inward face within the rail', () => {
++    for (let focus = 13; focus <= 519; focus += 5.5) {
++      for (let index = 0; index < 47; index += 1) {
++        const { width } = temporalFocusTick(index, focus, false);
++        expect(width).toBeGreaterThanOrEqual(8);
++        expect(width).toBeLessThanOrEqual(44);
++      }
++    }
++  });
++});
+diff --git a/huabu/apps/web/src/lcos/ui/context/temporalFocusProfile.ts b/huabu/apps/web/src/lcos/ui/context/temporalFocusProfile.ts
+new file mode 100644
+index 0000000000000000000000000000000000000000..c687c069b68bae0c2a248f982375023199c42aac
+--- /dev/null
++++ b/huabu/apps/web/src/lcos/ui/context/temporalFocusProfile.ts
+@@ -0,0 +1,49 @@
++import { temporalTickLength } from './temporalFisheye';
++import { TEMPORAL_TICK_STEP, TEMPORAL_TOP_PADDING } from './temporalNavigation';
++
++/**
++ * Figma 5156:3080 / ticks 5156:3081–3127, focused at tick 24 (y=277).
++ * This is a sampled DESIGN KEYFRAME, not an invented time/grouping algorithm.
++ * The approved focus keeps every y unchanged and expands leftwards to x=4.
++ * Between samples we interpolate their measured widths; the existing Motion
++ * runtime handles time interpolation. Do not restore the old vertical d3 warp.
++ */
++export const TEMPORAL_FOCUS_FALLOFF: readonly number[] = [
++  30,
++  28.065208435058594,
++  22.97784996032715,
++  16.4643497467041,
++  10.324613571166992,
++  5.666268348693848,
++  2.721538543701172,
++  1.1440000534057617,
++  0.4208536148071289,
++  0.1354970932006836,
++  0.03817939758300781,
++  0.0094146728515625,
++  0.0020322799682617188,
++  0.0003833770751953125,
++  6.389617919921875e-05,
++  9.5367431640625e-06,
++  9.5367431640625e-07,
++  0,
++];
++
++export function temporalFocusTick(index: number, focusY: number | null, reducedMotion: boolean) {
++  const y = TEMPORAL_TOP_PADDING + index * TEMPORAL_TICK_STEP;
++  const width = temporalTickLength(index);
++  const rest = { width, height: 1, backgroundColor: '#a8b8ac' };
++  if (reducedMotion || focusY === null || !Number.isFinite(focusY)) return rest;
++  const distance = Math.abs(y - focusY) / TEMPORAL_TICK_STEP;
++  const lower = Math.floor(distance);
++  const a = TEMPORAL_FOCUS_FALLOFF[lower];
++  if (a === undefined) return rest;
++  const b = TEMPORAL_FOCUS_FALLOFF[lower + 1] ?? 0;
++  const extension = a + (b - a) * (distance - lower);
++  const focused = index === Math.max(0, Math.round((focusY - TEMPORAL_TOP_PADDING) / TEMPORAL_TICK_STEP));
++  return {
++    width: Math.min(44, width + extension),
++    height: focused ? 3 : 1,
++    backgroundColor: focused ? '#263f30' : '#a8b8ac',
++  };
++}
+diff --git a/huabu/apps/web/src/lcos/ui/spatial/LightCurtainBackdrop.tsx b/huabu/apps/web/src/lcos/ui/spatial/LightCurtainBackdrop.tsx
+new file mode 100644
+index 0000000000000000000000000000000000000000..32cd6fe32065880403c90c6c0bae087fceca6956
+--- /dev/null
++++ b/huabu/apps/web/src/lcos/ui/spatial/LightCurtainBackdrop.tsx
+@@ -0,0 +1,20 @@
++import './light-curtain.css';
++
++/** Figma 5388:25501–25503 / 5140:4159–4161. Decorative layers, no state owner. */
++export function LightCurtainBackdrop({ kind }: { readonly kind: 'atlas' | 'hand' }): React.JSX.Element {
++  return (
++    <div className="lcos-light-curtain-backdrop" data-curtain-kind={kind} aria-hidden="true">
++      <div className="lcos-light-curtain-fog" />
++      <div className="lcos-light-curtain-floor"><div className="lcos-light-curtain-glow" /></div>
++    </div>
++  );
++}
++
++/** Native click semantics reject drags that began on a foreground control. */
++export function LightCurtainDismissPlane({ onClose, disabled = false }: {
++  readonly onClose: () => void;
++  readonly disabled?: boolean;
++}): React.JSX.Element {
++  return <button type="button" className="lcos-atlas-dismiss-plane" tabIndex={-1}
++    aria-label="收回集合总览" disabled={disabled} onClick={onClose} />;
++}
+diff --git a/huabu/apps/web/src/lcos/ui/spatial/Stage7PresentationLogic.test.ts b/huabu/apps/web/src/lcos/ui/spatial/Stage7PresentationLogic.test.ts
+new file mode 100644
+index 0000000000000000000000000000000000000000..cd4e7cae7c49e992bf3dab0e41675efce0617e82
+--- /dev/null
++++ b/huabu/apps/web/src/lcos/ui/spatial/Stage7PresentationLogic.test.ts
+@@ -0,0 +1,33 @@
++import { describe, expect, it } from 'vitest';
++
++import { filterWorkflowTitles } from '../workflow/filterWorkflowTitles';
++import { PRESENTATION_EXIT, PRESENTATION_SPRING, presentationPose } from './presentationMotion';
++
++describe('Stage7 donor presentation inputs', () => {
++  it.each([
++    [false, false, false, 0, 1], [false, true, false, -8, 1.025],
++    [false, true, true, 0, 1], [true, true, false, 0, 1],
++    [true, false, false, 0, 1], [true, true, true, 0, 1],
++  ] as const)('reduced=%s focused=%s disabled=%s', (reduced, focused, disabled, y, scale) => {
++    expect(presentationPose(reduced, focused, disabled)).toEqual({ opacity: 1, y, scale });
++  });
++  it('preserves the GEN1 spring', () => {
++    expect(PRESENTATION_SPRING).toEqual({ type: 'spring', stiffness: 400, damping: 25 });
++  });
++  it('keeps exit finite', () => {
++    expect(PRESENTATION_EXIT).toEqual({ duration: 0.2, ease: 'easeOut' });
++  });
++});
++
++describe('restored workflow title filter', () => {
++  const items = [{ id: 'a', title: '山野研究' }, { id: 'b', title: 'Workflow Review' }, { id: 'c', title: '山野主视觉' }, { id: 'd', title: null }, { id: 'e' }];
++  it('retains original list for an empty query', () => expect(filterWorkflowTitles(items, '   ')).toBe(items));
++  it('matches Chinese titles', () => expect(filterWorkflowTitles(items, '山野').map(x => x.id)).toEqual(['a', 'c']));
++  it('matches case insensitively', () => expect(filterWorkflowTitles(items, 'review')[0]).toBe(items[1]));
++  it('trims input', () => expect(filterWorkflowTitles(items, ' Review ')[0]).toBe(items[1]));
++  it('ignores missing titles', () => expect(filterWorkflowTitles(items, 'unknown')).toEqual([]));
++  it('retains selected object identity', () => {
++    expect(filterWorkflowTitles(items, '山野')[0]).toBe(items[0]);
++    expect(items).toHaveLength(5);
++  });
++});
+diff --git a/huabu/apps/web/src/lcos/ui/spatial/light-curtain.css b/huabu/apps/web/src/lcos/ui/spatial/light-curtain.css
+new file mode 100644
+index 0000000000000000000000000000000000000000..c8422c5c5633f5eef072757512226ec7a95260ea
+--- /dev/null
++++ b/huabu/apps/web/src/lcos/ui/spatial/light-curtain.css
+@@ -0,0 +1,10 @@
++/* Figma node 5388:25502 / 5140:4160. Local values are exported paints, not ColorPin. */
++.lcos-light-curtain-backdrop { position:fixed; inset:0; pointer-events:none; }
++.lcos-light-curtain-fog { position:absolute; inset:0; background:rgb(238 243 239); opacity:.38; }
++.lcos-light-curtain-backdrop[data-curtain-kind='hand'] .lcos-light-curtain-fog { opacity:.12; }
++.lcos-light-curtain-floor { position:absolute; inset-inline:0; bottom:0; height:min(690px,max(0px,calc(100vh - 210px))); background:linear-gradient(180deg,rgba(231,238,232,0) 0%,rgba(219,230,221,.46) 28%,rgba(181,202,188,.7) 78%,rgba(246,252,248,.93) 100%); }
++.lcos-light-curtain-backdrop[data-curtain-kind='hand'] .lcos-light-curtain-floor { height:33vh; max-height:690px; }
++.lcos-light-curtain-glow { position:absolute; left:50%; bottom:21px; width:min(890px,calc(100% - 48px)); height:18px; transform:translateX(-50%); border-radius:9px; filter:blur(12px); background:linear-gradient(90deg,rgba(195,229,211,0) 0%,rgba(229,255,240,.9) 40%,rgb(248,255,253) 60%,rgba(172,209,191,0) 100%); }
++/* Native backdrop button: a drag originating in content is not a blank click. */
++.lcos-atlas-dismiss-plane { position:fixed; inset:0; width:100%; height:100%; padding:0; margin:0; border:0; background:transparent; cursor:default; }
++[data-presentation-present='false'] { pointer-events:none; }
+diff --git a/huabu/apps/web/src/lcos/ui/spatial/presentationMotion.ts b/huabu/apps/web/src/lcos/ui/spatial/presentationMotion.ts
+new file mode 100644
+index 0000000000000000000000000000000000000000..67544c1f05f481312cc61ed6ab351495917e5ad3
+--- /dev/null
++++ b/huabu/apps/web/src/lcos/ui/spatial/presentationMotion.ts
+@@ -0,0 +1,12 @@
++/**
++ * GEN1 ObjectOrbit.tsx @3e99769: visible spring 400/25; exiting duration .2.
++ * The existing Motion runtime owns interpolation and velocity. No new clock.
++ * Figma 5392:4932 / 5392:4890 supplies pose/curtain semantics, not a timeline.
++ */
++export const PRESENTATION_SPRING = { type: 'spring', stiffness: 400, damping: 25 } as const;
++export const PRESENTATION_EXIT = { duration: 0.2, ease: 'easeOut' } as const;
++
++export function presentationPose(reduced: boolean, focused: boolean, disabled = false) {
++  const attention = focused && !disabled && !reduced;
++  return { opacity: 1, y: attention ? -8 : 0, scale: attention ? 1.025 : 1 };
++}
+diff --git a/huabu/apps/web/src/lcos/ui/workflow/WorkflowHandView.tsx b/huabu/apps/web/src/lcos/ui/workflow/WorkflowHandView.tsx
+new file mode 100644
+index 0000000000000000000000000000000000000000..e30d854b72e1fe20f9d7ba29c72b971d763eaea7
+--- /dev/null
++++ b/huabu/apps/web/src/lcos/ui/workflow/WorkflowHandView.tsx
+@@ -0,0 +1,48 @@
++import { AnimatePresence, motion, useIsPresent, useReducedMotion } from 'motion/react';
++
++import { LightCurtainBackdrop } from '../spatial/LightCurtainBackdrop';
++import { PRESENTATION_EXIT } from '../spatial/presentationMotion';
++
++import './workflow-hand.css';
++import type { ReactNode } from 'react';
++
++export interface WorkflowHandViewProps {
++  readonly open: boolean;
++  readonly header: ReactNode;
++  readonly children: ReactNode;
++}
++
++function HandLayer({ header, children }: Omit<WorkflowHandViewProps, 'open'>): React.JSX.Element {
++  const present = useIsPresent();
++  const reduced = Boolean(useReducedMotion());
++  return (
++    <motion.div
++      data-lcos-workflow-hand
++      data-presentation-present={present ? 'true' : 'false'}
++      className="lcos-workflow-hand-stage"
++      role="region"
++      aria-label="工作流手牌"
++      aria-hidden={!present || undefined}
++      inert={!present || undefined}
++      initial={reduced ? false : { opacity: 0 }}
++      animate={{ opacity: 1 }}
++      exit={{ opacity: 0 }}
++      transition={reduced ? { duration: 0 } : PRESENTATION_EXIT}
++    >
++      <LightCurtainBackdrop kind="hand" />
++      <div className="lcos-workflow-hand-shell">
++        <div className="lcos-workflow-hand-head">{header}</div>
++        {children}
++      </div>
++    </motion.div>
++  );
++}
++
++/** GEN1 ObjectOrbit presence pattern: boundary survives the open=false render. */
++export function WorkflowHandView({ open, header, children }: WorkflowHandViewProps): React.JSX.Element {
++  return (
++    <AnimatePresence initial={false} mode="sync">
++      {open ? <HandLayer key="workflow-hand" header={header}>{children}</HandLayer> : null}
++    </AnimatePresence>
++  );
++}
+diff --git a/huabu/apps/web/src/lcos/ui/workflow/WorkflowTaskCardView.tsx b/huabu/apps/web/src/lcos/ui/workflow/WorkflowTaskCardView.tsx
+index be1d9f62625150c5b36b2f651858722fd2cc3ed0..ef077f6b6238106c9d580524ffd5fe021f54fce7 100644
+--- a/huabu/apps/web/src/lcos/ui/workflow/WorkflowTaskCardView.tsx
++++ b/huabu/apps/web/src/lcos/ui/workflow/WorkflowTaskCardView.tsx
+@@ -1,6 +1,8 @@
+ import { motion, useReducedMotion } from 'motion/react';
+ 
+ import { PreviewMedia } from '../spatial/PreviewMedia';
++import { useDescendantFocus } from '../spatial/useDescendantFocus';
++import { PRESENTATION_EXIT, PRESENTATION_SPRING, presentationPose } from '../spatial/presentationMotion';
+ 
+ import flowIcon from './assets/workflow-flow-23.svg';
+ import paperclipIcon from './assets/workflow-use-paperclip.svg';
+@@ -26,12 +28,13 @@ export interface WorkflowTaskCardViewProps {
+ }
+ 
+ export function WorkflowTaskCardView({ title, summary, previewUrl, state, onUse, disabledReason }: WorkflowTaskCardViewProps): React.JSX.Element {
+-  const reducedMotion = useReducedMotion();
++  const reducedMotion = Boolean(useReducedMotion());
++  const focus = useDescendantFocus();
+   const disabled = state === '不可用';
+   const actionAllowed = onUse !== undefined && !disabled && state !== '草稿中' && state !== '已选目标';
+   const secondary = state === '草稿中' ? '已加入草稿 · 未发送' : disabled ? disabledReason ?? '当前不可用' : summary ?? '工作流';
+   return (
+-    <div className="lcos-workflow-task-slot" data-card-state={state}>
++    <div className="lcos-workflow-task-slot" data-card-state={state} onFocusCapture={focus.onFocusCapture} onBlurCapture={focus.onBlurCapture}>
+       <motion.article
+         data-lcos-workflow-task-card
+         data-state={state}
+@@ -40,10 +43,10 @@ export function WorkflowTaskCardView({ title, summary, previewUrl, state, onUse,
+         aria-disabled={disabled || undefined}
+         aria-label={`${title} · ${secondary}`}
+         initial={reducedMotion ? false : { opacity: 0, y: 112, scale: 0.82 }}
+-        animate={{ opacity: 1, y: 0, scale: 1 }}
+-        exit={reducedMotion ? undefined : { opacity: 0, y: 42, scale: 0.8 }}
++        animate={presentationPose(reducedMotion, focus.focused || state === '键盘焦点', disabled)}
++        exit={{ opacity: 0, y: reducedMotion ? 0 : 42, scale: reducedMotion ? 1 : 0.8, transition: reducedMotion ? { duration: 0 } : PRESENTATION_EXIT }}
+         whileHover={reducedMotion || disabled ? undefined : { y: -8, scale: 1.025 }}
+-        transition={reducedMotion ? { duration: 0 } : { type: 'spring', stiffness: 400, damping: 25 }}
++        transition={reducedMotion ? { duration: 0 } : PRESENTATION_SPRING}
+       >
+         <div className="lcos-workflow-task-plate" aria-hidden />
+         <div className="lcos-workflow-task-cover">
+diff --git a/huabu/apps/web/src/lcos/ui/workflow/filterWorkflowTitles.ts b/huabu/apps/web/src/lcos/ui/workflow/filterWorkflowTitles.ts
+new file mode 100644
+index 0000000000000000000000000000000000000000..758bc07b63b5dcf18cbe12cba8477e8223486d88
+--- /dev/null
++++ b/huabu/apps/web/src/lcos/ui/workflow/filterWorkflowTitles.ts
+@@ -0,0 +1,8 @@
++/** Restored from CURRENT WorkflowCardPool.tsx@802b7a5, removed by Stage5. */
++export function filterWorkflowTitles<T extends { readonly title?: string | null }>(
++  items: readonly T[], query: string,
++): readonly T[] {
++  const q = query.trim().toLowerCase();
++  if (q === '') return items;
++  return items.filter((item) => (item.title ?? '').toLowerCase().includes(q));
++}
+diff --git a/huabu/apps/web/src/lcos/ui/workflow/workflow-hand.css b/huabu/apps/web/src/lcos/ui/workflow/workflow-hand.css
+index 50fff584a5754932715a27759901c7367be948a1..940113625799f6e51fa1e4c5dab2144e5cab5615 100644
+--- a/huabu/apps/web/src/lcos/ui/workflow/workflow-hand.css
++++ b/huabu/apps/web/src/lcos/ui/workflow/workflow-hand.css
+@@ -1,12 +1,11 @@
+ /* Workflow Hand / Task Card deep fidelity: Figma 5140:3012 + 5334:46 + 5335:110. */
+-.lcos-workflow-hand-stage { position:fixed; inset:0; z-index:34; pointer-events:none; background:linear-gradient(180deg,rgba(250,250,250,.10),rgba(250,250,250,.78) 62%,rgba(250,250,250,.97)); backdrop-filter:blur(4px); -webkit-backdrop-filter:blur(4px); }
+-.lcos-workflow-hand-stage::before { content:''; position:absolute; left:0; right:0; bottom:0; height:297px; background:radial-gradient(ellipse at 50% 100%,rgba(255,255,255,.99),rgba(255,255,255,.50) 58%,transparent 80%); }
++.lcos-workflow-hand-stage { position:fixed; inset:0; z-index:34; pointer-events:none; background:transparent; }
+ .lcos-workflow-hand-shell { pointer-events:auto; position:absolute; left:50%; bottom:0; width:min(1080px,calc(100vw - 80px)); height:min(610px,calc(100vh - 150px)); transform:translateX(-50%); }
+ .lcos-workflow-hand-head { position:absolute; left:0; right:0; top:0; display:flex; align-items:center; justify-content:space-between; color:var(--gen2-muted); font:400 12px/19px 'Noto Sans SC',sans-serif; }
+ .lcos-workflow-hand-close { width:44px; height:44px; display:grid; place-items:center; border:0; background:transparent; border-radius:12px; color:var(--gen2-muted); }
+ .lcos-workflow-hand-close:hover,.lcos-workflow-hand-close:focus-visible { background:rgba(255,255,255,.72); outline:2px solid var(--gen2-accent); outline-offset:2px; }
+ .lcos-workflow-hand-pool { position:absolute; left:0; right:0; top:56px; bottom:0; overflow:hidden; padding:94px 18px 38px; }
+-.lcos-workflow-hand-cards { height:430px; display:flex; align-items:flex-start; justify-content:center; overflow-x:auto; overflow-y:hidden; padding:18px 72px 54px; scrollbar-width:none; }
++.lcos-workflow-hand-cards { height:430px; display:flex; align-items:flex-start; justify-content:flex-start; overflow-x:auto; overflow-y:hidden; padding:18px 72px 54px; scrollbar-width:none; }
+ .lcos-workflow-hand-cards::-webkit-scrollbar { display:none; }
+ .lcos-workflow-task-slot { position:relative; flex:0 0 224px; width:224px; height:380px; transform-origin:50% 100%; transition:transform 260ms cubic-bezier(.22,1,.36,1),filter 180ms ease,opacity 180ms ease; }
+ .lcos-workflow-hand-cards > .lcos-workflow-task-slot + .lcos-workflow-task-slot { margin-left:-64px; }
+@@ -81,3 +80,35 @@
+ }
+ 
+ .lcos-workflow-collection-cover .lcos-preview-media-message { justify-content:flex-start; padding-top:4px; gap:4px; }
++
++/* Auto margins resolve to zero when overflowing: the first card remains reachable. */
++.lcos-workflow-hand-cards > .lcos-workflow-task-slot:first-child { margin-left:auto; }
++.lcos-workflow-hand-cards > .lcos-workflow-task-slot:last-child { margin-right:auto; }
++.lcos-workflow-hand-cards > .lcos-workflow-task-slot:is(:hover,:focus-within) { z-index:2; }
++/* Figma rotation is around its local origin; don't rotate around the CSS default center. */
++.lcos-workflow-collection-back,.lcos-workflow-collection-cover { transform-origin:0 0; }
++@media (max-height:680px) {
++ .lcos-workflow-hand-pool { padding-top:18px; padding-bottom:12px; overflow:auto; }
++ .lcos-workflow-hand-cards { height:auto; min-height:430px; }
++}
++@media (prefers-reduced-motion:reduce) {
++ .lcos-workflow-hand-pool { overflow:auto; padding-top:18px; }
++ .lcos-workflow-hand-cards { height:auto; min-height:324px; display:grid; grid-template-columns:repeat(auto-fit,224px); justify-content:center; padding:18px 0 40px; gap:22px; }
++ .lcos-workflow-hand-cards > .lcos-workflow-task-slot:nth-child(n) { margin:0; }
++}
++
++/* Restore the approved Card Pool/Search path; filtering is local, not a new search API. */
++.lcos-workflow-hand-search { position:absolute; left:18px; right:18px; top:12px; display:flex; align-items:center; gap:8px; max-width:320px; min-height:40px; padding:8px 12px; border:1px solid var(--lcos-color-border-subtle); border-radius:12px; background:rgba(255,255,255,.7); color:var(--gen2-muted); }
++.lcos-workflow-hand-search input { min-width:0; width:100%; border:0; outline:none; background:transparent; color:var(--gen2-text); font:400 13px/20px 'Noto Sans SC',sans-serif; }
++.lcos-workflow-hand-search:focus-within { outline:2px solid var(--gen2-accent); outline-offset:2px; }
++.lcos-workflow-hand-pool[data-has-search='true'] { padding-top:64px; }
++/* Six or more cards use the pool layout instead of repeating a five-card fan forever.
++   This is a presentation threshold, not a limit on workflows or stored identities. */
++.lcos-workflow-hand-pool:has(.lcos-workflow-task-slot:nth-child(6)) { overflow:auto; }
++.lcos-workflow-hand-cards:has(> .lcos-workflow-task-slot:nth-child(6)) { height:auto; min-height:324px; display:grid; grid-template-columns:repeat(auto-fit,224px); gap:22px; justify-content:center; padding:18px 0 40px; overflow:visible; }
++.lcos-workflow-hand-cards:has(> .lcos-workflow-task-slot:nth-child(6)) > .lcos-workflow-task-slot:nth-child(n) { transform:none; margin:0; height:324px; }
++@media (max-width:760px) {
++ .lcos-workflow-hand-pool { overflow:auto; }
++ .lcos-workflow-hand-cards { height:auto; display:grid; grid-template-columns:repeat(auto-fit,224px); justify-content:center; padding-inline:0; gap:22px; overflow:visible; }
++ .lcos-workflow-hand-cards > .lcos-workflow-task-slot:nth-child(n) { transform:none; margin:0; height:324px; }
++}
+diff --git a/scripts/e2e/gui-stage7/README.md b/scripts/e2e/gui-stage7/README.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..ce95ca565ceb1cd7d80a58df7cb10de3e6776a48
+--- /dev/null
++++ b/scripts/e2e/gui-stage7/README.md
+@@ -0,0 +1,17 @@
++# Stage7 真实 Motion 组件检查
++
++从仓库根目录运行：
++
++```bash
++node scripts/e2e/gui-stage7/run.mjs /absolute/path/to/evidence
++```
++
++使用 `huabu/apps/web` 已安装的 React、Motion、Vite 和 Playwright。缺少依赖时脚本非零退出并写出 `BLOCKED_DEPENDENCIES`，不联网安装、不升级生产依赖、不换成动画测试替身。
++
++这是实际展示组件的隔离检查。数据和外围测试按钮都明确是 fixture，不是 Local Core / ReactFlow / 正式导航。用例会启动本机 `127.0.0.1:4177` 并在结束时关闭；该端口占用时失败，不替换用户服务器。
++
++关注：Atlas/手牌在退出中保持 DOM；快速反转保持同一 keyed 元素；退出中 inert；键盘关注；集合完整身体激活；多卡池；时间轨真实 DOM focus；Portal scene 跨状态保留；五档宽高和减少动态效果。
++
++录屏、截图、原始结果写到参数指定目录。正式合并前还要运行仓库现有 typecheck/lint/test/build/E2E，以及真实 Core、相机、跨现场恢复和安全区测试。
++
++2026-09-20 网页沙箱结果：`motion/react` 未安装，脚本退出 1，实际 Motion 用例执行 0 项。不能把本文件的用例数量当作已经通过。
+diff --git a/scripts/e2e/gui-stage7/run.mjs b/scripts/e2e/gui-stage7/run.mjs
+new file mode 100644
+index 0000000000000000000000000000000000000000..f601e8dabec0b79b9208356a4b879cfc68862c00
+--- /dev/null
++++ b/scripts/e2e/gui-stage7/run.mjs
+@@ -0,0 +1,94 @@
++/** Run from repo root: node scripts/e2e/gui-stage7/run.mjs [evidence-directory]
++ * Requires existing web workspace dependencies. Does not install/upgrade/mock Motion.
++ */
++import fs from 'node:fs/promises';
++import path from 'node:path';
++import { createRequire } from 'node:module';
++import { fileURLToPath, pathToFileURL } from 'node:url';
++const here=path.dirname(fileURLToPath(import.meta.url));
++const repo=path.resolve(here,'../../..'), web=path.join(repo,'huabu/apps/web');
++const out=path.resolve(process.argv[2] || path.join(repo,'.tmp/gui-stage7'));
++await fs.mkdir(out,{recursive:true});
++const requireWeb=createRequire(path.join(web,'package.json'));
++const results=[],errors=[];let server,browser;
++const report={status:'RUNNING',scope:'real Motion + shipped React Views; fixture data; no Core/ReactFlow',results,errors};
++async function save(){await fs.writeFile(path.join(out,'results.json'),JSON.stringify(report,null,2));}
++const check=(name,ok,detail)=>{results.push({name,ok,detail});if(!ok)throw new Error(name);};
++try {
++  const motionEntry=requireWeb.resolve('motion/react');
++  const react=requireWeb('react');
++  const {createServer}=await import(pathToFileURL(requireWeb.resolve('vite')).href);
++  const {chromium}=requireWeb('@playwright/test');
++  report.environment={react:react.version,motionEntry,browser:'installed Playwright Chromium; no Motion mock'};
++  const style=`*{box-sizing:border-box}body{margin:0;background:#f4f6f5;font-family:Arial,'Noto Sans SC',sans-serif;--gen2-text:#242625;--gen2-muted:#69716b;--gen2-surface:#fff;--gen2-raised:#eff2f0;--gen2-canvas:#f5f6f5;--gen2-accent:#107d98;--lcos-color-border-default:rgba(0,0,0,.12);--lcos-color-border-subtle:rgba(0,0,0,.09)}button{cursor:pointer}.test-controls{position:fixed;left:8px;top:4px;z-index:300;display:flex;gap:8px;flex-wrap:wrap;max-width:calc(100vw - 16px);font-size:11px}.test-controls button{min-height:28px}.test-portal{position:fixed;left:20px;top:120px;width:440px;max-width:calc(100vw - 40px)}`;
++  const scriptUrl='/@fs/'+path.join(here,'scene.tsx').replaceAll('\\','/');
++  const html=`<!doctype html><html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Stage7 真实 Motion 验证</title><style>${style}</style></head><body><div id="root"></div><script type="module" src="${scriptUrl}"></script></body></html>`;
++  server=await createServer({root:web,configFile:false,esbuild:{jsx:'automatic'},resolve:{alias:{'@':path.join(web,'src')}},server:{host:'127.0.0.1',port:4177,strictPort:true,fs:{allow:[repo]}},plugins:[{name:'stage7-scene',configureServer(s){s.middlewares.use((req,res,next)=>{if(req.url==='/'||req.url==='/__gui-stage7__/'){res.setHeader('content-type','text/html;charset=utf-8');res.end(html)}else next()})}}]});
++  await server.listen();browser=await chromium.launch();
++  const context=await browser.newContext({viewport:{width:1440,height:900},recordVideo:{dir:path.join(out,'video'),size:{width:1440,height:900}}});
++  const page=await context.newPage();
++  page.on('pageerror',e=>errors.push({type:'pageerror',message:e.message}));
++  page.on('console',m=>{if(m.type()==='error')errors.push({type:'console',message:m.text()})});
++  page.on('requestfailed',r=>errors.push({type:'requestfailed',url:r.url(),message:r.failure()?.errorText}));
++  page.on('response',r=>{if(r.status()>=400)errors.push({type:'http',status:r.status(),url:r.url()})});
++  await page.goto('http://127.0.0.1:4177/__gui-stage7__/');
++  await page.waitForSelector('#atlas-toggle');
++  check('page identity',(await page.title()).includes('真实 Motion'));
++  const engine=await page.locator('#engine-probe').evaluate(async el=>{const x=()=>new DOMMatrixReadOnly(getComputedStyle(el).transform).m41;const a=x();await new Promise(r=>setTimeout(r,120));return[a,x()]});
++  check('actual animation changes over time',engine[1]>engine[0],engine);
++  await page.click('#atlas-toggle');await page.waitForTimeout(85);
++  await page.evaluate(()=>{window.__atlasNode=document.querySelector('[data-lcos-context-atlas]')});
++  await page.click('#atlas-toggle');await page.waitForTimeout(30);
++  check('exiting Atlas remains briefly mounted',await page.locator('[data-lcos-context-atlas]').count()===1);
++  check('exiting Atlas is inert',await page.locator('[data-lcos-context-atlas]').getAttribute('inert')!==null);
++  await page.click('#atlas-toggle');await page.waitForTimeout(600);
++  check('reversal retains keyed element',await page.evaluate(()=>window.__atlasNode===document.querySelector('[data-lcos-context-atlas]')));
++  check('no duplicate Atlas',await page.locator('[data-lcos-context-atlas]').count()===1);
++  check('re-entered element interactive',(await page.locator('[data-lcos-context-atlas]').getAttribute('inert'))===null);
++  const a=page.getByRole('button',{name:'进入品牌原点'});await a.focus();await page.waitForTimeout(500);
++  check('keyboard focus lifts collection',await a.evaluate(el=>new DOMMatrixReadOnly(getComputedStyle(el.closest('[data-lcos-context-collection]')).transform).m42< -7));
++  await page.keyboard.press('Enter');check('native Enter exactly once',(await page.textContent('#enters'))==='1');
++  await page.screenshot({path:path.join(out,'atlas-focus-1440.png')});
++  await page.getByRole('button',{name:'进入集合 · 品牌原点'}).click();check('whole collection uses existing activation',(await page.textContent('#enters'))==='2');
++  await page.mouse.click(80,250);await page.waitForTimeout(450);
++  check('blank click retracts Atlas',await page.locator('[data-lcos-context-atlas]').count()===0);
++  await page.click('#hand-toggle');await page.waitForTimeout(700);
++  await page.click('#many-cards');await page.waitForTimeout(150);
++  check('many cards use pool instead of repeated fan',await page.locator('.lcos-workflow-hand-cards').evaluate(el=>getComputedStyle(el).display==='grid'));
++  await page.locator('.lcos-workflow-task-slot').last().scrollIntoViewIfNeeded();
++  check('last pool card reachable',await page.locator('.lcos-workflow-task-slot').last().isVisible());
++  await page.click('#hand-toggle');await page.waitForTimeout(30);
++  check('Hand exit retained',await page.locator('[data-lcos-workflow-hand]').count()===1);
++  await page.click('#hand-toggle');await page.waitForTimeout(500);
++  check('Hand rapid reopen unique',await page.locator('[data-lcos-workflow-hand]').count()===1);
++  await page.screenshot({path:path.join(out,'hand-24.png')});
++  await page.click('#hand-toggle');await page.waitForTimeout(450);await page.click('#temporal-show');
++  const first=page.locator('[data-temporal-item="one"]');await first.focus();await page.keyboard.press('ArrowDown');
++  check('Temporal skips disabled',await page.locator('[data-temporal-item="three"]').evaluate(el=>el===document.activeElement));
++  await page.keyboard.press('Escape');check('Temporal clears local preview',await page.locator('[data-temporal-item][data-preview="true"]').count()===0);
++  await page.locator('[data-lcos-temporal-rail]').hover();await page.mouse.wheel(0,80);await page.waitForTimeout(80);check('wheel callback delivered',Number(await page.textContent('#shifts'))>0);
++  const railBox=await page.locator('[data-lcos-temporal-rail]').boundingBox();
++  if(!railBox)throw new Error('missing Temporal rail');
++  await page.mouse.move(railBox.x+40,railBox.y+277);await page.waitForTimeout(650);
++  const focusTick=await page.locator('[data-temporal-tick="24"]').evaluate(el=>({top:el.offsetTop,width:parseFloat(getComputedStyle(el).width),height:parseFloat(getComputedStyle(el).height),color:getComputedStyle(el).backgroundColor}));
++  check('Figma inward lens keeps cadence and has 44x3 center',focusTick.top===277&&Math.abs(focusTick.width-44)<.1&&Math.abs(focusTick.height-3)<.1,focusTick);
++  const ys=await page.locator('[data-temporal-tick]').evaluateAll(es=>es.map(el=>el.offsetTop));check('hover does not warp y positions',ys.every((y,i)=>y===13+11*i),ys);
++  await page.mouse.move(200,100);await page.waitForTimeout(650);
++  check('temporary inward focus restores on leave',await page.locator('[data-temporal-tick="24"]').evaluate(el=>Math.abs(parseFloat(getComputedStyle(el).width)-14)<.1));
++  await page.click('#portal-show');await page.evaluate(()=>window.__sceneNode=document.querySelector('[data-lcos-real-portal-preview]'));await page.click('#portal-next');
++  check('Portal scene survives state change',await page.evaluate(()=>window.__sceneNode===document.querySelector('[data-lcos-real-portal-preview]')));
++  check('partial has no retry',await page.locator('.lcos-portal-retry').count()===0);
++  for(const [w,h] of [[1440,900],[1280,800],[1152,768],[1024,768],[390,844]]){
++    await page.setViewportSize({width:w,height:h});await page.click('#atlas-toggle');await page.waitForTimeout(650);
++    const sizes=await page.locator('.lcos-context-collection-slot').evaluateAll(es=>es.map(el=>({w:el.offsetWidth,h:el.offsetHeight})));check(`fixed body ${w}`,sizes.length===6&&sizes.every(s=>s.w===248&&s.h===244));
++    await page.screenshot({path:path.join(out,`atlas-${w}.png`)});await page.click('#atlas-toggle');await page.waitForTimeout(450);
++  }
++  await page.emulateMedia({reducedMotion:'reduce'});await page.click('#hand-toggle');await page.waitForTimeout(150);
++  check('reduced motion stable grid',await page.locator('.lcos-workflow-hand-cards').evaluate(el=>getComputedStyle(el).display==='grid'));
++  check('reduced motion no fan',await page.locator('.lcos-workflow-task-slot').evaluateAll(es=>es.every(el=>getComputedStyle(el).transform==='none')));
++  await page.screenshot({path:path.join(out,'reduced-mobile.png')});
++  check('no page/console/http errors',errors.length===0,errors);
++  await context.close();report.status='PASS';
++} catch(error) {
++  report.status=results.length===0?'BLOCKED_DEPENDENCIES':'FAIL';report.error=String(error.stack||error);process.exitCode=1;
++} finally {if(browser)await browser.close();if(server)await server.close();await save();console.log(JSON.stringify({status:report.status,checks:results.length,out}));}
+diff --git a/scripts/e2e/gui-stage7/scene.tsx b/scripts/e2e/gui-stage7/scene.tsx
+new file mode 100644
+index 0000000000000000000000000000000000000000..e958eadf5bc70d846dc386477739a86a4ceaa7c5
+--- /dev/null
++++ b/scripts/e2e/gui-stage7/scene.tsx
+@@ -0,0 +1,57 @@
++// TEST-ONLY. This scene imports shipped Views and the actual motion/react package.
++// No Core/ReactFlow data is simulated as a production result.
++import { AnimatePresence, MotionConfig, motion } from 'motion/react';
++import { StrictMode, useEffect, useState } from 'react';
++import { createRoot } from 'react-dom/client';
++import { ContextAtlasView } from '/src/lcos/ui/context/ContextAtlasView';
++import { ContextCollectionView } from '/src/lcos/ui/context/ContextCollectionView';
++import { WorkflowHandView } from '/src/lcos/ui/workflow/WorkflowHandView';
++import { WorkflowTaskCardView } from '/src/lcos/ui/workflow/WorkflowTaskCardView';
++import { TemporalRailView } from '/src/lcos/ui/context/TemporalRailView';
++import { PortalPreviewView } from '/src/lcos/ui/professional/PortalPreviewView';
++
++const cover = `data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="200" height="214"><rect width="200" height="214" fill="#dce9e1"/><text x="18" y="110" font-size="16">测试材料</text></svg>')}`;
++const labels = ['品牌原点', '关于山野', '研究与访谈', '主视觉探索', '语气与文字', '准备出发'];
++const temporal = [{ id:'one', label:'测试组一', ratio:.15 }, { id:'two', label:'不可用组', ratio:.5, disabled:true }, { id:'three', label:'测试组三', ratio:.8 }];
++function Scene() {
++  const [atlas, setAtlas] = useState(false);
++  const [hand, setHand] = useState(false);
++  const [deckCount, setDeckCount] = useState(5);
++  const [takes, setTakes] = useState(0);
++  const [enters, setEnters] = useState(0);
++  const [shifts, setShifts] = useState(0);
++  const [pane, setPane] = useState<'atlas'|'hand'|'temporal'|'portal'>('atlas');
++  const [portalState, setPortalState] = useState<'旧缓存'|'部分预览'>('旧缓存');
++  useEffect(() => {
++    const onKey = (event: KeyboardEvent) => {
++      // Explicit test owner, not a replacement for production overlay/nav ownership.
++      if (event.key === 'Escape' && !event.defaultPrevented) { setAtlas(false); setHand(false); }
++    };
++    document.addEventListener('keydown', onKey);
++    return () => document.removeEventListener('keydown', onKey);
++  }, []);
++  return <MotionConfig reducedMotion="user">
++    <div className="test-controls">
++      <b>Stage7 组件验证 · 测试数据，不是生产工作现场</b>
++      <button id="atlas-toggle" onClick={()=>{setPane('atlas');setAtlas(v=>!v);}}>集合总览</button>
++      <button id="hand-toggle" onClick={()=>{setPane('hand');setHand(v=>!v);}}>手牌</button>
++      <button id="many-cards" onClick={()=>setDeckCount(24)}>24 张卡</button>
++      <button id="temporal-show" onClick={()=>setPane('temporal')}>时间轨</button>
++      <button id="portal-show" onClick={()=>setPane('portal')}>目标预览</button>
++      <button id="portal-next" onClick={()=>setPortalState('部分预览')}>部分预览</button>
++      <output id="takes">{takes}</output><output id="enters">{enters}</output><output id="shifts">{shifts}</output>
++    </div>
++    <motion.div id="engine-probe" initial={{x:0}} animate={{x:100}} transition={{duration:1,ease:'linear'}} style={{position:'fixed',left:0,top:80,width:4,height:4}} />
++    {pane === 'atlas' ? <AnimatePresence initial={false} mode="sync">
++      {atlas ? <ContextAtlasView key="atlas" onClose={()=>setAtlas(false)} header={<><span>6 个集合</span><button className="lcos-atlas-close" aria-label="收回 Atlas" onClick={()=>setAtlas(false)}>×</button></>}>
++        <div className="lcos-atlas-grid">{labels.map((label,i)=><ContextCollectionView key={label} title={label} onActivate={()=>setEnters(n=>n+1)} organization={i%2?'时间':'事情'} previewUrl={cover} secondaryPreviewUrl={cover} action={<button aria-label={`进入${label}`} onClick={()=>setEnters(n=>n+1)}>进入</button>} />)}</div>
++      </ContextAtlasView> : null}
++    </AnimatePresence> : null}
++    {pane==='hand' ? <WorkflowHandView open={hand} header={<><span>工作流</span><button className="lcos-workflow-hand-close" aria-label="收回手牌" onClick={()=>setHand(false)}>×</button></>}>
++      <div className="lcos-workflow-hand-pool"><div className="lcos-workflow-hand-cards">{Array.from({length:deckCount},(_,i)=><WorkflowTaskCardView key={i} title={`测试任务 ${i+1}`} state="静息" previewUrl={cover} onUse={()=>setTakes(n=>n+1)} />)}</div></div>
++    </WorkflowHandView> : null}
++    {pane==='temporal' ? <TemporalRailView items={temporal} scopeKey="test" onWindowShift={()=>setShifts(n=>n+1)} onActivate={()=>setEnters(n=>n+1)}/> : null}
++    {pane==='portal' ? <div className="test-portal"><PortalPreviewView state={portalState} title="目标场景" onRetry={()=>setTakes(n=>n+1)} onZoom={()=>setShifts(n=>n+1)}><div data-lcos-real-portal-preview><button id="native-preview">内部预览动作</button></div></PortalPreviewView></div> : null}
++  </MotionConfig>;
++}
++createRoot(document.getElementById('root')!).render(<StrictMode><Scene/></StrictMode>);

@@ -1,0 +1,452 @@
+diff --git a/huabu/apps/web/src/lcos/ui/FigmaShellGlyph.tsx b/huabu/apps/web/src/lcos/ui/FigmaShellGlyph.tsx
+index 8dc5fcb..0f39911 100644
+--- a/huabu/apps/web/src/lcos/ui/FigmaShellGlyph.tsx
++++ b/huabu/apps/web/src/lcos/ui/FigmaShellGlyph.tsx
+@@ -23,11 +23,22 @@ const GLYPHS = { bench, collection, context, disabled, empty, error, focus,
+   grid, loading, normal, plus, project, recovery, root, search, workflow } as const;
+ export type FigmaShellGlyphName = keyof typeof GLYPHS;
+ 
+-export function FigmaShellGlyph({ name, size = 21, className }: {
++export function FigmaShellGlyph({ name, size = 21, className, monochrome = false }: {
+   readonly name: FigmaShellGlyphName;
+   readonly size?: number;
+   readonly className?: string;
++  /** Opt-in for single-ink exported glyphs; never recolours multi-colour assets. */
++  readonly monochrome?: boolean;
+ }): React.JSX.Element {
++  if (monochrome) {
++    return <span data-lcos-figma-glyph={name} data-lcos-glyph-monochrome
++      className={className} aria-hidden="true" style={{
++        display: 'block', width: size, height: size, flexShrink: 0,
++        backgroundColor: 'currentColor', maskImage: `url("${GLYPHS[name]}")`,
++        WebkitMaskImage: `url("${GLYPHS[name]}")`, maskSize: '100% 100%',
++        WebkitMaskSize: '100% 100%', maskRepeat: 'no-repeat', WebkitMaskRepeat: 'no-repeat',
++      }} />;
++  }
+   return <img data-lcos-figma-glyph={name} className={className}
+     src={GLYPHS[name]} alt="" aria-hidden draggable={false} width={size} height={size}
+     style={{ display: 'block', width: size, height: size, flexShrink: 0 }} />;
+diff --git a/huabu/apps/web/src/lcos/ui/LcosSurfaceFeedbackView.tsx b/huabu/apps/web/src/lcos/ui/LcosSurfaceFeedbackView.tsx
+index fc2793c..48dcbcd 100644
+--- a/huabu/apps/web/src/lcos/ui/LcosSurfaceFeedbackView.tsx
++++ b/huabu/apps/web/src/lcos/ui/LcosSurfaceFeedbackView.tsx
+@@ -1,9 +1,11 @@
+-import { LcosButton } from './primitives/LcosButton';
+-// Figma 5391:357；七态是视觉输入，不是新的业务状态。
+-import { FigmaShellGlyph } from './FigmaShellGlyph';
+-
++// Figma 5391:357. Keep the primitive and optional action as separate visual surfaces.
+ import type { CSSProperties } from 'react';
++
++import { FigmaShellGlyph } from './FigmaShellGlyph';
+ import type { LcosFeedbackPresentation } from './LcosSurfaceFeedback';
++import { LcosButton } from './primitives/LcosButton';
++
++import './surface-feedback.css';
+ 
+ export interface LcosSurfaceFeedbackViewProps {
+   readonly presentation: LcosFeedbackPresentation;
+@@ -17,12 +19,18 @@ export interface LcosSurfaceFeedbackViewProps {
+ export function LcosSurfaceFeedbackView({ presentation, message, onAction,
+   actionLabel = '重试', actionDisabled = false, style }: LcosSurfaceFeedbackViewProps): React.JSX.Element {
+   return (
+-    <div role="status" data-lcos-family="surface-feedback" data-lcos-variant={presentation}
+-      data-lcos-surface-feedback={presentation} style={style}>
+-      <FigmaShellGlyph name={presentation} size={18} />
+-      <span data-lcos-feedback-message>{message}</span>
+-      {onAction && <LcosButton type="button" data-lcos-feedback-action disabled={actionDisabled}
+-        onClick={onAction}>{actionLabel}</LcosButton>}
++    <div role="status" aria-atomic="true" data-lcos-family="surface-feedback"
++      data-lcos-variant={presentation} data-lcos-surface-feedback={presentation} style={style}>
++      <span data-lcos-feedback-body>
++        <FigmaShellGlyph name={presentation} size={18} monochrome />
++        <span data-lcos-feedback-message>{message}</span>
++      </span>
++      {onAction !== undefined && (
++        <LcosButton type="button" appearance="oreo" variant="secondary"
++          data-lcos-feedback-action disabled={actionDisabled} onClick={onAction}>
++          {actionLabel}
++        </LcosButton>
++      )}
+     </div>
+   );
+ }
+diff --git a/huabu/apps/web/src/lcos/ui/families/LcosWindowChrome.tsx b/huabu/apps/web/src/lcos/ui/families/LcosWindowChrome.tsx
+index b05753c..d596e07 100644
+--- a/huabu/apps/web/src/lcos/ui/families/LcosWindowChrome.tsx
++++ b/huabu/apps/web/src/lcos/ui/families/LcosWindowChrome.tsx
+@@ -56,7 +56,7 @@ export function LcosWindowChrome({
+             aria-current={tab.selected ? 'true' : undefined}
+             onClick={() => onSelectTab?.(tab.value ?? tab.key)}
+           >
+-            {tab.label}
++            <span data-lcos-window-tab-label title={tab.label}>{tab.label}</span>
+           </LcosButton>
+         ))}</div>
+       ) : (
+diff --git a/huabu/apps/web/src/lcos/ui/families/lcos-hud-presentation.css b/huabu/apps/web/src/lcos/ui/families/lcos-hud-presentation.css
+index 88e3d4e..987ea5a 100644
+--- a/huabu/apps/web/src/lcos/ui/families/lcos-hud-presentation.css
++++ b/huabu/apps/web/src/lcos/ui/families/lcos-hud-presentation.css
+@@ -264,6 +264,7 @@
+   text-overflow: ellipsis;
+   cursor: pointer;
+ }
++[data-lcos-window-tab-label] { display: block; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+ [data-lcos-window-tab][data-lcos-variant='selected'] { background: var(--gen2-raised); color: var(--gen2-text); font-weight: 500; }
+ [data-lcos-window-tab]:focus-visible { outline: 2px solid var(--lcos-pin-violet); outline-offset: -2px; }
+ [data-lcos-window-actions] { display: flex; align-items: center; gap: 4px; flex: 0 1 auto; min-width: 0; max-width: calc(100% - 44px); }
+@@ -298,38 +299,6 @@
+ [data-lcos-window-icon-button]:disabled { opacity: 0.45; cursor: not-allowed; }
+ [data-lcos-window-icon-button]:focus-visible { outline: 2px solid var(--lcos-pin-violet); outline-offset: -2px; }
+ 
+-/* Feedback: exact exported 18px glyphs; 38px single-line silhouette, no artificial spinner or timer. */
+-[data-lcos-family='surface-feedback'] {
+-  display: inline-flex;
+-  align-items: center;
+-  box-sizing: border-box;
+-  gap: 8px;
+-  min-height: 38px;
+-  max-width: 100%;
+-  padding: 10px 12px;
+-  border: 0;
+-  border-radius: var(--lcos-radius-medium);
+-  background: var(--lcos-surface-elevated);
+-  color: var(--lcos-text-primary);
+-  font: 400 13px/16px var(--lcos-hud-font);
+-}
+-[data-lcos-feedback-message] { min-width: 0; overflow-wrap: anywhere; }
+-[data-lcos-feedback-action] {
+-  appearance: none;
+-  align-self: center;
+-  flex: none;
+-  min-height: 28px;
+-  padding: 2px 8px;
+-  border: 0;
+-  border-radius: var(--lcos-radius-capsule);
+-  font: 500 11px/18px var(--lcos-hud-font);
+-  color: var(--gen2-text);
+-  background: transparent;
+-  cursor: pointer;
+-}
+-[data-lcos-feedback-action]:hover:not(:disabled) { background: var(--gen2-raised); }
+-[data-lcos-feedback-action]:disabled { opacity: 0.45; cursor: not-allowed; }
+-
+ /* Shell identity: preserve the production Link, not a second navigation component. */
+ [data-lcos-project-identity] {
+   display: inline-flex;
+@@ -440,7 +409,6 @@
+   [data-lcos-railway-item] { width: 44px; height: 44px; }
+   [data-lcos-pin-count-mark] { opacity: 1; }
+   [data-lcos-window-icon-button] { width: 44px; }
+-  [data-lcos-feedback-action] { min-height: 44px; }
+ }
+ @media (prefers-reduced-motion: reduce) {
+   [data-lcos-family='navigator-island'], [data-lcos-family='railway'],
+diff --git a/huabu/apps/web/src/lcos/ui/professional/ReaderContentTabsView.test.tsx b/huabu/apps/web/src/lcos/ui/professional/ReaderContentTabsView.test.tsx
+new file mode 100644
+index 0000000..6b8520a
+--- /dev/null
++++ b/huabu/apps/web/src/lcos/ui/professional/ReaderContentTabsView.test.tsx
+@@ -0,0 +1,88 @@
++// @vitest-environment happy-dom
++import { act } from 'react';
++import type { ReactNode } from 'react';
++import { createRoot } from 'react-dom/client';
++import type { Root } from 'react-dom/client';
++import { afterEach, describe, expect, it, vi } from 'vitest';
++
++import { LcosSurfaceFeedbackView } from '../LcosSurfaceFeedbackView';
++import { LcosWindowChrome } from '../families/LcosWindowChrome';
++import { ReaderContentTabsView } from './ReaderContentTabsView';
++import { ReaderGroupView } from './ReaderGroupView';
++
++let root: Root | undefined;
++let host: HTMLDivElement | undefined;
++async function render(node: ReactNode): Promise<HTMLDivElement> {
++  host = document.createElement('div');
++  document.body.append(host);
++  root = createRoot(host);
++  await act(async () => root?.render(node));
++  return host;
++}
++afterEach(async () => {
++  if (root) await act(async () => root?.unmount());
++  host?.remove();
++  root = undefined;
++  host = undefined;
++});
++
++const items = [
++  { id: 'a', label: '创意简报.pdf', selected: true },
++  { id: 'b', label: '访谈节选', selected: false },
++];
++describe('Reader instance skin and existing owner boundaries', () => {
++  it('forwards the exact content id without selecting locally', async () => {
++    const action = vi.fn();
++    const h = await render(<ReaderContentTabsView label="正文" items={items} onActivate={action} />);
++    await act(async () => h.querySelector<HTMLButtonElement>('[data-lcos-reader-content-tab="b"]')?.click());
++    expect(action).toHaveBeenCalledTimes(1);
++    expect(action).toHaveBeenCalledWith('b');
++    expect(h.querySelector('[data-selected="true"]')?.getAttribute('data-lcos-reader-content-tab')).toBe('a');
++  });
++  it('does not dispatch disabled content', async () => {
++    const action = vi.fn();
++    const h = await render(<ReaderContentTabsView label="正文" items={[{ ...items[0]!, disabled: true }]} onActivate={action} />);
++    await act(async () => h.querySelector<HTMLButtonElement>('button')?.click());
++    expect(action).not.toHaveBeenCalled();
++  });
++  it('does not manufacture a tab when empty', async () => {
++    const h = await render(<ReaderContentTabsView label="正文" items={[]} onActivate={vi.fn()} />);
++    expect(h.querySelectorAll('button')).toHaveLength(0);
++  });
++  it('preserves legacy opaque tabs when both entry points are supplied', async () => {
++    const h = await render(<ReaderGroupView presentation="single" activeGroupId="g" groups={[{
++      id: 'g', label: '正文', content: <p>正文</p>, tabs: <button data-legacy>原标签</button>,
++      contentTabs: { label: '不应渲染', items, onActivate: vi.fn() },
++    }]} />);
++    expect(h.querySelector('[data-legacy]')).not.toBeNull();
++    expect(h.querySelector('[data-lcos-reader-content-tabs]')).toBeNull();
++  });
++  it('renders the descriptor skin only when explicitly supplied', async () => {
++    const h = await render(<ReaderGroupView presentation="split" activeGroupId="g" groups={[{
++      id: 'g', label: '正文', content: <p>正文</p>, contentTabs: { label: '正文材料', items, onActivate: vi.fn() },
++    }]} />);
++    expect(h.querySelectorAll('[data-lcos-reader-content-tab]')).toHaveLength(2);
++  });
++  it('forwards window instance value even when two tabs share a kind', async () => {
++    const action = vi.fn();
++    const h = await render(<LcosWindowChrome layout="分组" title="阅读" tabs={[
++      { key: 'reader', value: 'one', label: '第一份' }, { key: 'reader', value: 'two', label: '第二份' },
++    ]} onSelectTab={action} />);
++    await act(async () => h.querySelector<HTMLButtonElement>('[data-lcos-window-tab-value="two"]')?.click());
++    expect(action).toHaveBeenCalledTimes(1);
++    expect(action).toHaveBeenCalledWith('two');
++  });
++  it('keeps a real action outside the lightweight feedback body', async () => {
++    const action = vi.fn();
++    const h = await render(<LcosSurfaceFeedbackView presentation="error" message="读取失败" onAction={action} />);
++    expect(h.querySelector('[data-lcos-feedback-body] button')).toBeNull();
++    await act(async () => h.querySelector<HTMLButtonElement>('[data-lcos-feedback-action]')?.click());
++    expect(action).toHaveBeenCalledTimes(1);
++    expect(h.querySelector('[data-lcos-surface-feedback="error"]')).not.toBeNull();
++  });
++  it('leaves feedback without a callback non-actionable', async () => {
++    const h = await render(<LcosSurfaceFeedbackView presentation="disabled" message="没有读取权限" />);
++    expect(h.querySelectorAll('button')).toHaveLength(0);
++    expect(h.textContent).toContain('没有读取权限');
++  });
++});
+diff --git a/huabu/apps/web/src/lcos/ui/professional/ReaderContentTabsView.tsx b/huabu/apps/web/src/lcos/ui/professional/ReaderContentTabsView.tsx
+new file mode 100644
+index 0000000..62f3623
+--- /dev/null
++++ b/huabu/apps/web/src/lcos/ui/professional/ReaderContentTabsView.tsx
+@@ -0,0 +1,45 @@
++import type { ReactNode } from 'react';
++
++import { LcosButton } from '../primitives/LcosButton';
++
++import './reader-content-tabs.css';
++
++export interface ReaderContentTab {
++  readonly id: string;
++  readonly label: string;
++  readonly selected: boolean;
++  readonly disabled?: boolean;
++  readonly disabledReason?: string;
++  /** The existing reader/group owner may provide a panel id. */
++  readonly panelId?: string;
++}
++
++export interface ReaderContentTabsViewProps {
++  readonly label: string;
++  readonly items: readonly ReaderContentTab[];
++  readonly onActivate: (id: string) => void;
++  /** Owner-supplied state such as an empty message; never fabricate a file. */
++  readonly emptyContent?: ReactNode;
++}
++
++/** Figma 5388:27477/80, Button instances with 104×30, 12/18 regular overrides.
++ * Buttons remain native and controlled. No local tab selection, group, or history state.
++ * Keep native Tab/Enter/Space rather than inventing a second roving-focus controller.
++ */
++export function ReaderContentTabsView({ label, items, onActivate,
++  emptyContent = null }: ReaderContentTabsViewProps): React.JSX.Element {
++  return (
++    <nav className="lcos-reader-content-tabs" aria-label={label} data-lcos-reader-content-tabs>
++      {items.length === 0 ? emptyContent : items.map((item) => (
++        <LcosButton key={item.id} type="button" appearance="oreo"
++          variant={item.selected ? 'primary' : 'secondary'}
++          data-lcos-reader-content-tab={item.id} data-selected={item.selected ? 'true' : undefined}
++          disabled={item.disabled} aria-current={item.selected ? 'page' : undefined}
++          aria-controls={item.panelId} title={item.disabledReason ?? item.label}
++          onClick={() => onActivate(item.id)}>
++          {item.label}
++        </LcosButton>
++      ))}
++    </nav>
++  );
++}
+diff --git a/huabu/apps/web/src/lcos/ui/professional/ReaderGroupView.tsx b/huabu/apps/web/src/lcos/ui/professional/ReaderGroupView.tsx
+index 8e15133..e28d33d 100644
+--- a/huabu/apps/web/src/lcos/ui/professional/ReaderGroupView.tsx
++++ b/huabu/apps/web/src/lcos/ui/professional/ReaderGroupView.tsx
+@@ -1,5 +1,8 @@
+ import type { ReactNode } from 'react';
+ 
++import { ReaderContentTabsView } from './ReaderContentTabsView';
++import type { ReaderContentTabsViewProps } from './ReaderContentTabsView';
++
+ import './professional-reading.css';
+ 
+ export interface ReaderGroupPresentation {
+@@ -8,6 +11,8 @@ export interface ReaderGroupPresentation {
+   readonly content: ReactNode;
+   /** Existing window/group owner supplies the real tabs and actions, if any. */
+   readonly tabs?: ReactNode;
++  /** Explicit descriptor seam; legacy opaque tabs keep priority and are never parsed. */
++  readonly contentTabs?: ReaderContentTabsViewProps;
+   readonly footer?: ReactNode;
+ }
+ 
+@@ -43,7 +48,13 @@ export function ReaderGroupView({
+             hidden={presentation === 'single' && group.id !== activeGroupId}
+             className="lcos-reader-group"
+           >
+-            {group.tabs === undefined ? null : <div className="lcos-reader-group-tabs">{group.tabs}</div>}
++            {group.tabs !== undefined ? (
++              <div className="lcos-reader-group-tabs">{group.tabs}</div>
++            ) : group.contentTabs !== undefined ? (
++              <div className="lcos-reader-group-tabs">
++                <ReaderContentTabsView {...group.contentTabs} />
++              </div>
++            ) : null}
+             <div className="lcos-reader-group-content">{group.content}</div>
+             {group.footer === undefined ? null : <footer className="lcos-reader-group-footer">{group.footer}</footer>}
+           </section>
+diff --git a/huabu/apps/web/src/lcos/ui/professional/professional-reading.css b/huabu/apps/web/src/lcos/ui/professional/professional-reading.css
+index 78444e0..c0b34cb 100644
+--- a/huabu/apps/web/src/lcos/ui/professional/professional-reading.css
++++ b/huabu/apps/web/src/lcos/ui/professional/professional-reading.css
+@@ -97,7 +97,7 @@
+ .lcos-reader-group[hidden] { display: none; }
+ .lcos-reader-group + .lcos-reader-group { border-inline-start: 1px solid var(--gen2-border); }
+ [data-reader-group-layout='single'] .lcos-reader-group { border-inline-start: 0; }
+-.lcos-reader-group-tabs, .lcos-reader-group-selector { display: flex; align-items: center; gap: 6px; padding: 12px 18px; overflow-x: auto; }
++.lcos-reader-group-tabs, .lcos-reader-group-selector { box-sizing: border-box; flex: none; display: flex; align-items: center; gap: 6px; padding: 12px 18px; overflow-x: auto; }
+ .lcos-reader-group-content { display: flex; flex-direction: column; min-inline-size: 0; min-block-size: 0; flex: 1; overflow: auto; padding: 24px 32px; }
+ .lcos-reader-group-footer { padding: 12px 18px 24px; }
+ @container (max-width: 620px) {
+@@ -117,3 +117,6 @@
+ .lcos-reader-richtext :is(h1, h2, h3) { margin-block: 0 18px; }
+ .lcos-reader-richtext blockquote { margin-block: 0; }
+ .lcos-reader-body, .lcos-reader-group { text-rendering: optimizeLegibility; }
++
++/* Typed content tabs own their one horizontal scroll rail, not a nested one. */
++.lcos-reader-group-tabs:has(> [data-lcos-reader-content-tabs]) { overflow: visible; }
+diff --git a/huabu/apps/web/src/lcos/ui/professional/reader-content-tabs.css b/huabu/apps/web/src/lcos/ui/professional/reader-content-tabs.css
+new file mode 100644
+index 0000000..0d6c68c
+--- /dev/null
++++ b/huabu/apps/web/src/lcos/ui/professional/reader-content-tabs.css
+@@ -0,0 +1,56 @@
++/* Actual Reader Button INSTANCE overrides; not the generic Button default.
++ * Preserve 44px native hit-height. Figma's 30px painted face is centered inside it;
++ * the resulting row is 10px taller than the static 34px Figma label frame. */
++.lcos-reader-content-tabs {
++  display: flex;
++  align-items: center;
++  gap: 6px;
++  box-sizing: border-box;
++  min-inline-size: 0;
++  max-inline-size: 100%;
++  min-block-size: 44px;
++  overflow-x: auto;
++  overscroll-behavior-inline: contain;
++  scrollbar-width: thin;
++  scroll-padding-inline: 2px;
++}
++.lcos-reader-content-tabs [data-lcos-reader-content-tab] {
++  --lcos-control-face-height: 30px;
++  --lcos-control-font: 'Noto Sans SC';
++  --lcos-control-font-size: 12px;
++  --lcos-control-line-height: 18px;
++  --lcos-control-font-weight: 400;
++  --oreo-fill: var(--gen2-surface);
++  --oreo-ink: var(--gen2-text);
++  --oreo-border: var(--gen2-border);
++  flex: 0 0 104px;
++  inline-size: 104px;
++  min-block-size: 44px;
++  padding: 0;
++  border: 0;
++  border-radius: 0;
++  opacity: 1;
++}
++.lcos-reader-content-tabs [data-lcos-reader-content-tab][data-selected='true'] {
++  --oreo-fill: var(--gen2-text);
++  --oreo-ink: var(--gen2-surface);
++  --oreo-border: transparent;
++}
++.lcos-reader-content-tabs [data-lcos-reader-content-tab] > .lcos-oreo-face {
++  justify-content: flex-start;
++  block-size: 30px;
++  padding: 6px 10px;
++  border-radius: var(--lcos-radius-control, 8px);
++}
++.lcos-reader-content-tabs .lcos-oreo-content { max-inline-size: 100%; }
++/* Disabled is a supplied accessibility state, not a new Reader Figma variant. */
++.lcos-reader-content-tabs [data-lcos-reader-content-tab]:disabled {
++  --oreo-fill: var(--lcos-surface-elevated);
++  --oreo-ink: var(--lcos-color-text-disabled);
++  --oreo-border: var(--gen2-border);
++}
++.lcos-reader-content-tabs [data-lcos-reader-content-tab]:disabled > .lcos-oreo-face { opacity: 1; }
++.lcos-reader-content-tabs [data-lcos-reader-content-tab]:focus-visible {
++  outline: 2px solid var(--gen2-accent);
++  outline-offset: -2px;
++}
+diff --git a/huabu/apps/web/src/lcos/ui/surface-feedback.css b/huabu/apps/web/src/lcos/ui/surface-feedback.css
+new file mode 100644
+index 0000000..4487556
+--- /dev/null
++++ b/huabu/apps/web/src/lcos/ui/surface-feedback.css
+@@ -0,0 +1,37 @@
++/* Seven actual variants of Figma 5391:357 share this surface.
++ * 38px = 10 + max(18px glyph, 16px text) + 10. Width is content-driven.
++ * Optional real actions are an Oreo composition, not an invented eighth variant. */
++[data-lcos-family='surface-feedback'] {
++  display: inline-flex;
++  flex-wrap: wrap;
++  align-items: center;
++  gap: var(--lcos-space-8, 8px);
++  box-sizing: border-box;
++  min-inline-size: 0;
++  max-inline-size: 100%;
++  color: var(--lcos-text-primary);
++  font: 400 13px/16px var(--lcos-hud-font, 'Noto Sans SC', sans-serif);
++}
++[data-lcos-feedback-body] {
++  display: inline-flex;
++  align-items: center;
++  gap: var(--lcos-space-8, 8px);
++  min-inline-size: 0;
++  max-inline-size: 100%;
++  min-block-size: 38px;
++  box-sizing: border-box;
++  padding: 10px 12px;
++  border: 0;
++  border-radius: var(--lcos-radius-medium, 16px);
++  background: var(--lcos-surface-elevated);
++  color: inherit;
++}
++[data-lcos-feedback-message] { min-inline-size: 0; overflow-wrap: anywhere; }
++/* Existing HUD image filters do not apply to this exact alpha mask. */
++[data-lcos-feedback-body] > [data-lcos-glyph-monochrome] { filter: none; }
++[data-lcos-feedback-action] { flex: 0 1 auto; max-inline-size: 100%; }
++[data-lcos-feedback-action] .lcos-oreo-label { white-space: normal; overflow-wrap: anywhere; }
++@media (forced-colors: active) {
++  [data-lcos-feedback-body] { outline: 1px solid CanvasText; color: CanvasText; }
++  [data-lcos-feedback-body] > [data-lcos-glyph-monochrome] { forced-color-adjust: none; background-color: CanvasText; }
++}

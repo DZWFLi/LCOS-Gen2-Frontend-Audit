@@ -1,0 +1,1561 @@
+{
+  "date": "2026-09-26",
+  "items": [
+    {
+      "id": "N01",
+      "name": "物种唯一生产接缝与原生机械保留",
+      "figma": [
+        {
+          "pageId": "5235:49",
+          "pageName": "10 / Gen2 · 通透玻璃与铝材对照",
+          "nodeId": "5388:96",
+          "name": "统一主稿 / 主画布"
+        }
+      ],
+      "productionPaths": [
+        "E:\\TRAE项目\\LCOS0.1收口\\LCOS_GEN2_GUI_RECOVERY_20260926\\huabu\\apps\\web\\src\\lcos\\useLcosCanvasProps.tsx",
+        "E:\\TRAE项目\\LCOS0.1收口\\LCOS_GEN2_GUI_RECOVERY_20260926\\huabu\\apps\\web\\src\\lcos\\nodes\\createLcosNodePresentationSeam.ts",
+        "E:\\TRAE项目\\LCOS0.1收口\\LCOS_GEN2_GUI_RECOVERY_20260926\\huabu\\apps\\web\\src\\lcos\\nodes\\lcosNodeCardRegistry.ts"
+      ],
+      "date": "2026-09-26",
+      "status": "已修主要回归；保留唯一接缝",
+      "implemented": "真实 node seam 未另建 Canvas；新增先读 canonical 绑定身份、随后原 reconcile 描述、原 store 原子替换。首次身份未就绪使用原 skeleton；原生自由节点在成功空列表后立即开放。",
+      "remaining": "新投影在 reconcile 中才产生的所有时序仍需更大项目覆盖；不把十节点 fixture 当任意规模证明。",
+      "verification": "27 项身份/接缝/caller 行为测试；实际主画布初载逐帧 nativeVisible=0，GET失败后重试恢复。",
+      "evidence": [
+        "E:\\TRAE项目\\LCOS0.1收口\\GUI全量对齐_20260926\\nodes-first-load-implementation.md"
+      ],
+      "confidence": "按已述源码、行为测试和实际浏览器证据分别记载；非全部验收通过"
+    },
+    {
+      "id": "N02",
+      "name": "大字文本 / 近场阅读表面",
+      "figma": [
+        {
+          "nodeId": "5388:102",
+          "pageId": "5235:49",
+          "note": "主稿子节点；在结构分片中查精确父级"
+        },
+        {
+          "pageId": "5151:49",
+          "pageName": "07 / Gen2 · 信息层级与细节",
+          "nodeId": "5152:503",
+          "name": "03 · 近距离 / 文字原位阅读"
+        }
+      ],
+      "productionPaths": [
+        "E:\\TRAE项目\\LCOS0.1收口\\LCOS_GEN2_GUI_RECOVERY_20260926\\huabu\\apps\\web\\src\\lcos\\ui\\source\\TextSourceView.tsx",
+        "E:\\TRAE项目\\LCOS0.1收口\\LCOS_GEN2_GUI_RECOVERY_20260926\\huabu\\apps\\web\\src\\lcos\\ui\\source\\source-presentation.css",
+        "E:\\TRAE项目\\LCOS0.1收口\\LCOS_GEN2_GUI_RECOVERY_20260926\\huabu\\apps\\web\\src\\lcos\\nodes\\LcosSpeciesBodies.tsx"
+      ],
+      "date": "2026-09-26",
+      "status": "已修层级；长文数据仍有缺口",
+      "implemented": "文本按现有几何和 zoom 调整字号；文档四档使用真实首句/片段，摘要不再挤满小字，最小屏幕字级与正文槽裁剪生效。",
+      "remaining": "上游 buildContentPreview 仍压缩空白且截取160字；reading不能冒充全文，正文继续用真实Reader。",
+      "verification": "LOD/材料31项；37%/53%/100%真实截图；长文整段待补真实内容供给。",
+      "evidence": [
+        "E:\\TRAE项目\\LCOS0.1收口\\GUI全量对齐_20260926\\nodes-lod-implementation.md"
+      ],
+      "confidence": "按已述源码、行为测试和实际浏览器证据分别记载；非全部验收通过"
+    },
+    {
+      "id": "N03",
+      "name": "原生自由文本原位编辑 / 托管材料只读差异",
+      "figma": [
+        {
+          "pageId": "5036:49",
+          "pageName": "03 / Gen2 · 第一稿全稿",
+          "nodeId": "5046:52",
+          "name": "04 / 就地文本与生成输入"
+        },
+        {
+          "pageId": "5185:1051",
+          "pageName": "08 / Gen2 · 第二轮基础操作",
+          "nodeId": "5188:635",
+          "name": "07 · 原位编辑与焦点"
+        },
+        {
+          "pageId": "5185:1051",
+          "pageName": "08 / Gen2 · 第二轮基础操作",
+          "nodeId": "5191:789",
+          "name": "12 · 只读与可用范围"
+        }
+      ],
+      "productionPaths": [
+        "E:\\TRAE项目\\LCOS0.1收口\\LCOS_GEN2_GUI_RECOVERY_20260926\\huabu\\apps\\web\\src\\lcos\\nodes\\LcosSpeciesBodies.tsx",
+        "E:\\TRAE项目\\LCOS0.1收口\\LCOS_GEN2_GUI_RECOVERY_20260926\\apps\\web-gen2\\src\\presentation\\visualFamily.ts"
+      ],
+      "date": "2026-09-26",
+      "status": "已保留职责；完整编辑回合待补证",
+      "implemented": "未绑定自由节点仍回原生编辑；受管材料保持只读投影，双击精确 Reader；重试/媒体控件的双击不会误开窗口。",
+      "remaining": "未新增 canonical 原位编辑能力；自由文本IME/撤销/多选全回合未逐项浏览器验证。",
+      "verification": "真实 seam/caller 回归；单击不打开，双击Reader目标准确。",
+      "evidence": [
+        "E:\\TRAE项目\\LCOS0.1收口\\GUI全量对齐_20260926\\nodes-implementation.md"
+      ],
+      "confidence": "按已述源码、行为测试和实际浏览器证据分别记载；非全部验收通过"
+    },
+    {
+      "id": "N04",
+      "name": "同对象文本 / 大纲 / 导图三读法",
+      "figma": [
+        {
+          "pageId": "5095:49",
+          "pageName": "05 / Gen2 · 第二轮空间与角色",
+          "nodeId": "5101:853",
+          "name": "07 / 文本 · 大纲读法"
+        },
+        {
+          "pageId": "5095:49",
+          "pageName": "05 / Gen2 · 第二轮空间与角色",
+          "nodeId": "5101:1048",
+          "name": "08 / 文本 · 导图读法"
+        }
+      ],
+      "productionPaths": [
+        "E:\\TRAE项目\\LCOS0.1收口\\LCOS_GEN2_GUI_RECOVERY_20260926\\huabu\\apps\\web\\src\\lcos\\nodes\\LcosSpeciesBodies.tsx",
+        "E:\\TRAE项目\\LCOS0.1收口\\LCOS_GEN2_GUI_RECOVERY_20260926\\apps\\web-gen2\\src\\presentation\\nodePresentation.ts"
+      ],
+      "date": "2026-09-26",
+      "status": "未实现",
+      "implemented": "保留真实文本/材料，不伪造大纲或导图状态。",
+      "remaining": "同一对象在正文、大纲、导图间切换的实际 producer/命令/视图未完成。",
+      "verification": "仅源码盘点；无运行验收。",
+      "evidence": [
+        "E:\\TRAE项目\\LCOS0.1收口\\GUI全量对齐_20260926\\inventory-nodes.md"
+      ],
+      "confidence": "按已述源码、行为测试和实际浏览器证据分别记载；非全部验收通过"
+    },
+    {
+      "id": "N05",
+      "name": "文档 / PDF / 演示封面物种",
+      "figma": [
+        {
+          "nodeId": "5388:106",
+          "pageId": "5235:49",
+          "note": "主稿子节点；在结构分片中查精确父级"
+        },
+        {
+          "pageId": "5095:49",
+          "pageName": "05 / Gen2 · 第二轮空间与角色",
+          "nodeId": "5103:1526",
+          "name": "13 / 文件 · 阅读展开"
+        }
+      ],
+      "productionPaths": [
+        "E:\\TRAE项目\\LCOS0.1收口\\LCOS_GEN2_GUI_RECOVERY_20260926\\huabu\\apps\\web\\src\\lcos\\ui\\source\\DocumentSourceView.tsx",
+        "E:\\TRAE项目\\LCOS0.1收口\\LCOS_GEN2_GUI_RECOVERY_20260926\\apps\\web-gen2\\src\\presentation\\visualFamily.ts"
+      ],
+      "date": "2026-09-26",
+      "status": "PDF已接；Office/PPT待实现和补证",
+      "implemented": "PDF使用真实字节、同PDF.js worker、真实第一页/页数/失败恢复；专业Reader按精确revision取fileRecordId。",
+      "remaining": "当前fixture无PDF，真实PDF浏览器未验；Office/PPT真页面缺当前renderer，不能用假封面代替。",
+      "verification": "PDF组件/字节落成/Reader精确revision单测；尚无真实PDF E2E。",
+      "evidence": [
+        "E:\\TRAE项目\\LCOS0.1收口\\GUI全量对齐_20260926\\nodes-implementation.md"
+      ],
+      "confidence": "按已述源码、行为测试和实际浏览器证据分别记载；非全部验收通过"
+    },
+    {
+      "id": "N06",
+      "name": "图像主图 / 缩略图与真实比例",
+      "figma": [
+        {
+          "nodeId": "5388:98",
+          "pageId": "5235:49",
+          "note": "主稿子节点；在结构分片中查精确父级"
+        },
+        {
+          "nodeId": "5388:111",
+          "pageId": "5235:49",
+          "note": "主稿子节点；在结构分片中查精确父级"
+        },
+        {
+          "pageId": "5151:49",
+          "pageName": "07 / Gen2 · 信息层级与细节",
+          "nodeId": "5152:753",
+          "name": "04 · 近距离 / 图像原位操作"
+        }
+      ],
+      "productionPaths": [
+        "E:\\TRAE项目\\LCOS0.1收口\\LCOS_GEN2_GUI_RECOVERY_20260926\\huabu\\apps\\web\\src\\lcos\\ui\\source\\ImageSourceView.tsx",
+        "E:\\TRAE项目\\LCOS0.1收口\\LCOS_GEN2_GUI_RECOVERY_20260926\\huabu\\apps\\web\\src\\lcos\\ui\\source\\source-presentation.css",
+        "E:\\TRAE项目\\LCOS0.1收口\\LCOS_GEN2_GUI_RECOVERY_20260926\\huabu\\apps\\web\\src\\lcos\\nodes\\stageProjectedSources.ts"
+      ],
+      "date": "2026-09-26",
+      "status": "本轮修复；边界组合待补证",
+      "implemented": "图片走已有PreviewMedia，contain保留实际比例；失败有重试，新src清理旧错误；重试双击不误开Reader。",
+      "remaining": "横竖超长/透明图与全部窄屏组合未穷尽。",
+      "verification": "真实图主画布可见；error→retry→load与Reader入口回归。",
+      "evidence": [
+        "E:\\TRAE项目\\LCOS0.1收口\\GUI全量对齐_20260926\\nodes-implementation.md"
+      ],
+      "confidence": "按已述源码、行为测试和实际浏览器证据分别记载；非全部验收通过"
+    },
+    {
+      "id": "N07",
+      "name": "音频波形、时长、播放与scrub",
+      "figma": [
+        {
+          "nodeId": "5388:121",
+          "pageId": "5235:49",
+          "note": "主稿子节点；在结构分片中查精确父级"
+        },
+        {
+          "pageId": "5095:49",
+          "pageName": "05 / Gen2 · 第二轮空间与角色",
+          "nodeId": "5122:3070",
+          "name": "29 / 音频 · 阅读与摘取"
+        }
+      ],
+      "productionPaths": [
+        "E:\\TRAE项目\\LCOS0.1收口\\LCOS_GEN2_GUI_RECOVERY_20260926\\huabu\\apps\\web\\src\\lcos\\ui\\source\\AudioSourceView.tsx",
+        "E:\\TRAE项目\\LCOS0.1收口\\LCOS_GEN2_GUI_RECOVERY_20260926\\huabu\\apps\\web\\src\\lcos\\nodes\\source\\AudioSourceMorphology.tsx",
+        "E:\\TRAE项目\\LCOS0.1收口\\LCOS_GEN2_GUI_RECOVERY_20260926\\huabu\\apps\\web\\src\\lcos\\nodes\\source\\sourceFigmaGeometry.ts"
+      ],
+      "date": "2026-09-26",
+      "status": "真实播放已接",
+      "implemented": "audio原生播放/暂停/metadata/seek；只对真正可解码字节生成声波，无源不画装饰波形。",
+      "remaining": "跨源拒绝/损坏文件及长音频浏览器全回合待补；不声称全媒体格式支持。",
+      "verification": "fixture38秒实际音频点击变暂停；进度/seek/error组件回归。",
+      "evidence": [
+        "E:\\TRAE项目\\LCOS0.1收口\\GUI全量对齐_20260926\\nodes-implementation.md"
+      ],
+      "confidence": "按已述源码、行为测试和实际浏览器证据分别记载；非全部验收通过"
+    },
+    {
+      "id": "N08",
+      "name": "视频节点与帧/片段识别",
+      "figma": [
+        {
+          "pageId": "5095:49",
+          "pageName": "05 / Gen2 · 第二轮空间与角色",
+          "nodeId": "5122:3305",
+          "name": "30 / 视频 · 帧与片段"
+        },
+        {
+          "pageId": "5036:49",
+          "pageName": "03 / Gen2 · 第一稿全稿",
+          "nodeId": "5046:71",
+          "name": "23 / 专业媒体与网页预览"
+        }
+      ],
+      "productionPaths": [
+        "E:\\TRAE项目\\LCOS0.1收口\\LCOS_GEN2_GUI_RECOVERY_20260926\\huabu\\apps\\web\\src\\lcos\\nodes\\source\\SourceMorphology.tsx"
+      ],
+      "date": "2026-09-26",
+      "status": "生产接缝已接；实媒体端到端待补",
+      "implemented": "原生VideoNode薄接同一seam，视频使用真实src和原生controls；mark不解码；失败可重试。",
+      "remaining": "fixture无真实视频；帧片段、区间引用的完整数据/交互未完成。",
+      "verification": "真实URL/失败恢复/控件手势回归；无真实视频E2E。",
+      "evidence": [
+        "E:\\TRAE项目\\LCOS0.1收口\\GUI全量对齐_20260926\\nodes-implementation.md"
+      ],
+      "confidence": "按已述源码、行为测试和实际浏览器证据分别记载；非全部验收通过"
+    },
+    {
+      "id": "N09",
+      "name": "网页 / 链接物种与站点身份",
+      "figma": [
+        {
+          "pageId": "5095:49",
+          "pageName": "05 / Gen2 · 第二轮空间与角色",
+          "nodeId": "5122:3442",
+          "name": "31 / 网页 · 阅读与引用"
+        },
+        {
+          "pageId": "5036:49",
+          "pageName": "03 / Gen2 · 第一稿全稿",
+          "nodeId": "5051:4623",
+          "name": "33 / 网页阅读与摘录"
+        }
+      ],
+      "productionPaths": [
+        "E:\\TRAE项目\\LCOS0.1收口\\LCOS_GEN2_GUI_RECOVERY_20260926\\huabu\\apps\\web\\src\\lcos\\nodes\\source\\SourceMorphology.tsx",
+        "E:\\TRAE项目\\LCOS0.1收口\\LCOS_GEN2_GUI_RECOVERY_20260926\\apps\\web-gen2\\src\\presentation\\visualFamily.ts"
+      ],
+      "date": "2026-09-26",
+      "status": "生产接缝已接；端到端待补",
+      "implemented": "原生WebNode薄接同一seam，复用getWebPreview与hydration调度；真实标题/摘要/图/原文URL；无URL诚实空态。",
+      "remaining": "fixture无网页，真实远端网页与鉴权/慢响应浏览器回合未验。",
+      "verification": "接口参数/失败重试/mark不请求回归；无真实网页E2E。",
+      "evidence": [
+        "E:\\TRAE项目\\LCOS0.1收口\\GUI全量对齐_20260926\\nodes-implementation.md"
+      ],
+      "confidence": "按已述源码、行为测试和实际浏览器证据分别记载；非全部验收通过"
+    },
+    {
+      "id": "N10",
+      "name": "未知文件与源缺失反馈",
+      "figma": [
+        {
+          "pageId": "5185:1051",
+          "pageName": "08 / Gen2 · 第二轮基础操作",
+          "nodeId": "5191:789",
+          "name": "12 · 只读与可用范围"
+        },
+        {
+          "pageId": "5185:1051",
+          "pageName": "08 / Gen2 · 第二轮基础操作",
+          "nodeId": "5188:1395",
+          "name": "10 · 部分导入失败"
+        }
+      ],
+      "productionPaths": [
+        "E:\\TRAE项目\\LCOS0.1收口\\LCOS_GEN2_GUI_RECOVERY_20260926\\huabu\\apps\\web\\src\\lcos\\ui\\source\\SourceFeedbackSlot.tsx",
+        "E:\\TRAE项目\\LCOS0.1收口\\LCOS_GEN2_GUI_RECOVERY_20260926\\huabu\\apps\\web\\src\\lcos\\ui\\source\\sourceViewTypes.ts",
+        "E:\\TRAE项目\\LCOS0.1收口\\LCOS_GEN2_GUI_RECOVERY_20260926\\huabu\\apps\\web\\src\\lcos\\nodes\\LcosSpeciesBodies.tsx"
+      ],
+      "date": "2026-09-26",
+      "status": "部分完成",
+      "implemented": "真实已绑定但无描述展示对象内容不可用与读取重试；图片/音频/视频/PDF/Web均不伪造成功内容。",
+      "remaining": "未知二进制、缺源与权限不足的全部文件族形态仍是通用fallback，未完成专门呈现。",
+      "verification": "bound loading和媒体失败回归；未知族只读盘点。",
+      "evidence": [
+        "E:\\TRAE项目\\LCOS0.1收口\\GUI全量对齐_20260926\\nodes-first-load-implementation.md"
+      ],
+      "confidence": "按已述源码、行为测试和实际浏览器证据分别记载；非全部验收通过"
+    },
+    {
+      "id": "N11",
+      "name": "生成中对象与运行状态机",
+      "figma": [
+        {
+          "pageId": "5198:49",
+          "pageName": "09 / Gen2 · 色彩层级与近场交互",
+          "nodeId": "5204:13842",
+          "name": "09 · 节点执行 · 局部反馈"
+        },
+        {
+          "pageId": "5185:1051",
+          "pageName": "08 / Gen2 · 第二轮基础操作",
+          "nodeId": "5191:1036",
+          "name": "13 · 任务失败与重试"
+        },
+        {
+          "pageId": "5136:49",
+          "pageName": "06 / Gen2 · 图标与光幕空间",
+          "nodeId": "5388:22998",
+          "name": "统一主稿 / 工作流现场"
+        }
+      ],
+      "productionPaths": [
+        "E:\\TRAE项目\\LCOS0.1收口\\LCOS_GEN2_GUI_RECOVERY_20260926\\huabu\\apps\\web\\src\\lcos\\nodes\\LcosSpeciesBodies.tsx",
+        "E:\\TRAE项目\\LCOS0.1收口\\LCOS_GEN2_GUI_RECOVERY_20260926\\apps\\web-gen2\\src\\presentation\\nodeSpecies.ts"
+      ],
+      "date": "2026-09-26",
+      "status": "部分完成",
+      "implemented": "Glyth运行态由真实会话projection驱动，running提供进度；材料sourceRunId不再被解释为假待审核。",
+      "remaining": "材料生成中的运行事实及结果审核状态并未全部进入每种body；不能由sourceRunId推断Draft/Current。",
+      "verification": "G02状态命令矩阵与实际thinking会话；生成审核未E2E。",
+      "evidence": [
+        "E:\\TRAE项目\\LCOS0.1收口\\GUI全量对齐_20260926\\glyth-g02-implementation.md"
+      ],
+      "confidence": "按已述源码、行为测试和实际浏览器证据分别记载；非全部验收通过"
+    },
+    {
+      "id": "N12",
+      "name": "生成结果Draft、Current与来源",
+      "figma": [
+        {
+          "pageId": "5095:49",
+          "pageName": "05 / Gen2 · 第二轮空间与角色",
+          "nodeId": "5122:2949",
+          "name": "28 / 结果 · 对照与采用"
+        },
+        {
+          "pageId": "5198:49",
+          "pageName": "09 / Gen2 · 色彩层级与近场交互",
+          "nodeId": "5204:13842",
+          "name": "09 · 节点执行 · 局部反馈"
+        }
+      ],
+      "productionPaths": [
+        "E:\\TRAE项目\\LCOS0.1收口\\LCOS_GEN2_GUI_RECOVERY_20260926\\huabu\\apps\\web\\src\\lcos\\nodes\\createLcosNodePresentationSeam.ts",
+        "E:\\TRAE项目\\LCOS0.1收口\\LCOS_GEN2_GUI_RECOVERY_20260926\\apps\\web-gen2\\src\\host\\projectionFacade.ts",
+        "E:\\TRAE项目\\LCOS0.1收口\\LCOS_GEN2_GUI_RECOVERY_20260926\\apps\\web-gen2\\src\\presentation\\nodeSpecies.ts",
+        "E:\\TRAE项目\\LCOS0.1收口\\LCOS_GEN2_GUI_RECOVERY_20260926\\huabu\\apps\\web\\src\\lcos\\nodes\\LcosSpeciesBodies.tsx"
+      ],
+      "date": "2026-09-26",
+      "status": "来源/本体修复；审核语义待补",
+      "implemented": "真实sourceRunId透传；生成图片/音视频等保留材料本体和Reader，不被纯文字生成卡替换。",
+      "remaining": "Draft/Current接受/修订/失败事实仍需现有producer提供，未画假审核控件。",
+      "verification": "生成图片真实seam/Reader目标回归。",
+      "evidence": [
+        "E:\\TRAE项目\\LCOS0.1收口\\GUI全量对齐_20260926\\nodes-implementation.md"
+      ],
+      "confidence": "按已述源码、行为测试和实际浏览器证据分别记载；非全部验收通过"
+    },
+    {
+      "id": "N13",
+      "name": "技能、决策、提示对象的独立形态",
+      "figma": [
+        {
+          "pageId": "5095:49",
+          "pageName": "05 / Gen2 · 第二轮空间与角色",
+          "nodeId": "5122:2365",
+          "name": "23 / 能力 · 编辑与装备"
+        },
+        {
+          "pageId": "5095:49",
+          "pageName": "05 / Gen2 · 第二轮空间与角色",
+          "nodeId": "5103:1798",
+          "name": "15 / 工作流 · 行动路径"
+        }
+      ],
+      "productionPaths": [
+        "E:\\TRAE项目\\LCOS0.1收口\\LCOS_GEN2_GUI_RECOVERY_20260926\\huabu\\apps\\web\\src\\lcos\\nodes\\LcosSpeciesBodies.tsx",
+        "E:\\TRAE项目\\LCOS0.1收口\\LCOS_GEN2_GUI_RECOVERY_20260926\\apps\\web-gen2\\src\\presentation\\nodeSpecies.ts",
+        "E:\\TRAE项目\\LCOS0.1收口\\LCOS_GEN2_GUI_RECOVERY_20260926\\huabu\\apps\\web\\src\\lcos\\nodes\\source\\SourceMorphology.tsx"
+      ],
+      "date": "2026-09-26",
+      "status": "未完成独立形态",
+      "implemented": "保留真实技能/决策/提示实体与既有入口。",
+      "remaining": "仍有generic卡形；技能/判断/执行步骤的独立轮廓、密度和细节尚未完整对稿。",
+      "verification": "源码盘点；不可用既有组件注册数充当完成。",
+      "evidence": [
+        "E:\\TRAE项目\\LCOS0.1收口\\GUI全量对齐_20260926\\inventory-nodes.md"
+      ],
+      "confidence": "按已述源码、行为测试和实际浏览器证据分别记载；非全部验收通过"
+    },
+    {
+      "id": "N14",
+      "name": "节点角标与ColorPin真实颜色成员",
+      "figma": [
+        {
+          "pageId": "5151:49",
+          "pageName": "07 / Gen2 · 信息层级与细节",
+          "nodeId": "5153:540",
+          "name": "06 · 彩色标 / 对象对应"
+        },
+        {
+          "nodeId": "5388:102",
+          "pageId": "5235:49",
+          "note": "主稿子节点；在结构分片中查精确父级"
+        },
+        {
+          "nodeId": "5388:98",
+          "pageId": "5235:49",
+          "note": "主稿子节点；在结构分片中查精确父级"
+        }
+      ],
+      "productionPaths": [
+        "E:\\TRAE项目\\LCOS0.1收口\\LCOS_GEN2_GUI_RECOVERY_20260926\\huabu\\apps\\web\\src\\lcos\\ui\\source\\TextSourceView.tsx",
+        "E:\\TRAE项目\\LCOS0.1收口\\LCOS_GEN2_GUI_RECOVERY_20260926\\huabu\\apps\\web\\src\\lcos\\ui\\source\\ImageSourceView.tsx",
+        "E:\\TRAE项目\\LCOS0.1收口\\LCOS_GEN2_GUI_RECOVERY_20260926\\huabu\\apps\\web\\src\\lcos\\nodes\\source\\SourceMarker.tsx",
+        "E:\\TRAE项目\\LCOS0.1收口\\LCOS_GEN2_GUI_RECOVERY_20260926\\huabu\\apps\\web\\src\\lcos\\pin\\LcosColorPinProvider.tsx"
+      ],
+      "date": "2026-09-26",
+      "status": "真实membership已接",
+      "implemented": "删除固定装饰Pin；NodeColorPinMarkers读canonical membership/definition/exact target；11px可见角标、24px热区、屏幕尺寸固定；Glyth也挂同组件。",
+      "remaining": "集合自定义形状与图标身份不是本次Pin角标接线的替代；完整配置跨视图一致性由导航域继续核验。",
+      "verification": "无membership无角标、entity/view区分、点击authoring回归；真实橙Pin可见。",
+      "evidence": [
+        "E:\\TRAE项目\\LCOS0.1收口\\GUI全量对齐_20260926\\nodes-implementation.md"
+      ],
+      "confidence": "按已述源码、行为测试和实际浏览器证据分别记载；非全部验收通过"
+    },
+    {
+      "id": "N15",
+      "name": "引用独立于选中，节点静默标识",
+      "figma": [
+        {
+          "pageId": "5185:1051",
+          "pageName": "08 / Gen2 · 第二轮基础操作",
+          "nodeId": "5187:431",
+          "name": "04 · 引用落点与原位保留"
+        },
+        {
+          "pageId": "5198:49",
+          "pageName": "09 / Gen2 · 色彩层级与近场交互",
+          "nodeId": "5229:1489",
+          "name": "13 · 引用选择 / 缩略预览与就近操作"
+        },
+        {
+          "pageId": "5198:49",
+          "pageName": "09 / Gen2 · 色彩层级与近场交互",
+          "nodeId": "5229:1753",
+          "name": "14 · 移除一份引用 / 保留输入"
+        }
+      ],
+      "productionPaths": [
+        "E:\\TRAE项目\\LCOS0.1收口\\LCOS_GEN2_GUI_RECOVERY_20260926\\huabu\\apps\\web\\src\\lcos\\lcosReferenceState.ts",
+        "E:\\TRAE项目\\LCOS0.1收口\\LCOS_GEN2_GUI_RECOVERY_20260926\\huabu\\apps\\web\\src\\lcos\\LcosHostOverlay.tsx",
+        "E:\\TRAE项目\\LCOS0.1收口\\LCOS_GEN2_GUI_RECOVERY_20260926\\huabu\\apps\\web\\src\\lcos\\nodes\\LcosSpeciesBodies.tsx",
+        "E:\\TRAE项目\\LCOS0.1收口\\LCOS_GEN2_GUI_RECOVERY_20260926\\huabu\\apps\\web\\src\\lcos\\navigation\\LcosActionArc.tsx"
+      ],
+      "date": "2026-09-26",
+      "status": "静默引用标已接",
+      "implemented": "NodeReferenceMarker只读显式草稿；撤销只移除引用不删节点、不改选中；Glyth与Portal共用。",
+      "remaining": "引用来源与复杂集合内成员跨视图完整回合仍需合并验证。",
+      "verification": "添加/撤引用保留实体回归；根域Composer键盘与引用条验证另见其记录。",
+      "evidence": [
+        "E:\\TRAE项目\\LCOS0.1收口\\GUI全量对齐_20260926\\nodes-implementation.md"
+      ],
+      "confidence": "按已述源码、行为测试和实际浏览器证据分别记载；非全部验收通过"
+    },
+    {
+      "id": "N16",
+      "name": "关系活边、目标容差与远近权重",
+      "figma": [
+        {
+          "pageId": "5095:49",
+          "pageName": "05 / Gen2 · 第二轮空间与角色",
+          "nodeId": "5122:2664",
+          "name": "26 / 上下文 · 关系与来源"
+        },
+        {
+          "pageId": "5151:49",
+          "pageName": "07 / Gen2 · 信息层级与细节",
+          "nodeId": "5152:49",
+          "name": "02 · 中距离 / 内容与关系"
+        }
+      ],
+      "productionPaths": [
+        "E:\\TRAE项目\\LCOS0.1收口\\LCOS_GEN2_GUI_RECOVERY_20260926\\huabu\\apps\\web\\src\\lcos\\useLcosCanvasProps.tsx",
+        "E:\\TRAE项目\\LCOS0.1收口\\LCOS_GEN2_GUI_RECOVERY_20260926\\huabu\\apps\\web\\src\\lcos\\navigation\\LcosEdgeArc.tsx"
+      ],
+      "date": "2026-09-26",
+      "status": "部分保留；关系视觉仍缺",
+      "implemented": "唯一关系/边owner保留，Arc与近场命中由根域修；本次未引第二关系系统。",
+      "remaining": "现有Main边标签仍出现references/governs；关系方向/权重/各LOD的完整语义视觉未完成。",
+      "verification": "真实Main截图确认遗留；不宣称关系全对齐。",
+      "evidence": [
+        "E:\\TRAE项目\\LCOS0.1收口\\GUI全量对齐_20260926\\nodes-lod-implementation.md"
+      ],
+      "confidence": "按已述源码、行为测试和实际浏览器证据分别记载；非全部验收通过"
+    },
+    {
+      "id": "N17",
+      "name": "集合主画布压缩文件夹",
+      "figma": [
+        {
+          "pageId": "5332:2",
+          "pageName": "13 / Gen2 · 集合跨视图与工作流取用",
+          "nodeId": "5333:96",
+          "name": "集合 / 上下文跨视图"
+        },
+        {
+          "pageId": "5332:2",
+          "pageName": "13 / Gen2 · 集合跨视图与工作流取用",
+          "nodeId": "5338:24",
+          "name": "00 / 同对象跨视图 · 形态对照"
+        },
+        {
+          "pageId": "5332:2",
+          "pageName": "13 / Gen2 · 集合跨视图与工作流取用",
+          "nodeId": "5341:496",
+          "name": "A04 / 已有集合投影"
+        },
+        {
+          "pageId": "5235:49",
+          "pageName": "10 / Gen2 · 通透玻璃与铝材对照",
+          "nodeId": "5388:96",
+          "name": "统一主稿 / 主画布"
+        }
+      ],
+      "productionPaths": [
+        "E:\\TRAE项目\\LCOS0.1收口\\LCOS_GEN2_GUI_RECOVERY_20260926\\huabu\\apps\\web\\src\\lcos\\nodes\\lcosNodeCardRegistry.ts",
+        "E:\\TRAE项目\\LCOS0.1收口\\LCOS_GEN2_GUI_RECOVERY_20260926\\huabu\\apps\\web\\src\\lcos\\nodes\\LcosSpeciesBodies.tsx",
+        "E:\\TRAE项目\\LCOS0.1收口\\LCOS_GEN2_GUI_RECOVERY_20260926\\huabu\\apps\\web\\src\\lcos\\ui\\context\\ContextCollectionView.tsx"
+      ],
+      "date": "2026-09-26",
+      "status": "轮廓已修；Gen2普通集合producer未接",
+      "implemented": "普通集合消费端复用CollectionNodePresentation文件夹轮廓、无外层白卡。旧Core确有collection Scope、snapshot branch建scope/views和通用POST /graph；不是完全没有集合能力。",
+      "remaining": "Gen2 reconciliation目前仅main/workflow，缺普通集合producer；T1/T4要求的正式Collection identity/membership未落当前contract，旧Presentation.memberViewIds明确仅迁移兼容，不能冒充正式成员真值。",
+      "verification": "六态采用5333:96；消费端单测；本次逐层核对domain/routes/repository/projection与原T1/T4；普通集合真实E2E仍缺。",
+      "evidence": [
+        "E:\\TRAE项目\\LCOS0.1收口\\GUI全量对齐_20260926\\collection-owner-investigation.md"
+      ],
+      "confidence": "按已述源码、行为测试和实际浏览器证据分别记载；非全部验收通过"
+    },
+    {
+      "id": "N18",
+      "name": "集合展开、收起与自动排布",
+      "figma": [
+        {
+          "pageId": "5198:49",
+          "pageName": "09 / Gen2 · 色彩层级与近场交互",
+          "nodeId": "5203:13424",
+          "name": "06 · 集合展开 · 六份混合材料"
+        },
+        {
+          "pageId": "5198:49",
+          "pageName": "09 / Gen2 · 色彩层级与近场交互",
+          "nodeId": "5204:107",
+          "name": "08 · 集合展开 · 十二份材料自动排布"
+        },
+        {
+          "pageId": "5332:2",
+          "pageName": "13 / Gen2 · 集合跨视图与工作流取用",
+          "nodeId": "5333:96",
+          "name": "集合 / 上下文跨视图"
+        }
+      ],
+      "productionPaths": [
+        "E:\\TRAE项目\\LCOS0.1收口\\LCOS_GEN2_GUI_RECOVERY_20260926\\huabu\\apps\\web\\src\\lcos\\nodes\\LcosSpeciesBodies.tsx",
+        "E:\\TRAE项目\\LCOS0.1收口\\LCOS_GEN2_GUI_RECOVERY_20260926\\apps\\web-gen2\\src\\spatial\\reconciliationRunner.ts"
+      ],
+      "date": "2026-09-26",
+      "status": "现有几何可复用；折叠显示接缝未接",
+      "implemented": "Huabu已有Frame及free/row/column/grid、fit/hug和reflow；用户已允许进入集合后自动排齐。保留唯一几何owner，不再笼统记为几何owner不存在。",
+      "remaining": "缺沿现有host seam实现的会话期显示折叠、隐藏托管子节点、恢复展开与成员manifestation resolver；T1明确不得把折叠写进Core或复制展开坐标。正式membership仍依赖N17。",
+      "verification": "查实FrameNode、shared frame/projection、原T1 Step2A §7–8；未改canonical，未伪造已可展开。",
+      "evidence": [
+        "E:\\TRAE项目\\LCOS0.1收口\\GUI全量对齐_20260926\\collection-owner-investigation.md"
+      ],
+      "confidence": "按已述源码、行为测试和实际浏览器证据分别记载；非全部验收通过"
+    },
+    {
+      "id": "N19",
+      "name": "集合收纳drop与多集合共享成员",
+      "figma": [
+        {
+          "pageId": "5332:2",
+          "pageName": "13 / Gen2 · 集合跨视图与工作流取用",
+          "nodeId": "5340:398",
+          "name": "A02 / 拿起与建议落点"
+        },
+        {
+          "pageId": "5332:2",
+          "pageName": "13 / Gen2 · 集合跨视图与工作流取用",
+          "nodeId": "5341:279",
+          "name": "A03 / 等待放入回执"
+        },
+        {
+          "pageId": "5332:2",
+          "pageName": "13 / Gen2 · 集合跨视图与工作流取用",
+          "nodeId": "5341:1033",
+          "name": "A07 / 已加入 · 位置待恢复"
+        },
+        {
+          "pageId": "5332:2",
+          "pageName": "13 / Gen2 · 集合跨视图与工作流取用",
+          "nodeId": "5341:1212",
+          "name": "A08 / 放入已确认"
+        }
+      ],
+      "productionPaths": [
+        "E:\\TRAE项目\\LCOS0.1收口\\LCOS_GEN2_GUI_RECOVERY_20260926\\huabu\\apps\\web\\src\\lcos\\drop\\dropIntentResolver.ts",
+        "E:\\TRAE项目\\LCOS0.1收口\\LCOS_GEN2_GUI_RECOVERY_20260926\\huabu\\apps\\web\\src\\lcos\\nodes\\LcosSpeciesBodies.tsx",
+        "E:\\TRAE项目\\LCOS0.1收口\\LCOS_GEN2_GUI_RECOVERY_20260926\\huabu\\apps\\web\\src\\lcos\\LcosHostOverlay.tsx"
+      ],
+      "date": "2026-09-26",
+      "status": "普通集合target与正式成员接收未接",
+      "implemented": "真实携带payload与合法target已接；collection可作Assembly source；节点侧未注册虚假接收区。",
+      "remaining": "AssemblyTargetRef无collection target且service校验拒绝把collection scope冒作context/workflow；正式集合member add/remove/list与多集合proxy/hosted规则缺。现有scope/view和Presentation存储能力不等于该contract已完成。",
+      "verification": "已核对contract、service、通用mutation、T1/T4旧Presentation禁作正式membership的原文；没有尝试写入假target。",
+      "evidence": [
+        "E:\\TRAE项目\\LCOS0.1收口\\GUI全量对齐_20260926\\collection-owner-investigation.md"
+      ],
+      "confidence": "按已述源码、行为测试和实际浏览器证据分别记载；非全部验收通过"
+    },
+    {
+      "id": "N20",
+      "name": "集合图标、颜色、外形身份",
+      "figma": [
+        {
+          "pageId": "5198:49",
+          "pageName": "09 / Gen2 · 色彩层级与近场交互",
+          "nodeId": "5204:13457",
+          "name": "07 · 集合身份 · 图标颜色与外形"
+        },
+        {
+          "pageId": "5332:2",
+          "pageName": "13 / Gen2 · 集合跨视图与工作流取用",
+          "nodeId": "5333:96",
+          "name": "集合 / 上下文跨视图"
+        }
+      ],
+      "productionPaths": [
+        "E:\\TRAE项目\\LCOS0.1收口\\LCOS_GEN2_GUI_RECOVERY_20260926\\huabu\\apps\\web\\src\\lcos\\nodes\\LcosSpeciesBodies.tsx",
+        "E:\\TRAE项目\\LCOS0.1收口\\LCOS_GEN2_GUI_RECOVERY_20260926\\huabu\\apps\\web\\src\\lcos\\ui\\context\\ContextCollectionFace.tsx"
+      ],
+      "date": "2026-09-26",
+      "status": "未完成集合身份自定义",
+      "implemented": "Pin真实颜色已区分，集合/工作流独立轮廓消费端保留。",
+      "remaining": "集合自定义图标/形状/颜色的canonical生产与跨Rail/导航映射尚缺，不能拿Pin颜色充当集合身份设计。",
+      "verification": "源码盘点。",
+      "evidence": [
+        "E:\\TRAE项目\\LCOS0.1收口\\GUI全量对齐_20260926\\inventory-nodes.md"
+      ],
+      "confidence": "按已述源码、行为测试和实际浏览器证据分别记载；非全部验收通过"
+    },
+    {
+      "id": "N21",
+      "name": "工作流集合书册在Main的形态",
+      "figma": [
+        {
+          "pageId": "5332:2",
+          "pageName": "13 / Gen2 · 集合跨视图与工作流取用",
+          "nodeId": "5334:46",
+          "name": "集合 / 工作流跨视图"
+        },
+        {
+          "pageId": "5332:2",
+          "pageName": "13 / Gen2 · 集合跨视图与工作流取用",
+          "nodeId": "5338:24",
+          "name": "00 / 同对象跨视图 · 形态对照"
+        }
+      ],
+      "productionPaths": [
+        "E:\\TRAE项目\\LCOS0.1收口\\LCOS_GEN2_GUI_RECOVERY_20260926\\huabu\\apps\\web\\src\\lcos\\nodes\\LcosSpeciesBodies.tsx",
+        "E:\\TRAE项目\\LCOS0.1收口\\LCOS_GEN2_GUI_RECOVERY_20260926\\huabu\\apps\\web\\src\\lcos\\ui\\workflow\\WorkflowCollectionView.tsx",
+        "E:\\TRAE项目\\LCOS0.1收口\\LCOS_GEN2_GUI_RECOVERY_20260926\\huabu\\apps\\web\\src\\lcos\\ui\\workflow\\WorkflowCollectionFace.tsx"
+      ],
+      "date": "2026-09-26",
+      "status": "工作流书册已接",
+      "implemented": "复用WorkflowCollectionView经CollectionNodePresentation接真实主画布scope；透明host，独立书册。多个workspace显式选择，精确scope，缺canvas不跳转。",
+      "remaining": "fixture目标workspace缺可进入canvas；完整Main→真实workflow子现场回合仍待真实数据。",
+      "verification": "Main真书册可见；成功/多目标/错scope与无canvascaller回归。",
+      "evidence": [
+        "E:\\TRAE项目\\LCOS0.1收口\\GUI全量对齐_20260926\\nodes-implementation.md"
+      ],
+      "confidence": "按已述源码、行为测试和实际浏览器证据分别记载；非全部验收通过"
+    },
+    {
+      "id": "N22",
+      "name": "子现场入口及来源返回",
+      "figma": [
+        {
+          "pageId": "5136:49",
+          "pageName": "06 / Gen2 · 图标与光幕空间",
+          "nodeId": "5144:675",
+          "name": "10 · 进入集合 / 独立上下文画布"
+        },
+        {
+          "pageId": "5332:2",
+          "pageName": "13 / Gen2 · 集合跨视图与工作流取用",
+          "nodeId": "5350:20987",
+          "name": "P06 / 进入Context子画布 · 返回Portal来源"
+        }
+      ],
+      "productionPaths": [
+        "E:\\TRAE项目\\LCOS0.1收口\\LCOS_GEN2_GUI_RECOVERY_20260926\\huabu\\apps\\web\\src\\lcos\\nodes\\PortalNodeBody.tsx",
+        "E:\\TRAE项目\\LCOS0.1收口\\LCOS_GEN2_GUI_RECOVERY_20260926\\huabu\\apps\\web\\src\\lcos\\navigation\\childWorksiteNavigation.ts",
+        "E:\\TRAE项目\\LCOS0.1收口\\LCOS_GEN2_GUI_RECOVERY_20260926\\huabu\\apps\\web\\src\\lcos\\professional\\ProfessionalWindowStage.tsx"
+      ],
+      "date": "2026-09-26",
+      "status": "职责保留；真实子现场待补证",
+      "implemented": "材料双击Reader、工作流单目标原beginChildWorksiteNavigation；多目标显式选择；来源node/targetSurface传入原导航owner。",
+      "remaining": "root workspace不能误称子现场；当前fixture无完整真实子现场往返素材。",
+      "verification": "主节点行为测试与surfaces根/子分流4项；实际子现场未E2E。",
+      "evidence": [
+        "E:\\TRAE项目\\LCOS0.1收口\\GUI全量对齐_20260926\\surfaces-batch4-continuation.md"
+      ],
+      "confidence": "按已述源码、行为测试和实际浏览器证据分别记载；非全部验收通过"
+    },
+    {
+      "id": "N23",
+      "name": "门户只读预览、局部缩放和打开",
+      "figma": [
+        {
+          "pageId": "5332:2",
+          "pageName": "13 / Gen2 · 集合跨视图与工作流取用",
+          "nodeId": "5348:1151",
+          "name": "产品 Portal / 目标预览状态"
+        },
+        {
+          "pageId": "5332:2",
+          "pageName": "13 / Gen2 · 集合跨视图与工作流取用",
+          "nodeId": "5350:1332",
+          "name": "P01 / Context 门户 · 只读预览"
+        },
+        {
+          "pageId": "5332:2",
+          "pageName": "13 / Gen2 · 集合跨视图与工作流取用",
+          "nodeId": "5350:1490",
+          "name": "P02 / 门户局部放大 · Main 不动"
+        },
+        {
+          "pageId": "5332:2",
+          "pageName": "13 / Gen2 · 集合跨视图与工作流取用",
+          "nodeId": "5350:1672",
+          "name": "P03 / 打开工作流现场 · 独立状态"
+        }
+      ],
+      "productionPaths": [
+        "E:\\TRAE项目\\LCOS0.1收口\\LCOS_GEN2_GUI_RECOVERY_20260926\\huabu\\apps\\web\\src\\lcos\\professional\\PortalPreviewBody.tsx",
+        "E:\\TRAE项目\\LCOS0.1收口\\LCOS_GEN2_GUI_RECOVERY_20260926\\huabu\\apps\\web\\src\\lcos\\ui\\professional\\PortalPreviewView.tsx"
+      ],
+      "date": "2026-09-26",
+      "status": "部分接入",
+      "implemented": "Portal继续走原只读预览与既有工作窗，原preview窗口缩放/打开入口未另建owner；共享引用/Pin已补。",
+      "remaining": "Portal视觉与只读/可交互/目标缺失全态未完成完整对稿；不能把preview组件存在视为五态齐全。",
+      "verification": "现有源码与跨域报告；Portal全态浏览器待补。",
+      "evidence": [
+        "E:\\TRAE项目\\LCOS0.1收口\\GUI全量对齐_20260926\\inventory-nodes.md"
+      ],
+      "confidence": "按已述源码、行为测试和实际浏览器证据分别记载；非全部验收通过"
+    },
+    {
+      "id": "N24",
+      "name": "门户提升/投递生命周期",
+      "figma": [
+        {
+          "pageId": "5332:2",
+          "pageName": "13 / Gen2 · 集合跨视图与工作流取用",
+          "nodeId": "5350:20679",
+          "name": "P04 / 门户提升为装配 · 同目标"
+        },
+        {
+          "pageId": "5332:2",
+          "pageName": "13 / Gen2 · 集合跨视图与工作流取用",
+          "nodeId": "5350:20877",
+          "name": "P05 / 门户提升为工作台 · 同目标"
+        },
+        {
+          "pageId": "5332:2",
+          "pageName": "13 / Gen2 · 集合跨视图与工作流取用",
+          "nodeId": "5351:1219",
+          "name": "P07 / 门户投递 · 落点预览"
+        },
+        {
+          "pageId": "5332:2",
+          "pageName": "13 / Gen2 · 集合跨视图与工作流取用",
+          "nodeId": "5351:1358",
+          "name": "P08 / 门户投递 · 等待回执"
+        },
+        {
+          "pageId": "5332:2",
+          "pageName": "13 / Gen2 · 集合跨视图与工作流取用",
+          "nodeId": "5351:1491",
+          "name": "P09 / 门户投递 · 部分完成"
+        },
+        {
+          "pageId": "5332:2",
+          "pageName": "13 / Gen2 · 集合跨视图与工作流取用",
+          "nodeId": "5351:1624",
+          "name": "P10 / 门户投递 · 已确认放入"
+        },
+        {
+          "pageId": "5332:2",
+          "pageName": "13 / Gen2 · 集合跨视图与工作流取用",
+          "nodeId": "5351:1757",
+          "name": "P11 / 门户投递 · 结果未知"
+        },
+        {
+          "pageId": "5332:2",
+          "pageName": "13 / Gen2 · 集合跨视图与工作流取用",
+          "nodeId": "5351:1890",
+          "name": "P12 / 门户投递 · 投递失败"
+        },
+        {
+          "pageId": "5332:2",
+          "pageName": "13 / Gen2 · 集合跨视图与工作流取用",
+          "nodeId": "5352:2038",
+          "name": "P13 / 投递部分完成 · 逐项结果"
+        }
+      ],
+      "productionPaths": [
+        "E:\\TRAE项目\\LCOS0.1收口\\LCOS_GEN2_GUI_RECOVERY_20260926\\huabu\\apps\\web\\src\\lcos\\professional\\PortalPreviewBody.tsx",
+        "E:\\TRAE项目\\LCOS0.1收口\\LCOS_GEN2_GUI_RECOVERY_20260926\\huabu\\apps\\web\\src\\lcos\\ui\\professional\\PortalPreviewView.tsx",
+        "E:\\TRAE项目\\LCOS0.1收口\\LCOS_GEN2_GUI_RECOVERY_20260926\\huabu\\apps\\web\\src\\lcos\\drop\\dropTargetRegistry.ts"
+      ],
+      "date": "2026-09-26",
+      "status": "生命周期尚未全完成",
+      "implemented": "保留原提升/打开和投递owner，不以新浮窗模拟真实Portal状态。",
+      "remaining": "创建请求/取消/结果未知/目标缺失/返回来源的完整Portal回合未逐项修完。",
+      "verification": "原始目录覆盖已关联，运行态补证仍缺。",
+      "evidence": [
+        "E:\\TRAE项目\\LCOS0.1收口\\GUI全量对齐_20260926\\inventory-nodes.md"
+      ],
+      "confidence": "按已述源码、行为测试和实际浏览器证据分别记载；非全部验收通过"
+    },
+    {
+      "id": "N25",
+      "name": "Colony轮廓、剥离与取消",
+      "figma": [
+        {
+          "pageId": "5095:49",
+          "pageName": "05 / Gen2 · 第二轮空间与角色",
+          "nodeId": "5100:85",
+          "name": "01 / 主画布 · 对象各有形体"
+        }
+      ],
+      "productionPaths": [
+        "E:\\TRAE项目\\LCOS0.1收口\\LCOS_GEN2_GUI_RECOVERY_20260926\\huabu\\apps\\web\\src\\lcos\\nodes\\LcosSpeciesBodies.tsx",
+        "E:\\TRAE项目\\LCOS0.1收口\\LCOS_GEN2_GUI_RECOVERY_20260926\\apps\\web-gen2\\src\\spatial\\reconciliationRunner.ts"
+      ],
+      "date": "2026-09-26",
+      "status": "未实现",
+      "implemented": "未新造假的Colony形态或剥离按钮。",
+      "remaining": "Colony语义轮廓、剥离与取消回退尚无完整真实实现。",
+      "verification": "源码盘点。",
+      "evidence": [
+        "E:\\TRAE项目\\LCOS0.1收口\\GUI全量对齐_20260926\\inventory-nodes.md"
+      ],
+      "confidence": "按已述源码、行为测试和实际浏览器证据分别记载；非全部验收通过"
+    },
+    {
+      "id": "N26",
+      "name": "远/中/近四档节点信息层级",
+      "figma": [
+        {
+          "pageId": "5151:49",
+          "pageName": "07 / Gen2 · 信息层级与细节",
+          "nodeId": "5152:272",
+          "name": "01 · 远距离 / 形体与方向"
+        },
+        {
+          "pageId": "5151:49",
+          "pageName": "07 / Gen2 · 信息层级与细节",
+          "nodeId": "5152:49",
+          "name": "02 · 中距离 / 内容与关系"
+        },
+        {
+          "pageId": "5151:49",
+          "pageName": "07 / Gen2 · 信息层级与细节",
+          "nodeId": "5152:503",
+          "name": "03 · 近距离 / 文字原位阅读"
+        },
+        {
+          "pageId": "5151:49",
+          "pageName": "07 / Gen2 · 信息层级与细节",
+          "nodeId": "5152:753",
+          "name": "04 · 近距离 / 图像原位操作"
+        }
+      ],
+      "productionPaths": [
+        "E:\\TRAE项目\\LCOS0.1收口\\LCOS_GEN2_GUI_RECOVERY_20260926\\huabu\\apps\\web\\src\\lcos\\nodes\\useLcosDensity.ts",
+        "E:\\TRAE项目\\LCOS0.1收口\\LCOS_GEN2_GUI_RECOVERY_20260926\\huabu\\apps\\web\\src\\lcos\\ui\\source\\source-presentation.css",
+        "E:\\TRAE项目\\LCOS0.1收口\\LCOS_GEN2_GUI_RECOVERY_20260926\\huabu\\apps\\web\\src\\lcos\\nodes\\LcosSpeciesBodies.tsx",
+        "E:\\TRAE项目\\LCOS0.1收口\\LCOS_GEN2_GUI_RECOVERY_20260926\\huabu\\apps\\web\\src\\lcos\\nodes\\GlythNodeBody.tsx"
+      ],
+      "date": "2026-09-26",
+      "status": "四档消费与连续可读性已修",
+      "implemented": "继续唯一density resolver；mark身份、summary真实首句、working关键片段、reading来源；字号/内距随屏幕尺度连续适配。",
+      "remaining": "reading全文受上游160字preview限制；全部族群的远中近形态与全量节点拥挤度仍待扩验。",
+      "verification": "31项回归；37%/53%/100%浏览器截图；未改用户camera保存值。",
+      "evidence": [
+        "E:\\TRAE项目\\LCOS0.1收口\\GUI全量对齐_20260926\\nodes-lod-implementation.md"
+      ],
+      "confidence": "按已述源码、行为测试和实际浏览器证据分别记载；非全部验收通过"
+    },
+    {
+      "id": "N27",
+      "name": "节点11态与原位轻反馈",
+      "figma": [
+        {
+          "pageId": "5185:1051",
+          "pageName": "08 / Gen2 · 第二轮基础操作",
+          "nodeId": "5186:49",
+          "name": "01 · 单选与对象工具"
+        },
+        {
+          "pageId": "5185:1051",
+          "pageName": "08 / Gen2 · 第二轮基础操作",
+          "nodeId": "5186:312",
+          "name": "02 · 框选与多选作用范围"
+        },
+        {
+          "pageId": "5185:1051",
+          "pageName": "08 / Gen2 · 第二轮基础操作",
+          "nodeId": "5187:179",
+          "name": "03 · 拖动、对齐与取消"
+        },
+        {
+          "pageId": "5198:49",
+          "pageName": "09 / Gen2 · 色彩层级与近场交互",
+          "nodeId": "5204:13842",
+          "name": "09 · 节点执行 · 局部反馈"
+        },
+        {
+          "pageId": "5243:49",
+          "pageName": "11 / Gen2 · Glyth 续工与分支对话",
+          "nodeId": "5262:551",
+          "name": "26 · 焦点 · 薄光边，不常驻发光"
+        }
+      ],
+      "productionPaths": [
+        "E:\\TRAE项目\\LCOS0.1收口\\LCOS_GEN2_GUI_RECOVERY_20260926\\huabu\\apps\\web\\src\\lcos\\nodes\\LcosSpeciesBodies.tsx",
+        "E:\\TRAE项目\\LCOS0.1收口\\LCOS_GEN2_GUI_RECOVERY_20260926\\huabu\\apps\\web\\src\\lcos\\ui\\source\\SourceFeedbackSlot.tsx",
+        "E:\\TRAE项目\\LCOS0.1收口\\LCOS_GEN2_GUI_RECOVERY_20260926\\huabu\\apps\\web\\src\\lcos\\ui\\source\\sourceViewTypes.ts"
+      ],
+      "date": "2026-09-26",
+      "status": "状态反馈部分完成",
+      "implemented": "媒体错误/重试、真实Glyth状态主动作、Drop轻反馈、身份初载/错误恢复已接入真实caller。",
+      "remaining": "节点11态没有在所有species逐一完成；成功/待判/缺权限/中断等不能仅靠标签算齐。",
+      "verification": "各专项行为测试；完整11态×物种矩阵仍缺。",
+      "evidence": [
+        "E:\\TRAE项目\\LCOS0.1收口\\GUI全量对齐_20260926\\nodes-first-load-implementation.md"
+      ],
+      "confidence": "按已述源码、行为测试和实际浏览器证据分别记载；非全部验收通过"
+    },
+    {
+      "id": "N28",
+      "name": "拖动、resize、中断及内容尺寸",
+      "figma": [
+        {
+          "pageId": "5185:1051",
+          "pageName": "08 / Gen2 · 第二轮基础操作",
+          "nodeId": "5187:179",
+          "name": "03 · 拖动、对齐与取消"
+        },
+        {
+          "pageId": "5185:1051",
+          "pageName": "08 / Gen2 · 第二轮基础操作",
+          "nodeId": "5188:635",
+          "name": "07 · 原位编辑与焦点"
+        }
+      ],
+      "productionPaths": [
+        "E:\\TRAE项目\\LCOS0.1收口\\LCOS_GEN2_GUI_RECOVERY_20260926\\huabu\\apps\\web\\src\\lcos\\nodes\\LcosSpeciesBodies.tsx",
+        "E:\\TRAE项目\\LCOS0.1收口\\LCOS_GEN2_GUI_RECOVERY_20260926\\huabu\\apps\\web\\src\\lcos\\ui\\source\\source-presentation.css",
+        "E:\\TRAE项目\\LCOS0.1收口\\LCOS_GEN2_GUI_RECOVERY_20260926\\huabu\\apps\\web\\src\\lcos\\nodes\\GlythNodeBody.tsx"
+      ],
+      "date": "2026-09-26",
+      "status": "尺寸与LOD修复；机械保留",
+      "implemented": "不改NodeWrapper和世界几何；文本/纸张在真实宽高内排版，保留拖动/resize原owner。",
+      "remaining": "拖动中断/编辑焦点与长内容所有边界未全E2E，不能以静态截图覆盖。",
+      "verification": "尺寸/行数/四档测试及真实缩放截图。",
+      "evidence": [
+        "E:\\TRAE项目\\LCOS0.1收口\\GUI全量对齐_20260926\\nodes-lod-implementation.md"
+      ],
+      "confidence": "按已述源码、行为测试和实际浏览器证据分别记载；非全部验收通过"
+    },
+    {
+      "id": "N29",
+      "name": "GLYTH本体与真实基本状态",
+      "figma": [
+        {
+          "nodeId": "5388:118",
+          "pageId": "5235:49",
+          "note": "主稿子节点；在结构分片中查精确父级"
+        },
+        {
+          "nodeId": "5388:119",
+          "pageId": "5235:49",
+          "note": "主稿子节点；在结构分片中查精确父级"
+        },
+        {
+          "pageId": "5095:49",
+          "pageName": "05 / Gen2 · 第二轮空间与角色",
+          "nodeId": "5103:1932",
+          "name": "16 / Glyth · 状态与空间表达"
+        }
+      ],
+      "productionPaths": [
+        "E:\\TRAE项目\\LCOS0.1收口\\LCOS_GEN2_GUI_RECOVERY_20260926\\huabu\\apps\\web\\src\\lcos\\nodes\\GlythNodeBody.tsx",
+        "E:\\TRAE项目\\LCOS0.1收口\\LCOS_GEN2_GUI_RECOVERY_20260926\\huabu\\apps\\web\\src\\lcos\\ui\\glyth\\GlythBodyView.tsx",
+        "E:\\TRAE项目\\LCOS0.1收口\\LCOS_GEN2_GUI_RECOVERY_20260926\\huabu\\apps\\web\\src\\lcos\\ui\\glyth\\glythPresence.ts"
+      ],
+      "date": "2026-09-26",
+      "status": "真实Glyth状态已修",
+      "implemented": "本体仅由真实projection驱动，删除旧descriptor active/waiting兜底；ready/needs_user/running主动作区分，真实pendingInput/Review才出现回答/复核；receiving curious保留。",
+      "remaining": "六态外全部异常组合及真实review/pending-input fixture仍待运行补证。",
+      "verification": "G02命令/动作20新增+10既有测试；actual thinking进度打开真实WorkView。",
+      "evidence": [
+        "E:\\TRAE项目\\LCOS0.1收口\\GUI全量对齐_20260926\\glyth-g02-implementation.md"
+      ],
+      "confidence": "按已述源码、行为测试和实际浏览器证据分别记载；非全部验收通过"
+    },
+    {
+      "id": "N30",
+      "name": "GLYTH缩放接管与身体命中",
+      "figma": [
+        {
+          "pageId": "5151:49",
+          "pageName": "07 / Gen2 · 信息层级与细节",
+          "nodeId": "5152:272",
+          "name": "01 · 远距离 / 形体与方向"
+        },
+        {
+          "pageId": "5151:49",
+          "pageName": "07 / Gen2 · 信息层级与细节",
+          "nodeId": "5152:49",
+          "name": "02 · 中距离 / 内容与关系"
+        },
+        {
+          "pageId": "5095:49",
+          "pageName": "05 / Gen2 · 第二轮空间与角色",
+          "nodeId": "5101:1371",
+          "name": "10 / Glyth · 持续工作"
+        }
+      ],
+      "productionPaths": [
+        "E:\\TRAE项目\\LCOS0.1收口\\LCOS_GEN2_GUI_RECOVERY_20260926\\huabu\\apps\\web\\src\\lcos\\nodes\\GlythNodeBody.tsx",
+        "E:\\TRAE项目\\LCOS0.1收口\\LCOS_GEN2_GUI_RECOVERY_20260926\\huabu\\apps\\web\\src\\lcos\\ui\\glyth\\GlythBodyView.tsx"
+      ],
+      "date": "2026-09-26",
+      "status": "本体连续缩放已修；接管变形未完",
+      "implemented": "删除34/92硬切；用现有geometry/zoom连续计算本体，低倍率屏幕最小可识别约36px并受节点边界约束，不改世界尺寸。",
+      "remaining": "从节点完整接管为工作现场的连续morph尚未实现，不以本体缩放冒充完整接管。",
+      "verification": "远37/中53/近100截图；layout与状态动作回归。",
+      "evidence": [
+        "E:\\TRAE项目\\LCOS0.1收口\\GUI全量对齐_20260926\\nodes-lod-implementation.md"
+      ],
+      "confidence": "按已述源码、行为测试和实际浏览器证据分别记载；非全部验收通过"
+    },
+    {
+      "id": "N31",
+      "name": "投送材料给GLYTH的命中与就近草稿",
+      "figma": [
+        {
+          "pageId": "5095:49",
+          "pageName": "05 / Gen2 · 第二轮空间与角色",
+          "nodeId": "5101:1243",
+          "name": "09 / Glyth · 接收材料"
+        },
+        {
+          "pageId": "5332:2",
+          "pageName": "13 / Gen2 · 集合跨视图与工作流取用",
+          "nodeId": "5344:999",
+          "name": "B04 / 交给目标 Glyth"
+        }
+      ],
+      "productionPaths": [
+        "E:\\TRAE项目\\LCOS0.1收口\\LCOS_GEN2_GUI_RECOVERY_20260926\\huabu\\apps\\web\\src\\lcos\\nodes\\GlythNodeBody.tsx",
+        "E:\\TRAE项目\\LCOS0.1收口\\LCOS_GEN2_GUI_RECOVERY_20260926\\huabu\\apps\\web\\src\\lcos\\drop\\dropTargetRegistry.ts",
+        "E:\\TRAE项目\\LCOS0.1收口\\LCOS_GEN2_GUI_RECOVERY_20260926\\huabu\\apps\\web\\src\\lcos\\LcosHostOverlay.tsx"
+      ],
+      "date": "2026-09-26",
+      "status": "草稿投送已接；长期语义与链路未闭环",
+      "implemented": "真实携带/命中/近场Composer和Reference标已接，source不移动。9/17收敛实施交接明确采用composer target+draft references，当前行为有较新依据。",
+      "remaining": "旧T3/T5 durable身体映射与9/17 draft接法未明确合并；不能仅按旧稿回滚，也不能宣称长期绑定完成。已有Core relation写入与Reach读取身份不一致，continuation bundle未读取关系，详见专项；前端反馈应准确说待发送引用。",
+      "verification": "已验证当前指针/草稿链；本次只读追到收敛V1§15、Gate2–5交接、BatchB及Core三段源码；未执行durable写入，无长期重载/send回执证明。",
+      "evidence": [
+        "E:\\TRAE项目\\LCOS0.1收口\\GUI全量对齐_20260926\\glyth-drop-semantics-investigation.md",
+        "E:\\TRAE项目\\LCOS0.1收口\\GUI全量对齐_20260926\\root-composer-hud-batch.md"
+      ],
+      "confidence": "按已述源码、行为测试和实际浏览器证据分别记载；非全部验收通过"
+    },
+    {
+      "id": "N32",
+      "name": "GLYTH原位续工入口与Composer内展开",
+      "figma": [
+        {
+          "pageId": "5243:49",
+          "pageName": "11 / Gen2 · Glyth 续工与分支对话",
+          "nodeId": "5243:50",
+          "name": "01 · Glyth 原位续工"
+        },
+        {
+          "pageId": "5243:49",
+          "pageName": "11 / Gen2 · Glyth 续工与分支对话",
+          "nodeId": "5246:59",
+          "name": "02 · 续工在 Composer 内展开"
+        },
+        {
+          "pageId": "5243:49",
+          "pageName": "11 / Gen2 · Glyth 续工与分支对话",
+          "nodeId": "5249:104",
+          "name": "03 · 继续当前，不生出第二只"
+        }
+      ],
+      "productionPaths": [
+        "E:\\TRAE项目\\LCOS0.1收口\\LCOS_GEN2_GUI_RECOVERY_20260926\\huabu\\apps\\web\\src\\lcos\\navigation\\LcosActionArc.tsx",
+        "E:\\TRAE项目\\LCOS0.1收口\\LCOS_GEN2_GUI_RECOVERY_20260926\\huabu\\apps\\web\\src\\lcos\\professional\\ConversationWorkViewBody.tsx",
+        "E:\\TRAE项目\\LCOS0.1收口\\LCOS_GEN2_GUI_RECOVERY_20260926\\huabu\\apps\\web\\src\\lcos\\composer\\LcosComposerHost.tsx"
+      ],
+      "date": "2026-09-26",
+      "status": "近场续工已接",
+      "implemented": "ready Arc继续进入同一Composer；真实readDiagnostics operation确认后才解锁send；WorkView共用草稿/现有窗口，running进入真实进度段。",
+      "remaining": "当前fixture canSend=false/能力未探测，不能宣称真实外部发送成功；完整伴身转换另项。",
+      "verification": "根域Composer/续工61项；G02真实进度WorkView；窄屏/键盘回合。",
+      "evidence": [
+        "E:\\TRAE项目\\LCOS0.1收口\\GUI全量对齐_20260926\\root-composer-hud-batch.md"
+      ],
+      "confidence": "按已述源码、行为测试和实际浏览器证据分别记载；非全部验收通过"
+    },
+    {
+      "id": "N33",
+      "name": "续工四种模式及不支持时显式改选",
+      "figma": [
+        {
+          "pageId": "5243:49",
+          "pageName": "11 / Gen2 · Glyth 续工与分支对话",
+          "nodeId": "5249:415",
+          "name": "04 · 完整历史分支，可用能力样本"
+        },
+        {
+          "pageId": "5243:49",
+          "pageName": "11 / Gen2 · Glyth 续工与分支对话",
+          "nodeId": "5249:726",
+          "name": "05 · 不支持原生分支，显式改选"
+        },
+        {
+          "pageId": "5243:49",
+          "pageName": "11 / Gen2 · Glyth 续工与分支对话",
+          "nodeId": "5249:1044",
+          "name": "06 · 空白新建，没有隐含继承"
+        },
+        {
+          "pageId": "5243:49",
+          "pageName": "11 / Gen2 · Glyth 续工与分支对话",
+          "nodeId": "5249:1355",
+          "name": "07 · 精选继承与隔离目录分开"
+        }
+      ],
+      "productionPaths": [
+        "E:\\TRAE项目\\LCOS0.1收口\\LCOS_GEN2_GUI_RECOVERY_20260926\\huabu\\apps\\web\\src\\lcos\\professional\\ConversationWorkViewBody.tsx",
+        "E:\\TRAE项目\\LCOS0.1收口\\LCOS_GEN2_GUI_RECOVERY_20260926\\huabu\\apps\\web\\src\\lcos\\professional\\conversationContinuationActions.ts"
+      ],
+      "date": "2026-09-26",
+      "status": "四模式渐进控制已接",
+      "implemented": "原继续/精选新建/空白新建/完整分支收进Composer会话选项；选择仅预览，显式确认才调用；不支持分支不降级。",
+      "remaining": "真实provider能力未探测，UI诚实禁用；无真实外部新建/完整分支成功录像。",
+      "verification": "surfaces四模式/拒绝/unknown/双击19项，1440与390实测。",
+      "evidence": [
+        "E:\\TRAE项目\\LCOS0.1收口\\GUI全量对齐_20260926\\surfaces-batch4-continuation.md"
+      ],
+      "confidence": "按已述源码、行为测试和实际浏览器证据分别记载；非全部验收通过"
+    },
+    {
+      "id": "N34",
+      "name": "续工确认来源、提交快照与草稿分离",
+      "figma": [
+        {
+          "pageId": "5243:49",
+          "pageName": "11 / Gen2 · Glyth 续工与分支对话",
+          "nodeId": "5249:1665",
+          "name": "08 · 检查来源与确认内容"
+        },
+        {
+          "pageId": "5243:49",
+          "pageName": "11 / Gen2 · Glyth 续工与分支对话",
+          "nodeId": "5249:1975",
+          "name": "09 · 已提交快照，草稿另存"
+        }
+      ],
+      "productionPaths": [
+        "E:\\TRAE项目\\LCOS0.1收口\\LCOS_GEN2_GUI_RECOVERY_20260926\\huabu\\apps\\web\\src\\lcos\\professional\\ConversationWorkViewBody.tsx",
+        "E:\\TRAE项目\\LCOS0.1收口\\LCOS_GEN2_GUI_RECOVERY_20260926\\huabu\\apps\\web\\src\\lcos\\professional\\conversationContinuationActions.ts",
+        "E:\\TRAE项目\\LCOS0.1收口\\LCOS_GEN2_GUI_RECOVERY_20260926\\huabu\\apps\\web\\src\\lcos\\composer\\composerSubmission.ts"
+      ],
+      "date": "2026-09-26",
+      "status": "当前挂载期快照已修",
+      "implemented": "沿原operationId保留请求；嵌套引用复制，失败重试仍用原快照；blank不带旧引用，草稿与提交确认分开。",
+      "remaining": "跨卸载快照未持久化；历史完整引用未由RecoveryProjection提供，不能保证刷新后重绘全快照。",
+      "verification": "surfaces快照/重试/跨目标迟到隔离测试；真实续工控件布局验证。",
+      "evidence": [
+        "E:\\TRAE项目\\LCOS0.1收口\\GUI全量对齐_20260926\\surfaces-batch4-continuation.md"
+      ],
+      "confidence": "按已述源码、行为测试和实际浏览器证据分别记载；非全部验收通过"
+    },
+    {
+      "id": "N35",
+      "name": "创建伴身种子与四阶段可见回执",
+      "figma": [
+        {
+          "pageId": "5243:49",
+          "pageName": "11 / Gen2 · Glyth 续工与分支对话",
+          "nodeId": "5250:319",
+          "name": "10 · 正在创建，只有伴身种子"
+        },
+        {
+          "pageId": "5243:49",
+          "pageName": "11 / Gen2 · Glyth 续工与分支对话",
+          "nodeId": "5250:593",
+          "name": "11 · 外部已创建，正在关联项目"
+        },
+        {
+          "pageId": "5243:49",
+          "pageName": "11 / Gen2 · Glyth 续工与分支对话",
+          "nodeId": "5250:860",
+          "name": "12 · 投影已存在，历史仍待同步"
+        },
+        {
+          "pageId": "5243:49",
+          "pageName": "11 / Gen2 · Glyth 续工与分支对话",
+          "nodeId": "5250:1130",
+          "name": "13 · 正在放入现场，暂不可定位"
+        }
+      ],
+      "productionPaths": [
+        "E:\\TRAE项目\\LCOS0.1收口\\LCOS_GEN2_GUI_RECOVERY_20260926\\huabu\\apps\\web\\src\\lcos\\nodes\\GlythNodeBody.tsx",
+        "E:\\TRAE项目\\LCOS0.1收口\\LCOS_GEN2_GUI_RECOVERY_20260926\\huabu\\apps\\web\\src\\lcos\\professional\\ConversationWorkViewBody.tsx",
+        "E:\\TRAE项目\\LCOS0.1收口\\LCOS_GEN2_GUI_RECOVERY_20260926\\huabu\\apps\\web\\src\\lcos\\professional\\RecoverySection.tsx"
+      ],
+      "date": "2026-09-26",
+      "status": "未完成伴身创建四阶段",
+      "implemented": "accepted明确显示等待外部确认，不声称新会话已完成；原operation恢复机制保留。",
+      "remaining": "伴身种子请求/准备/确认/生成的完整形态与动作串联尚未实现。",
+      "verification": "没有以accepted代成功；动效无运行验收。",
+      "evidence": [
+        "E:\\TRAE项目\\LCOS0.1收口\\GUI全量对齐_20260926\\surfaces-batch4-continuation.md"
+      ],
+      "confidence": "按已述源码、行为测试和实际浏览器证据分别记载；非全部验收通过"
+    },
+    {
+      "id": "N36",
+      "name": "分支创建完成、来源尾迹与精选继承完成",
+      "figma": [
+        {
+          "pageId": "5243:49",
+          "pageName": "11 / Gen2 · Glyth 续工与分支对话",
+          "nodeId": "5250:1397",
+          "name": "14 · 原生分支完成，轻量来源"
+        },
+        {
+          "pageId": "5243:49",
+          "pageName": "11 / Gen2 · Glyth 续工与分支对话",
+          "nodeId": "5250:1670",
+          "name": "15 · 精选上下文完成，独立来源"
+        },
+        {
+          "pageId": "5243:49",
+          "pageName": "11 / Gen2 · Glyth 续工与分支对话",
+          "nodeId": "5262:1078",
+          "name": "28 · 创建完成 · 辉光扩散后收回"
+        }
+      ],
+      "productionPaths": [
+        "E:\\TRAE项目\\LCOS0.1收口\\LCOS_GEN2_GUI_RECOVERY_20260926\\huabu\\apps\\web\\src\\lcos\\ui\\glyth\\glythPresence.ts",
+        "E:\\TRAE项目\\LCOS0.1收口\\LCOS_GEN2_GUI_RECOVERY_20260926\\huabu\\apps\\web\\src\\lcos\\ui\\glyth\\GlythBodyView.tsx",
+        "E:\\TRAE项目\\LCOS0.1收口\\LCOS_GEN2_GUI_RECOVERY_20260926\\huabu\\apps\\web\\src\\lcos\\nodes\\GlythNodeBody.tsx"
+      ],
+      "date": "2026-09-26",
+      "status": "未完成来源尾迹",
+      "implemented": "生成材料保留真实sourceRunId；精选引用确认有真实标签。",
+      "remaining": "新Glyth完成来源尾迹、精选继承可视形态与过渡尚未完成。",
+      "verification": "来源数据单测；伴身尾迹无运行验收。",
+      "evidence": [
+        "E:\\TRAE项目\\LCOS0.1收口\\GUI全量对齐_20260926\\glyth-continuation-shortlist.md"
+      ],
+      "confidence": "按已述源码、行为测试和实际浏览器证据分别记载；非全部验收通过"
+    },
+    {
+      "id": "N37",
+      "name": "续工失败、未知与取消恢复",
+      "figma": [
+        {
+          "pageId": "5243:49",
+          "pageName": "11 / Gen2 · Glyth 续工与分支对话",
+          "nodeId": "5251:407",
+          "name": "16 · 确认未创建，保留草稿"
+        },
+        {
+          "pageId": "5243:49",
+          "pageName": "11 / Gen2 · Glyth 续工与分支对话",
+          "nodeId": "5251:674",
+          "name": "17 · 外部已创建，项目关联失败"
+        },
+        {
+          "pageId": "5243:49",
+          "pageName": "11 / Gen2 · Glyth 续工与分支对话",
+          "nodeId": "5251:941",
+          "name": "18 · 已有对话，仅画布位置失败"
+        },
+        {
+          "pageId": "5243:49",
+          "pageName": "11 / Gen2 · Glyth 续工与分支对话",
+          "nodeId": "5253:509",
+          "name": "19 · 结果未知，查验原操作"
+        },
+        {
+          "pageId": "5243:49",
+          "pageName": "11 / Gen2 · Glyth 续工与分支对话",
+          "nodeId": "5253:776",
+          "name": "20 · 请求取消，不提前收回"
+        },
+        {
+          "pageId": "5243:49",
+          "pageName": "11 / Gen2 · Glyth 续工与分支对话",
+          "nodeId": "5253:1043",
+          "name": "21 · 取消已确认"
+        },
+        {
+          "pageId": "5243:49",
+          "pageName": "11 / Gen2 · Glyth 续工与分支对话",
+          "nodeId": "5252:453",
+          "name": "22 · 取消结果未知"
+        },
+        {
+          "pageId": "5243:49",
+          "pageName": "11 / Gen2 · Glyth 续工与分支对话",
+          "nodeId": "5252:720",
+          "name": "23 · 重启恢复，不重播出生"
+        },
+        {
+          "pageId": "5243:49",
+          "pageName": "11 / Gen2 · Glyth 续工与分支对话",
+          "nodeId": "5252:993",
+          "name": "24 · 能力变化，重新检查"
+        },
+        {
+          "pageId": "5243:49",
+          "pageName": "11 / Gen2 · Glyth 续工与分支对话",
+          "nodeId": "5252:1260",
+          "name": "25 · 原对话不可继续"
+        }
+      ],
+      "productionPaths": [
+        "E:\\TRAE项目\\LCOS0.1收口\\LCOS_GEN2_GUI_RECOVERY_20260926\\huabu\\apps\\web\\src\\lcos\\professional\\RecoverySection.tsx",
+        "E:\\TRAE项目\\LCOS0.1收口\\LCOS_GEN2_GUI_RECOVERY_20260926\\huabu\\apps\\web\\src\\lcos\\professional\\ConversationWorkViewBody.tsx",
+        "E:\\TRAE项目\\LCOS0.1收口\\LCOS_GEN2_GUI_RECOVERY_20260926\\huabu\\apps\\web\\src\\lcos\\nodes\\GlythNodeBody.tsx"
+      ],
+      "date": "2026-09-26",
+      "status": "错误恢复部分完成",
+      "implemented": "现有WorkView恢复入口修正retry_external_create；未知结果不重发、可核对原操作，重试保留intent；身份读取/媒体错误可恢复。",
+      "remaining": "创建伴身全态、取消与晚成功完整动效/语义未全部完成，不能用通用报错替代。",
+      "verification": "surfaces恢复与unknown测试，根域提交重复/旧目标回执隔离回归；身份失败实测。",
+      "evidence": [
+        "E:\\TRAE项目\\LCOS0.1收口\\GUI全量对齐_20260926\\surfaces-batch4-continuation.md"
+      ],
+      "confidence": "按已述源码、行为测试和实际浏览器证据分别记载；非全部验收通过"
+    },
+    {
+      "id": "N38",
+      "name": "焦点薄光边、处理边缘色散和减少动态",
+      "figma": [
+        {
+          "pageId": "5243:49",
+          "pageName": "11 / Gen2 · Glyth 续工与分支对话",
+          "nodeId": "5262:551",
+          "name": "26 · 焦点 · 薄光边，不常驻发光"
+        },
+        {
+          "pageId": "5243:49",
+          "pageName": "11 / Gen2 · Glyth 续工与分支对话",
+          "nodeId": "5262:807",
+          "name": "27 · 处理中 · 色散沿种子边缘流动"
+        },
+        {
+          "pageId": "5243:49",
+          "pageName": "11 / Gen2 · Glyth 续工与分支对话",
+          "nodeId": "5262:1078",
+          "name": "28 · 创建完成 · 辉光扩散后收回"
+        },
+        {
+          "pageId": "5332:2",
+          "pageName": "13 / Gen2 · 集合跨视图与工作流取用",
+          "nodeId": "5353:1476",
+          "name": "R01 / 减少动态效果 · Main"
+        },
+        {
+          "pageId": "5332:2",
+          "pageName": "13 / Gen2 · 集合跨视图与工作流取用",
+          "nodeId": "5353:1949",
+          "name": "R04 / 减少动态效果 · 目标"
+        }
+      ],
+      "productionPaths": [
+        "E:\\TRAE项目\\LCOS0.1收口\\LCOS_GEN2_GUI_RECOVERY_20260926\\huabu\\apps\\web\\src\\lcos\\ui\\glyth\\glyth-presence.css",
+        "E:\\TRAE项目\\LCOS0.1收口\\LCOS_GEN2_GUI_RECOVERY_20260926\\huabu\\apps\\web\\src\\lcos\\ui\\glyth\\glythPresence.ts",
+        "E:\\TRAE项目\\LCOS0.1收口\\LCOS_GEN2_GUI_RECOVERY_20260926\\huabu\\apps\\web\\src\\lcos\\ui\\motion\\glythMotion.ts"
+      ],
+      "date": "2026-09-26",
+      "status": "轻反馈部分完成",
+      "implemented": "现有Glyth attention/receiving及reduced-motion消费保留；Drop轻反馈由根域接入，不铺满大弹窗。",
+      "remaining": "创建/上传/任务/焦点全流程统一边缘弥散未完成；不把静态阴影当动效验收。",
+      "verification": "相关节点布局/状态与root反馈测试；全动效录像仍缺。",
+      "evidence": [
+        "E:\\TRAE项目\\LCOS0.1收口\\GUI全量对齐_20260926\\nodes-lod-implementation.md"
+      ],
+      "confidence": "按已述源码、行为测试和实际浏览器证据分别记载；非全部验收通过"
+    },
+    {
+      "id": "N39",
+      "name": "节点原位空白、重命名、删除/撤销与多选",
+      "figma": [
+        {
+          "pageId": "5185:1051",
+          "pageName": "08 / Gen2 · 第二轮基础操作",
+          "nodeId": "5186:312",
+          "name": "02 · 框选与多选作用范围"
+        },
+        {
+          "pageId": "5185:1051",
+          "pageName": "08 / Gen2 · 第二轮基础操作",
+          "nodeId": "5188:374",
+          "name": "06 · 重命名与输入校验"
+        },
+        {
+          "pageId": "5185:1051",
+          "pageName": "08 / Gen2 · 第二轮基础操作",
+          "nodeId": "5188:889",
+          "name": "08 · 移除与撤销恢复"
+        },
+        {
+          "pageId": "5185:1051",
+          "pageName": "08 / Gen2 · 第二轮基础操作",
+          "nodeId": "5188:1658",
+          "name": "11 · 空画布与继续工作"
+        }
+      ],
+      "productionPaths": [
+        "E:\\TRAE项目\\LCOS0.1收口\\LCOS_GEN2_GUI_RECOVERY_20260926\\huabu\\apps\\web\\src\\lcos\\navigation\\LcosActionArc.tsx",
+        "E:\\TRAE项目\\LCOS0.1收口\\LCOS_GEN2_GUI_RECOVERY_20260926\\huabu\\apps\\web\\src\\lcos\\useLcosCanvasProps.tsx"
+      ],
+      "date": "2026-09-26",
+      "status": "基本机械保留；全操作清单未验完",
+      "implemented": "单击选择、双击材料Reader、原生自由节点编辑、节点控件stopPropagation职责已保留；Arc透明热区及菜单键盘由根域修。",
+      "remaining": "空白创建/重命名/删除撤销/多选复制/IME完整组合需整机实际回归，当前不能标全完成。",
+      "verification": "caller行为和Arc26项，实际邻近Glyth可非force打开；完整基础操作E2E未齐。",
+      "evidence": [
+        "E:\\TRAE项目\\LCOS0.1收口\\GUI全量对齐_20260926\\arc-hit-avoidance-implementation.md"
+      ],
+      "confidence": "按已述源码、行为测试和实际浏览器证据分别记载；非全部验收通过"
+    },
+    {
+      "id": "N40",
+      "name": "源到Reader/WorkView提升与恢复连续性",
+      "figma": [
+        {
+          "pageId": "5095:49",
+          "pageName": "05 / Gen2 · 第二轮空间与角色",
+          "nodeId": "5103:1526",
+          "name": "13 / 文件 · 阅读展开"
+        },
+        {
+          "pageId": "5095:49",
+          "pageName": "05 / Gen2 · 第二轮空间与角色",
+          "nodeId": "5388:27411",
+          "name": "统一主稿 / 阅读器"
+        },
+        {
+          "pageId": "5332:2",
+          "pageName": "13 / Gen2 · 集合跨视图与工作流取用",
+          "nodeId": "5350:20877",
+          "name": "P05 / 门户提升为工作台 · 同目标"
+        }
+      ],
+      "productionPaths": [
+        "E:\\TRAE项目\\LCOS0.1收口\\LCOS_GEN2_GUI_RECOVERY_20260926\\huabu\\apps\\web\\src\\lcos\\nodes\\LcosSpeciesBodies.tsx",
+        "E:\\TRAE项目\\LCOS0.1收口\\LCOS_GEN2_GUI_RECOVERY_20260926\\huabu\\apps\\web\\src\\lcos\\navigation\\LcosActionArc.tsx",
+        "E:\\TRAE项目\\LCOS0.1收口\\LCOS_GEN2_GUI_RECOVERY_20260926\\apps\\web-gen2\\src\\host\\projectionFacade.ts"
+      ],
+      "date": "2026-09-26",
+      "status": "真实窗口目标已接；提升连续动效未完",
+      "implemented": "材料Reader读取精确artifact/revision；Glyth同一个WorkView；单目标/多目标导航保留原来源node与既有owner。",
+      "remaining": "从节点到窗口的完整视觉接管/回落连续morph未做全；portal多态回合仍缺。",
+      "verification": "节点Reader入口/controls回归、surfaces真实revision读链、实际Glyth工作窗。",
+      "evidence": [
+        "E:\\TRAE项目\\LCOS0.1收口\\GUI全量对齐_20260926\\nodes-implementation.md"
+      ],
+      "confidence": "按已述源码、行为测试和实际浏览器证据分别记载；非全部验收通过"
+    },
+    {
+      "id": "N41",
+      "name": "素材装配到画布后的内容真实性",
+      "figma": [
+        {
+          "pageId": "5235:49",
+          "pageName": "10 / Gen2 · 通透玻璃与铝材对照",
+          "nodeId": "5388:96",
+          "name": "统一主稿 / 主画布"
+        },
+        {
+          "pageId": "5332:2",
+          "pageName": "13 / Gen2 · 集合跨视图与工作流取用",
+          "nodeId": "5346:1416",
+          "name": "C01 / 装配 · 瀑布流"
+        }
+      ],
+      "productionPaths": [
+        "E:\\TRAE项目\\LCOS0.1收口\\LCOS_GEN2_GUI_RECOVERY_20260926\\huabu\\apps\\web\\src\\lcos\\nodes\\stageProjectedSources.ts",
+        "E:\\TRAE项目\\LCOS0.1收口\\LCOS_GEN2_GUI_RECOVERY_20260926\\huabu\\apps\\web\\src\\lcos\\useLcosCanvasProps.tsx"
+      ],
+      "date": "2026-09-26",
+      "status": "真实内容落成已修；更多媒体E2E待补",
+      "implemented": "staging沿现有client和upload写真实image/audio/video/PDF；已有源保护、项目检查、content CAS与真实mime不变，不灌假波形或封面。",
+      "remaining": "大文件/权限/切项目与真实视频PDF网页浏览器组合仍需素材；普通集合producer缺口另计。",
+      "verification": "staging真实接口/uploader/CAS测试，Main真图/38秒音频实测；video/PDF/Web暂为组件和接口验证。",
+      "evidence": [
+        "E:\\TRAE项目\\LCOS0.1收口\\GUI全量对齐_20260926\\nodes-implementation.md"
+      ],
+      "confidence": "按已述源码、行为测试和实际浏览器证据分别记载；非全部验收通过"
+    }
+  ]
+}

@@ -1,0 +1,19 @@
+{
+  "rail_overflow_management": "same canonical CAS owner, includes up/down/open/remove; focus follows moved item",
+  "receiver": "existing Glyth renderer + Chinese true collaboration projection",
+  "project_events": "existing shared SSE read-only watchProjectChanges; preserved conversation refcount and reader lifetime",
+  "pin_preview": "exact live image projection only; entity and view remain distinct; load failure falls back to type glyph",
+  "search_pagination": "unsupported by current CoreSearch contract; actual truncated feedback only",
+  "main_atlas": "root canvas uses ordinary switchWorksite; exact child uses existing child helper",
+  "browser_root_context_url": "/projects/lcos-gen2-dev/context",
+  "browser_root_return_button_count": 0,
+  "browser_atlas_after_root_count": 0,
+  "canonical_mutated": false,
+  "screenshots": [
+    "navigation-main-atlas-root.png",
+    "navigation-pin-real-preview.png"
+  ],
+  "rail_browser_fixture_present": false,
+  "console_errors": 0,
+  "console_warnings": 0
+}

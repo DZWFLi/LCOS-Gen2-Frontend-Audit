@@ -1,0 +1,73 @@
+{
+  "date": "2026-09-26",
+  "app": "http://127.0.0.1:5286/projects/lcos-gen2-dev/main",
+  "before": [
+    {
+      "elapsed": 1123,
+      "nodes": 10,
+      "nativeVisible": 10,
+      "skeletons": 0,
+      "glyth": 0,
+      "materials": 0
+    },
+    {
+      "elapsed": 1281,
+      "nodes": 10,
+      "nativeVisible": 0,
+      "skeletons": 9,
+      "glyth": 1,
+      "materials": 0
+    },
+    {
+      "elapsed": 1688,
+      "nodes": 10,
+      "nativeVisible": 0,
+      "skeletons": 0,
+      "glyth": 1,
+      "materials": 8
+    }
+  ],
+  "after": [
+    {
+      "elapsed": 1592,
+      "nodes": 10,
+      "cover": "loading",
+      "nativeVisible": 0,
+      "skeletons": 0,
+      "glyth": 0,
+      "materials": 0
+    },
+    {
+      "elapsed": 1809,
+      "nodes": 10,
+      "cover": null,
+      "nativeVisible": 0,
+      "skeletons": 9,
+      "glyth": 1,
+      "materials": 0
+    },
+    {
+      "elapsed": 2253,
+      "nodes": 10,
+      "cover": null,
+      "nativeVisible": 0,
+      "skeletons": 0,
+      "glyth": 1,
+      "materials": 8
+    }
+  ],
+  "method": "独立浏览器真实项目，DOMContentLoaded后requestAnimationFrame逐帧读取DOM与所有祖先opacity/display及自身visibility。只保存结构改变帧；前后墙钟加载时间不能当性能对比，判断为原生body可见数。",
+  "controlledReadFailure": {
+    "request": "GET **/projects/lcos-gen2-dev/spatial/bindings",
+    "interception": "仅此独立浏览器暂时abort GET，不改服务或数据；解除后点现有重新读取",
+    "recoveredMaterials": 8,
+    "remainingCover": 0
+  },
+  "screenshots": {
+    "pendingIdentityControlled": "nodes-first-load-pending-identity.png",
+    "boundSkeletonNatural": "nodes-first-load-bound-skeletons.png",
+    "readyNatural": "nodes-first-load-ready-fixed.png",
+    "readErrorControlled": "nodes-first-load-error.png"
+  },
+  "knownRemaining": "旧Arc在portal层不受Canvas父层inert影响；已交root在现有eligible条件检查同canvas绑定身份ready，需合并后复测。"
+}

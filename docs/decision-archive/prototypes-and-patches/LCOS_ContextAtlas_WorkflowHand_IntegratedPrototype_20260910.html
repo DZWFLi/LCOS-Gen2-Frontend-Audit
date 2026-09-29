@@ -1,0 +1,455 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>LCOS · Context Atlas + Workflow Hand Prototype</title>
+<style>
+:root{
+  --bg:#eef1f4;--ink:#111419;--muted:#737b86;--line:rgba(17,20,25,.10);
+  --glass:rgba(255,255,255,.78);--glass2:rgba(255,255,255,.94);
+  --shadow:0 24px 78px rgba(27,36,48,.14),0 6px 22px rgba(27,36,48,.07);
+  --ease:cubic-bezier(.22,1,.36,1);--blue:#778cff;--blue2:#b7c2ff;
+}
+*{box-sizing:border-box}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(--ink);font-family:Inter,"PingFang SC","Microsoft YaHei",system-ui,-apple-system,sans-serif}
+button,input{font:inherit;color:inherit}
+button{cursor:pointer}
+#app{position:relative;width:100vw;height:100vh;overflow:hidden;background:
+  radial-gradient(circle at 50% 36%,#fff 0 15%,#f7f9fb 38%,#e7ecf1 77%,#dfe6ed 100%)}
+.grain{position:absolute;inset:0;pointer-events:none;opacity:.12;mix-blend-mode:multiply;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter id='n'/%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.08'/%3E%3C/svg%3E")}
+
+/* worksite */
+.worksite{position:absolute;inset:0;padding:20px 23px 22px;transition:.32s var(--ease)}
+body.overlay-open .worksite{filter:blur(1.2px) saturate(.75);opacity:.42;transform:scale(.994)}
+body.subcanvas-open .worksite{opacity:0;pointer-events:none}
+.top{height:48px;display:flex;align-items:center;justify-content:space-between}
+.brand{display:flex;align-items:center;gap:11px}
+.logo{width:28px;height:28px;border-radius:9px;border:1px solid rgba(0,0,0,.12);background:#fff;display:grid;place-items:center;box-shadow:0 7px 22px rgba(0,0,0,.05)}
+.logo:before{content:"";width:11px;height:11px;border:2px solid #15191e;border-right-color:transparent;border-radius:50%;transform:rotate(22deg)}
+.brand b{font-size:13px}.brand small{display:block;margin-top:2px;font-size:8px;color:#8b929b;letter-spacing:.08em}
+.top-tools{display:flex;gap:7px}.top-tools button{width:35px;height:35px;border-radius:10px;border:1px solid rgba(0,0,0,.08);background:rgba(255,255,255,.72)}
+.canvas{position:absolute;left:23px;right:23px;top:72px;bottom:24px;border:1px solid rgba(0,0,0,.07);border-radius:24px;overflow:hidden;background:
+  linear-gradient(rgba(40,45,52,.032) 1px,transparent 1px),
+  linear-gradient(90deg,rgba(40,45,52,.032) 1px,transparent 1px),
+  rgba(255,255,255,.58);background-size:34px 34px;box-shadow:inset 0 1px 0 rgba(255,255,255,.8)}
+.canvas-note{position:absolute;left:18px;top:14px;font-size:8px;color:#979ca4;letter-spacing:.08em}
+.node{position:absolute;width:165px;height:94px;border-radius:17px;border:1px solid rgba(0,0,0,.1);background:rgba(255,255,255,.91);box-shadow:0 12px 32px rgba(30,38,49,.08);padding:12px}
+.node .type{font-size:7px;letter-spacing:.09em;color:#979da5}.node b{display:block;margin-top:7px;font-size:10px}.node span{display:block;margin-top:5px;font-size:8px;color:#828994;line-height:1.4}
+.node.dark{background:#16191e;color:#fff}.node.dark span,.node.dark .type{color:#89919b}
+
+/* summon strips */
+.rail-wrap{position:absolute;z-index:95;left:50%;bottom:14px;transform:translateX(-50%);display:flex;gap:20px;align-items:center}
+.summon{position:relative;width:260px;height:32px;display:flex;align-items:flex-start;justify-content:center;cursor:pointer}
+.light{position:absolute;left:0;right:0;bottom:6px;height:5px;border-radius:999px;background:linear-gradient(90deg,transparent,rgba(105,128,255,.17) 12%,rgba(119,139,255,.7) 43%,rgba(212,220,255,.96) 50%,rgba(119,139,255,.7) 57%,rgba(105,128,255,.17) 88%,transparent);box-shadow:0 0 15px rgba(114,136,255,.48),0 0 42px rgba(114,136,255,.18);transition:.25s var(--ease)}
+.summon.context .light{background:linear-gradient(90deg,transparent,rgba(150,157,183,.14) 12%,rgba(137,148,178,.58) 43%,rgba(225,229,240,.96) 50%,rgba(137,148,178,.58) 57%,rgba(150,157,183,.14) 88%,transparent);box-shadow:0 0 15px rgba(125,137,169,.34),0 0 42px rgba(125,137,169,.14)}
+.summon:hover .light{height:7px}
+.summon span{font-size:8px;letter-spacing:.08em;color:#747c87;opacity:0;transition:.18s}.summon:hover span{opacity:1}
+body.subcanvas-open .rail-wrap{opacity:0;pointer-events:none}
+
+/* overlay common */
+.overlay{position:absolute;z-index:70;inset:0;opacity:0;pointer-events:none;transition:opacity .26s var(--ease)}
+.overlay.open{opacity:1;pointer-events:auto}
+.backdrop{position:absolute;inset:0;background:rgba(235,240,246,.34);backdrop-filter:blur(3px)}
+.curtain{position:absolute;left:0;right:0;bottom:0;height:38%;background:radial-gradient(ellipse at 50% 100%,rgba(143,161,255,.17),transparent 58%);pointer-events:none}
+.overlay-head{position:absolute;left:28px;right:28px;top:22px;z-index:8;display:flex;justify-content:space-between;align-items:flex-start}
+.overlay-head h1{margin:0;font-size:25px;font-weight:590;letter-spacing:-.04em}
+.overlay-head p{margin:6px 0 0;font-size:9px;color:#777f89;max-width:470px;line-height:1.5}
+.controls{display:flex;gap:7px;align-items:center}
+.segment{display:flex;padding:3px;border-radius:11px;border:1px solid rgba(0,0,0,.08);background:rgba(255,255,255,.68);backdrop-filter:blur(18px)}
+.segment button{border:0;background:transparent;border-radius:8px;padding:7px 10px;font-size:8px;color:#747b85}
+.segment button.active{background:#fff;color:#16191e;box-shadow:0 5px 14px rgba(0,0,0,.07)}
+.searchbox{height:34px;width:230px;border-radius:10px;border:1px solid rgba(0,0,0,.08);background:rgba(255,255,255,.74);backdrop-filter:blur(16px);display:flex;align-items:center;padding:0 9px;gap:6px}
+.searchbox input{border:0;background:transparent;outline:none;width:100%;font-size:8px}
+.iconbtn{width:34px;height:34px;border-radius:10px;border:1px solid rgba(0,0,0,.08);background:rgba(255,255,255,.74)}
+.overlay-hint{position:absolute;left:30px;bottom:20px;font-size:7px;color:#838a94;letter-spacing:.05em}
+
+/* Context atlas */
+.atlas-stage{position:absolute;left:28px;right:28px;top:82px;bottom:54px;overflow:hidden}
+#atlasCanvas{width:100%;height:100%;cursor:grab;touch-action:none}
+#atlasCanvas.dragging{cursor:grabbing}
+.pin{position:absolute;z-index:9;left:0;top:0;transform:translate(-50%,-100%);opacity:0;pointer-events:none;transition:.18s}
+.pin.show{opacity:1}
+.pin-card{min-width:180px;padding:8px 9px;border-radius:10px;background:rgba(255,255,255,.92);border:1px solid rgba(0,0,0,.09);box-shadow:0 13px 34px rgba(28,36,47,.12)}
+.pin-card b{display:block;font-size:9px}.pin-card span{display:block;margin-top:3px;font-size:7px;color:#7e858f}.pin-card em{font-style:normal;display:inline-block;margin-top:5px;font-size:7px;padding:3px 5px;border-radius:5px;background:#eef1f4;color:#666e79}
+.pin-stem{width:1px;height:33px;background:linear-gradient(#161a20,rgba(22,26,32,.15));margin:0 auto}.pin-dot{width:7px;height:7px;border-radius:50%;margin:0 auto;background:#171b20;box-shadow:0 0 0 5px rgba(255,255,255,.7),0 0 0 6px rgba(0,0,0,.08)}
+.atlas-actions{position:absolute;right:28px;bottom:17px;z-index:9;display:flex;gap:6px;opacity:0;pointer-events:none;transform:translateY(7px);transition:.2s}
+.atlas-actions.show{opacity:1;pointer-events:auto;transform:none}
+.atlas-actions button{height:32px;border-radius:9px;border:1px solid rgba(0,0,0,.08);background:rgba(255,255,255,.83);padding:0 9px;font-size:7px}
+.atlas-actions button.primary{background:#15181d;color:#fff}
+
+/* Workflow hand */
+.workflow-stage{position:absolute;left:0;right:0;top:80px;bottom:58px;perspective:1600px;overflow:hidden}
+.hand{position:absolute;left:50%;bottom:38px;width:0;height:0;transform-style:preserve-3d}
+.wcard{position:absolute;width:152px;height:202px;margin-left:-76px;margin-top:-101px;border-radius:18px;transform-origin:50% 115%;will-change:transform,opacity;cursor:pointer;transition:filter .18s}
+.wcard .shell{position:absolute;inset:0;border-radius:18px;border:1px solid rgba(0,0,0,.11);background:linear-gradient(145deg,#fff,#edf1f4);box-shadow:0 20px 50px rgba(27,36,48,.15);overflow:hidden}
+.wcard .cover{position:absolute;left:10px;right:10px;top:10px;height:122px;border-radius:12px;background:var(--cover,linear-gradient(145deg,#dbe1e7,#f4f7f9));overflow:hidden}
+.wcard .cover img{width:100%;height:100%;object-fit:cover;display:block}
+.wcard .cover:after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,transparent,rgba(0,0,0,.08))}
+.wcard .name{position:absolute;left:12px;right:12px;bottom:28px;font-size:9px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.wcard .tag{position:absolute;left:12px;bottom:10px;font-size:7px;color:#747c86}
+.wcard.selected .shell{border-color:rgba(17,20,25,.5)}
+.wcard:hover{filter:brightness(1.02)}
+.workflow-pool{position:absolute;z-index:15;left:50%;top:55%;transform:translate(-50%,-50%) scale(.98);width:min(920px,84vw);height:min(620px,72vh);border-radius:22px;border:1px solid rgba(0,0,0,.09);background:rgba(255,255,255,.86);backdrop-filter:blur(30px);box-shadow:0 28px 90px rgba(26,35,48,.14);opacity:0;pointer-events:none;transition:.24s var(--ease);padding:17px}
+.workflow-pool.open{opacity:1;pointer-events:auto;transform:translate(-50%,-50%) scale(1)}
+.pool-head{display:flex;align-items:center;justify-content:space-between}.pool-head b{font-size:11px}.pool-head small{display:block;margin-top:2px;font-size:7px;color:#8a919a}
+.pool-grid{position:absolute;left:17px;right:17px;top:66px;bottom:17px;overflow:auto;display:grid;grid-template-columns:repeat(auto-fill,minmax(126px,1fr));gap:12px;align-content:start}
+.pool-card{height:164px;border-radius:15px;border:1px solid rgba(0,0,0,.08);background:#fff;padding:8px;cursor:pointer}
+.pool-cover{height:108px;border-radius:10px;background:linear-gradient(145deg,#dce2e7,#f3f6f8);overflow:hidden}.pool-cover img{width:100%;height:100%;object-fit:cover}
+.pool-card b{display:block;font-size:8px;margin-top:7px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.pool-card span{font-size:7px;color:#8a919b}
+.card-pop{position:absolute;z-index:18;width:250px;border-radius:15px;border:1px solid rgba(0,0,0,.09);background:rgba(255,255,255,.91);backdrop-filter:blur(22px);box-shadow:0 18px 50px rgba(27,36,48,.12);padding:13px;opacity:0;pointer-events:none;transform:translateY(8px);transition:.2s}
+.card-pop.open{opacity:1;pointer-events:auto;transform:none}
+.card-pop b{font-size:10px}.card-pop p{font-size:8px;color:#777f89;line-height:1.55}.card-pop .pop-actions{display:flex;gap:6px}.card-pop button{flex:1;height:31px;border-radius:8px;border:1px solid rgba(0,0,0,.08);background:#fff;font-size:7px}.card-pop button.primary{background:#15181d;color:#fff}
+.image-upload{position:absolute;right:28px;bottom:17px;z-index:10;display:none}.image-upload.show{display:flex;gap:6px}
+.image-upload button{height:32px;border-radius:9px;border:1px solid rgba(0,0,0,.08);background:rgba(255,255,255,.8);padding:0 9px;font-size:7px}
+
+/* Subcontext */
+.subcanvas{position:absolute;z-index:110;inset:0;background:radial-gradient(circle at 50% 35%,#fff,#edf1f4 80%);opacity:0;pointer-events:none;transition:.3s var(--ease)}
+body.subcanvas-open .subcanvas{opacity:1;pointer-events:auto}
+.sub-top{position:absolute;z-index:12;left:22px;right:22px;top:17px;height:44px;display:flex;align-items:center;justify-content:space-between}
+.sub-left{display:flex;gap:9px;align-items:center}.back{width:34px;height:34px;border-radius:10px;border:1px solid rgba(0,0,0,.08);background:#fff}.sub-name b{font-size:12px}.sub-name small{display:block;font-size:7px;color:#8c929a;margin-top:2px;letter-spacing:.07em}
+.sub-controls{display:flex;gap:7px}.sub-controls button{height:33px;border-radius:9px;border:1px solid rgba(0,0,0,.08);background:rgba(255,255,255,.76);padding:0 9px;font-size:7px}.sub-controls button.active{background:#171a1f;color:#fff}
+.sub-work{position:absolute;left:56px;right:20px;top:70px;bottom:21px;border:1px solid rgba(0,0,0,.07);border-radius:23px;overflow:hidden;background:
+  linear-gradient(rgba(40,45,52,.032) 1px,transparent 1px),linear-gradient(90deg,rgba(40,45,52,.032) 1px,transparent 1px),rgba(255,255,255,.58);background-size:32px 32px}
+.sub-world{position:absolute;inset:0;transition:transform .48s var(--ease)}
+.snode{position:absolute;width:150px;height:88px;border-radius:16px;border:1px solid rgba(0,0,0,.1);background:rgba(255,255,255,.93);box-shadow:0 11px 30px rgba(27,36,47,.08);padding:11px;transition:left .5s var(--ease),top .5s var(--ease),opacity .18s,transform .2s}
+.snode .type{font-size:7px;color:#979da5;letter-spacing:.08em}.snode b{display:block;margin-top:7px;font-size:9px}.snode span{display:block;margin-top:5px;font-size:7px;color:#848b94;line-height:1.4}
+.snode.dim{opacity:.23}.snode.hot{transform:scale(1.04);box-shadow:0 17px 42px rgba(27,36,47,.15)}
+/* vertical seismic rail */
+.time-rail{position:absolute;z-index:15;left:12px;top:82px;bottom:34px;width:38px}
+.rail-axis{position:absolute;left:20px;top:0;bottom:0;width:1px;background:rgba(20,25,31,.07)}
+.quake{position:absolute;right:0;height:2px;border-radius:999px;background:#cbd0d5;transform:translateY(-50%);cursor:pointer;transition:.18s var(--ease)}
+.quake:hover{background:#7d858f}.quake.active{background:#171b20;height:3px}
+.quake-label{position:absolute;left:45px;transform:translateY(-50%);padding:6px 8px;border-radius:9px;background:rgba(255,255,255,.9);border:1px solid rgba(0,0,0,.08);box-shadow:0 9px 24px rgba(25,34,46,.08);font-size:7px;white-space:nowrap;opacity:0;pointer-events:none;transition:.15s}
+.quake-label.show{opacity:1}
+/* warehouse */
+.whandle{position:absolute;z-index:15;right:8px;top:50%;transform:translateY(-50%);width:30px;height:118px;border-radius:12px;border:1px solid rgba(0,0,0,.08);background:rgba(255,255,255,.72);writing-mode:vertical-rl;font-size:7px;letter-spacing:.07em}
+.warehouse{position:absolute;z-index:14;right:18px;top:75px;bottom:26px;width:315px;border-radius:20px;border:1px solid rgba(0,0,0,.09);background:rgba(255,255,255,.88);backdrop-filter:blur(26px);box-shadow:0 22px 65px rgba(27,36,48,.12);transform:translateX(calc(100% + 40px));transition:.3s var(--ease);padding:15px}
+.warehouse.open{transform:none}
+.whead{display:flex;align-items:center;justify-content:space-between}.whead b{font-size:10px}.whead button{border:0;background:transparent}
+.wsearch{margin-top:10px;height:34px;border-radius:10px;border:1px solid rgba(0,0,0,.08);background:#f6f8fa;display:flex;align-items:center;padding:0 9px;gap:6px}.wsearch input{border:0;outline:none;background:transparent;width:100%;font-size:8px}
+.wcats{display:flex;gap:4px;margin:10px 0}.wcats button{border:1px solid rgba(0,0,0,.07);background:#fff;border-radius:7px;padding:5px 6px;font-size:6.5px;color:#717983}.wcats button.active{background:#171a1f;color:#fff}
+.witems{position:absolute;left:15px;right:15px;top:112px;bottom:14px;overflow:auto}
+.witem{display:flex;gap:8px;padding:9px 0;border-bottom:1px solid rgba(0,0,0,.065);cursor:grab}.wthumb{width:40px;height:32px;border-radius:8px;background:linear-gradient(145deg,#dce2e7,#f5f7f9);border:1px solid rgba(0,0,0,.06);flex:none}.witem b{display:block;font-size:7.5px}.witem span{display:block;margin-top:3px;font-size:6.5px;color:#8b919a}.witem.pinitem .wthumb{box-shadow:inset 0 0 0 2px #778cff}
+
+/* workflow region mock after open */
+.workflow-region{position:absolute;z-index:120;inset:0;background:radial-gradient(circle at 50% 35%,#fff,#edf1f4 80%);opacity:0;pointer-events:none;transition:.28s}
+body.workflow-open .workflow-region{opacity:1;pointer-events:auto}
+.wr-head{position:absolute;left:22px;right:22px;top:18px;display:flex;align-items:center;gap:10px}.wr-head b{font-size:12px}.wr-head span{font-size:7px;color:#878e97}.wr-canvas{position:absolute;left:20px;right:20px;top:68px;bottom:20px;border-radius:23px;border:1px solid rgba(0,0,0,.07);background:rgba(255,255,255,.58)}
+@media(max-width:900px){
+  .searchbox{width:150px}.overlay-head p{display:none}.rail-wrap{gap:8px}.summon{width:170px}.workflow-pool{width:92vw}.atlas-stage{left:12px;right:12px}
+}
+@media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+<div id="app">
+<div class="grain"></div>
+
+<section class="worksite">
+  <div class="top">
+    <div class="brand"><div class="logo"></div><div><b>LCOS · Worksite</b><small>Main / Context / Workflow share the same project truth</small></div></div>
+    <div class="top-tools"><button>⌕</button><button>＋</button><button>···</button></div>
+  </div>
+  <div class="canvas">
+    <div class="canvas-note">CURRENT REAL WORK CANVAS · PRESS C FOR CONTEXT · PRESS W FOR WORKFLOWS</div>
+    <div class="node" style="left:10%;top:21%"><span class="type">CONVERSATION</span><b>当前讨论</b><span>Context / Workflow GUI 收敛</span></div>
+    <div class="node dark" style="left:40%;top:34%"><span class="type">ARTIFACT</span><b>T5 Visual Contract</b><span>正在迭代 · 当前选择</span></div>
+    <div class="node" style="left:69%;top:18%"><span class="type">REFERENCE</span><b>Rhine Motion</b><span>2.5D / Camera / ripple donor</span></div>
+    <div class="node" style="left:64%;top:64%"><span class="type">RESULT</span><b>Gen2 Construction</b><span>主体施工即将开始</span></div>
+  </div>
+</section>
+
+<div class="rail-wrap">
+  <div class="summon context" id="contextSummon"><span>CONTEXT · C</span><div class="light"></div></div>
+  <div class="summon" id="workflowSummon"><span>WORKFLOW · W</span><div class="light"></div></div>
+</div>
+
+<!-- Context Atlas -->
+<section class="overlay" id="contextOverlay">
+  <div class="backdrop" data-dismiss="context"></div><div class="curtain"></div>
+  <div class="overlay-head">
+    <div><h1>Project Context</h1><p>集合级视觉层。规整排布、阵列波浪、Focus 抽出、Glyth/Pin 标记。可以搜索、合并、拆分，但不承担细致编辑。</p></div>
+    <div class="controls">
+      <div class="searchbox"><span>⌕</span><input id="atlasSearch" placeholder="搜索 Context / 标签 / 性质"/></div>
+      <div class="segment"><button class="active" data-atlas="time">时间</button><button data-atlas="nature">性质</button></div>
+      <button class="iconbtn" id="atlasReset">⌂</button>
+    </div>
+  </div>
+  <div class="atlas-stage" id="atlasStage">
+    <canvas id="atlasCanvas"></canvas>
+    <div class="pin" id="atlasPin"><div class="pin-card"><b id="pinTitle">Context</b><span id="pinMeta"></span><em id="pinGlyph">GLYTH / PIN</em></div><div class="pin-stem"></div><div class="pin-dot"></div></div>
+  </div>
+  <div class="overlay-hint">Hover / Click 波浪响应 · Shift+Click 多选 · 双击 / Enter 进入子 Context Canvas · 点击背景退下</div>
+  <div class="atlas-actions" id="atlasActions"><button>Agent 拆分</button><button>合并</button><button>提取</button><button>删除集合</button><button class="primary" id="openSub">进入子画布</button></div>
+</section>
+
+<!-- Workflow Hand -->
+<section class="overlay" id="workflowOverlay">
+  <div class="backdrop" data-dismiss="workflow"></div><div class="curtain"></div>
+  <div class="overlay-head">
+    <div><h1>Workflows</h1><p>一张小卡 = 一个完整 Workflow。卡面只保留材质 / 图片 / 名字 / 标签；单击看详情，双击或 Enter 直接定位真实 Workflow。</p></div>
+    <div class="controls">
+      <div class="searchbox"><span>⌕</span><input id="workflowSearch" placeholder="搜索 Workflow"/></div>
+      <button class="iconbtn" id="poolBtn" title="打开卡牌池">▦</button>
+    </div>
+  </div>
+  <div class="workflow-stage"><div class="hand" id="hand"></div></div>
+  <div class="card-pop" id="cardPop"><b id="popTitle"></b><p id="popText"></p><div class="pop-actions"><button id="popImage">换图片</button><button class="primary" id="popOpen">打开 Workflow</button></div></div>
+  <div class="workflow-pool" id="workflowPool"><div class="pool-head"><div><b>Workflow Card Pool</b><small>卡多时直接扫池，不用滚二十下</small></div><button class="iconbtn" id="closePool">×</button></div><div class="pool-grid" id="poolGrid"></div></div>
+  <div class="image-upload" id="imageUpload"><input id="imageFile" type="file" accept="image/*" hidden/><button id="uploadBtn">上传卡面图片</button></div>
+  <div class="overlay-hint">滚轮 / ← → 轮转 · 单击预览 · 双击 / Enter 定位 · ▦ 打开卡牌池</div>
+</section>
+
+<!-- Subcontext -->
+<section class="subcanvas" id="subcanvas">
+  <div class="sub-top">
+    <div class="sub-left"><button class="back" id="subBack">←</button><div class="sub-name"><b id="subTitle">Context</b><small>CHILD CONTEXT CANVAS · AGENT-ARRANGED REPRESENTATION</small></div></div>
+    <div class="sub-controls"><button class="active" data-subview="time">按时间排布</button><button data-subview="concept">按概念排布</button><button id="warehouseBtn">Assembly</button></div>
+  </div>
+  <div class="time-rail" id="timeRail"><div class="rail-axis"></div></div>
+  <div class="sub-work" id="subWork"><div class="sub-world" id="subWorld"></div></div>
+  <button class="whandle" id="whandle">ASSEMBLY</button>
+  <aside class="warehouse" id="warehouse">
+    <div class="whead"><b>Project Warehouse</b><button id="wclose">×</button></div>
+    <div class="wsearch"><span>⌕</span><input id="wsearch" placeholder="RAG 语义搜索项目里的任何东西"/></div>
+    <div class="wcats"><button class="active" data-wcat="pinned">Pinned</button><button data-wcat="all">全部</button><button data-wcat="context">Context</button><button data-wcat="workflow">Workflow</button><button data-wcat="artifact">文件</button></div>
+    <div class="witems" id="witems"></div>
+  </aside>
+</section>
+
+<!-- Workflow real region -->
+<section class="workflow-region" id="workflowRegion">
+  <div class="wr-head"><button class="back" id="wrBack">←</button><div><b id="wrTitle">Workflow</b><span>REAL WORKFLOW REGION / SUBCANVAS · IMPLEMENTATION MAY VARY</span></div></div>
+  <div class="wr-canvas"></div>
+</section>
+
+</div>
+<script>
+const body=document.body;
+const ctxData=[
+ {title:'项目启动',nature:'Brief',date:'08/12',items:8,act:35,glyph:'◆'},
+ {title:'产品冻结',nature:'Decision',date:'08/18',items:21,act:72,glyph:'●'},
+ {title:'架构审计',nature:'Architecture',date:'08/23',items:17,act:58,glyph:'◇'},
+ {title:'Context 点线面',nature:'Context',date:'08/29',items:26,act:92,glyph:'✦'},
+ {title:'Workflow 语义',nature:'Workflow',date:'09/01',items:19,act:68,glyph:'▰'},
+ {title:'Donor Census',nature:'Research',date:'09/03',items:24,act:83,glyph:'⌘'},
+ {title:'Rhine Motion',nature:'Interaction',date:'09/05',items:15,act:54,glyph:'◉'},
+ {title:'Skill Intelligence',nature:'Skill',date:'09/07',items:22,act:77,glyph:'✣'},
+ {title:'T5 Visual',nature:'Design',date:'09/08',items:12,act:46,glyph:'◫'},
+ {title:'主体施工',nature:'Construction',date:'09/09',items:29,act:96,glyph:'▣'},
+ {title:'T7 专项',nature:'Future',date:'09/10',items:10,act:41,glyph:'◎'},
+ {title:'复盘与归档',nature:'Review',date:'09/10',items:13,act:49,glyph:'□'}
+];
+const wfData=Array.from({length:20},(_,i)=>({
+ title:['T5 视觉收敛','Gen2 主体施工','Context Refinement','Skill Intelligence','Donor Audit','素材研究','产品冻结','Workflow 复盘','Assembly 整理','T6 GUI','Run Review','Motion Lab','界面验收','交付工作流','快速研究','视觉探索','用户反馈','质量检查','版本收口','归档流程'][i],
+ tag:['Design','Build','Context','Skill','Audit','Research'][i%6],
+ color:[['#d9dfe5','#f7f9fb'],['#ded5c9','#f6f1eb'],['#d3ddd5','#f4f7f4'],['#d8d0e1','#f6f2f8'],['#cdd6df','#f0f4f7']][i%5],
+ image:null
+}));
+
+/* overlay management */
+const overlays={context:document.getElementById('contextOverlay'),workflow:document.getElementById('workflowOverlay')};
+let activeOverlay=null;
+function showOverlay(name){
+  Object.values(overlays).forEach(o=>o.classList.remove('open'));
+  overlays[name].classList.add('open');activeOverlay=name;body.classList.add('overlay-open');
+  if(name==='context')setTimeout(resizeAtlas,20);
+}
+function hideOverlay(){
+  if(activeOverlay)overlays[activeOverlay].classList.remove('open');activeOverlay=null;body.classList.remove('overlay-open')
+}
+document.getElementById('contextSummon').onclick=()=>activeOverlay==='context'?hideOverlay():showOverlay('context');
+document.getElementById('workflowSummon').onclick=()=>activeOverlay==='workflow'?hideOverlay():showOverlay('workflow');
+document.querySelectorAll('[data-dismiss]').forEach(x=>x.onclick=e=>{if(e.target===x)hideOverlay()});
+document.addEventListener('keydown',e=>{
+ if(body.classList.contains('subcanvas-open')||body.classList.contains('workflow-open'))return;
+ if((e.key==='c'||e.key==='C')&&!['INPUT','TEXTAREA'].includes(document.activeElement.tagName)){e.preventDefault();activeOverlay==='context'?hideOverlay():showOverlay('context')}
+ if((e.key==='w'||e.key==='W')&&!['INPUT','TEXTAREA'].includes(document.activeElement.tagName)){e.preventDefault();activeOverlay==='workflow'?hideOverlay():showOverlay('workflow')}
+ if(e.key==='Escape')hideOverlay()
+});
+
+/* CONTEXT ATLAS 2.5D canvas */
+const atlasStage=document.getElementById('atlasStage'),ac=document.getElementById('atlasCanvas'),ax=ac.getContext('2d'),pin=document.getElementById('atlasPin'),actions=document.getElementById('atlasActions');
+let AW=0,AH=0,adpr=1,atlasSort='time',atlasOrder=[...ctxData.keys()],atlasSearch='',asel=-1,ahover=-1;
+let panX=0,panY=0,zoom=1,tpanX=0,tpanY=0,tzoom=1,adrag=false,alastX=0,alastY=0,amoved=false;
+let waveI=3,waveT=performance.now()/1000,hits=[];
+const positions=ctxData.map(()=>({x:0,y:0,tx:0,ty:0,vx:0,vy:0,focus:0,vf:0}));
+function resizeAtlas(){
+ const r=atlasStage.getBoundingClientRect();AW=r.width;AH=r.height;adpr=Math.min(devicePixelRatio,1.6);ac.width=AW*adpr;ac.height=AH*adpr;ac.style.width=AW+'px';ac.style.height=AH+'px';ax.setTransform(adpr,0,0,adpr,0,0);layoutAtlas(true)
+}
+addEventListener('resize',resizeAtlas);
+function layoutAtlas(snap=false){
+ const cols=AW<800?3:4,rows=Math.ceil(atlasOrder.length/cols),sx=Math.min(188,AW/(cols+1.05)),sy=Math.min(126,AH/(rows+1.05));
+ atlasOrder.forEach((idx,pos)=>{
+   const row=Math.floor(pos/cols),col=pos%cols;
+   let x=(col-(cols-1)/2)*sx,y=(row-(rows-1)/2)*sy;
+   if(atlasSort==='nature'){const n=ctxData[idx].nature.charCodeAt(0);x+=((n%3)-1)*10;y+=(n%2)*7}
+   positions[idx].tx=x;positions[idx].ty=y;if(snap){positions[idx].x=x;positions[idx].y=y}
+ })
+}
+function damp(o,k,vk,target,rate,dt){const d=o[k]-target,imp=o[vk]+rate*d,dec=Math.exp(-rate*dt);o[k]=target+(d+imp*dt)*dec;o[vk]=(o[vk]-rate*imp*dt)*dec}
+function project(x,y,z){return[AW/2+(x-y*.28+panX)*zoom,AH*.56+(y*.54+panY-z)*zoom]}
+function poly(pts,fill,stroke='rgba(17,21,27,.11)'){ax.beginPath();pts.forEach((p,i)=>i?ax.lineTo(...p):ax.moveTo(...p));ax.closePath();ax.fillStyle=fill;ax.fill();ax.strokeStyle=stroke;ax.lineWidth=1;ax.stroke()}
+function inside(x,y,pts){let c=false;for(let i=0,j=pts.length-1;i<pts.length;j=i++){const a=pts[i],b=pts[j];if(((a[1]>y)!=(b[1]>y))&&(x<(b[0]-a[0])*(y-a[1])/(b[1]-a[1]+1e-9)+a[0]))c=!c}return c}
+function gridDist(a,b){const cols=AW<800?3:4,pa=atlasOrder.indexOf(a),pb=atlasOrder.indexOf(b);return Math.hypot(Math.floor(pa/cols)-Math.floor(pb/cols),((pa%cols)-(pb%cols))*1.12)}
+const pal=[['#f3f4f6','#ced6dc','#b6c1c9'],['#f3efe9','#dccfbe','#bdad95'],['#eef2f4','#cad5dd','#aebdc7'],['#eef3ef','#cad7cc','#a9baab'],['#f0f1f6','#cbd0df','#adb7cf'],['#f3f0f6','#d6cce0','#bcaeca']];
+function drawAtlas(t){
+ ax.clearRect(0,0,AW,AH);hits=[];
+ // subtle avenue/street
+ ax.save();ax.globalAlpha=.32;ax.strokeStyle='rgba(27,33,41,.12)';ax.lineWidth=14;ax.lineCap='round';
+ let s1=project(-390,-10,-8),e1=project(400,-10,-8);ax.beginPath();ax.moveTo(...s1);ax.lineTo(...e1);ax.stroke();
+ ax.lineWidth=1;ax.strokeStyle='rgba(27,33,41,.11)';
+ for(let i=-4;i<=4;i++){let a=project(i*150,-300,0),b=project(i*150,300,0);ax.beginPath();ax.moveTo(...a);ax.lineTo(...b);ax.stroke()}
+ for(let i=-3;i<=3;i++){let a=project(-460,i*120,0),b=project(460,i*120,0);ax.beginPath();ax.moveTo(...a);ax.lineTo(...b);ax.stroke()}
+ ax.restore();
+ const q=atlasSearch.trim().toLowerCase();
+ const order=[...ctxData.keys()].sort((a,b)=>positions[a].y-positions[b].y);
+ order.forEach(i=>{
+  const d=ctxData[i],p=positions[i],match=!q||(d.title+d.nature+d.date).toLowerCase().includes(q);
+  const age=t-waveT,dist=gridDist(i,waveI),wave=age<3&&age>=0?Math.exp(-Math.pow(dist-age*2.45,2)/1.28)*Math.exp(-age*.72)*Math.cos((dist-age*2.45)*1.1)*16:0;
+  const h=34+d.act*.62+wave+p.focus*55,w=112,dep=42,[cx,cy]=project(p.x,p.y,0),topY=cy-h*zoom;
+  const top=[[cx-w/2*zoom,topY],[cx+w/2*zoom,topY],[cx+w/2*zoom+dep*.32*zoom,topY-dep*.25*zoom],[cx-w/2*zoom+dep*.32*zoom,topY-dep*.25*zoom]];
+  const front=[[cx-w/2*zoom,topY],[cx+w/2*zoom,topY],[cx+w/2*zoom,cy],[cx-w/2*zoom,cy]];
+  const side=[[cx+w/2*zoom,topY],[cx+w/2*zoom+dep*.32*zoom,topY-dep*.25*zoom],[cx+w/2*zoom+dep*.32*zoom,cy-dep*.25*zoom],[cx+w/2*zoom,cy]];
+  ax.save();ax.globalAlpha=(asel>=0&&i!==asel?.66:1)*(match?1:.12);
+  ax.filter='blur(7px)';ax.fillStyle='rgba(27,36,48,.11)';ax.beginPath();ax.ellipse(cx+9,cy+8,w*.47*zoom,8*zoom,0,0,6.28);ax.fill();ax.filter='none';
+  const c=pal[i%pal.length];poly(front,c[0]);poly(side,c[2]);poly(top,c[1]);
+  if(i===asel||i===ahover){ax.strokeStyle=i===asel?'rgba(15,18,23,.72)':'rgba(15,18,23,.34)';ax.lineWidth=i===asel?2:1.2;ax.beginPath();ax.moveTo(...top[0]);top.slice(1).forEach(v=>ax.lineTo(...v));ax.closePath();ax.stroke()}
+  if(zoom>.82){ax.fillStyle='rgba(20,24,29,.9)';ax.font=`${Math.max(8,9*zoom)}px system-ui`;ax.fillText(d.title,cx-w/2*zoom+7,Math.min(cy-9,topY+18));ax.fillStyle='rgba(77,84,94,.68)';ax.font=`${Math.max(7,7*zoom)}px system-ui`;ax.fillText(`${d.date} · ${d.items}`,cx-w/2*zoom+7,Math.min(cy+2,topY+30))}
+  ax.restore();hits.push({i,pts:front.concat(side,top),anchor:[cx+dep*.08*zoom,topY-dep*.12*zoom]})
+ });
+ updatePin()
+}
+function updatePin(){
+ if(asel<0){pin.classList.remove('show');return}const h=hits.find(h=>h.i===asel);if(!h)return;pin.style.left=h.anchor[0]+'px';pin.style.top=(h.anchor[1]-4)+'px';pin.classList.add('show')
+}
+function atlasHit(x,y){for(let k=hits.length-1;k>=0;k--)if(inside(x,y,hits[k].pts))return hits[k].i;return-1}
+function focusAtlas(i){
+ asel=i;waveI=i;waveT=performance.now()/1000;positions.forEach((p,j)=>p.focus=j===i?1:0);const d=ctxData[i];document.getElementById('pinTitle').textContent=d.title;document.getElementById('pinMeta').textContent=`${d.nature} · ${d.date} · ${d.items} items`;document.getElementById('pinGlyph').textContent=`${d.glyph} GLYTH / PIN`;actions.classList.add('show');tzoom=1.08
+}
+function clearAtlasFocus(){asel=-1;positions.forEach(p=>p.focus=0);actions.classList.remove('show');pin.classList.remove('show');tzoom=1}
+document.getElementById('atlasSearch').addEventListener('input',e=>{atlasSearch=e.target.value;const q=atlasSearch.trim().toLowerCase();const i=ctxData.findIndex(d=>(d.title+d.nature).toLowerCase().includes(q));if(q&&i>=0){waveI=i;waveT=performance.now()/1000}});
+document.querySelectorAll('[data-atlas]').forEach(b=>b.onclick=()=>{document.querySelectorAll('[data-atlas]').forEach(x=>x.classList.remove('active'));b.classList.add('active');atlasSort=b.dataset.atlas;atlasOrder=atlasSort==='time'?[...ctxData.keys()]:[...ctxData.keys()].sort((a,b)=>ctxData[a].nature.localeCompare(ctxData[b].nature));layoutAtlas();waveI=atlasOrder[Math.floor(atlasOrder.length/2)];waveT=performance.now()/1000});
+document.getElementById('atlasReset').onclick=()=>{tpanX=tpanY=0;tzoom=1;clearAtlasFocus()};
+atlasStage.addEventListener('pointerdown',e=>{adrag=true;amoved=false;alastX=e.clientX;alastY=e.clientY;ac.setPointerCapture(e.pointerId);ac.classList.add('dragging')});
+atlasStage.addEventListener('pointermove',e=>{const r=atlasStage.getBoundingClientRect();if(adrag){const dx=e.clientX-alastX,dy=e.clientY-alastY;alastX=e.clientX;alastY=e.clientY;if(Math.abs(dx)+Math.abs(dy)>2)amoved=true;tpanX+=dx/zoom;tpanY+=dy/zoom;return}const i=atlasHit(e.clientX-r.left,e.clientY-r.top);if(i!==ahover){ahover=i;if(i>=0){waveI=i;waveT=performance.now()/1000}}});
+atlasStage.addEventListener('pointerup',e=>{adrag=false;ac.classList.remove('dragging');const r=atlasStage.getBoundingClientRect(),i=atlasHit(e.clientX-r.left,e.clientY-r.top);if(!amoved&&i>=0)focusAtlas(i)});
+atlasStage.addEventListener('dblclick',e=>{const r=atlasStage.getBoundingClientRect(),i=atlasHit(e.clientX-r.left,e.clientY-r.top);if(i>=0)enterSub(i)});
+atlasStage.addEventListener('wheel',e=>{e.preventDefault();tzoom=Math.max(.72,Math.min(1.32,tzoom-e.deltaY*.0007))},{passive:false});
+document.getElementById('openSub').onclick=()=>asel>=0&&enterSub(asel);
+
+/* WORKFLOW cards */
+const hand=document.getElementById('hand'),pool=document.getElementById('workflowPool'),poolGrid=document.getElementById('poolGrid'),pop=document.getElementById('cardPop');
+let wfSel=2,wfPos=2,wfTarget=2,wfCards=[];
+function cardCoverStyle(d){return d.image?`background-image:url("${d.image}");background-size:cover;background-position:center;`:`background:linear-gradient(145deg,${d.color[0]},${d.color[1]});`}
+function renderHand(){
+ hand.innerHTML='';wfCards=[];
+ wfData.forEach((d,i)=>{const el=document.createElement('div');el.className='wcard';el.dataset.i=i;el.innerHTML=`<div class="shell"><div class="cover" style="${cardCoverStyle(d)}">${d.image?`<img src="${d.image}">`:''}</div><div class="name">${d.title}</div><div class="tag">${d.tag}</div></div>`;el.onclick=e=>{e.stopPropagation();if(Math.abs(i-wfSel)>.1){wfTarget=i;wfSel=i}else showCardPop(i,el)};el.ondblclick=e=>{e.stopPropagation();openWorkflow(i)};hand.appendChild(el);wfCards.push(el)})
+}
+renderHand();
+function updateCards(){
+ wfCards.forEach((el,i)=>{const d=i-wfPos,abs=Math.abs(d),x=d*108,rot=d*7,scale=1-Math.min(abs,1.3)*.08,y=abs*15-(i===wfSel?18:0),z=-abs*48;el.style.transform=`translate3d(${x}px,${y}px,${z}px) rotate(${rot}deg) scale(${scale})`;el.style.opacity=Math.max(.2,1-abs*.18);el.style.zIndex=String(60-Math.round(abs*4));el.classList.toggle('selected',i===wfSel)})
+}
+function showCardPop(i,el){
+ const d=wfData[i],r=el.getBoundingClientRect();document.getElementById('popTitle').textContent=d.title;document.getElementById('popText').textContent=`${d.tag} · 完整 Workflow。这里只显示最轻量信息；打开后才进入真实工作区域。`;pop.style.left=Math.min(innerWidth-270,r.left+r.width+10)+'px';pop.style.top=Math.max(90,r.top+10)+'px';pop.dataset.i=i;pop.classList.add('open');document.getElementById('imageUpload').classList.add('show')
+}
+document.getElementById('popOpen').onclick=()=>openWorkflow(Number(pop.dataset.i));
+document.getElementById('poolBtn').onclick=()=>{renderPool();pool.classList.add('open')};
+document.getElementById('closePool').onclick=()=>pool.classList.remove('open');
+document.getElementById('workflowSearch').addEventListener('input',e=>{const q=e.target.value.toLowerCase();const i=wfData.findIndex(d=>(d.title+d.tag).toLowerCase().includes(q));if(i>=0){wfTarget=i;wfSel=i}});
+function renderPool(){
+ const q=document.getElementById('workflowSearch').value.toLowerCase();poolGrid.innerHTML=wfData.map((d,i)=>({d,i})).filter(x=>(x.d.title+x.d.tag).toLowerCase().includes(q)).map(({d,i})=>`<div class="pool-card" data-i="${i}"><div class="pool-cover" style="${cardCoverStyle(d)}">${d.image?`<img src="${d.image}">`:''}</div><b>${d.title}</b><span>${d.tag}</span></div>`).join('');poolGrid.querySelectorAll('.pool-card').forEach(el=>{el.onclick=()=>{wfSel=wfTarget=Number(el.dataset.i);pool.classList.remove('open')};el.ondblclick=()=>openWorkflow(Number(el.dataset.i))})
+}
+document.getElementById('uploadBtn').onclick=()=>document.getElementById('imageFile').click();
+document.getElementById('popImage').onclick=()=>document.getElementById('imageFile').click();
+document.getElementById('imageFile').onchange=e=>{const f=e.target.files[0];if(!f)return;const rd=new FileReader();rd.onload=()=>{const i=Number(pop.dataset.i>=0?pop.dataset.i:wfSel);wfData[i].image=rd.result;renderHand();renderPool()};rd.readAsDataURL(f)};
+document.getElementById('workflowOverlay').addEventListener('wheel',e=>{if(pool.classList.contains('open'))return;e.preventDefault();wfTarget=Math.max(0,Math.min(wfData.length-1,wfTarget+Math.sign(e.deltaY||e.deltaX)));wfSel=Math.round(wfTarget)},{passive:false});
+document.addEventListener('keydown',e=>{
+ if(activeOverlay!=='workflow'||body.classList.contains('workflow-open'))return;
+ if(e.key==='ArrowRight'){wfTarget=Math.min(wfData.length-1,Math.round(wfTarget)+1);wfSel=Math.round(wfTarget)}
+ if(e.key==='ArrowLeft'){wfTarget=Math.max(0,Math.round(wfTarget)-1);wfSel=Math.round(wfTarget)}
+ if(e.key==='Enter')openWorkflow(wfSel)
+});
+function openWorkflow(i){hideOverlay();body.classList.add('workflow-open');document.getElementById('wrTitle').textContent=wfData[i].title;pop.classList.remove('open');pool.classList.remove('open')}
+document.getElementById('wrBack').onclick=()=>body.classList.remove('workflow-open');
+
+/* SUBCONTEXT */
+const subNodes=[
+ {type:'Conversation',title:'需求原话',time:0.10,concept:0},
+ {type:'Artifact',title:'冻结稿 V2',time:0.21,concept:1},
+ {type:'Run',title:'源码审计',time:0.34,concept:2},
+ {type:'Decision',title:'点线面裁决',time:0.43,concept:1},
+ {type:'Reference',title:'Rhine Motion',time:0.58,concept:3},
+ {type:'Feedback',title:'用户反馈',time:0.64,concept:0},
+ {type:'Skill',title:'Context Refinement',time:0.72,concept:3},
+ {type:'Artifact',title:'GUI Prototype',time:0.84,concept:2},
+ {type:'Review',title:'复盘',time:0.92,concept:0}
+];
+let subIndex=3,subView='time',timeActive=-1;
+function enterSub(i){subIndex=i;hideOverlay();body.classList.add('subcanvas-open');document.getElementById('subTitle').textContent=ctxData[i].title;renderSub();renderRail();renderWarehouse()}
+function leaveSub(){body.classList.remove('subcanvas-open')}
+document.getElementById('subBack').onclick=leaveSub;
+function renderSub(){
+ const w=document.getElementById('subWorld');w.innerHTML='';
+ const R=document.getElementById('subWork').getBoundingClientRect();
+ subNodes.forEach((n,i)=>{const el=document.createElement('div');el.className='snode';el.dataset.i=i;el.innerHTML=`<span class="type">${n.type}</span><b>${n.title}</b><span>${subView==='time'?'按时间位置组织':'Agent 按概念簇组织'}</span>`;w.appendChild(el);
+   let x,y;
+   if(subView==='time'){x=12+(i%3)*28+(i%2)*4;y=10+n.time*68}
+   else{const anchors=[[18,22],[46,20],[28,58],[67,52]][n.concept];x=anchors[0]+(i%2)*7;y=anchors[1]+(i%3)*5}
+   el.style.left=`${x}%`;el.style.top=`${y}%`
+ })
+}
+document.querySelectorAll('[data-subview]').forEach(b=>b.onclick=()=>{document.querySelectorAll('[data-subview]').forEach(x=>x.classList.remove('active'));b.classList.add('active');subView=b.dataset.subview;renderSub()});
+function renderRail(){
+ const rail=document.getElementById('timeRail');rail.querySelectorAll('.quake,.quake-label').forEach(x=>x.remove());
+ subNodes.forEach((n,i)=>{const q=document.createElement('div');q.className='quake';q.style.top=(8+n.time*84)+'%';q.style.width=(6+((i*7)%23))+'px';q.dataset.i=i;rail.appendChild(q);
+   const lab=document.createElement('div');lab.className='quake-label';lab.style.top=q.style.top;lab.textContent=`${String(9+Math.floor(n.time*8)).padStart(2,'0')}:${String(Math.floor((n.time*100)%60)).padStart(2,'0')} · ${n.title}`;rail.appendChild(lab);
+   q.onmouseenter=()=>{lab.classList.add('show');highlightTime(i,false)};q.onmouseleave=()=>{lab.classList.remove('show');if(timeActive<0)highlightTime(-1,false)};q.onclick=()=>{timeActive=i;rail.querySelectorAll('.quake').forEach((e,j)=>e.classList.toggle('active',j===i));highlightTime(i,true)}
+ })
+}
+function highlightTime(i,move){
+ document.querySelectorAll('.snode').forEach((el,j)=>{el.classList.toggle('dim',i>=0&&j!==i&&Math.abs(j-i)>1);el.classList.toggle('hot',j===i)});
+ if(move&&i>=0){const n=subNodes[i],world=document.getElementById('subWorld');world.style.transform=`translate(${(0.5-(i%3)/3)*80}px,${(0.5-n.time)*80}px)`}
+}
+
+/* Warehouse with global Pinned */
+const whData=[
+ {type:'pinned',title:'产品冻结 V2',meta:'Global Pin · Artifact'},
+ {type:'pinned',title:'Rhine Motion',meta:'Color Pin · Reference'},
+ {type:'pinned',title:'Workflow 语义区',meta:'Glyth · Workflow region'},
+ {type:'context',title:'Context 点线面',meta:'26 objects'},
+ {type:'workflow',title:'T5 Visual Workflow',meta:'Workflow'},
+ {type:'artifact',title:'T6 审计包',meta:'ZIP'},
+ {type:'artifact',title:'施工蓝图',meta:'Markdown'},
+ {type:'workflow',title:'Gen2 主体施工',meta:'Workflow'},
+ {type:'context',title:'Skill Intelligence',meta:'Context collection'}
+];
+let wcat='pinned';
+function renderWarehouse(){
+ const q=document.getElementById('wsearch').value.toLowerCase(),box=document.getElementById('witems');
+ const list=whData.filter(x=>(wcat==='all'||x.type===wcat||wcat==='pinned'&&x.type==='pinned')&&(!q||(x.title+x.meta+x.type).toLowerCase().includes(q)));
+ box.innerHTML=list.map(x=>`<div class="witem ${x.type==='pinned'?'pinitem':''}" draggable="true"><div class="wthumb"></div><div><b>${x.title}</b><span>${x.meta}</span></div></div>`).join('')
+}
+document.querySelectorAll('[data-wcat]').forEach(b=>b.onclick=()=>{document.querySelectorAll('[data-wcat]').forEach(x=>x.classList.remove('active'));b.classList.add('active');wcat=b.dataset.wcat;renderWarehouse()});
+document.getElementById('wsearch').addEventListener('input',renderWarehouse);
+const warehouse=document.getElementById('warehouse');
+function toggleWarehouse(v){warehouse.classList.toggle('open',v??!warehouse.classList.contains('open'))}
+document.getElementById('warehouseBtn').onclick=()=>toggleWarehouse();document.getElementById('whandle').onclick=()=>toggleWarehouse();document.getElementById('wclose').onclick=()=>toggleWarehouse(false);
+
+/* animation loop */
+let last=performance.now()/1000;
+function frame(ms){
+ const t=ms/1000,dt=Math.min(.04,t-last);last=t;
+ // atlas smooth
+ panX+=(tpanX-panX)*(1-Math.exp(-dt*8));panY+=(tpanY-panY)*(1-Math.exp(-dt*8));zoom+=(tzoom-zoom)*(1-Math.exp(-dt*8));
+ positions.forEach((p,i)=>{damp(p,'x','vx',p.tx,7.5,dt);damp(p,'y','vy',p.ty,7.5,dt);damp(p,'focus','vf',i===asel?1:0,8,dt)});
+ if(overlays.context.classList.contains('open'))drawAtlas(t);
+ // workflow smooth
+ wfPos+=(wfTarget-wfPos)*(1-Math.exp(-dt*11));updateCards();
+ requestAnimationFrame(frame)
+}
+renderWarehouse();requestAnimationFrame(frame);
+</script>
+</body>
+</html>

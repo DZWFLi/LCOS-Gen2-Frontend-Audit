@@ -1,0 +1,46 @@
+{
+  "result": [
+    {
+      "count": 0,
+      "visible": 0,
+      "box": null,
+      "overflow": null
+    },
+    {
+      "count": 1,
+      "visible": 1,
+      "box": {
+        "x": 24,
+        "y": 424,
+        "width": 52,
+        "height": 52
+      },
+      "overflow": null
+    },
+    {
+      "count": 4,
+      "visible": 4,
+      "box": {
+        "x": 24,
+        "y": 361,
+        "width": 52,
+        "height": 178
+      },
+      "overflow": null
+    },
+    {
+      "count": 20,
+      "visible": 4,
+      "box": {
+        "x": 24,
+        "y": 343,
+        "width": 52,
+        "height": 178
+      },
+      "overflow": "+16"
+    }
+  ],
+  "beforeNewResponse": 0,
+  "after": 0,
+  "writes": []
+}

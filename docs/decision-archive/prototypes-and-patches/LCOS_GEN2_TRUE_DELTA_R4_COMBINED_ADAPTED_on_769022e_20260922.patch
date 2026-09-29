@@ -1,0 +1,2846 @@
+diff --git a/huabu/apps/web/src/lcos/app/LcosProjectLauncherPage.tsx b/huabu/apps/web/src/lcos/app/LcosProjectLauncherPage.tsx
+index 191dab0..923e2ba 100644
+--- a/huabu/apps/web/src/lcos/app/LcosProjectLauncherPage.tsx
++++ b/huabu/apps/web/src/lcos/app/LcosProjectLauncherPage.tsx
+@@ -3,17 +3,19 @@
+ // 禁止 mock 项目列表、禁止把打开失败伪装成功；reload 重读列表、已创建不重复创建。
+ 
+ import { HttpError } from '@local-creative-os/web-gen2';
+-import { FolderPlus, FolderOpen, Search, X } from 'lucide-react';
+ import { useEffect, useMemo, useState } from 'react';
+ import { useNavigate } from 'react-router-dom';
+ 
+-
+-import { Button } from '@/components/Common/Button';
+-import { Input } from '@/components/Common/Input';
+-
+ import { createLcosCoreSession } from './lcosCoreClient';
++import {
++  ProjectCardView,
++  ProjectDialogField,
++  ProjectDialogView,
++  ProjectLauncherTabsView,
++  ProjectSearchView,
++} from '../ui/launcher/ProjectLauncherViews';
+ import { LcosSurfaceFeedback } from '../ui/LcosSurfaceFeedback';
+-import { lcosGlassStyle, lcosHitArea, lcosTokens } from '../ui/lcosTokens';
++import { LcosButton } from '../ui/primitives/LcosButton';
+ 
+ import type { ProjectListItem } from '@local-creative-os/web-gen2';
+ 
+@@ -139,246 +141,122 @@ export function LcosProjectLauncherPage(): React.JSX.Element {
+     }
+   };
+ 
+-  const coverTone = (seed: string, index: number): string => {
+-    const tones = ['linear-gradient(135deg,#E8EFE7,#F2F6F0)', 'linear-gradient(135deg,#E4EDF2,#EEF4F6)', 'linear-gradient(135deg,#F2ECE4,#F7F2EA)'];
+-    return tones[(seed.length + index) % tones.length];
++  const projectMeta = (project: ProjectListItem): string => {
++    if (!project.lastOpenedAt) return '主画布 · 尚未打开';
++    const date = new Date(project.lastOpenedAt);
++    if (Number.isNaN(date.valueOf())) return '主画布 · 最近编辑';
++    return `主画布 · ${date.toLocaleDateString('zh-CN')}`;
+   };
+ 
+   return (
+-    <div
+-      data-lcos-launcher
+-      className="relative flex h-full w-full flex-col overflow-hidden"
+-      style={{ background: lcosTokens.color.surface, color: lcosTokens.color.text }}
+-    >
+-      {/* 品牌 + 标题区 */}
+-      <header className="flex items-start justify-between px-12 pt-8">
+-        <div className="flex flex-col gap-7">
+-          <span className="text-lg font-semibold tracking-wide" style={{ fontSize: 18 }}>LCOS</span>
+-          <div className="flex flex-col gap-1.5">
+-            <h1 className="font-semibold" style={{ fontSize: lcosTokens.fontSize.hero }}>
+-              项目
+-            </h1>
+-            <p className="text-sm" style={{ color: lcosTokens.color.muted }}>
+-              继续上一次的创作现场。
+-            </p>
+-          </div>
+-          <div className="flex items-center gap-2">
+-            <button
+-              type="button"
+-              onClick={() => setTab('recent')}
+-              className="rounded-full px-4 py-1.5 text-sm font-medium transition-colors"
+-              style={
+-                tab === 'recent'
+-                  ? { background: lcosTokens.color.inverse, color: lcosTokens.color.textOnInverse }
+-                  : { color: lcosTokens.color.muted, minHeight: 28 }
+-              }
+-            >
+-              最近
+-            </button>
+-            <button
+-              type="button"
+-              onClick={() => setTab('all')}
+-              className="rounded-full px-4 py-1.5 text-sm font-medium transition-colors"
+-              style={tab === 'all' ? { background: lcosTokens.color.inverse, color: lcosTokens.color.textOnInverse } : { color: lcosTokens.color.muted, minHeight: 28 }}
+-            >
+-              全部
+-            </button>
+-          </div>
+-        </div>
+-        <div className="flex flex-col items-end gap-4">
+-          <Button
+-            variant="solid"
+-            shape="pill"
+-            size="lg"
+-            style={{ minHeight: lcosHitArea.min }}
+-            onClick={() => { setSubmitError(undefined); setDialog('create'); }}
+-          >
+-            <FolderPlus className="mr-1.5 h-4 w-4" />
+-            新建项目
+-          </Button>
+-          <Button
+-            variant="outline"
+-            shape="pill"
+-            size="lg"
+-            style={{ minHeight: lcosHitArea.min, minWidth: 188 }}
+-            onClick={() => { setSubmitError(undefined); setDialog('open'); }}
+-          >
+-            <FolderOpen className="mr-1.5 h-4 w-4" />
+-            打开已有项目
+-          </Button>
+-        </div>
++    <div data-lcos-launcher className="lcos-launcher relative flex h-full w-full flex-col overflow-hidden">
++      <header className="lcos-launcher-header">
++        <p className="lcos-launcher-brand">LCOS</p>
++        <h1 className="lcos-launcher-title">项目</h1>
++        <p className="lcos-launcher-subtitle">继续上一次的创作现场。</p>
++
++        <ProjectLauncherTabsView value={tab} onChange={setTab} />
++        <ProjectSearchView value={query} onChange={setQuery} onClear={() => setQuery('')} />
++        <LcosButton
++          appearance="oreo"
++          variant="primary"
++          className="lcos-launcher-new-project lcos-launcher-instance-button"
++          onClick={() => { setSubmitError(undefined); setDialog('create'); }}
++        >新建项目</LcosButton>
++        <LcosButton
++          appearance="oreo"
++          variant="secondary"
++          className="lcos-launcher-open-project lcos-launcher-instance-button"
++          onClick={() => { setSubmitError(undefined); setDialog('open'); }}
++        >打开已有项目</LcosButton>
+       </header>
+ 
+-      {/* 内容区 */}
+-      <main className="min-h-0 flex-1 overflow-y-auto px-12 pt-6">
+-        {status === 'loading' && (
+-          <div className="py-16">
+-            <LcosSurfaceFeedback presentation="loading" message="正在读取项目…" />
++      <main className="lcos-launcher-main">
++        {status === 'loading' ? (
++          <div className="lcos-launcher-feedback"><LcosSurfaceFeedback presentation="loading" message="正在读取项目…" /></div>
++        ) : null}
++        {status === 'offline' ? (
++          <div className="lcos-launcher-feedback">
++            <LcosSurfaceFeedback presentation="error" message={`Local Core 未连接${statusDetail ? `（${statusDetail}）` : ''}`}
++              onAction={() => { setStatus('loading'); void load(); }} actionLabel="重试" />
+           </div>
+-        )}
+-        {status === 'offline' && (
+-          <div className="py-16">
+-            <LcosSurfaceFeedback
+-              presentation="error"
+-              message={`Local Core 未连接${statusDetail ? `（${statusDetail}）` : ''}`}
+-              onAction={() => { setStatus('loading'); void load(); }}
+-              actionLabel="重试"
+-            />
++        ) : null}
++        {status === 'error' ? (
++          <div className="lcos-launcher-feedback">
++            <LcosSurfaceFeedback presentation="error" message={`项目列表读取失败${statusDetail ? `（${statusDetail}）` : ''}`}
++              onAction={() => { setStatus('loading'); void load(); }} actionLabel="重试" />
+           </div>
+-        )}
+-        {status === 'error' && (
+-          <div className="py-16">
+-            <LcosSurfaceFeedback
+-              presentation="error"
+-              message={`项目列表读取失败${statusDetail ? `（${statusDetail}）` : ''}`}
+-              onAction={() => { setStatus('loading'); void load(); }}
+-              actionLabel="重试"
+-            />
++        ) : null}
++        {status === 'ready' && filtered.length === 0 ? (
++          <div className="lcos-launcher-feedback">
++            <LcosSurfaceFeedback presentation="empty" message={query ? '没有匹配的项目' : '还没有项目 · 新建或打开一个创作现场'} />
+           </div>
+-        )}
+-        {status === 'ready' && (
+-          <div className="flex flex-col gap-5 pb-16">
+-            <label className="flex max-w-md items-center gap-2 rounded-xl px-4 py-2.5" style={{ background: lcosTokens.color.raised }}>
+-              <Search className="h-4 w-4 shrink-0" style={{ color: lcosTokens.color.muted }} aria-hidden />
+-              <input
+-                value={query}
+-                onChange={(event) => setQuery(event.target.value)}
+-                placeholder="名称或关键词"
+-                aria-label="搜索项目"
+-                className="w-full bg-transparent text-sm outline-none"
+-                style={{ color: lcosTokens.color.text }}
++        ) : null}
++        {status === 'ready' && filtered.length > 0 ? (
++          <div className="lcos-launcher-grid" data-lcos-launcher-project-grid>
++            {filtered.map((project) => (
++              <ProjectCardView
++                key={project.id}
++                title={project.name}
++                meta={projectMeta(project)}
++                rootPath={project.rootPath}
++                disabled={openingId === project.id}
++                onOpen={() => openProject(project.id)}
+               />
+-              {query !== '' && (
+-                <button type="button" onClick={() => setQuery('')} aria-label="清空搜索">
+-                  <X className="h-4 w-4" style={{ color: lcosTokens.color.muted }} />
+-                </button>
+-              )}
+-            </label>
+-
+-            {filtered.length === 0 ? (
+-              <div className="py-16">
+-                <LcosSurfaceFeedback
+-                  presentation="empty"
+-                  message={query ? '没有匹配的项目' : '还没有项目 · 新建或打开一个创作现场'}
+-                />
+-              </div>
+-            ) : (
+-              <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3" style={{ rowGap: 28 }}>
+-                {filtered.map((project, index) => (
+-                  <button
+-                    key={project.id}
+-                    type="button"
+-                    disabled={openingId === project.id}
+-                    onClick={() => openProject(project.id)}
+-                    className="group flex flex-col items-start gap-2 text-left outline-none transition-transform hover:-translate-y-0.5"
+-                    style={{ minWidth: 260, minHeight: 174 }}
+-                  >
+-                    <div
+-                      className="flex aspect-[16/10] w-full items-end justify-end overflow-hidden rounded-xl p-3 transition-shadow"
+-                      style={{ background: coverTone(project.rootPath, index), boxShadow: lcosTokens.shadow.default }}
+-                    >
+-                      <span className="rounded-full bg-white/60 px-2 py-0.5 text-[10px] font-medium" style={{ color: lcosTokens.color.muted }}>
+-                        项目
+-                      </span>
+-                    </div>
+-                    <span className="text-sm font-semibold" style={{ fontSize: lcosTokens.fontSize.md }}>
+-                      {project.name}
+-                    </span>
+-                    <span className="text-xs truncate max-w-full" style={{ color: lcosTokens.color.muted }}>
+-                      {project.rootPath}
+-                      {project.lastOpenedAt ? ` · ${new Date(project.lastOpenedAt).toLocaleDateString('zh-CN')}` : ''}
+-                    </span>
+-                  </button>
+-                ))}
+-              </div>
+-            )}
++            ))}
+           </div>
+-        )}
++        ) : null}
+       </main>
+ 
+-      <footer className="flex items-center justify-between px-12 pb-6">
+-        <span className="text-xs" style={{ color: lcosTokens.color.muted }}>
+-          项目保存在你自己的电脑上 — Local Core 是唯一真相源
+-        </span>
+-      </footer>
++      <footer className="lcos-launcher-footer">项目保存在你自己的电脑上</footer>
+ 
+-      {/* 创建 / 打开对话框（真实 Core route；保留已输入路径） */}
+-      {dialog !== null && (
+-        <div className="pointer-events-auto absolute inset-0 z-50 flex items-center justify-center bg-black/20">
+-          <button
+-            type="button"
+-            aria-label="关闭对话框"
+-            tabIndex={-1}
+-            className="absolute inset-0"
+-            style={{ background: 'transparent', cursor: 'default' }}
+-            onClick={() => setDialog(null)}
+-          />
+-          <div role="dialog" aria-modal="true" aria-label={dialog === 'create' ? '新建项目' : '打开已有项目'} className="relative z-10 w-[420px] p-6" style={lcosGlassStyle}>
+-            <div className="mb-5 flex items-center justify-between">
+-              <h2 className="text-lg font-semibold">{dialog === 'create' ? '新建项目' : '打开已有项目'}</h2>
+-              <button type="button" onClick={() => setDialog(null)} aria-label="关闭" className="rounded-full p-1.5" style={{ minHeight: 32, minWidth: 32 }}>
+-                <X className="h-4 w-4" />
+-              </button>
+-            </div>
++      {dialog === 'create' ? (
++        <ProjectDialogView
++          title="新建项目"
++          ariaLabel="新建项目"
++          primaryLabel={submitting ? '创建中…' : '创建项目'}
++          primaryBusy={submitting}
++          onPrimary={() => void submitCreate()}
++          alternateLead="已有项目？"
++          alternateLabel="打开项目文件夹"
++          onAlternate={() => { setSubmitError(undefined); setDialog('open'); }}
++          onDismiss={() => setDialog(null)}
++          error={submitError}
++        >
++          <ProjectDialogField label="项目名称" value={createDraft.name}
++            onChange={(value) => setCreateDraft({ ...createDraft, name: value })}
++            placeholder="新的创作现场" />
++          <ProjectDialogField label="保存位置" value={createDraft.parentPath}
++            onChange={(value) => setCreateDraft({ ...createDraft, parentPath: value })}
++            placeholder="选择本地文件夹" />
++          <ProjectDialogField label="目录名" value={createDraft.directoryName}
++            onChange={(value) => setCreateDraft({ ...createDraft, directoryName: value })}
++            placeholder="例如：mountain-brand" />
++        </ProjectDialogView>
++      ) : null}
+ 
+-            {dialog === 'create' ? (
+-              <div className="flex flex-col gap-3">
+-                <Field label="项目名称" value={createDraft.name} onChange={(v) => setCreateDraft({ ...createDraft, name: v })} placeholder="例如：山野 · 品牌探索" autoFocus />
+-                <Field label="父目录路径" value={createDraft.parentPath} onChange={(v) => setCreateDraft({ ...createDraft, parentPath: v })} placeholder="例如：D:\Projects" />
+-                <Field label="目录名" value={createDraft.directoryName} onChange={(v) => setCreateDraft({ ...createDraft, directoryName: v })} placeholder="例如：mountain-brand" />
+-              </div>
+-            ) : (
+-              <div className="flex flex-col gap-3">
+-                <Field label="项目名称" value={openDraft.name} onChange={(v) => setOpenDraft({ ...openDraft, name: v })} placeholder="例如：山野 · 品牌探索" autoFocus />
+-                <Field label="已有目录路径（rootPath）" value={openDraft.rootPath} onChange={(v) => setOpenDraft({ ...openDraft, rootPath: v })} placeholder="例如：D:\Projects\mountain-brand" />
+-              </div>
+-            )}
+-
+-            {submitError && (
+-              <div className="mt-3 rounded-lg px-3 py-2" style={{ background: 'rgba(194,91,78,0.08)', color: lcosTokens.color.danger }}>
+-                <span className="text-xs">{submitError}</span>
+-              </div>
+-            )}
+-
+-            <div className="mt-5 flex items-center justify-end gap-2">
+-              <Button variant="ghost" shape="pill" size="lg" onClick={() => setDialog(null)} style={{ minHeight: lcosHitArea.min }}>
+-                取消
+-              </Button>
+-              <Button
+-                variant="solid"
+-                shape="pill"
+-                size="lg"
+-                disabled={submitting}
+-                onClick={dialog === 'create' ? () => void submitCreate() : () => void submitOpen()}
+-                style={{ minHeight: lcosHitArea.min }}
+-              >
+-                {submitting ? (dialog === 'create' ? '创建中…' : '打开中…') : dialog === 'create' ? '创建并进入' : '打开并进入'}
+-              </Button>
+-            </div>
+-          </div>
+-        </div>
+-      )}
++      {dialog === 'open' ? (
++        <ProjectDialogView
++          title="打开已有项目"
++          ariaLabel="打开已有项目"
++          primaryLabel={submitting ? '打开中…' : '打开并进入'}
++          primaryBusy={submitting}
++          onPrimary={() => void submitOpen()}
++          alternateLead="需要新项目？"
++          alternateLabel="新建项目"
++          onAlternate={() => { setSubmitError(undefined); setDialog('create'); }}
++          onDismiss={() => setDialog(null)}
++          error={submitError}
++        >
++          <ProjectDialogField label="项目名称" value={openDraft.name}
++            onChange={(value) => setOpenDraft({ ...openDraft, name: value })}
++            placeholder="新的创作现场" />
++          <ProjectDialogField label="已有目录路径" value={openDraft.rootPath}
++            onChange={(value) => setOpenDraft({ ...openDraft, rootPath: value })}
++            placeholder="选择本地文件夹" />
++        </ProjectDialogView>
++      ) : null}
+     </div>
+   );
+-}
+ 
+-function Field(props: {
+-  label: string;
+-  value: string;
+-  onChange: (value: string) => void;
+-  placeholder?: string;
+-  autoFocus?: boolean;
+-}): React.JSX.Element {
+-  return (
+-    <label className="flex flex-col gap-1.5">
+-      <span className="text-xs font-medium" style={{ color: lcosTokens.color.muted }}>{props.label}</span>
+-      <Input
+-        value={props.value}
+-        onChange={(event) => props.onChange(event.target.value)}
+-        placeholder={props.placeholder}
+-        autoFocus={props.autoFocus}
+-        className="w-full"
+-      />
+-    </label>
+-  );
+ }
+diff --git a/huabu/apps/web/src/lcos/navigation/LcosActionArc.tsx b/huabu/apps/web/src/lcos/navigation/LcosActionArc.tsx
+index 0223430..45c885c 100644
+--- a/huabu/apps/web/src/lcos/navigation/LcosActionArc.tsx
++++ b/huabu/apps/web/src/lcos/navigation/LcosActionArc.tsx
+@@ -32,6 +32,7 @@ import {
+   Sparkles,
+   TextCursorInput,
+   Trash2,
++  X,
+ } from 'lucide-react';
+ import { AnimatePresence } from 'motion/react';
+ import { useEffect, useMemo, useState } from 'react';
+@@ -42,7 +43,9 @@ import {
+   CanvasFloatingPopover,
+   type CanvasAnchorRect,
+ } from '@/components/Common/CanvasFloatingPopover';
++import { Popover } from '@/components/Common/Popover';
+ import { useHeightMode } from '@/components/Nodes/shared/height/useHeightMode';
++import { formatShortcutById } from '@/config/shortcuts';
+ import { shouldStandDownLegacyNodeToolbar } from '@/lcos-seam/chromeModeSlot';
+ import useCanvasStore from '@/store/canvasStore';
+ import { openPreviewNode } from '@/store/previewWorkspace/actions';
+@@ -50,10 +53,12 @@ import { openPreviewNode } from '@/store/previewWorkspace/actions';
+ import { resolveActionArcGeometry } from './actionArcGeometry';
+ import { useLcosReferenceStore } from '../lcosReferenceState';
+ import { useLcosShellStore } from '../shell/lcosShellStore';
+-import { lcosGlassStyle, lcosTokens } from '../ui/lcosTokens';
++import { lcosTokens } from '../ui/lcosTokens';
+ import { LcosActionOrbitMotion, LcosActionArcMotionHost } from '../ui/nearfield/LcosActionOrbitMotion';
+ import { LcosActionOrbView as ActionArcOrb } from '../ui/nearfield/LcosActionOrbView';
+ import { LcosNearfieldGlyph } from '../ui/nearfield/LcosNearfieldGlyph';
++import { LcosObjectCommandMenuView, type LcosObjectCommandMenuItem } from '../ui/nearfield/LcosObjectCommandMenuView';
++import '../ui/nearfield/lcos-floating-surfaces.css';
+ 
+ import type { Node } from '@xyflow/react';
+ 
+@@ -112,7 +117,7 @@ export function LcosActionArc(): React.JSX.Element | null {
+   const nodes = useCanvasStore((s) => s.nodes);
+   const [moreOpen, setMoreOpen] = useState(false);
+   const [sizeDraft, setSizeDraft] = useState<{ width: number; height: number } | null>(null);
+-  const [contextMenu, setContextMenu] = useState<{ nodeId: string; x: number; y: number } | null>(null);
++  const [contextMenu, setContextMenu] = useState<{ nodeId: string; x: number; y: number; origin: HTMLElement; boundary: Element | null } | null>(null);
+   const composerOpen = useLcosShellStore((state) => state.composerOpen);
+   const professionalWindowOpen = useLcosShellStore((state) => state.windows.length > 0);
+ 
+@@ -182,6 +187,7 @@ export function LcosActionArc(): React.JSX.Element | null {
+       if (target.closest('input, textarea, select, [contenteditable="true"], a[href]')) return;
+       if (target.closest('[data-canvas-root]') === null) return;
+       const nodeElement = target.closest<HTMLElement>('.react-flow__node[data-id]');
++      if (nodeElement === null) return;
+       const targetNodeId = nodeElement?.dataset.id;
+       if (targetNodeId === undefined) return;
+       const targetNode = nodes.find((candidate) => candidate.id === targetNodeId);
+@@ -195,36 +201,26 @@ export function LcosActionArc(): React.JSX.Element | null {
+       event.preventDefault();
+       useCanvasStore.getState().selectNodes([targetNodeId]);
+       setMoreOpen(false);
+-      setContextMenu({ nodeId: targetNodeId, x: event.clientX, y: event.clientY });
++      setContextMenu({ nodeId: targetNodeId, x: event.clientX, y: event.clientY, origin: nodeElement, boundary: target.closest('[data-canvas-root]') });
+     };
+     window.addEventListener('contextmenu', onContextMenu);
+     return () => window.removeEventListener('contextmenu', onContextMenu);
+   }, [composerOpen, nodes, professionalWindowOpen]);
+ 
+-  useEffect(() => {
+-    if (contextMenu === null) return;
+-    const close = (event: PointerEvent): void => {
+-      const target = event.target;
+-      if (target instanceof Element && target.closest('[data-lcos-context-menu]') !== null) return;
+-      setContextMenu(null);
+-    };
+-    const onKeyDown = (event: KeyboardEvent): void => {
+-      if (event.key === 'Escape') setContextMenu(null);
+-    };
+-    window.addEventListener('pointerdown', close, true);
+-    window.addEventListener('keydown', onKeyDown);
+-    return () => {
+-      window.removeEventListener('pointerdown', close, true);
+-      window.removeEventListener('keydown', onKeyDown);
+-    };
+-  }, [contextMenu]);
+-
+   useEffect(() => {
+     if (contextMenu !== null && (node === undefined || commands.length === 0)) {
+       setContextMenu(null);
+     }
+   }, [commands.length, contextMenu, node]);
+ 
++  const dismissContextMenu = (): void => {
++    const origin = contextMenu?.origin;
++    setContextMenu(null);
++    if (origin?.isConnected) {
++      requestAnimationFrame(() => origin.focus({ preventScroll: true }));
++    }
++  };
++
+   // Professional Window owns the foreground interaction; keep the node Arc out
+   // of the reader, Assembly, portal, and conversation work view.
+   if (!node || !nodeId || composerOpen || professionalWindowOpen) return <AnimatePresence />;
+@@ -305,57 +301,44 @@ export function LcosActionArc(): React.JSX.Element | null {
+     items: commands.filter((command) => command.group === group).filter((c) => !primary.includes(c)),
+   })).filter((entry) => entry.items.length > 0);
+ 
++  const shortcutForCommand = (command: LcosNodeCommand): string | undefined => {
++    const label = command.label.trim();
++    if (label === '复制') return formatShortcutById('edit.copy');
++    if (command.id === 'delete' || label === '从画布移除') return formatShortcutById('edit.delete');
++    return undefined;
++  };
++
++  const contextMenuItems: readonly LcosObjectCommandMenuItem[] = commands.map((command) => ({
++    id: command.id,
++    label: command.label,
++    shortcut: shortcutForCommand(command),
++    disabledReason: command.disabledReason,
++    danger: command.id === 'delete',
++    onSelect: () => {
++      if (command.id === 'size' || command.id === 'accent') {
++        setContextMenu(null);
++        setMoreOpen(true);
++        return;
++      }
++      dispatch(command);
++      dismissContextMenu();
++    },
++  }));
++
+   const contextMenuView = contextMenu !== null && node !== undefined && nodeId !== undefined
+     ? (
+-      <div
+-        key="context-menu"
+-        data-lcos-context-menu
+-        role="menu"
+-        aria-label="节点命令"
+-        className="pointer-events-auto fixed z-[70] flex max-h-[60vh] w-64 max-w-[calc(100vw-24px)] flex-col gap-1 overflow-y-auto rounded-2xl p-2"
+-        style={{
+-          ...lcosGlassStyle,
+-          left: Math.min(contextMenu.x, Math.max(12, window.innerWidth - 268)),
+-          top: Math.min(contextMenu.y, Math.max(12, window.innerHeight - 360)),
+-        }}
++      <Popover
++        position={{ x: contextMenu.x, y: contextMenu.y }}
++        anchor="top-left"
++        offset={{ x: 0, y: 0 }}
++        viewportMargin={12}
++        boundary={contextMenu.boundary}
++        onDismiss={dismissContextMenu}
++        className="lcos-object-command-popover"
++        zIndex={1000}
+       >
+-        <span className="px-2 py-1 text-[10px]" style={{ color: lcosTokens.color.muted }}>
+-          {((node.data as { label?: string } | undefined)?.label ?? '节点')} · 命令
+-        </span>
+-        {grouped.map(({ group, items }) => (
+-          <div key={group} data-lcos-context-command-group={group} className="flex flex-col gap-0.5">
+-            <span className="px-2 pt-1 text-[10px]" style={{ color: lcosTokens.color.muted }}>{group}</span>
+-            {items.map((command) => (
+-              <button
+-                key={command.id}
+-                type="button"
+-                role="menuitem"
+-                data-lcos-context-command={command.id}
+-                disabled={command.disabledReason !== undefined}
+-                title={command.disabledReason ?? command.label}
+-                onClick={() => {
+-                  if (command.id === 'size' || command.id === 'accent') {
+-                    setContextMenu(null);
+-                    setMoreOpen(true);
+-                    return;
+-                  }
+-                  dispatch(command);
+-                  setContextMenu(null);
+-                }}
+-                className="flex min-h-8 flex-col items-start rounded-xl px-2 py-1 text-left text-[11px] hover:bg-black/5 disabled:cursor-not-allowed disabled:opacity-50"
+-                style={{ color: lcosTokens.color.text }}
+-              >
+-                <span className="font-medium">{command.label}</span>
+-                {command.disabledReason && (
+-                  <span className="text-[10px]" style={{ color: lcosTokens.color.muted }}>
+-                    {command.disabledReason}
+-                  </span>
+-                )}
+-              </button>
+-            ))}
+-          </div>
+-        ))}
+-      </div>
++        <LcosObjectCommandMenuView items={contextMenuItems} label="节点命令" />
++      </Popover>
+     )
+     : null;
+ 
+@@ -406,23 +389,17 @@ export function LcosActionArc(): React.JSX.Element | null {
+         {moreOpen && (
+           <div
+             data-lcos-arc-panel
+-            className="flex max-h-[46vh] flex-col gap-1.5 overflow-y-auto"
+-            style={{
+-              ...lcosGlassStyle,
+-              width: 280,
+-              maxWidth: 'min(320px, 78vw)',
+-              padding: 6,
+-            }}
++            className="lcos-arc-more-panel"
+           >
+-            {grouped.map(({ group, items }) => (
+-              <div key={group} data-lcos-command-group={group} className="flex flex-col gap-0.5">
+-                <span className="px-1 text-[10px]" style={{ color: lcosTokens.color.muted }}>
+-                  {group}
+-                </span>
++            <span className="lcos-arc-more-title">{((node.data as { label?: string } | undefined)?.label ?? '节点')}</span>
++            <button type="button" className="lcos-arc-more-close" aria-label="关闭更多命令" onClick={() => setMoreOpen(false)}><X aria-hidden /></button>
++            {grouped.map(({ group, items }, groupIndex) => (
++              <div key={group} data-lcos-command-group={group}>
++                {groupIndex > 0 ? <div className="lcos-arc-more-divider" aria-hidden /> : null}
+                 {items.map((command) => {
+                   if (command.id === 'size') {
+                     return (
+-                      <div key={command.id} data-lcos-command="size" className="flex items-center gap-1 px-1 py-0.5">
++                      <div key={command.id} data-lcos-command="size" className="lcos-arc-more-control-row">
+                         <span className="text-[11px]" style={{ color: lcosTokens.color.text }}>
+                           尺寸
+                         </span>
+@@ -472,7 +449,7 @@ export function LcosActionArc(): React.JSX.Element | null {
+                   }
+                   if (command.id === 'accent') {
+                     return (
+-                      <div key={command.id} data-lcos-command="accent" className="flex items-center gap-1 px-1 py-0.5">
++                      <div key={command.id} data-lcos-command="accent" className="lcos-arc-more-control-row">
+                         <span className="text-[11px]" style={{ color: lcosTokens.color.text }}>
+                           强调色
+                         </span>
+@@ -521,20 +498,10 @@ export function LcosActionArc(): React.JSX.Element | null {
+                         dispatch(command);
+                         setMoreOpen(false);
+                       }}
+-                      className="flex flex-col items-start rounded-lg px-2 py-1 text-left text-[11px]"
+-                      style={{
+-                        minHeight: 30,
+-                        color: command.disabledReason ? lcosTokens.color.muted : lcosTokens.color.text,
+-                        cursor: command.disabledReason ? 'not-allowed' : 'pointer',
+-                        opacity: command.disabledReason ? 0.6 : 1,
+-                      }}
++                      className="lcos-arc-more-row"
+                     >
+-                      <span className="font-medium">{command.label}</span>
+-                      {command.disabledReason && (
+-                        <span data-lcos-command-reason className="text-[10px]">
+-                          {command.disabledReason}
+-                        </span>
+-                      )}
++                      {primaryCommandIcon(command)}
++                      <span>{command.label}</span>
+                     </button>
+                   );
+                 })}
+diff --git a/huabu/apps/web/src/lcos/navigation/LcosCameraControls.tsx b/huabu/apps/web/src/lcos/navigation/LcosCameraControls.tsx
+index 2df67eb..a721da1 100644
+--- a/huabu/apps/web/src/lcos/navigation/LcosCameraControls.tsx
++++ b/huabu/apps/web/src/lcos/navigation/LcosCameraControls.tsx
+@@ -1,25 +1,37 @@
+ // LcosCameraControls — 画布左下相机浮岛（Figma Global HUD：camera 左下 52；P12 动态视觉）。
+ // 取代隐藏的 Huabu Controls；通过 shell store camera 命令 → 唯一 Huabu camera。
+-// zoom 百分比读 RF useViewport（purely presentation）。
++// zoom 百分比读 Huabu canonical canvas store（purely presentation；不另建 camera truth）。
+ 
+-import { useViewport } from '@xyflow/react';
+-import { Maximize2, Minus, Plus } from 'lucide-react';
++import { Minus, Plus } from 'lucide-react';
++import { useState } from 'react';
+ 
++import { useCloseOnEscape } from '@/hooks/useCloseOnEscape';
++import useCanvasStore from '@/store/canvasStore';
++
++import { lcosHudEdgeOffsets } from '../shell/lcosHudPlacement';
+ import { useLcosShellStore } from '../shell/lcosShellStore';
+ import { LcosCameraControlsView } from '../ui/families/LcosCameraControlsView';
+ 
+ export function LcosCameraControls(): React.JSX.Element {
+   const requestCamera = useLcosShellStore((s) => s.requestCamera);
+-  const { zoom } = useViewport();
++  const windowEnvironment = useLcosShellStore((s) => s.windowEnvironment);
++  // Route-level HUD cannot depend on ReactFlow context. Huabu's canonical canvas
++  // store already owns the same viewport; reading it here keeps one camera truth.
++  const zoom = useCanvasStore((s) => s.viewport?.zoom ?? 1);
++  const [expanded, setExpanded] = useState(false);
++  useCloseOnEscape(expanded, () => setExpanded(false));
++
++  const viewport = { width: window.innerWidth, height: window.innerHeight };
++  const edgeOffsets = lcosHudEdgeOffsets(windowEnvironment, viewport);
+ 
+   return (
+-    <LcosCameraControlsView zoom={zoom} className="pointer-events-auto"
+-      style={{ position: 'absolute', left: 24, bottom: 24, zIndex: 30 }}
++    <LcosCameraControlsView zoom={zoom} className="pointer-events-auto fixed z-40"
++      style={{ left: edgeOffsets.left, bottom: edgeOffsets.bottom + 4 }}
++      compact={{ expanded, onToggle: () => setExpanded((value) => !value) }}
+       onZoomOut={() => requestCamera('zoom-out')}
+       onZoomIn={() => requestCamera('zoom-in')}
+       onFit={() => requestCamera('fit')}
+       zoomOutIcon={<Minus className="h-4 w-4" />}
+-      zoomInIcon={<Plus className="h-4 w-4" />}
+-      fitIcon={<Maximize2 className="h-4 w-4" />} />
++      zoomInIcon={<Plus className="h-4 w-4" />} />
+   );
+ }
+diff --git a/huabu/apps/web/src/lcos/nodes/LcosSpeciesBodies.test.tsx b/huabu/apps/web/src/lcos/nodes/LcosSpeciesBodies.test.tsx
+index e471013..259c63d 100644
+--- a/huabu/apps/web/src/lcos/nodes/LcosSpeciesBodies.test.tsx
++++ b/huabu/apps/web/src/lcos/nodes/LcosSpeciesBodies.test.tsx
+@@ -9,7 +9,7 @@ import { LcosSpeciesBodyContent } from './LcosSpeciesBodies';
+ 
+ function renderSource(
+   visualFamily: 'text' | 'document' | 'image' | 'audio',
+-  options: { preview?: string; mediaSrc?: string; durationSec?: number; worldWidth?: number } = {},
++  options: { preview?: string; mediaSrc?: string; durationSec?: number; worldWidth?: number; markerColor?: string } = {},
+ ): string {
+   return renderToStaticMarkup(
+     <LcosSpeciesBodyContent
+@@ -21,6 +21,7 @@ function renderSource(
+       mediaSrc={options.mediaSrc}
+       durationSec={options.durationSec}
+       worldWidth={options.worldWidth}
++      markerColor={options.markerColor}
+       visualFamily={visualFamily}
+     />,
+   );
+@@ -49,6 +50,14 @@ describe('LcosSpeciesBodies / Main source morphology', () => {
+     expect(html).toContain('src="https://example.test/ridge.png"');
+   });
+ 
++  it('corner marker is explicit presentation data, never inferred from source family', () => {
++    const withoutMarker = renderSource('image', { mediaSrc: 'https://example.test/ridge.png' });
++    const withMarker = renderSource('image', { mediaSrc: 'https://example.test/ridge.png', markerColor: '#d3a16e' });
++    expect(withoutMarker).not.toContain('data-lcos-source-corner-marker');
++    expect(withMarker).toContain('data-lcos-source-corner-marker');
++    expect(withMarker).toContain('background:#d3a16e');
++  });
++
+   it('audio → Figma 5388:121 waveform morphology, explicitly decorative', () => {
+     const html = renderSource('audio', { durationSec: 38 });
+     expect(html).toContain('data-lcos-source-visual="audio"');
+diff --git a/huabu/apps/web/src/lcos/nodes/LcosSpeciesBodies.tsx b/huabu/apps/web/src/lcos/nodes/LcosSpeciesBodies.tsx
+index 51ced8e..9e13eae 100644
+--- a/huabu/apps/web/src/lcos/nodes/LcosSpeciesBodies.tsx
++++ b/huabu/apps/web/src/lcos/nodes/LcosSpeciesBodies.tsx
+@@ -28,7 +28,9 @@ import { SourceMorphology } from './source/SourceMorphology';
+ import { useLcosDensity } from './useLcosDensity';
+ import { useLcosReferenceStore } from '../lcosReferenceState';
+ import { useLcosShellStore } from '../shell/lcosShellStore';
++import { ContextCollectionActionGlyph, ContextCollectionFace } from '../ui/context/ContextCollectionFace';
+ import { lcosTokens } from '../ui/lcosTokens';
++import { WorkflowCollectionFace } from '../ui/workflow/WorkflowCollectionFace';
+ 
+ import type { CanvasNodeBodySlotInput } from '@/lcos-seam/types';
+ import type { ComponentType, JSX } from 'react';
+@@ -104,6 +106,12 @@ export function LcosSpeciesBodyContent({
+   mediaSrc,
+   durationSec,
+   worldWidth,
++  collectionOrganization = '未指定',
++  secondaryMediaSrc,
++  workflowRendition = '主画布',
++  markerColor,
++  mediaFit,
++  mediaPosition,
+ }: {
+   species: LcosNodeSpecies;
+   title: string;
+@@ -112,6 +120,12 @@ export function LcosSpeciesBodyContent({
+   mediaSrc?: string;
+   durationSec?: number;
+   worldWidth?: number;
++  collectionOrganization?: '事情' | '时间' | '未指定';
++  secondaryMediaSrc?: string;
++  workflowRendition?: '工作流现场' | '主画布' | '装配';
++  markerColor?: string;
++  mediaFit?: 'cover' | 'contain';
++  mediaPosition?: string;
+   /**
+    * 真实次级行（来自 Core 元数据：kind/受管/可用性/revision）。
+    * 有真实事实就显示真实事实；没有就退回该物种的**形态说明**（说清这是什么，不假装有数据）。
+@@ -139,6 +153,9 @@ export function LcosSpeciesBodyContent({
+             durationSec={durationSec}
+             density={density}
+             worldWidth={worldWidth}
++            markerColor={markerColor}
++            mediaFit={mediaFit}
++            mediaPosition={mediaPosition}
+           />
+         </div>
+       );
+@@ -227,6 +244,27 @@ export function LcosSpeciesBodyContent({
+       );
+ 
+     case 'collection':
++      if (density === 'working' || density === 'reading') {
++        return (
++          <div
++            data-lcos-species="collection"
++            data-lcos-context-collection
++            data-rendition="主画布"
++            data-organization={collectionOrganization}
++            className="lcos-context-collection"
++          >
++            <ContextCollectionFace
++              title={title}
++              organization={collectionOrganization}
++              rendition="主画布"
++              {...(mediaSrc === undefined ? {} : { previewUrl: mediaSrc })}
++              {...(secondaryMediaSrc === undefined ? {} : { secondaryPreviewUrl: secondaryMediaSrc })}
++              unspecifiedGlyph={<Folder aria-hidden size={21} strokeWidth={1.7} />}
++              action={<span aria-hidden><ContextCollectionActionGlyph /></span>}
++            />
++          </div>
++        );
++      }
+       return (
+         <div style={root} data-lcos-species="collection">
+           <div className="flex items-center gap-1.5">
+@@ -239,6 +277,23 @@ export function LcosSpeciesBodyContent({
+       );
+ 
+     case 'workflow-collection':
++      if (density === 'working' || density === 'reading') {
++        return (
++          <div
++            data-lcos-species="workflow-collection"
++            data-lcos-workflow-collection
++            data-rendition={workflowRendition}
++            className="lcos-workflow-collection"
++          >
++            <WorkflowCollectionFace
++              title={title}
++              rendition={workflowRendition}
++              {...(mediaSrc === undefined ? {} : { previewUrl: mediaSrc })}
++              action={<span aria-hidden>↗</span>}
++            />
++          </div>
++        );
++      }
+       return (
+         <div style={root} data-lcos-species="workflow-collection">
+           <div className="flex items-center gap-1.5">
+@@ -297,6 +352,7 @@ function LcosSpeciesBody({
+ }): JSX.Element {
+   const density = useLcosDensity();
+   const presentation = useLcosNodePresentation();
++  const activeSurface = useLcosShellStore((state) => state.activeSurface);
+   const canvasId = useCanvasStore((state) => state.canvasId);
+   const title = titleOf(input.data as Readonly<Record<string, unknown>> | undefined);
+   // Core facts are read from the single reference store. The visual family is
+@@ -320,9 +376,26 @@ function LcosSpeciesBody({
+       : typeof rawMediaSrc === 'string' && rawMediaSrc !== ''
+         ? resolveArtifactUrl(rawMediaSrc, canvasId ?? undefined)
+         : undefined;
++  const rawSecondaryMediaSrc = input.data.secondaryPresentationMediaSrc;
++  const secondaryMediaSrc = typeof rawSecondaryMediaSrc === 'string' && rawSecondaryMediaSrc !== ''
++    ? resolveArtifactUrl(rawSecondaryMediaSrc, canvasId ?? undefined)
++    : undefined;
++  const rawOrganization = input.data.organization;
++  const collectionOrganization = rawOrganization === '事情' || rawOrganization === '时间'
++    ? rawOrganization
++    : '未指定';
+   const rawDuration = input.data.presentationDurationSec;
+   const durationSec = typeof rawDuration === 'number' && Number.isFinite(rawDuration) ? rawDuration : undefined;
+-  const isFreeformSource = species === 'source';
++  // Presentation-only inputs. Do not infer persistent Color Pin or crop semantics from the visual family.
++  const rawMarkerColor = input.data.presentationMarkerColor;
++  const markerColor = typeof rawMarkerColor === 'string' && rawMarkerColor.trim() !== '' ? rawMarkerColor : undefined;
++  const rawMediaFit = input.data.presentationMediaFit;
++  const mediaFit = rawMediaFit === 'contain' || rawMediaFit === 'cover' ? rawMediaFit : undefined;
++  const rawMediaPosition = input.data.presentationMediaPosition;
++  const mediaPosition = typeof rawMediaPosition === 'string' && rawMediaPosition.trim() !== '' ? rawMediaPosition : undefined;
++  const exactCollectionFace = (species === 'collection' || species === 'workflow-collection')
++    && (density === 'working' || density === 'reading');
++  const isFreeformSource = species === 'source' || exactCollectionFace;
+   return (
+     <div
+       data-lcos-species-body
+@@ -357,6 +430,12 @@ function LcosSpeciesBody({
+         mediaSrc={mediaSrc}
+         durationSec={durationSec}
+         worldWidth={presentation?.worldWidth}
++        collectionOrganization={collectionOrganization}
++        secondaryMediaSrc={secondaryMediaSrc}
++        workflowRendition={activeSurface === 'workflow' ? '工作流现场' : '主画布'}
++        markerColor={markerColor}
++        mediaFit={mediaFit}
++        mediaPosition={mediaPosition}
+       />
+     </div>
+   );
+diff --git a/huabu/apps/web/src/lcos/nodes/source/SourceMarker.tsx b/huabu/apps/web/src/lcos/nodes/source/SourceMarker.tsx
+index 67c3c61..5caf6c3 100644
+--- a/huabu/apps/web/src/lcos/nodes/source/SourceMarker.tsx
++++ b/huabu/apps/web/src/lcos/nodes/source/SourceMarker.tsx
+@@ -1,15 +1,17 @@
+-import { lcosTokens } from '../../ui/lcosTokens';
+-
+ import type { JSX } from 'react';
+ 
++/**
++ * Figma Main object corner marker. Color is an explicit presentation input.
++ * This component deliberately does not map visual family/runtime state to Color Pin semantics.
++ */
+ export function SourceMarker({
+   size,
+-  tone,
++  color,
+   right,
+   top,
+ }: {
+   readonly size: number;
+-  readonly tone: 'amber' | 'green';
++  readonly color: string;
+   readonly right: number;
+   readonly top: number;
+ }): JSX.Element {
+@@ -24,13 +26,11 @@ export function SourceMarker({
+         width: size,
+         height: size,
+         borderRadius: 3,
+-        background:
+-          tone === 'amber'
+-            ? lcosTokens.color.mainMarkerAmber
+-            : lcosTokens.color.mainMarkerGreen,
+-        border: `1.5px solid ${lcosTokens.color.surface}`,
++        background: color,
++        border: '1.5px solid var(--gen2-surface)',
+         boxSizing: 'border-box',
+         zIndex: 2,
++        pointerEvents: 'none',
+       }}
+     />
+   );
+diff --git a/huabu/apps/web/src/lcos/nodes/source/sourceFigmaGeometry.test.ts b/huabu/apps/web/src/lcos/nodes/source/sourceFigmaGeometry.test.ts
+index c1890b0..22864c3 100644
+--- a/huabu/apps/web/src/lcos/nodes/source/sourceFigmaGeometry.test.ts
++++ b/huabu/apps/web/src/lcos/nodes/source/sourceFigmaGeometry.test.ts
+@@ -9,9 +9,9 @@ import {
+ 
+ describe('Main source exact Figma geometry', () => {
+   it('keeps the five exact source anchors', () => {
+-    expect(FIGMA_SOURCE_GEOMETRY.image).toMatchObject({ width: 410, height: 273, marker: 11 });
+-    expect(FIGMA_SOURCE_GEOMETRY.imageThumbnail).toMatchObject({ width: 205, height: 127, marker: 9 });
+-    expect(FIGMA_SOURCE_GEOMETRY.text).toMatchObject({ width: 385, height: 142, marker: 11 });
++    expect(FIGMA_SOURCE_GEOMETRY.image).toMatchObject({ width: 410, height: 273, marker: 11, markerRight: -3, markerTop: -5, radius: 7, captionTop: 282 });
++    expect(FIGMA_SOURCE_GEOMETRY.imageThumbnail).toMatchObject({ width: 205, height: 127, marker: 9, markerRight: 0, markerTop: -4, radius: 6, captionTop: 136 });
++    expect(FIGMA_SOURCE_GEOMETRY.text).toMatchObject({ width: 385, height: 142, marker: 11, markerRight: 0, markerTop: 3, captionTop: 117 });
+     expect(FIGMA_SOURCE_GEOMETRY.document).toMatchObject({ width: 206, height: 154 });
+     expect(FIGMA_SOURCE_GEOMETRY.audio).toMatchObject({ width: 171, height: 96, barWidth: 2, barGap: 0.671875 });
+   });
+diff --git a/huabu/apps/web/src/lcos/nodes/source/sourceFigmaGeometry.ts b/huabu/apps/web/src/lcos/nodes/source/sourceFigmaGeometry.ts
+index bacadc7..f4c3cb4 100644
+--- a/huabu/apps/web/src/lcos/nodes/source/sourceFigmaGeometry.ts
++++ b/huabu/apps/web/src/lcos/nodes/source/sourceFigmaGeometry.ts
+@@ -7,9 +7,9 @@ export const FIGMA_SOURCE_NODE_IDS = {
+ } as const;
+ 
+ export const FIGMA_SOURCE_GEOMETRY = {
+-  image: { width: 410, height: 273, marker: 11, radius: 7, captionTop: 282 },
+-  imageThumbnail: { width: 205, height: 127, marker: 9, radius: 6, captionTop: 136 },
+-  text: { width: 385, height: 142, marker: 11, captionTop: 117 },
++  image: { width: 410, height: 273, marker: 11, markerRight: -3, markerTop: -5, radius: 7, captionTop: 282 },
++  imageThumbnail: { width: 205, height: 127, marker: 9, markerRight: 0, markerTop: -4, radius: 6, captionTop: 136 },
++  text: { width: 385, height: 142, marker: 11, markerRight: 0, markerTop: 3, captionTop: 117 },
+   document: { width: 206, height: 154, paddingX: 18 },
+   audio: { width: 171, height: 96, barWidth: 2, barGap: 0.671875, captionTop: 79 },
+ } as const;
+diff --git a/huabu/apps/web/src/lcos/nodes/source/sourceTypes.ts b/huabu/apps/web/src/lcos/nodes/source/sourceTypes.ts
+index 211df64..bb836de 100644
+--- a/huabu/apps/web/src/lcos/nodes/source/sourceTypes.ts
++++ b/huabu/apps/web/src/lcos/nodes/source/sourceTypes.ts
+@@ -9,4 +9,9 @@ export interface SourceMorphologyProps {
+   readonly durationSec?: number;
+   readonly density: PresentationDensity;
+   readonly worldWidth?: number;
++  /** Explicit presentation input from the existing owner. Never infer a Color Pin from visual family. */
++  readonly markerColor?: string;
++  /** Supplied media crop. The view must not guess from title, kind or image dimensions. */
++  readonly mediaFit?: 'cover' | 'contain';
++  readonly mediaPosition?: string;
+ }
+diff --git a/huabu/apps/web/src/lcos/nodes/useLcosDensity.test.ts b/huabu/apps/web/src/lcos/nodes/useLcosDensity.test.ts
+index 945fbba..7597f39 100644
+--- a/huabu/apps/web/src/lcos/nodes/useLcosDensity.test.ts
++++ b/huabu/apps/web/src/lcos/nodes/useLcosDensity.test.ts
+@@ -10,6 +10,8 @@ describe('densityFromZoom（无呈现上下文时的退化阶梯）', () => {
+     expect(densityFromZoom(0.3)).toBe('summary');
+     expect(densityFromZoom(0.7)).toBe('working');
+     expect(densityFromZoom(1.2)).toBe('reading');
++    expect(densityFromZoom(Number.NaN)).toBe('reading');
++    expect(densityFromZoom(0)).toBe('reading');
+   });
+ });
+ 
+diff --git a/huabu/apps/web/src/lcos/nodes/useLcosDensity.ts b/huabu/apps/web/src/lcos/nodes/useLcosDensity.ts
+index 053d00a..5b03471 100644
+--- a/huabu/apps/web/src/lcos/nodes/useLcosDensity.ts
++++ b/huabu/apps/web/src/lcos/nodes/useLcosDensity.ts
+@@ -17,9 +17,25 @@ import { useViewport } from '@xyflow/react';
+ import { useLcosNodePresentation } from '@/lcos-seam/nodePresentation';
+ import useCanvasStore from '@/store/canvasStore';
+ 
+-/** 无呈现上下文时的纯 zoom 阶梯（退化路径，非主判定）。 */
++/**
++ * 无呈现上下文时的纯 zoom 阶梯（退化路径，非主判定）。
++ * 四档与产品可见层级同名，边界集中在这里，避免各物种再偷偷发明一套。
++ */
++export const LCOS_ZOOM_DENSITY_STOPS = Object.freeze({
++  markMax: 0.25,
++  summaryMax: 0.55,
++  workingMax: 0.9,
++});
++
+ export function densityFromZoom(zoom: number): PresentationDensity {
+-  return zoom < 0.25 ? 'mark' : zoom < 0.55 ? 'summary' : zoom < 0.9 ? 'working' : 'reading';
++  const safeZoom = Number.isFinite(zoom) && zoom > 0 ? zoom : 1;
++  return safeZoom < LCOS_ZOOM_DENSITY_STOPS.markMax
++    ? 'mark'
++    : safeZoom < LCOS_ZOOM_DENSITY_STOPS.summaryMax
++      ? 'summary'
++      : safeZoom < LCOS_ZOOM_DENSITY_STOPS.workingMax
++        ? 'working'
++        : 'reading';
+ }
+ 
+ /**
+diff --git a/huabu/apps/web/src/lcos/shell/LcosGlobalHud.tsx b/huabu/apps/web/src/lcos/shell/LcosGlobalHud.tsx
+index 2f5cf6a..12d4efe 100644
+--- a/huabu/apps/web/src/lcos/shell/LcosGlobalHud.tsx
++++ b/huabu/apps/web/src/lcos/shell/LcosGlobalHud.tsx
+@@ -7,12 +7,15 @@ import { useNavigate } from 'react-router-dom';
+ 
+ import useCanvasStore from '@/store/canvasStore';
+ 
++import { lcosHudEdgeOffsets } from './lcosHudPlacement';
+ import { LcosRailway } from './LcosRailway';
+ import { useLcosShellStore, type LcosSurfaceKey } from './lcosShellStore';
+ import { LcosSurfaceDock } from './LcosSurfaceDock';
+ import { useLcosWorksiteNav } from '../app/useLcosWorksiteNav';
++import { LcosCameraControls } from '../navigation/LcosCameraControls';
+ import { LcosFocusWhere } from '../navigation/LcosFocusWhere';
+ import { LcosNavigatorIsland } from '../navigation/LcosNavigatorIsland';
++import { FigmaShellGlyph } from '../ui/FigmaShellGlyph';
+ 
+ import type { RailwayDestinationProjection } from '../navigation/railwayProjection';
+ 
+@@ -38,7 +41,13 @@ export function LcosGlobalHud(props: LcosGlobalHudProps): React.JSX.Element {
+   });
+   const navigate = useNavigate();
+   const setActiveSurface = useLcosShellStore((s) => s.setActiveSurface);
++  const activeSurface = useLcosShellStore((s) => s.activeSurface);
++  const activeWorkspaceId = useLcosShellStore((s) => s.activeWorkspaceId);
++  const windowEnvironment = useLcosShellStore((s) => s.windowEnvironment);
++  const openAssembly = useLcosShellStore((s) => s.openAssembly);
+   const { ensureWorkspaceCanvas } = props;
++  const viewport = { width: window.innerWidth, height: window.innerHeight };
++  const edgeOffsets = lcosHudEdgeOffsets(windowEnvironment, viewport);
+   const activateDestination = useCallback(
+     async (destination: RailwayDestinationProjection): Promise<void> => {
+       if (destination.surface === undefined) return;
+@@ -90,6 +99,35 @@ export function LcosGlobalHud(props: LcosGlobalHudProps): React.JSX.Element {
+         canvasBySurface={props.canvasBySurface}
+         ensureCanvas={props.ensureCanvas}
+       />
++      <LcosCameraControls />
++      <button
++        type="button"
++        data-lcos-shell-assembly
++        aria-label="打开装配"
++        title={`打开装配 · 投放到 ${activeSurface}`}
++        className="pointer-events-auto fixed z-40"
++        style={{
++          right: edgeOffsets.right + 6,
++          bottom: edgeOffsets.bottom + 5,
++        }}
++        onClick={() => {
++          if (activeSurface === 'main') {
++            openAssembly({ kind: 'main' }, '装配 · Main');
++            return;
++          }
++          if (activeWorkspaceId !== null) {
++            openAssembly(
++              { kind: 'workspace', id: activeWorkspaceId },
++              `装配 · ${activeSurface === 'context' ? 'Context' : 'Workflow'}`,
++            );
++            return;
++          }
++          openAssembly({ kind: 'project', id: props.projectId }, '装配 · 项目');
++        }}
++      >
++        <span data-lcos-shell-assembly-glyph="bench"><FigmaShellGlyph name="bench" size={20} /></span>
++        <span data-lcos-shell-assembly-glyph="plus"><FigmaShellGlyph name="plus" size={20} /></span>
++      </button>
+     </>
+   );
+ }
+diff --git a/huabu/apps/web/src/lcos/shell/LcosProjectShell.tsx b/huabu/apps/web/src/lcos/shell/LcosProjectShell.tsx
+index cdeed5b..a8eb7d7 100644
+--- a/huabu/apps/web/src/lcos/shell/LcosProjectShell.tsx
++++ b/huabu/apps/web/src/lcos/shell/LcosProjectShell.tsx
+@@ -2,7 +2,7 @@
+ // 组成：项目身份胶囊（顶左）+ 三现场舞台（唯一 Canvas）+ GlobalHud（Navigator/Railway/Dock/camera）。
+ // Professional Stage 常驻；Composer 仅由 canvas-local 明确命令按需挂载。
+ 
+-import { ArrowLeft, Hand } from 'lucide-react';
++import { ArrowLeft } from 'lucide-react';
+ import { useEffect, useState } from 'react';
+ import { Link, useNavigate } from 'react-router-dom';
+ 
+@@ -16,9 +16,8 @@ import { waitForProjectedEntity } from '../navigation/waitForProjectedEntity';
+ import { ProfessionalWindowStage } from '../professional/ProfessionalWindowStage';
+ import { ContextWorksite } from '../surfaces/context/ContextWorksite';
+ import { MainWorksite } from '../surfaces/main/MainWorksite';
+-import { WorkflowHandOverlay, WorkflowWorksite } from '../surfaces/workflow/WorkflowWorksite';
++import { WorkflowWorksite } from '../surfaces/workflow/WorkflowWorksite';
+ import { LcosProjectIdentityView } from '../ui/families/LcosProjectIdentityView';
+-import { FigmaShellGlyph } from '../ui/FigmaShellGlyph';
+ import { LcosSurfaceFeedback } from '../ui/LcosSurfaceFeedback';
+ import { lcosGlassStyle, lcosTokens } from '../ui/lcosTokens';
+ 
+@@ -64,13 +63,10 @@ export function LcosProjectShell({
+   const setActiveWorkspaceId = useLcosShellStore(
+     (s) => s.setActiveWorkspaceId,
+   );
+-  const activeWorkspaceId = useLcosShellStore((s) => s.activeWorkspaceId);
+   const childReturn = useLcosShellStore((s) => s.childReturn);
+   const clearChildNavigation = useLcosShellStore((s) => s.clearChildNavigation);
+   const setProject = useLcosShellStore((s) => s.setProject);
+-  const openAssembly = useLcosShellStore((s) => s.openAssembly);
+   const mainNodeCount = useCanvasStore((s) => s.nodes.length);
+-  const [mainHandOpen, setMainHandOpen] = useState(false);
+   const [returning, setReturning] = useState(false);
+   const [returnError, setReturnError] = useState<string | undefined>(undefined);
+ 
+@@ -88,8 +84,6 @@ export function LcosProjectShell({
+     ? (_surface: LcosSurfaceKey, force = false) => ensureWorkspaceCanvas(childWorkspaceId, force)
+     : ensureCanvas;
+ 
+-  useEffect(() => { setMainHandOpen(false); }, [projectId, activeSurface]);
+-
+   useEffect(() => {
+     useLcosReferenceStore.getState().setProject(projectId);
+     setProject(projectId);
+@@ -243,30 +237,6 @@ export function LcosProjectShell({
+             <Link to="/projects" data-lcos-project-identity title="返回项目列表">
+               <LcosProjectIdentityView name={projectName ?? projectId.slice(0, 12)} />
+             </Link>
+-            <button
+-              type="button"
+-              data-lcos-assembly-entry
+-              aria-label="Assembly"
+-              title={`打开 Assembly · 投放到 ${active}`}
+-              onClick={() => {
+-                if (active === 'main') {
+-                  openAssembly({ kind: 'main' }, 'Assembly · Main');
+-                  return;
+-                }
+-                if (activeWorkspaceId) {
+-                  openAssembly(
+-                    { kind: 'workspace', id: activeWorkspaceId },
+-                    `Assembly · ${active === 'context' ? 'Context' : 'Workflow'}`,
+-                  );
+-                  return;
+-                }
+-                openAssembly({ kind: 'project', id: projectId }, 'Assembly · 项目');
+-              }}
+-              className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full transition-colors hover:opacity-90"
+-              style={{ ...lcosGlassStyle, color: lcosTokens.color.text }}
+-            >
+-              <FigmaShellGlyph name="bench" size={20} />
+-            </button>
+           </div>
+           {returnError && (
+             <div className="pointer-events-auto fixed top-[76px] left-6 z-40 rounded-full px-3 py-2 text-xs" style={{ ...lcosGlassStyle, color: lcosTokens.color.danger }}>
+@@ -286,22 +256,6 @@ export function LcosProjectShell({
+ 
+           {/* 专业窗口舞台；Composer 由 canvas-local 明确命令挂载。 */}
+           <ProfessionalWindowStage projectId={projectId} />
+-          {active === 'main' && (
+-            <>
+-              <button
+-                type="button"
+-                aria-label="呼出工作流手牌"
+-                aria-expanded={mainHandOpen}
+-                title="工作流手牌"
+-                onClick={() => setMainHandOpen((open) => !open)}
+-                className="pointer-events-auto fixed right-6 bottom-6 z-40 flex h-12 w-12 items-center justify-center rounded-full"
+-                style={lcosGlassStyle}
+-              >
+-                <Hand size={18} aria-hidden />
+-              </button>
+-              <WorkflowHandOverlay projectId={projectId} open={mainHandOpen} onClose={() => setMainHandOpen(false)} />
+-            </>
+-          )}
+         </>
+       )}
+     </div>
+diff --git a/huabu/apps/web/src/lcos/shell/LcosRailway.tsx b/huabu/apps/web/src/lcos/shell/LcosRailway.tsx
+index 1319d95..1db3ad1 100644
+--- a/huabu/apps/web/src/lcos/shell/LcosRailway.tsx
++++ b/huabu/apps/web/src/lcos/shell/LcosRailway.tsx
+@@ -85,6 +85,7 @@ export function LcosRailway({
+   const [peekKey, setPeekKey] = useState<string | undefined>(undefined);
+   const [moreKey, setMoreKey] = useState<string | undefined>(undefined);
+   const [notice, setNotice] = useState<string | undefined>(undefined);
++  const [overflowOpen, setOverflowOpen] = useState(false);
+   const session = useMemo(() => createLcosCoreSession(), []);
+   const railway = useMemo(() => new CoreRailwayClient(session.http), [session]);
+   const projects = useMemo(
+@@ -296,7 +297,7 @@ export function LcosRailway({
+       .finally(() => setReordering(false));
+   }, [projectId, refreshAfterConflict, railway, snapshot]);
+ 
+-  const items: readonly LcosRailwayViewItem[] = destinations.map(
++  const destinationItems: readonly LcosRailwayViewItem[] = destinations.map(
+     (destination) => ({
+       key: destination.key,
+       label: destination.label,
+@@ -443,6 +444,43 @@ export function LcosRailway({
+     }),
+   );
+ 
++  const overflowDestinations = destinations.length > 4 ? destinations.slice(3) : [];
++  const items: readonly LcosRailwayViewItem[] = overflowDestinations.length === 0
++    ? destinationItems
++    : [
++        ...destinationItems.slice(0, 3),
++        {
++          key: '__overflow__',
++          label: `还有 ${overflowDestinations.length} 个目的地`,
++          icon: MoreHorizontal,
++          overflowCount: overflowDestinations.length,
++          disabled: activatingKey !== undefined || reordering,
++          peekOpen: overflowOpen,
++          onPeekEnter: () => setOverflowOpen(true),
++          onPeekLeave: () => setOverflowOpen(false),
++          peek: overflowOpen ? (
++            <div data-lcos-railway-peek="overflow" role="menu" aria-label="更多 Railway 目的地"
++              style={{ ...lcosGlassStyle, color: lcosTokens.color.text }}>
++              <strong data-lcos-railway-peek-label>+{overflowDestinations.length} 目的地</strong>
++              {overflowDestinations.map((destination) => (
++                <button key={destination.key} type="button" role="menuitem"
++                  data-lcos-railway-overflow-destination={destination.key}
++                  disabled={!destination.available || activatingKey !== undefined || reordering}
++                  onClick={() => {
++                    if (!destination.available || activatingKey !== undefined || reordering) return;
++                    setActivatingKey(destination.key);
++                    void Promise.resolve(activateDestination(destination))
++                      .catch((cause: unknown) => setError(cause instanceof Error ? cause.message : String(cause)))
++                      .finally(() => setActivatingKey(undefined));
++                  }}>
++                  {destination.label}
++                </button>
++              ))}
++            </div>
++          ) : undefined,
++        },
++      ];
++
+   // An empty project has no Railway yet. Do not leave a decorative empty rail
+   // on screen: the rail appears only after the user has durable destinations.
+   if (items.length === 0 && error === undefined) return <></>;
+@@ -463,6 +501,10 @@ export function LcosRailway({
+       <LcosRailwayView
+         items={items}
+         onSelect={(key) => {
++          if (key === '__overflow__') {
++            setOverflowOpen((open) => !open);
++            return;
++          }
+           const destination = destinations.find((item) => item.key === key);
+           if (!destination?.available || activatingKey !== undefined) return;
+           setActivatingKey(destination.key);
+diff --git a/huabu/apps/web/src/lcos/shell/LcosSurfaceDock.tsx b/huabu/apps/web/src/lcos/shell/LcosSurfaceDock.tsx
+index 1401cc1..acb0daf 100644
+--- a/huabu/apps/web/src/lcos/shell/LcosSurfaceDock.tsx
++++ b/huabu/apps/web/src/lcos/shell/LcosSurfaceDock.tsx
+@@ -2,12 +2,12 @@
+ // 三现场切换驱动真实 worksite canvasId（切换 = switchCanvas / 首次 = createCanvas + 回写）。
+ // Assembly 有独立入口；Dock 只呈现三个一级 Surface。
+ 
++import { lcosHudEdgeOffsets } from './lcosHudPlacement';
+ import {
+   LCOS_SURFACES,
+   useLcosShellStore,
+   type LcosSurfaceKey,
+ } from './lcosShellStore';
+-import { lcosHudEdgeOffsets } from './lcosHudPlacement';
+ import { useLcosWorksiteNav } from '../app/useLcosWorksiteNav';
+ import { LcosSurfaceDockView } from '../ui/families/LcosSurfaceDockView';
+ import { lcosTokens } from '../ui/lcosTokens';
+@@ -52,7 +52,7 @@ export function LcosSurfaceDock({
+   return (
+     <LcosSurfaceDockView
+       className="pointer-events-auto fixed z-40"
+-      style={{ left: safeCenteredLeft, bottom: edgeOffsets.bottom,
++      style={{ left: safeCenteredLeft, bottom: Math.max(23, edgeOffsets.bottom - 1),
+         transform: 'translateX(-50%)', maxWidth: 'calc(100vw - 24px)' }}
+       items={LCOS_SURFACES.map(({ key, label }) => ({
+         key, label, glyph: SURFACE_GLYPH[key], selected: activeSurface === key,
+diff --git a/huabu/apps/web/src/lcos/surfaces/context/ContextWorksite.tsx b/huabu/apps/web/src/lcos/surfaces/context/ContextWorksite.tsx
+index 53f6687..dea4c4c 100644
+--- a/huabu/apps/web/src/lcos/surfaces/context/ContextWorksite.tsx
++++ b/huabu/apps/web/src/lcos/surfaces/context/ContextWorksite.tsx
+@@ -2,7 +2,6 @@
+ // （Atlas 强表征 / Temporal Rail 局部时间轨 / 来源与关系 Wave 8）。Atlas=Context 现场表征，
+ // 不是全局 overlay；child canvas 复用同一 Huabu kernel（Portal/Surface 机制 Wave 8 精化）。
+ 
+-import { Layers } from 'lucide-react';
+ import { AnimatePresence } from 'motion/react';
+ import { useState } from 'react';
+ import { useNavigate } from 'react-router-dom';
+@@ -89,19 +88,19 @@ export function ContextWorksite({
+         ensureCanvas={(recreate?: boolean) => ensureCanvas(surface, recreate)}
+       />
+ 
+-      {/* Context 现场仪器入口（真实动作；Temporal Rail 常驻右侧） */}
+-      <div className="pointer-events-auto fixed left-6 bottom-24 z-30 flex flex-col gap-2">
+-        <button
+-          type="button"
+-          data-lcos-context-instrument="atlas"
+-          onClick={() => setAtlasOpen(true)}
+-          className="lcos-context-instrument-trigger"
+-          aria-label="打开集合总览"
+-          title="集合总览"
+-        >
+-          <Layers className="h-4 w-4" aria-hidden />
+-        </button>
+-      </div>
++      {/* Context 的 Atlas 是现场强表征，不在统一静息主稿里常驻一块按钮。
++          保留真实入口，但收成与产品冻结一致的“灯条”热区：静息不制造额外 chrome，
++          hover/focus 时才显形；键盘仍可发现并触发。 */}
++      <button
++        type="button"
++        data-lcos-context-instrument="atlas"
++        onClick={() => setAtlasOpen(true)}
++        className="lcos-context-instrument-trigger"
++        aria-label="打开集合总览"
++        title="集合总览"
++      >
++        <span className="lcos-context-instrument-light" aria-hidden />
++      </button>
+ 
+       <TemporalRail />
+ 
+diff --git a/huabu/apps/web/src/lcos/surfaces/workflow/WorkflowWorksite.tsx b/huabu/apps/web/src/lcos/surfaces/workflow/WorkflowWorksite.tsx
+index 8ed29c7..7693951 100644
+--- a/huabu/apps/web/src/lcos/surfaces/workflow/WorkflowWorksite.tsx
++++ b/huabu/apps/web/src/lcos/surfaces/workflow/WorkflowWorksite.tsx
+@@ -2,7 +2,7 @@
+ // 手牌 = 现场表征（非第二 graph）；取用 → 加入 Composer 草稿（未发送，真实动作）；
+ // 打开/续接（Run 执行）Wave 8 接 T6 Run 事实。
+ 
+-import { Hand, X } from 'lucide-react';
++import { X } from 'lucide-react';
+ import { useState } from 'react';
+ 
+ import { useCloseOnEscape } from '@/hooks/useCloseOnEscape';
+@@ -48,7 +48,6 @@ export function WorkflowWorksite({
+   ensureCanvas,
+ }: WorkflowWorksiteProps): React.JSX.Element {
+   const [handOpen, setHandOpen] = useState(false);
+-
+   return (
+     <div data-lcos-workflow-worksite data-hand-open={handOpen ? 'true' : undefined} className="relative h-full w-full">
+       <LcosWorksiteStage
+@@ -58,17 +57,17 @@ export function WorkflowWorksite({
+         ensureCanvas={(recreate?: boolean) => ensureCanvas(surface, recreate)}
+       />
+ 
+-      {/* 手牌呼出（真实：卡池） */}
++      {/* Workflow Cards / 手牌是召回式现场表征。统一静息主稿不常驻一块图标按钮，
++          所以生产 caller 保留为灯条热区，避免为了“有入口”重新长出旧 HUD。 */}
+       <button
+         type="button"
+-        data-lcos-workflow-hand-toggle
+-        data-open={handOpen ? 'true' : undefined}
+-        onClick={() => setHandOpen((v) => !v)}
+         className="lcos-workflow-hand-trigger"
+-        aria-label={handOpen ? '收起工作流手牌' : '打开工作流手牌'}
+-        title={handOpen ? '收起手牌' : '打开手牌'}
++        data-open={handOpen ? 'true' : undefined}
++        aria-label="打开工作流取用"
++        title="工作流取用"
++        onClick={() => setHandOpen(true)}
+       >
+-        <Hand className="h-4 w-4" aria-hidden />
++        <span className="lcos-workflow-hand-light" aria-hidden />
+       </button>
+ 
+       <WorkflowHandOverlay projectId={projectId} open={handOpen} onClose={() => setHandOpen(false)} />
+diff --git a/huabu/apps/web/src/lcos/ui/context/context-spatial.css b/huabu/apps/web/src/lcos/ui/context/context-spatial.css
+index a6a1e48..36011e4 100644
+--- a/huabu/apps/web/src/lcos/ui/context/context-spatial.css
++++ b/huabu/apps/web/src/lcos/ui/context/context-spatial.css
+@@ -14,7 +14,7 @@
+ .lcos-context-collection-slot { position: relative; width: 248px; height: 244px; transition: opacity 150ms ease, filter 150ms ease, transform 180ms cubic-bezier(.22,1,.36,1); }
+ .lcos-context-collection-slot[data-disabled='true'] { opacity: .65; }
+ .lcos-context-collection { position:relative; width:248px; height:244px; color:var(--lcos-text-primary); outline:none; }
+-.lcos-context-collection-back { box-sizing:border-box; position:absolute; left:18px; top:38px; width:212px; height:164px; border-radius:18px; background:var(--lcos-surface-base); border:1px solid var(--lcos-surface-base); box-shadow:var(--lcos-glass-shadow); }
++.lcos-context-collection-back { box-sizing:border-box; position:absolute; left:18px; top:38px; width:212px; height:164px; border-radius:18px; background:color-mix(in srgb,var(--lcos-surface-base) 10%,transparent); border:1px solid var(--lcos-surface-base); box-shadow:var(--lcos-glass-shadow); backdrop-filter:blur(var(--lcos-glass-blur)); -webkit-backdrop-filter:blur(var(--lcos-glass-blur)); }
+ .lcos-context-collection[data-rendition='总览'] .lcos-context-collection-back { transform:rotate(3deg); transform-origin:0 0; }
+ .lcos-context-collection-tab { position:absolute; left:30px; top:24px; width:82px; height:36px; border-radius:10px; background:var(--lcos-color-palette-blue-bg); }
+ .lcos-context-collection-cover { position:absolute; overflow:hidden; background:transparent; border-radius:12px; transform-origin:0 0; }
+@@ -26,7 +26,7 @@
+ .lcos-context-collection:not([data-rendition='总览']) .cover-a { top:34px; }
+ .lcos-context-collection:not([data-rendition='总览']) .cover-b { top:38px; }
+ /* Original white carrier and blue frost are separate Figma layers. */
+-.lcos-context-collection-pocket-base { box-sizing:border-box; position:absolute; left:12px; top:101px; width:224px; height:110px; border-radius:18px; background:var(--lcos-surface-base); border:1px solid var(--lcos-surface-base); box-shadow:var(--lcos-glass-shadow); }
++.lcos-context-collection-pocket-base { box-sizing:border-box; position:absolute; left:12px; top:101px; width:224px; height:110px; border-radius:18px; background:color-mix(in srgb,var(--lcos-surface-base) 10%,transparent); border:1px solid var(--lcos-surface-base); box-shadow:var(--lcos-glass-shadow); backdrop-filter:blur(var(--lcos-glass-blur)); -webkit-backdrop-filter:blur(var(--lcos-glass-blur)); }
+ .lcos-context-collection-pocket { box-sizing:border-box; position:absolute; left:12px; top:101px; width:224px; height:110px; border-radius:18px; background:var(--lcos-color-palette-blue-bg); border:1px solid var(--lcos-surface-base); backdrop-filter:blur(7px); -webkit-backdrop-filter:blur(7px); }
+ .lcos-context-collection-copy { position:absolute; left:22px; top:136px; width:198px; display:grid; grid-template-columns:21px 1fr; gap:5px; align-items:start; color:var(--lcos-color-palette-blue-text); }
+ .lcos-context-collection-icon { width:21px; height:21px; display:grid; place-items:center; margin-top:1px; color:var(--lcos-color-palette-blue-text); }
+@@ -95,8 +95,13 @@
+   .lcos-temporal-item > span,.lcos-temporal-item > i { transition:none; }
+ }
+ 
+-.lcos-context-instrument-trigger { pointer-events:auto; position:fixed; left:24px; bottom:96px; z-index:30; width:44px; height:44px; display:grid; place-items:center; border:1px solid var(--lcos-color-border-subtle); border-radius:14px; background:rgba(252,252,252,.76); color:var(--gen2-muted); box-shadow:0 4px 12px rgba(40,48,58,.075); backdrop-filter:blur(18px) saturate(1.4); }
+-.lcos-context-instrument-trigger:hover,.lcos-context-instrument-trigger:focus-visible { color:var(--gen2-text); background:rgba(255,255,255,.92); outline:2px solid var(--gen2-accent); outline-offset:2px; }
++/* Atlas summon light-strip: product/source contract keeps the entry, while unified 5388:21602
++   has no visible idle tile. The 44×24 hot target stays keyboard/pointer reachable; only the 28×2
++   indicator paints on hover/focus so the static worksite remains pixel-clean. */
++.lcos-context-instrument-trigger { pointer-events:auto; position:fixed; left:24px; bottom:92px; z-index:30; width:44px; height:24px; display:grid; place-items:center; padding:0; border:0; background:transparent; color:var(--gen2-accent); }
++.lcos-context-instrument-light { width:28px; height:2px; border-radius:999px; background:currentColor; opacity:0; transform:scaleX(.55); transition:opacity 150ms ease,transform 180ms cubic-bezier(.22,1,.36,1),box-shadow 180ms ease; }
++.lcos-context-instrument-trigger:hover .lcos-context-instrument-light,.lcos-context-instrument-trigger:focus-visible .lcos-context-instrument-light { opacity:.72; transform:scaleX(1); box-shadow:0 0 12px color-mix(in srgb,var(--gen2-accent) 48%,transparent); }
++.lcos-context-instrument-trigger:focus-visible { outline:2px solid var(--gen2-accent); outline-offset:4px; border-radius:999px; }
+ 
+ /* Feedback stays local and readable; it never manufactures temporal entries. */
+ .lcos-temporal-feedback { position:absolute; right:8px; bottom:0; display:flex; flex-direction:column; gap:6px; max-width:180px; width:max-content; padding:6px; border-radius:9px; background:var(--gen2-surface); color:var(--gen2-muted); font:400 11px/16px 'Noto Sans SC',sans-serif; }
+diff --git a/huabu/apps/web/src/lcos/ui/families/LcosCameraControlsView.tsx b/huabu/apps/web/src/lcos/ui/families/LcosCameraControlsView.tsx
+index 562204d..b270c8a 100644
+--- a/huabu/apps/web/src/lcos/ui/families/LcosCameraControlsView.tsx
++++ b/huabu/apps/web/src/lcos/ui/families/LcosCameraControlsView.tsx
+@@ -14,12 +14,11 @@ export interface LcosCameraControlsViewProps {
+   /** 原有图标 primitive 由现有 container 注入，不自行重画。 */
+   readonly zoomOutIcon: ReactNode;
+   readonly zoomInIcon: ReactNode;
+-  readonly fitIcon: ReactNode;
+   readonly compact?: { readonly expanded: boolean; readonly onToggle: () => void };
+   readonly disabled?: boolean;
+ }
+ export function LcosCameraControlsView({ zoom, onZoomOut, onZoomIn, onFit,
+-  zoomOutIcon, zoomInIcon, fitIcon, compact, disabled = false, className, style,
++  zoomOutIcon, zoomInIcon, compact, disabled = false, className, style,
+ }: LcosCameraControlsViewProps): React.JSX.Element {
+   const collapsed = compact !== undefined && !compact.expanded;
+   return <div data-lcos-camera-controls data-lcos-family="camera-controls"
+@@ -29,11 +28,10 @@ export function LcosCameraControlsView({ zoom, onZoomOut, onZoomIn, onFit,
+       <LcosIconButton type="button" aria-label="缩小" title="缩小" disabled={disabled} onClick={onZoomOut}>{zoomOutIcon}</LcosIconButton>
+       <span data-lcos-camera-zoom>{Math.round(zoom * 100)}%</span>
+       <LcosIconButton type="button" aria-label="放大" title="放大" disabled={disabled} onClick={onZoomIn}>{zoomInIcon}</LcosIconButton>
+-      <span data-lcos-camera-separator aria-hidden />
+-      <LcosIconButton type="button" aria-label="适合画面" title="适合画面" disabled={disabled} onClick={onFit}>{fitIcon}</LcosIconButton>
+-      {compact && <LcosIconButton type="button" aria-label="收起相机控件" aria-expanded onClick={compact.onToggle}>
++      <LcosIconButton type="button" data-lcos-camera-fit aria-label="适合画面并收起" title="适合画面" disabled={disabled}
++        onClick={() => { onFit(); compact?.onToggle(); }}>
+         <FigmaShellGlyph name="grid" size={17} />
+-      </LcosIconButton>}
++      </LcosIconButton>
+     </>}
+   </div>;
+ }
+diff --git a/huabu/apps/web/src/lcos/ui/families/LcosNavigatorIslandView.tsx b/huabu/apps/web/src/lcos/ui/families/LcosNavigatorIslandView.tsx
+index 9a03f26..f586551 100644
+--- a/huabu/apps/web/src/lcos/ui/families/LcosNavigatorIslandView.tsx
++++ b/huabu/apps/web/src/lcos/ui/families/LcosNavigatorIslandView.tsx
+@@ -48,6 +48,7 @@ export interface LcosNavigatorIslandViewProps {
+   readonly onToggleSearch?: () => void;
+   readonly onActivatePin?: (pin: LcosNavigatorPin) => void;
+   /** 创建颜色组入口（容器负责弹调色板，本视图只发命令）。 */
++  /** Organization action is transient: right-click the island; no persistent + button in Figma 5384:367. */
+   readonly onCreatePin?: () => void;
+   readonly createPinDisabled?: boolean;
+   /** loading / error / degraded 的短态文案（Figma 这些状态与静息共用壳）。 */
+@@ -70,7 +71,12 @@ export function LcosNavigatorIslandView({
+   return (
+     <div data-lcos-nav-view>
+       <div data-lcos-family="navigator-island" data-lcos-variant={state}
+-        data-lcos-expanded={expanded ? 'true' : 'false'} aria-busy={state === 'loading'}>
++        data-lcos-expanded={expanded ? 'true' : 'false'} aria-busy={state === 'loading'}
++        onContextMenu={(event) => {
++          if (onCreatePin === undefined || disabled || createPinDisabled) return;
++          event.preventDefault();
++          onCreatePin();
++        }}>
+         <LcosIconButton type="button" data-lcos-nav-part="search"
+           aria-label={expanded ? '收起搜索（Esc）' : '搜索项目中的内容（Ctrl/Cmd+F）'}
+           aria-expanded={expanded} disabled={disabled} onClick={onToggleSearch}>
+@@ -86,15 +92,8 @@ export function LcosNavigatorIslandView({
+             title={pin.count === undefined ? pin.label : `${pin.label} · ${pin.count} 项`}
+             disabled={disabled} onClick={() => onActivatePin?.(pin)}>
+             <FigmaPinMark color={pin.color ?? tones[pin.tone]} />
+-            {pin.count !== undefined && pin.count > 0 &&
+-              <span data-lcos-pin-count-mark>{pin.count}</span>}
+           </LcosIconButton>
+         ))}
+-        {onCreatePin !== undefined && <LcosIconButton type="button" data-lcos-nav-part="pin-add"
+-          aria-label="新建颜色组" title="把当前现场标为颜色组"
+-          disabled={disabled || createPinDisabled} onClick={onCreatePin}>
+-          <FigmaShellGlyph name="plus" size={16} />
+-        </LcosIconButton>}
+       </div>
+       {feedback !== undefined && <div data-lcos-nav-feedback>
+         <LcosSurfaceFeedbackView presentation={feedback}
+diff --git a/huabu/apps/web/src/lcos/ui/families/LcosRailwayView.tsx b/huabu/apps/web/src/lcos/ui/families/LcosRailwayView.tsx
+index 507ca6d..496f801 100644
+--- a/huabu/apps/web/src/lcos/ui/families/LcosRailwayView.tsx
++++ b/huabu/apps/web/src/lcos/ui/families/LcosRailwayView.tsx
+@@ -15,6 +15,8 @@ export interface LcosRailwayViewItem {
+   readonly icon: ComponentType<{ className?: string }>;
+   /** 仅视觉替换。未映射时保留 container 已提供的真实图标。 */
+   readonly glyph?: FigmaShellGlyphName;
++  /** Figma overflow destination uses a literal +N tile instead of another semantic glyph. */
++  readonly overflowCount?: number;
+   readonly selected?: boolean;
+   readonly disabled?: boolean;
+   /** Container-owned ref used to publish live receive geometry. */
+@@ -96,8 +98,10 @@ export function LcosRailwayView({ items, onSelect, footer }: LcosRailwayViewProp
+                 onDrop={item.onDrop}
+                 onDragEnd={item.onDragEnd}
+               >
+-                {item.glyph === undefined ? <Icon className="h-[21px] w-[21px]" />
+-                  : <FigmaShellGlyph name={item.glyph} size={21} />}
++                {item.overflowCount !== undefined
++                  ? <span data-lcos-railway-overflow-count>+{item.overflowCount}</span>
++                  : item.glyph === undefined ? <Icon className="h-[21px] w-[21px]" />
++                    : <FigmaShellGlyph name={item.glyph} size={21} />}
+               </LcosIconButton>
+               {item.peekOpen && item.peek}
+               {item.moreOpen && item.more}
+diff --git a/huabu/apps/web/src/lcos/ui/families/lcos-hud-presentation.css b/huabu/apps/web/src/lcos/ui/families/lcos-hud-presentation.css
+index f559b4a..b220f9d 100644
+--- a/huabu/apps/web/src/lcos/ui/families/lcos-hud-presentation.css
++++ b/huabu/apps/web/src/lcos/ui/families/lcos-hud-presentation.css
+@@ -116,20 +116,6 @@
+   mask-repeat: no-repeat; -webkit-mask-repeat: no-repeat;
+ }
+ [data-lcos-pin-highlight] { position: absolute; left: 5px; top: 3.5px; width: 14px; height: 4px; }
+-[data-lcos-pin-count-mark] {
+-  position: absolute;
+-  right: 0; bottom: 0;
+-  min-width: 10px;
+-  padding: 0 2px;
+-  border-radius: 4px;
+-  font: 400 9px/11px var(--lcos-hud-font);
+-  color: var(--gen2-text);
+-  background: var(--lcos-hud-surface);
+-  opacity: 0;
+-  pointer-events: none;
+-}
+-[data-lcos-nav-part='pin']:hover [data-lcos-pin-count-mark],
+-[data-lcos-nav-part='pin']:focus-visible [data-lcos-pin-count-mark] { opacity: 1; }
+ [data-lcos-nav-feedback] {
+   position: absolute;
+   top: calc(100% + 8px);
+@@ -172,6 +158,7 @@
+   transition: opacity 120ms ease, background-color 120ms ease, box-shadow 120ms ease;
+ }
+ [data-lcos-railway-item] > svg { width: 21px; height: 21px; flex: none; }
++[data-lcos-railway-overflow-count] { display:grid; place-items:center; width:21px; height:21px; color:var(--gen2-muted); font:500 11px/14px var(--lcos-hud-font); font-variant-numeric:tabular-nums; letter-spacing:-.2px; }
+ [data-lcos-railway-item]:hover:not(:disabled) { background: var(--gen2-raised); }
+ [data-lcos-railway-item][data-lcos-variant='selected'] {
+   background: var(--lcos-hud-surface);
+@@ -276,7 +263,8 @@
+   height: 48px;
+   min-height: 48px;
+   flex: none;
+-  padding: 8px 24px;
++  position: relative;
++  padding: 8px 138px 8px 24px;
+   border-radius: 0;
+   box-shadow: inset 0 0 0 1px var(--lcos-hud-border), var(--lcos-glass-shadow);
+ }
+@@ -321,8 +309,8 @@
+ [data-lcos-window-tab-label] { display: block; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+ [data-lcos-window-tab][data-lcos-variant='selected'] { background: var(--gen2-raised); color: var(--gen2-text); font-weight: 500; }
+ [data-lcos-window-tab]:focus-visible { outline: 2px solid var(--lcos-pin-violet); outline-offset: -2px; }
+-[data-lcos-window-actions] { display: flex; align-items: center; gap: 4px; flex: 0 0 auto; }
+-[data-lcos-window-actions]:empty { width: 114px; }
++[data-lcos-window-actions] { position:absolute; right:12px; top:8px; display:flex; align-items:center; gap:4px; height:32px; }
++[data-lcos-window-actions]:empty { width: 0; }
+ [data-lcos-window-icon-button] {
+   appearance: none;
+   display: grid;
+@@ -408,13 +396,16 @@
+ [data-lcos-surface]:disabled { cursor: not-allowed; }
+ [data-lcos-surface]:focus-visible { outline: 2px solid var(--lcos-pin-violet); outline-offset: -2px; }
+ 
+-/* Camera: existing expanded production controls, optional controlled compact variant. */
++/* Camera: resting state is Figma 5386:274 (52×48). The expanded detail reuses the
++   earlier approved 174×48 camera strip: minus / percentage / plus / map-fit. */
+ [data-lcos-family='camera-controls'] {
+   display: flex;
+   align-items: center;
+-  gap: 4px;
+-  min-height: 52px;
+-  padding: 4px 6px;
++  gap: 0;
++  width: 174px;
++  height: 48px;
++  min-height: 48px;
++  padding: 2px 6px;
+   border-radius: 20px;
+   max-width: calc(100vw - 48px);
+ }
+@@ -423,7 +414,7 @@
+   display: grid;
+   place-items: center;
+   flex: none;
+-  width: 44px;
++  width: 36px;
+   height: 44px;
+   border: 0;
+   padding: 0;
+@@ -435,13 +426,46 @@
+ [data-lcos-family='camera-controls'] button:hover:not(:disabled) { background: var(--gen2-raised); }
+ [data-lcos-family='camera-controls'] button:disabled { opacity: 0.45; cursor: not-allowed; }
+ [data-lcos-family='camera-controls'] button:focus-visible { outline: 2px solid var(--lcos-pin-violet); outline-offset: -2px; }
+-[data-lcos-camera-zoom] { width: 48px; flex: none; text-align: center; font: 400 12px/18px var(--lcos-hud-font); font-variant-numeric: tabular-nums; color: var(--gen2-muted); }
+-[data-lcos-camera-separator] { width: 1px; height: 20px; margin: 0 2px; background: var(--lcos-color-border-subtle); }
++[data-lcos-camera-zoom] { width: 54px; flex: none; text-align: center; font: 400 12px/19px var(--lcos-hud-font); font-variant-numeric: tabular-nums; color: var(--gen2-muted); }
+ [data-lcos-family='camera-controls'][data-lcos-camera-collapsed='true'] { width: 52px; height: 48px; min-height: 48px; padding: 2px 4px; }
++[data-lcos-family='camera-controls'][data-lcos-camera-collapsed='true'] button { width:44px; height:44px; }
++
++/* Shell Assembly entry: Figma Shell 5386:436 — bottom-right 128×52, two 20px glyphs. */
++[data-lcos-shell-assembly] {
++  appearance:none; box-sizing:border-box; display:grid; grid-template-columns:58px 58px; align-items:center;
++  width:128px; height:52px; padding:0 6px; border:0; border-radius:20px;
++  background:var(--lcos-hud-surface); color:var(--gen2-text);
++  box-shadow:inset 0 0 0 .6px var(--lcos-hud-border),var(--lcos-glass-shadow);
++  backdrop-filter:blur(var(--lcos-glass-blur)); -webkit-backdrop-filter:blur(var(--lcos-glass-blur)); cursor:pointer;
++}
++[data-lcos-shell-assembly-glyph] { display:grid; place-items:center; width:44px; height:44px; justify-self:center; border-radius:12px; }
++[data-lcos-shell-assembly]:hover [data-lcos-shell-assembly-glyph='bench'],
++[data-lcos-shell-assembly]:focus-visible [data-lcos-shell-assembly-glyph='bench'] { background:var(--gen2-raised); }
++[data-lcos-shell-assembly]:focus-visible { outline:2px solid var(--lcos-pin-violet); outline-offset:2px; }
++
++[data-lcos-railway-overflow-destination] {
++  appearance:none; min-height:32px; padding:6px 8px; border:0; border-radius:8px; background:transparent;
++  color:var(--gen2-text); font:400 12px/18px var(--lcos-hud-font); text-align:left; cursor:pointer;
++}
++[data-lcos-railway-overflow-destination]:hover:not(:disabled),
++[data-lcos-railway-overflow-destination]:focus-visible { background:var(--gen2-raised); }
++
++[data-lcos-window-overflow-menu] {
++  position:absolute; top:44px; right:12px; z-index:30; display:flex; flex-direction:column; gap:2px; width:184px; padding:6px;
++  border-radius:12px; background:var(--lcos-hud-surface); box-shadow:inset 0 0 0 .6px var(--lcos-hud-border),var(--lcos-glass-shadow);
++  backdrop-filter:blur(var(--lcos-glass-blur)); -webkit-backdrop-filter:blur(var(--lcos-glass-blur));
++}
++[data-lcos-window-overflow-menu] > button {
++  appearance:none; display:flex; align-items:center; gap:8px; min-height:36px; padding:6px 10px; border:0; border-radius:8px;
++  background:transparent; color:var(--gen2-text); font:400 12px/18px var(--lcos-hud-font); text-align:left; cursor:pointer;
++}
++[data-lcos-window-overflow-menu] > button:hover:not(:disabled),
++[data-lcos-window-overflow-menu] > button:focus-visible { background:var(--gen2-raised); outline:none; }
++[data-lcos-window-overflow-menu] > button:disabled { opacity:.42; cursor:not-allowed; }
+ 
+ /* Constraint-based narrow composition; no font scaling and no hidden action buttons. */
+ @media (max-width: 720px) {
+-  [data-lcos-family='window-chrome'] { padding-inline: 12px; }
++  [data-lcos-family='window-chrome'] { padding:8px 92px 8px 12px; }
+   [data-lcos-window-tab] { max-width: 132px; }
+ }
+ @media (pointer: coarse) {
+diff --git a/huabu/apps/web/src/lcos/ui/launcher/ProjectLauncherViews.test.tsx b/huabu/apps/web/src/lcos/ui/launcher/ProjectLauncherViews.test.tsx
+new file mode 100644
+index 0000000..7af0ca5
+--- /dev/null
++++ b/huabu/apps/web/src/lcos/ui/launcher/ProjectLauncherViews.test.tsx
+@@ -0,0 +1,86 @@
++// @vitest-environment happy-dom
++import { act } from 'react';
++import { createRoot } from 'react-dom/client';
++import { afterEach, describe, expect, it, vi } from 'vitest';
++
++import {
++  ProjectCardView,
++  ProjectDialogField,
++  ProjectDialogView,
++  ProjectLauncherTabsView,
++  ProjectSearchView,
++} from './ProjectLauncherViews';
++
++import type { ReactNode } from 'react';
++
++const mounted: { root: ReturnType<typeof createRoot>; host: HTMLDivElement }[] = [];
++async function mount(node: ReactNode): Promise<HTMLDivElement> {
++  const host = document.createElement('div');
++  document.body.append(host);
++  const root = createRoot(host);
++  mounted.push({ root, host });
++  await act(async () => root.render(node));
++  return host;
++}
++
++afterEach(async () => {
++  for (const { root, host } of mounted.splice(0)) {
++    await act(async () => root.unmount());
++    host.remove();
++  }
++});
++
++describe('Project launcher Figma presentation', () => {
++  it('does not invent the archive action when production has no caller', async () => {
++    const change = vi.fn();
++    const host = await mount(<ProjectLauncherTabsView value="recent" onChange={change} />);
++    expect(host.querySelectorAll('button')).toHaveLength(2);
++    expect(host.textContent).not.toContain('归档');
++    await act(async () => host.querySelectorAll<HTMLButtonElement>('button')[1]?.click());
++    expect(change).toHaveBeenCalledWith('all');
++  });
++
++  it('renders a neutral project cover instead of fabricating a photo', async () => {
++    const host = await mount(<ProjectCardView title="真实项目" meta="主画布 · 今天" rootPath="D:/Projects/real" onOpen={() => undefined} />);
++    expect(host.querySelector('img')).toBeNull();
++    expect(host.querySelector('.lcos-launcher-project-cover-empty')).not.toBeNull();
++    expect(host.querySelector('button')?.title).toBe('D:/Projects/real');
++  });
++
++  it('uses the exact supplied preview only when a real one exists', async () => {
++    const host = await mount(<ProjectCardView title="真实项目" meta="主画布 · 今天" rootPath="D:/Projects/real" previewUrl="blob:project-preview" onOpen={() => undefined} />);
++    expect(host.querySelector('img')?.getAttribute('src')).toBe('blob:project-preview');
++  });
++
++  it('preserves disabled opening state and native click semantics', async () => {
++    const open = vi.fn();
++    const host = await mount(<ProjectCardView title="项目" meta="主画布" rootPath="D:/p" disabled onOpen={open} />);
++    const button = host.querySelector<HTMLButtonElement>('button');
++    expect(button?.disabled).toBe(true);
++    await act(async () => button?.click());
++    expect(open).not.toHaveBeenCalled();
++  });
++
++  it('keeps launcher search as one native input with explicit clear', async () => {
++    const change = vi.fn();
++    const clear = vi.fn();
++    const host = await mount(<ProjectSearchView value="山野" onChange={change} onClear={clear} />);
++    expect(host.querySelectorAll('input')).toHaveLength(1);
++    await act(async () => host.querySelector<HTMLButtonElement>('[aria-label="清空搜索"]')?.click());
++    expect(clear).toHaveBeenCalledTimes(1);
++  });
++
++  it('dismisses the dialog on Escape without manufacturing a submit', async () => {
++    const dismiss = vi.fn();
++    const submit = vi.fn();
++    await mount(
++      <ProjectDialogView title="新建项目" ariaLabel="新建项目" primaryLabel="创建项目" onPrimary={submit}
++        alternateLead="已有项目？" alternateLabel="打开项目文件夹" onAlternate={() => undefined} onDismiss={dismiss}>
++        <ProjectDialogField label="项目名称" value="" onChange={() => undefined} />
++      </ProjectDialogView>,
++    );
++    await act(async () => document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })));
++    expect(dismiss).toHaveBeenCalledTimes(1);
++    expect(submit).not.toHaveBeenCalled();
++  });
++});
+diff --git a/huabu/apps/web/src/lcos/ui/launcher/ProjectLauncherViews.tsx b/huabu/apps/web/src/lcos/ui/launcher/ProjectLauncherViews.tsx
+new file mode 100644
+index 0000000..372e75c
+--- /dev/null
++++ b/huabu/apps/web/src/lcos/ui/launcher/ProjectLauncherViews.tsx
+@@ -0,0 +1,160 @@
++import { useEffect, type ReactNode } from 'react';
++
++import { LcosButton } from '../primitives/LcosButton';
++import { LcosIconButton } from '../primitives/LcosIconButton';
++
++import './project-launcher.css';
++
++export type ProjectLauncherTab = 'recent' | 'all';
++
++export function ProjectLauncherTabsView(props: {
++  readonly value: ProjectLauncherTab;
++  readonly onChange: (value: ProjectLauncherTab) => void;
++  readonly archiveAction?: (() => void) | undefined;
++}): React.JSX.Element {
++  return (
++    <div className="lcos-launcher-tabs" data-lcos-launcher-tabs aria-label="项目范围">
++      <LcosButton
++        appearance="oreo"
++        variant={props.value === 'recent' ? 'primary' : 'secondary'}
++        className="lcos-launcher-tab"
++        aria-pressed={props.value === 'recent'}
++        onClick={() => props.onChange('recent')}
++      >最近</LcosButton>
++      <LcosButton
++        appearance="oreo"
++        variant={props.value === 'all' ? 'primary' : 'secondary'}
++        className="lcos-launcher-tab"
++        aria-pressed={props.value === 'all'}
++        onClick={() => props.onChange('all')}
++      >全部</LcosButton>
++      {props.archiveAction ? (
++        <LcosButton appearance="oreo" variant="secondary" className="lcos-launcher-tab" onClick={props.archiveAction}>
++          归档
++        </LcosButton>
++      ) : null}
++    </div>
++  );
++}
++
++export function ProjectSearchView(props: {
++  readonly value: string;
++  readonly onChange: (value: string) => void;
++  readonly onClear: () => void;
++}): React.JSX.Element {
++  return (
++    <label className="lcos-launcher-search" data-lcos-launcher-search>
++      <span className="lcos-launcher-search-label">搜索项目</span>
++      <span className="lcos-launcher-search-field">
++        <input
++          value={props.value}
++          onChange={(event) => props.onChange(event.target.value)}
++          placeholder="名称或关键词"
++          aria-label="搜索项目"
++        />
++        {props.value !== '' ? (
++          <LcosIconButton appearance="oreo" variant="ghost" size="sm" aria-label="清空搜索" className="lcos-launcher-search-clear" onClick={props.onClear}>
++            <span aria-hidden="true">×</span>
++          </LcosIconButton>
++        ) : null}
++      </span>
++    </label>
++  );
++}
++
++export function ProjectCardView(props: {
++  readonly title: string;
++  readonly meta: string;
++  readonly rootPath: string;
++  readonly previewUrl?: string | undefined;
++  readonly disabled?: boolean | undefined;
++  readonly onOpen: () => void;
++}): React.JSX.Element {
++  return (
++    <button
++      type="button"
++      className="lcos-launcher-project-card"
++      disabled={props.disabled}
++      onClick={props.onOpen}
++      title={props.rootPath}
++      data-lcos-launcher-project-card
++    >
++      <span className="lcos-launcher-project-cover" aria-hidden="true">
++        {props.previewUrl ? <img src={props.previewUrl} alt="" draggable={false} /> : <span className="lcos-launcher-project-cover-empty" />}
++      </span>
++      <span className="lcos-launcher-project-title">{props.title}</span>
++      <span className="lcos-launcher-project-meta">{props.meta}</span>
++    </button>
++  );
++}
++
++export function ProjectDialogField(props: {
++  readonly label: string;
++  readonly value: string;
++  readonly onChange: (value: string) => void;
++  readonly placeholder?: string | undefined;
++}): React.JSX.Element {
++  return (
++    <label className="lcos-launcher-dialog-field">
++      <span>{props.label}</span>
++      <input
++        value={props.value}
++        onChange={(event) => props.onChange(event.target.value)}
++        placeholder={props.placeholder}
++      />
++    </label>
++  );
++}
++
++export function ProjectDialogView(props: {
++  readonly title: string;
++  readonly ariaLabel: string;
++  readonly children: ReactNode;
++  readonly error?: string | undefined;
++  readonly primaryLabel: string;
++  readonly primaryBusy?: boolean | undefined;
++  readonly onPrimary: () => void;
++  readonly alternateLead: string;
++  readonly alternateLabel: string;
++  readonly onAlternate: () => void;
++  readonly onDismiss: () => void;
++}): React.JSX.Element {
++  const onDismiss = props.onDismiss;
++  useEffect(() => {
++    const onKeyDown = (event: KeyboardEvent): void => {
++      if (event.key !== 'Escape') return;
++      event.preventDefault();
++      event.stopPropagation();
++      onDismiss();
++    };
++    document.addEventListener('keydown', onKeyDown, true);
++    return () => document.removeEventListener('keydown', onKeyDown, true);
++  }, [onDismiss]);
++
++  return (
++    <div className="lcos-launcher-dialog-layer" data-lcos-launcher-dialog-layer>
++      <button type="button" className="lcos-launcher-dialog-dismiss" tabIndex={-1} aria-label="关闭对话框" onClick={props.onDismiss} />
++      <section className="lcos-launcher-dialog" role="dialog" aria-modal="true" aria-label={props.ariaLabel} data-lcos-launcher-dialog>
++        <h2>{props.title}</h2>
++        <div className="lcos-launcher-dialog-fields">{props.children}</div>
++        {props.error ? <div className="lcos-launcher-dialog-error" role="alert">{props.error}</div> : null}
++        <LcosButton
++          appearance="oreo"
++          variant="primary"
++          className="lcos-launcher-dialog-primary lcos-launcher-instance-button"
++          disabled={props.primaryBusy}
++          onClick={props.onPrimary}
++        >
++          {props.primaryLabel}
++        </LcosButton>
++        <div className="lcos-launcher-dialog-divider" aria-hidden="true" />
++        <div className="lcos-launcher-dialog-alternate">
++          <span>{props.alternateLead}</span>
++          <LcosButton appearance="oreo" variant="secondary" className="lcos-launcher-dialog-alt lcos-launcher-instance-button" onClick={props.onAlternate}>
++            {props.alternateLabel}
++          </LcosButton>
++        </div>
++      </section>
++    </div>
++  );
++}
+diff --git a/huabu/apps/web/src/lcos/ui/launcher/project-launcher.css b/huabu/apps/web/src/lcos/ui/launcher/project-launcher.css
+new file mode 100644
+index 0000000..4baba65
+--- /dev/null
++++ b/huabu/apps/web/src/lcos/ui/launcher/project-launcher.css
+@@ -0,0 +1,322 @@
++/* Project Launcher — Figma 5388:3652 + legacy dialog source 5122:2037.
++ * Route/Core state remains in LcosProjectLauncherPage; this file only owns presentation. */
++.lcos-launcher {
++  position: relative;
++  display: flex;
++  width: 100%;
++  height: 100%;
++  flex-direction: column;
++  overflow: hidden;
++  min-width: 0;
++  min-height: 0;
++  color: var(--gen2-text, #242625);
++  background: var(--gen2-canvas, #fafafa);
++  font-family: 'Noto Sans SC', 'Noto Sans CJK SC', system-ui, sans-serif;
++}
++.lcos-launcher-header {
++  position: relative;
++  flex: 0 0 296px;
++  min-height: 296px;
++}
++.lcos-launcher-brand {
++  position: absolute;
++  left: 64px;
++  top: 36px;
++  margin: 0;
++  width: 140px;
++  color: var(--gen2-text, #242625);
++  font: 700 18px/28px 'DM Sans', sans-serif;
++  letter-spacing: 0;
++}
++.lcos-launcher-title {
++  position: absolute;
++  left: 64px;
++  top: 125px;
++  width: min(740px, calc(100% - 128px));
++  margin: 0;
++  color: var(--gen2-text, #242625);
++  font: 500 32px/50px 'Noto Sans SC', 'Noto Sans CJK SC', sans-serif;
++}
++.lcos-launcher-subtitle {
++  position: absolute;
++  left: 66px;
++  top: 181px;
++  width: min(700px, calc(100% - 132px));
++  margin: 0;
++  color: var(--gen2-muted, #69716b);
++  font: 400 11px/18px 'Noto Sans SC', 'Noto Sans CJK SC', sans-serif;
++}
++.lcos-launcher-new-project {
++  --lcos-control-face-height: 30px;
++  position: absolute;
++  top: 125px;
++  right: 70px;
++  width: 150px;
++  height: 44px;
++}
++.lcos-launcher-open-project {
++  --lcos-control-face-height: 30px;
++  position: absolute;
++  top: 125px;
++  right: 230px;
++  width: 150px;
++  height: 44px;
++}
++.lcos-launcher-instance-button[data-lcos-control-skin='oreo'] > .lcos-oreo-face,
++.lcos-launcher-open-project[data-lcos-control-skin='oreo'] > .lcos-oreo-face,
++.lcos-launcher-new-project[data-lcos-control-skin='oreo'] > .lcos-oreo-face,
++.lcos-launcher-tab[data-lcos-control-skin='oreo'] > .lcos-oreo-face {
++  min-block-size: 30px;
++  padding: 6px 10px;
++  font-family: 'Noto Sans SC', 'Noto Sans CJK SC', sans-serif;
++  font-size: 12px;
++  font-weight: 400;
++  line-height: 18px;
++}
++.lcos-launcher-tabs {
++  position: absolute;
++  left: 64px;
++  top: 219px;
++  display: flex;
++  align-items: center;
++  gap: 6px;
++  height: 44px;
++}
++.lcos-launcher-tab { width: 104px; height: 44px; }
++.lcos-launcher-search {
++  position: absolute;
++  right: 70px;
++  top: 206px;
++  width: 370px;
++  height: 72px;
++}
++.lcos-launcher-search-label {
++  display: block;
++  margin: 0 0 7px;
++  color: var(--gen2-muted, #69716b);
++  font: 400 11px/18px 'Noto Sans SC', 'Noto Sans CJK SC', sans-serif;
++}
++.lcos-launcher-search-field {
++  position: relative;
++  display: block;
++  width: 370px;
++  height: 40px;
++}
++.lcos-launcher-search-field > input {
++  box-sizing: border-box;
++  width: 100%;
++  height: 40px;
++  padding: 9px 42px 9px 13px;
++  border: 1px solid var(--gen2-border, #e7e9e7);
++  border-radius: 8px;
++  outline: 0;
++  color: var(--gen2-text, #242625);
++  background: var(--gen2-raised, #f5f5f5);
++  font: 400 14px/22px 'Noto Sans SC', 'Noto Sans CJK SC', sans-serif;
++}
++.lcos-launcher-search-field > input::placeholder { color: var(--gen2-text, #242625); opacity: .64; }
++.lcos-launcher-search-field > input:focus-visible { outline: 2px solid var(--gen2-accent); outline-offset: 2px; }
++.lcos-launcher-search-clear {
++  position: absolute;
++  right: -2px;
++  top: -2px;
++  transform: scale(.82);
++}
++.lcos-launcher-search-clear[data-lcos-control-skin='oreo'] > .lcos-oreo-face { background: transparent; box-shadow: none; }
++
++.lcos-launcher-main {
++  min-height: 0;
++  flex: 1 1 auto;
++  overflow: auto;
++  padding: 40px 64px 80px;
++  scrollbar-gutter: stable;
++}
++.lcos-launcher-feedback { padding-top: 24px; }
++.lcos-launcher-grid {
++  display: grid;
++  grid-template-columns: repeat(3, minmax(0, 408px));
++  gap: 32px;
++  align-items: start;
++  max-width: 1288px;
++  margin: 0 auto 0 0;
++}
++.lcos-launcher-project-card {
++  display: grid;
++  grid-template-rows: auto auto auto;
++  gap: 0;
++  min-width: 0;
++  padding: 0;
++  border: 0;
++  outline: 0;
++  color: inherit;
++  background: transparent;
++  text-align: left;
++  cursor: pointer;
++  transition: transform 180ms ease, opacity 160ms ease;
++}
++.lcos-launcher-project-cover {
++  position: relative;
++  display: block;
++  width: 100%;
++  aspect-ratio: 408 / 268;
++  min-height: 174px;
++  overflow: hidden;
++  border-radius: 14px;
++  background: var(--lcos-surface-elevated, #f9f9f9);
++}
++.lcos-launcher-project-cover > img { display: block; width: 100%; height: 100%; object-fit: cover; }
++.lcos-launcher-project-cover-empty {
++  position: absolute;
++  inset: 0;
++  background: var(--lcos-surface-elevated, #f9f9f9);
++}
++.lcos-launcher-project-title {
++  display: block;
++  min-width: 0;
++  margin: 20px 2px 0;
++  overflow: hidden;
++  color: var(--gen2-text, #242625);
++  font: 500 19px/30px 'Noto Sans SC', 'Noto Sans CJK SC', sans-serif;
++  text-overflow: ellipsis;
++  white-space: nowrap;
++}
++.lcos-launcher-project-meta {
++  display: block;
++  min-width: 0;
++  margin: 12px 2px 0;
++  overflow: hidden;
++  color: var(--gen2-muted, #69716b);
++  font: 400 11px/18px 'Noto Sans SC', 'Noto Sans CJK SC', sans-serif;
++  text-overflow: ellipsis;
++  white-space: nowrap;
++}
++@media (hover: hover) {
++  .lcos-launcher-project-card:hover:not(:disabled) { transform: translateY(-2px); }
++}
++.lcos-launcher-project-card:focus-visible .lcos-launcher-project-cover { outline: 2px solid var(--gen2-accent); outline-offset: 3px; }
++.lcos-launcher-project-card:disabled { cursor: wait; opacity: .52; }
++
++.lcos-launcher-footer {
++  flex: 0 0 82px;
++  padding: 0 66px;
++  color: var(--gen2-muted, #69716b);
++  font: 400 11px/18px 'Noto Sans SC', 'Noto Sans CJK SC', sans-serif;
++}
++
++.lcos-launcher-dialog-layer {
++  position: absolute;
++  inset: 0;
++  z-index: 50;
++  display: grid;
++  place-items: center;
++  padding: 24px;
++  background: rgb(0 0 0 / 12%);
++}
++.lcos-launcher-dialog-dismiss { position: absolute; inset: 0; border: 0; background: transparent; cursor: default; }
++.lcos-launcher-dialog {
++  position: relative;
++  z-index: 1;
++  box-sizing: border-box;
++  width: min(500px, calc(100vw - 32px));
++  min-height: 526px;
++  max-height: min(760px, calc(100vh - 48px));
++  overflow: auto;
++  padding: 23px 27px 28px;
++  border: 1px solid var(--gen2-border, #e7e9e7);
++  border-radius: 16px;
++  color: var(--gen2-text, #242625);
++  background: color-mix(in srgb, var(--gen2-surface, #fff) 94%, transparent);
++  box-shadow: 0 12px 18px rgb(0 0 0 / 8%);
++  backdrop-filter: blur(3px);
++  -webkit-backdrop-filter: blur(3px);
++}
++.lcos-launcher-dialog > h2 {
++  margin: 0 0 14px;
++  color: var(--gen2-text, #242625);
++  font: 500 24px/38px 'Noto Sans SC', 'Noto Sans CJK SC', sans-serif;
++}
++.lcos-launcher-dialog-fields { display: grid; gap: 26px; }
++.lcos-launcher-dialog-field { display: grid; gap: 7px; min-width: 0; }
++.lcos-launcher-dialog-field > span { color: var(--gen2-muted, #69716b); font: 400 11px/18px 'Noto Sans SC', 'Noto Sans CJK SC', sans-serif; }
++.lcos-launcher-dialog-field > input {
++  box-sizing: border-box;
++  width: 100%;
++  height: 48px;
++  padding: 12px 13px;
++  border: 1px solid var(--gen2-border, #e7e9e7);
++  border-radius: 8px;
++  outline: 0;
++  color: var(--gen2-text, #242625);
++  background: var(--gen2-raised, #f5f5f5);
++  font: 400 14px/22px 'Noto Sans SC', 'Noto Sans CJK SC', sans-serif;
++}
++.lcos-launcher-dialog-field > input:focus-visible { outline: 2px solid var(--gen2-accent); outline-offset: 2px; }
++.lcos-launcher-dialog-error {
++  margin-top: 16px;
++  padding: 9px 12px;
++  border-radius: 8px;
++  color: var(--lcos-status-danger, #b84c42);
++  background: color-mix(in srgb, var(--lcos-status-danger, #b84c42) 8%, transparent);
++  font: 400 12px/18px 'Noto Sans SC', 'Noto Sans CJK SC', sans-serif;
++}
++.lcos-launcher-dialog-primary {
++  --lcos-control-face-height: 30px;
++  width: 100%;
++  margin-top: 38px;
++}
++.lcos-launcher-dialog-primary > .lcos-oreo-face { width: 100%; }
++.lcos-launcher-dialog-divider { height: 1px; margin-top: 35px; background: var(--gen2-border, #e7e9e7); }
++.lcos-launcher-dialog-alternate {
++  display: grid;
++  grid-template-columns: 1fr auto;
++  gap: 16px;
++  align-items: center;
++  margin-top: 16px;
++  color: var(--gen2-muted, #69716b);
++  font: 400 13px/21px 'Noto Sans SC', 'Noto Sans CJK SC', sans-serif;
++}
++.lcos-launcher-dialog-alt { --lcos-control-face-height: 30px; min-width: 196px; }
++
++@media (max-width: 1279px) {
++  .lcos-launcher-grid { grid-template-columns: repeat(3, minmax(260px, 1fr)); gap: 24px; max-width: none; }
++  .lcos-launcher-main { padding-inline: 48px; }
++  .lcos-launcher-brand,.lcos-launcher-title { left: 48px; }
++  .lcos-launcher-subtitle { left: 50px; }
++  .lcos-launcher-tabs { left: 48px; }
++  .lcos-launcher-new-project,.lcos-launcher-search { right: 48px; }
++  .lcos-launcher-open-project { right: 208px; }
++  .lcos-launcher-footer { padding-inline: 50px; }
++}
++@media (max-width: 1159px) {
++  .lcos-launcher-header { min-height: 316px; flex-basis: 316px; }
++  .lcos-launcher-grid { grid-template-columns: repeat(2, minmax(260px, 1fr)); gap: 24px; }
++  .lcos-launcher-search { top: 219px; right: 48px; width: min(370px, calc(50vw - 72px)); }
++  .lcos-launcher-search-field { width: 100%; }
++  .lcos-launcher-main { padding-top: 20px; }
++}
++@media (max-width: 760px) {
++  .lcos-launcher-header { min-height: 344px; flex-basis: 344px; }
++  .lcos-launcher-brand { left: 24px; top: 24px; }
++  .lcos-launcher-title { left: 24px; top: 92px; font-size: 30px; line-height: 44px; }
++  .lcos-launcher-subtitle { left: 26px; top: 142px; }
++  .lcos-launcher-new-project { left: 24px; right: auto; top: 181px; }
++  .lcos-launcher-open-project { left: 184px; right: auto; top: 181px; }
++  .lcos-launcher-tabs { left: 24px; top: 230px; }
++  .lcos-launcher-tab { width: 88px; }
++  .lcos-launcher-search { left: 24px; right: 24px; top: 280px; width: auto; }
++  .lcos-launcher-main { padding: 20px 24px 64px; }
++  .lcos-launcher-grid { grid-template-columns: 1fr; gap: 30px; }
++  .lcos-launcher-project-cover { min-height: 174px; }
++  .lcos-launcher-footer { padding: 8px 26px 24px; }
++  .lcos-launcher-dialog-layer { padding: 16px; }
++  .lcos-launcher-dialog { width: min(500px, calc(100vw - 32px)); padding-inline: 22px; }
++  .lcos-launcher-dialog-alternate { grid-template-columns: 1fr; }
++  .lcos-launcher-dialog-alt { width: 100%; }
++}
++@media (prefers-reduced-motion: reduce) {
++  .lcos-launcher-project-card { transition: none; }
++  .lcos-launcher-project-card:hover:not(:disabled) { transform: none; }
++}
++@media (forced-colors: active) {
++  .lcos-launcher-project-cover,.lcos-launcher-dialog,.lcos-launcher-search-field > input,.lcos-launcher-dialog-field > input { border: 1px solid CanvasText; }
++}
+diff --git a/huabu/apps/web/src/lcos/ui/nearfield/LcosActionOrbView.tsx b/huabu/apps/web/src/lcos/ui/nearfield/LcosActionOrbView.tsx
+index 9a66fdb..a33d759 100644
+--- a/huabu/apps/web/src/lcos/ui/nearfield/LcosActionOrbView.tsx
++++ b/huabu/apps/web/src/lcos/ui/nearfield/LcosActionOrbView.tsx
+@@ -4,6 +4,7 @@ import { Tooltip } from '@/components/Common/Tooltip';
+ 
+ import { satelliteVariants } from './objectOrbitMotion';
+ import './nearfield.css';
++import './lcos-floating-surfaces.css';
+ import {
+   ACTION_ARC_HIT_INSET, ACTION_ARC_HIT_SIZE, ACTION_ARC_VISUAL_SIZE,
+   type ActionArcPoint,
+diff --git a/huabu/apps/web/src/lcos/ui/nearfield/LcosObjectCommandMenuView.test.tsx b/huabu/apps/web/src/lcos/ui/nearfield/LcosObjectCommandMenuView.test.tsx
+new file mode 100644
+index 0000000..14271f2
+--- /dev/null
++++ b/huabu/apps/web/src/lcos/ui/nearfield/LcosObjectCommandMenuView.test.tsx
+@@ -0,0 +1,59 @@
++// @vitest-environment happy-dom
++import { act } from 'react';
++import { createRoot } from 'react-dom/client';
++import { afterEach, describe, expect, it, vi } from 'vitest';
++
++import { LcosObjectCommandMenuView } from './LcosObjectCommandMenuView';
++
++import type { Root } from 'react-dom/client';
++
++let root: Root | undefined;
++let host: HTMLDivElement | undefined;
++
++async function renderMenu() {
++  host = document.createElement('div');
++  document.body.append(host);
++  root = createRoot(host);
++  const focus = vi.fn();
++  const rename = vi.fn();
++  const remove = vi.fn();
++  await act(async () => root?.render(
++    <LcosObjectCommandMenuView items={[
++      { id: 'focus', label: '聚焦所选', onSelect: focus },
++      { id: 'rename', label: '重命名', onSelect: rename },
++      { id: 'copy', label: '复制', shortcut: 'Ctrl+C', onSelect: vi.fn() },
++      { id: 'duplicate', label: '重复', onSelect: vi.fn() },
++      { id: 'delete', label: '从画布移除', shortcut: 'Delete / Backspace', danger: true, onSelect: remove },
++    ]} />,
++  ));
++  return { host, focus, rename, remove };
++}
++
++afterEach(async () => {
++  if (root) await act(async () => root?.unmount());
++  host?.remove();
++  root = undefined;
++  host = undefined;
++});
++
++describe('LCOS object command menu view', () => {
++  it('renders one menu root and five native menuitem buttons', async () => {
++    const { host } = await renderMenu();
++    expect(host.querySelectorAll('[role="menu"]')).toHaveLength(1);
++    expect(host.querySelectorAll('[role="menuitem"]')).toHaveLength(5);
++  });
++
++  it('keeps shortcut copy and destructive presentation separate from command ownership', async () => {
++    const { host } = await renderMenu();
++    expect([...host.querySelectorAll('kbd')].map((node) => node.textContent)).toEqual(['Ctrl+C', 'Delete / Backspace']);
++    expect(host.querySelector('[data-lcos-context-command="delete"]')?.getAttribute('data-danger')).toBe('true');
++  });
++
++  it('dispatches only the callback belonging to the activated row', async () => {
++    const { host, focus, rename, remove } = await renderMenu();
++    await act(async () => (host.querySelector('[data-lcos-context-command="rename"]') as HTMLButtonElement).click());
++    expect(rename).toHaveBeenCalledTimes(1);
++    expect(focus).not.toHaveBeenCalled();
++    expect(remove).not.toHaveBeenCalled();
++  });
++});
+diff --git a/huabu/apps/web/src/lcos/ui/nearfield/LcosObjectCommandMenuView.tsx b/huabu/apps/web/src/lcos/ui/nearfield/LcosObjectCommandMenuView.tsx
+new file mode 100644
+index 0000000..b6311e2
+--- /dev/null
++++ b/huabu/apps/web/src/lcos/ui/nearfield/LcosObjectCommandMenuView.tsx
+@@ -0,0 +1,57 @@
++import type { CSSProperties, ReactNode } from 'react';
++
++import './lcos-floating-surfaces.css';
++
++export interface LcosObjectCommandMenuItem {
++  readonly id: string;
++  readonly label: string;
++  readonly shortcut?: string | undefined;
++  readonly disabledReason?: string | undefined;
++  readonly danger?: boolean | undefined;
++  readonly icon?: ReactNode | undefined;
++  readonly onSelect: () => void;
++}
++
++export interface LcosObjectCommandMenuViewProps {
++  readonly items: readonly LcosObjectCommandMenuItem[];
++  readonly label?: string | undefined;
++}
++
++/**
++ * Figma 5187:921 object menu presentation.
++ *
++ * Position/dismiss/clamp/focus ownership stays in Huabu Popover. This view only
++ * paints the menu body. Five rows produce the exact 248×265 Figma specimen;
++ * additional real commands extend by the same 47px cadence instead of being
++ * hidden to preserve a screenshot.
++ */
++export function LcosObjectCommandMenuView({ items, label = '节点命令' }: LcosObjectCommandMenuViewProps): React.JSX.Element {
++  return (
++    <div
++      data-lcos-object-command-menu
++      className="lcos-object-command-menu"
++      role="menu"
++      aria-label={label}
++      style={{ '--lcos-object-menu-rows': items.length } as CSSProperties}
++    >
++      {items.map((item) => (
++        <button
++          key={item.id}
++          type="button"
++          role="menuitem"
++          data-lcos-context-command={item.id}
++          data-danger={item.danger || undefined}
++          disabled={item.disabledReason !== undefined}
++          title={item.disabledReason ?? item.label}
++          aria-label={item.disabledReason ? `${item.label}，${item.disabledReason}` : item.label}
++          onClick={item.onSelect}
++          className="lcos-object-command-menu-row"
++        >
++          {item.icon ? <span className="lcos-object-command-menu-icon" aria-hidden>{item.icon}</span> : null}
++          <span className="lcos-object-command-menu-label">{item.label}</span>
++          {item.shortcut ? <kbd className="lcos-object-command-menu-shortcut">{item.shortcut}</kbd> : null}
++        </button>
++      ))}
++    </div>
++  );
++}
+diff --git a/huabu/apps/web/src/lcos/ui/nearfield/lcos-floating-surfaces.css b/huabu/apps/web/src/lcos/ui/nearfield/lcos-floating-surfaces.css
+new file mode 100644
+index 0000000..e632821
+--- /dev/null
++++ b/huabu/apps/web/src/lcos/ui/nearfield/lcos-floating-surfaces.css
+@@ -0,0 +1,179 @@
++/* LCOS floating presentation surfaces.
++   Mechanics remain Huabu Popover/Tooltip/CanvasFloatingPopover owners. */
++
++.lcos-object-command-menu,
++.lcos-arc-more-panel {
++  box-sizing: border-box;
++  font-family: 'Noto Sans SC', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
++  color: var(--gen2-text, #242625);
++}
++
++/* Figma 5187:921 — 248×265 at 5 rows, 47px row cadence. */
++.lcos-object-command-popover {
++  padding: 0 !important;
++  overflow: visible !important;
++  border: 0 !important;
++  border-radius: 15px !important;
++  background: transparent !important;
++  box-shadow: none !important;
++}
++.lcos-object-command-menu {
++  width: 248px;
++  max-width: calc(100vw - 24px);
++  height: calc(var(--lcos-object-menu-rows, 0) * 47px + 30px);
++  max-height: min(70vh, 500px);
++  padding: 2px 0 26px;
++  overflow-x: hidden;
++  overflow-y: auto;
++  border: 1px solid var(--gen2-border, #e7e9e7);
++  border-radius: 15px;
++  background: var(--gen2-surface, #fff);
++  box-shadow: 0 12px 18px rgb(0 0 0 / 8%);
++  backdrop-filter: blur(3px);
++  -webkit-backdrop-filter: blur(3px);
++}
++.lcos-object-command-menu-row {
++  box-sizing: border-box;
++  display: grid;
++  grid-template-columns: minmax(0, 1fr) 70px;
++  align-items: center;
++  width: 100%;
++  height: 47px;
++  min-height: 47px;
++  padding: 0 1px 0 16px;
++  border: 0;
++  border-radius: 0;
++  background: transparent;
++  color: var(--gen2-text, #242625);
++  text-align: left;
++  cursor: pointer;
++}
++.lcos-object-command-menu-row:hover:not(:disabled) { background: color-mix(in srgb, var(--gen2-text, #242625) 4%, transparent); }
++.lcos-object-command-menu-row:active:not(:disabled) { background: color-mix(in srgb, var(--gen2-text, #242625) 7%, transparent); }
++.lcos-object-command-menu-row:focus-visible { outline: 2px solid var(--lcos-pin-violet, #6371dd); outline-offset: -3px; }
++.lcos-object-command-menu-row:disabled { cursor: not-allowed; opacity: .45; }
++.lcos-object-command-menu-row[data-danger] { color: var(--gen2-error, var(--lcos-status-danger, #a14e48)); }
++.lcos-object-command-menu-label {
++  min-width: 0;
++  overflow: hidden;
++  text-overflow: ellipsis;
++  white-space: nowrap;
++  font-size: 12px;
++  font-weight: 400;
++  line-height: 19px;
++}
++.lcos-object-command-menu-shortcut {
++  justify-self: start;
++  min-width: 0;
++  padding: 0;
++  border: 0;
++  background: transparent;
++  color: var(--gen2-muted, #69716b);
++  font: 400 10px/16px 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
++}
++.lcos-object-command-menu-icon { display: none; }
++
++/* Figma 5226:1264 — Action Arc "more" popover body. */
++.lcos-arc-more-panel {
++  position: relative;
++  width: 238px;
++  max-width: min(238px, calc(100vw - 24px));
++  max-height: min(46vh, 440px);
++  overflow: auto;
++  padding: 37px 6px 16px;
++  border: 1px solid rgb(255 255 255 / 90%);
++  border-radius: 15px;
++  background: #f6f8fa;
++  box-shadow: 0 10px 13px rgb(33 48 69 / 14%);
++  backdrop-filter: blur(9px);
++  -webkit-backdrop-filter: blur(9px);
++}
++.dark .lcos-arc-more-panel {
++  background: var(--gen2-raised, #202322);
++  border-color: rgb(255 255 255 / 14%);
++}
++.lcos-arc-more-title {
++  position: absolute;
++  left: 13px;
++  right: 36px;
++  top: 11px;
++  overflow: hidden;
++  color: var(--gen2-muted, #69716b);
++  font-size: 11px;
++  font-weight: 400;
++  line-height: 18px;
++  text-overflow: ellipsis;
++  white-space: nowrap;
++}
++.lcos-arc-more-close {
++  position: absolute;
++  right: 3px;
++  top: -2px;
++  display: grid;
++  place-items: center;
++  width: 44px;
++  height: 44px;
++  padding: 0;
++  border: 0;
++  border-radius: 50%;
++  background: transparent;
++  color: var(--gen2-text, #242625);
++}
++.lcos-arc-more-close > svg { width: 12px; height: 12px; }
++.lcos-arc-more-close:hover { background: color-mix(in srgb, var(--gen2-text, #242625) 4%, transparent); }
++.lcos-arc-more-row,
++.lcos-arc-more-control-row {
++  box-sizing: border-box;
++  width: 224px;
++  min-height: 39px;
++  margin: 0;
++  border: 0;
++  border-radius: var(--lcos-radius-control, 8px);
++  background: transparent;
++  color: var(--gen2-text, #242625);
++}
++.lcos-arc-more-row {
++  display: grid;
++  grid-template-columns: 20px minmax(0, 1fr);
++  align-items: start;
++  gap: 8px;
++  padding: 6px 10px;
++  text-align: left;
++  font-size: 12px;
++  font-weight: 400;
++  line-height: 18px;
++}
++.lcos-arc-more-row > svg { width: 16px; height: 16px; justify-self: center; margin-top: 2px; }
++.lcos-arc-more-row:hover:not(:disabled) { background: color-mix(in srgb, var(--gen2-text, #242625) 4%, transparent); }
++.lcos-arc-more-row:disabled { opacity: .45; cursor: not-allowed; }
++.lcos-arc-more-row:focus-visible,
++.lcos-arc-more-control-row :focus-visible,
++.lcos-arc-more-close:focus-visible { outline: 2px solid var(--lcos-pin-violet, #6371dd); outline-offset: -2px; }
++.lcos-arc-more-control-row { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; padding: 5px 10px; font-size: 11px; }
++.lcos-arc-more-divider { height: 1px; margin: 0 7px; background: var(--gen2-border, #e7e9e7); }
++
++/* Figma 5137:53 — tooltip face. Huabu Tooltip keeps delay/focus/dismiss/flip/shift. */
++.lcos-action-orb-tooltip {
++  box-sizing: border-box;
++  min-height: 32px;
++  padding: 7px 12px !important;
++  border-radius: 9px !important;
++  background: var(--gen2-text, #242625) !important;
++  color: var(--gen2-surface, #fff) !important;
++  box-shadow: none !important;
++  font-family: 'Noto Sans SC', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
++  font-size: 11px !important;
++  font-weight: 400;
++  line-height: 18px !important;
++  white-space: nowrap;
++}
++
++@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
++  .lcos-object-command-menu,
++  .lcos-arc-more-panel { background: var(--gen2-surface, #fff); }
++}
++@media (prefers-reduced-motion: reduce) {
++  .lcos-object-command-menu-row,
++  .lcos-arc-more-row,
++  .lcos-arc-more-close { transition: none !important; }
++}
+diff --git a/huabu/apps/web/src/lcos/ui/nearfield/nearfield.css b/huabu/apps/web/src/lcos/ui/nearfield/nearfield.css
+index af28326..f580900 100644
+--- a/huabu/apps/web/src/lcos/ui/nearfield/nearfield.css
++++ b/huabu/apps/web/src/lcos/ui/nearfield/nearfield.css
+@@ -24,20 +24,21 @@
+   padding: 12px 12px 14px;
+   border-radius: 20px;
+   background: var(--lcos-composer-glass);
+-  box-shadow: inset 0 0 0 .6px var(--lcos-action-orb-border), var(--lcos-action-orb-shadow);
++  box-shadow: inset 0 0 0 .6px rgba(255,255,255,.78), 0 0 .5px rgba(40,48,58,.10), 0 4px 6px rgba(40,48,58,.08);
+   backdrop-filter: blur(var(--lcos-glass-blur));
+   -webkit-backdrop-filter: blur(var(--lcos-glass-blur));
+   color: var(--gen2-text);
+   font-family: 'Noto Sans SC', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+   pointer-events: auto;
+ }
++.lcos-composer-view[data-presentation='nearfield'] { min-height: 234px; }
+ .lcos-composer-heading {
+   position: relative;
+   display: flex;
+   align-items: center;
+   gap: 9px;
+   min-width: 0;
+-  min-height: 28px;
++  min-height: 25px;
+   padding-right: 30px;
+ }
+ .lcos-composer-title,
+@@ -69,8 +70,8 @@
+ .lcos-composer-identity > svg { display: block; width: 100%; height: 100%; }
+ .lcos-composer-close {
+   position: absolute;
+-  right: -9px;
+-  top: -11px;
++  right: 3.6px;
++  top: 1.4px;
+   display: grid;
+   place-items: center;
+   width: 44px;
+@@ -90,7 +91,7 @@
+   min-width: 0;
+   max-width: 100%;
+   min-height: 24px;
+-  margin-top: 8px;
++  margin-top: 10px;
+   overflow-x: auto;
+   scrollbar-width: thin;
+   overscroll-behavior-x: contain;
+@@ -156,7 +157,7 @@
+   box-shadow: inset 0 0 0 1.5px var(--lcos-pin-violet), var(--lcos-composer-input-shadow);
+ }
+ .lcos-composer-tools { display: flex; align-items: center; justify-content: space-between; min-height: 32px; gap: 8px; }
+-.lcos-composer-tools-start { display: flex; align-items: center; gap: 0; min-width: 0; margin-left: -6px; }
++.lcos-composer-tools-start { display:flex; align-items:center; gap:0; min-width:0; margin-left:-6px; }
+ .lcos-composer-tool-hit {
+   display: grid; place-items: center; flex: none; position: relative;
+   width: 44px; height: 44px; margin-block: -6px; padding: 0; border: 0; border-radius: 50%;
+@@ -246,7 +247,6 @@
+ }
+ 
+ .lcos-action-orb-tooltip-host { display: inline-flex; width: 44px; height: 44px; }
+-.lcos-action-orb-tooltip { font-size: 11px; line-height: 18px; }
+ .lcos-action-orb-placement { pointer-events: auto; }
+ 
+ .lcos-composer-identity { position: relative; }
+diff --git a/huabu/apps/web/src/lcos/ui/source/ImageSourceView.tsx b/huabu/apps/web/src/lcos/ui/source/ImageSourceView.tsx
+index 56bfadf..f7a5a77 100644
+--- a/huabu/apps/web/src/lcos/ui/source/ImageSourceView.tsx
++++ b/huabu/apps/web/src/lcos/ui/source/ImageSourceView.tsx
+@@ -1,8 +1,7 @@
+-import { Image as ImageIcon } from 'lucide-react';
+-
+ import { SourceFeedbackSlot } from './SourceFeedbackSlot';
+ import { FIGMA_SOURCE_GEOMETRY, FIGMA_SOURCE_NODE_IDS } from '../../nodes/source/sourceFigmaGeometry';
+ import { SourceMarker } from '../../nodes/source/SourceMarker';
++import { PreviewMedia } from '../spatial/PreviewMedia';
+ import './source-presentation.css';
+ 
+ import type { SourceVisualProps } from './sourceViewTypes';
+@@ -11,6 +10,7 @@ import type { JSX } from 'react';
+ export function ImageSourceView(props: SourceVisualProps): JSX.Element {
+   // Preserve the current thumbnail rule; this is not a new zoom/LOD threshold.
+   const compact = (props.worldWidth ?? FIGMA_SOURCE_GEOMETRY.image.width) <= 240;
++  const geometry = compact ? FIGMA_SOURCE_GEOMETRY.imageThumbnail : FIGMA_SOURCE_GEOMETRY.image;
+   return (
+     <div className="lcos-source-view lcos-source-image"
+       data-lcos-source-visual="image"
+@@ -20,12 +20,19 @@ export function ImageSourceView(props: SourceVisualProps): JSX.Element {
+       data-ui-interaction={props.interaction}
+     >
+       <div data-lcos-source-media className="lcos-image-media">
+-        {props.mediaSrc
+-          ? <img src={props.mediaSrc} alt={props.title} draggable={false} />
+-          : <div className="lcos-image-unavailable"><ImageIcon size={28} strokeWidth={1.5} aria-hidden /></div>}
++        <PreviewMedia
++          src={props.mediaSrc}
++          label={props.title}
++          fit={props.mediaFit ?? 'cover'}
++          position={props.mediaPosition}
++        />
+       </div>
+-      <SourceMarker size={compact ? 9 : 11} tone={compact ? 'green' : 'amber'}
+-        right={compact ? 0 : -3} top={compact ? -4 : -5} />
++      {props.markerColor ? <SourceMarker
++        size={geometry.marker}
++        color={props.markerColor}
++        right={geometry.markerRight}
++        top={geometry.markerTop}
++      /> : null}
+       {props.density !== 'mark' && (
+         <span className="lcos-source-caption">
+           {props.title}{props.secondary ? ` · ${props.secondary}` : ''}
+diff --git a/huabu/apps/web/src/lcos/ui/source/SourceViews.test.tsx b/huabu/apps/web/src/lcos/ui/source/SourceViews.test.tsx
+index 5af0246..1cd1b39 100644
+--- a/huabu/apps/web/src/lcos/ui/source/SourceViews.test.tsx
++++ b/huabu/apps/web/src/lcos/ui/source/SourceViews.test.tsx
+@@ -20,12 +20,47 @@ describe('source presentation, not spatial ownership', () => {
+         <AudioSourceView family="audio" title="声音" durationText="00:38" density="working" />
+       </>));
+       expect(host.querySelectorAll('[data-lcos-source-visual]')).toHaveLength(4);
++      expect(host.querySelectorAll('[data-lcos-source-corner-marker]')).toHaveLength(0);
+       expect(host.querySelectorAll('[data-lcos-wave-bar]')).toHaveLength(64);
+       expect(host.textContent).toContain('00:38');
+       expect(host.querySelector('[data-waveform-source]')?.getAttribute('data-waveform-source'))
+         .toBe('figma-decorative');
+     } finally { await act(async () => root.unmount()); host.remove(); }
+   });
++
++  it('only renders the Figma corner marker from an explicit presentation input', async () => {
++    const host = document.createElement('div'); const root = createRoot(host);
++    try {
++      await act(async () => root.render(<ImageSourceView family="image" title="图片"
++        mediaSrc="data:image/png;base64," density="reading" markerColor="#d3a16e" />));
++      const marker = host.querySelector<HTMLElement>('[data-lcos-source-corner-marker]');
++      expect(marker).not.toBeNull();
++      expect(['#d3a16e', 'rgb(211, 161, 110)']).toContain(marker?.style.background);
++      expect(marker?.style.width).toBe('11px');
++      expect(marker?.style.right).toBe('-3px');
++      expect(marker?.style.top).toBe('-5px');
++    } finally { await act(async () => root.unmount()); }
++  });
++
++  it('reuses the GEN1-derived preview media lifecycle instead of a raw image-only branch', async () => {
++    const host = document.createElement('div'); const root = createRoot(host);
++    try {
++      await act(async () => root.render(<ImageSourceView family="image" title="图片"
++        mediaSrc="/broken-preview.png" density="reading" mediaFit="contain" mediaPosition="top center" />));
++      const media = host.querySelector<HTMLElement>('[data-image-phase]');
++      const image = host.querySelector<HTMLImageElement>('[data-image-phase] img');
++      expect(media?.dataset.imagePhase).toBe('loading');
++      expect(image?.style.objectFit).toBe('contain');
++      expect(image?.style.objectPosition).toBe('top center');
++      await act(async () => image?.dispatchEvent(new Event('error')));
++      expect(host.querySelector<HTMLElement>('[data-image-phase]')?.dataset.imagePhase).toBe('error');
++      expect(host.textContent).toContain('预览读取失败');
++      const retry = host.querySelector<HTMLButtonElement>('[data-image-phase] button');
++      await act(async () => retry?.click());
++      expect(host.querySelector<HTMLElement>('[data-image-phase]')?.dataset.imagePhase).toBe('loading');
++    } finally { await act(async () => root.unmount()); }
++  });
++
+   it('takes mark density from the owner, without a new viewport threshold', async () => {
+     const host = document.createElement('div'); const root = createRoot(host);
+     try {
+diff --git a/huabu/apps/web/src/lcos/ui/source/TextSourceView.tsx b/huabu/apps/web/src/lcos/ui/source/TextSourceView.tsx
+index 56b1583..1eeabfa 100644
+--- a/huabu/apps/web/src/lcos/ui/source/TextSourceView.tsx
++++ b/huabu/apps/web/src/lcos/ui/source/TextSourceView.tsx
+@@ -1,5 +1,5 @@
+ import { SourceFeedbackSlot } from './SourceFeedbackSlot';
+-import { FIGMA_SOURCE_NODE_IDS } from '../../nodes/source/sourceFigmaGeometry';
++import { FIGMA_SOURCE_GEOMETRY, FIGMA_SOURCE_NODE_IDS } from '../../nodes/source/sourceFigmaGeometry';
+ import { SourceMarker } from '../../nodes/source/SourceMarker';
+ import './source-presentation.css';
+ 
+@@ -9,6 +9,7 @@ import type { JSX } from 'react';
+ export function TextSourceView(props: SourceVisualProps): JSX.Element {
+   const isMark = props.density === 'mark';
+   const statement = props.preview?.trim() || props.title;
++  const geometry = FIGMA_SOURCE_GEOMETRY.text;
+   return (
+     <div className="lcos-source-view lcos-source-text"
+       data-lcos-source-visual="text"
+@@ -18,7 +19,12 @@ export function TextSourceView(props: SourceVisualProps): JSX.Element {
+     >
+       <span data-lcos-node-preview className="lcos-source-statement">{statement}</span>
+       {!isMark && <span className="lcos-source-caption">{props.secondary || props.title}</span>}
+-      <SourceMarker size={11} tone="green" right={0} top={3} />
++      {props.markerColor ? <SourceMarker
++        size={geometry.marker}
++        color={props.markerColor}
++        right={geometry.markerRight}
++        top={geometry.markerTop}
++      /> : null}
+       <SourceFeedbackSlot feedback={props.feedback} />
+     </div>
+   );
+diff --git a/huabu/apps/web/src/lcos/ui/source/source-presentation.css b/huabu/apps/web/src/lcos/ui/source/source-presentation.css
+index 86bbb32..01f3f93 100644
+--- a/huabu/apps/web/src/lcos/ui/source/source-presentation.css
++++ b/huabu/apps/web/src/lcos/ui/source/source-presentation.css
+@@ -35,8 +35,12 @@
+   width: 100%; height: 100%; overflow: hidden; border-radius: 7px;
+   background: var(--lcos-surface-elevated); box-shadow: var(--lcos-main-image-shadow);
+ }
+-.lcos-image-media img { display: block; width: 100%; height: 100%; border: 0; object-fit: cover; pointer-events: none; }
+-.lcos-image-unavailable { display: grid; place-items: center; width: 100%; height: 100%; color: var(--gen2-muted); }
++.lcos-image-media > .lcos-preview-media { width: 100%; height: 100%; overflow: hidden; border-radius: inherit; background: var(--lcos-surface-elevated); }
++.lcos-image-media > .lcos-preview-media > img { display: block; width: 100%; height: 100%; border: 0; pointer-events: none; }
++.lcos-image-media > .lcos-preview-media[data-image-phase='ready'] { background: transparent; }
++.lcos-image-media .lcos-preview-media-message { font-size: 11px; line-height: 16px; }
++.lcos-image-media .lcos-preview-media-message > button { min-width: 44px; min-height: 32px; }
++
+ .lcos-source-image[data-thumbnail] .lcos-image-media { border-radius: 6px; box-shadow: var(--lcos-main-image-shadow-small); }
+ /* Caption follows the user's actual media box, not the initial projection's saved height. */
+ .lcos-source-image > .lcos-source-caption { position: absolute; top: calc(100% + 9px); left: 0; width: 100%; }
+@@ -45,10 +49,16 @@
+ .lcos-audio-wave [data-wave-tone='leading'] { background: var(--lcos-main-wave-active); }
+ .lcos-source-audio > .lcos-source-caption { position: absolute; left: 0; top: 79px; width: 220px; }
+ .lcos-source-feedback { position: absolute; top: calc(100% + 32px); left: 0; z-index: 1; max-width: max(100%, 200px); }
+-/* Optional controlled states: default runtime selection outline is NOT duplicated. */
+-.lcos-source-view[data-ui-interaction='hover'] { filter: brightness(1.025); }
+-.lcos-source-view[data-ui-interaction='selected'] { outline: 1px solid var(--gen2-accent); outline-offset: 4px; }
+-.lcos-source-view[data-ui-interaction='active'] { outline: 1px solid var(--lcos-pin-violet); outline-offset: 2px; }
++/*
++ * Optional controlled states. Huabu NodeWrapper / SelectionOutlines remain the
++ * only spatial selection chrome; source bodies only provide the Figma light lift.
++ */
++.lcos-source-view { transition: transform 140ms ease, filter 140ms ease, opacity 140ms ease; }
++.lcos-source-view[data-ui-interaction='hover'] { transform: translateY(-2px); filter: brightness(1.015); }
++.lcos-source-view[data-ui-interaction='selected'] { filter: brightness(1.01); }
++.lcos-source-view[data-ui-interaction='active'] { filter: brightness(1.02); }
+ .lcos-source-view[data-ui-interaction='disabled'] { opacity: .55; }
+-.lcos-source-view:focus-visible { outline: 2px solid var(--lcos-pin-violet); outline-offset: 4px; }
+-@media (prefers-reduced-motion: reduce) { .lcos-source-view { animation: none; transition: none; } }
++@media (prefers-reduced-motion: reduce) {
++  .lcos-source-view { animation: none; transition: none; }
++  .lcos-source-view[data-ui-interaction='hover'] { transform: none; }
++}
+diff --git a/huabu/apps/web/src/lcos/ui/workflow/workflow-hand.css b/huabu/apps/web/src/lcos/ui/workflow/workflow-hand.css
+index f26f6c4..613c294 100644
+--- a/huabu/apps/web/src/lcos/ui/workflow/workflow-hand.css
++++ b/huabu/apps/web/src/lcos/ui/workflow/workflow-hand.css
+@@ -48,7 +48,7 @@
+ .lcos-workflow-collection-spine { position:absolute; left:20px; top:91px; width:9px; height:125px; border-radius:4px; background:var(--lcos-color-palette-blue-text); }
+ .lcos-workflow-collection-tab { position:absolute; left:180px; top:91px; width:34px; height:7px; border-radius:3px; background:var(--lcos-color-palette-blue-text); }
+ .lcos-workflow-collection-icon { position:absolute; left:32px; top:130px; width:22px; height:22px; display:block; }
+-.lcos-workflow-collection-copy { position:absolute; left:64px; top:151px; width:150px; display:flex; flex-direction:column; gap:8px; }
++.lcos-workflow-collection-copy { position:absolute; left:64px; top:151px; width:150px; display:flex; flex-direction:column; gap:4px; }
+ .lcos-workflow-collection-copy strong { font:500 17px/1.45 'Noto Sans SC',sans-serif; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+ .lcos-workflow-collection-copy span { color:var(--lcos-color-text-secondary); font:400 12px/1.45 'Noto Sans SC',sans-serif; }
+ .lcos-workflow-collection-action { position:absolute; left:204px; top:186px; width:20px; height:23px; display:grid; place-items:center; font:500 16px/23px 'Noto Sans SC',sans-serif; }
+@@ -69,8 +69,12 @@
+   .lcos-workflow-hand-cards:has(.lcos-workflow-task-slot:hover) .lcos-workflow-task-slot:not(:hover),.lcos-workflow-hand-cards:has(.lcos-workflow-task-slot:focus-within) .lcos-workflow-task-slot:not(:focus-within) { opacity:.72; filter:none; }
+ }
+ 
+-.lcos-workflow-hand-trigger { pointer-events:auto; position:fixed; left:24px; bottom:96px; z-index:30; width:44px; height:44px; display:grid; place-items:center; border:1px solid var(--lcos-color-border-subtle); border-radius:14px; background:rgba(252,252,252,.76); color:var(--gen2-muted); box-shadow:0 4px 12px rgba(40,48,58,.075); backdrop-filter:blur(18px) saturate(1.4); }
+-.lcos-workflow-hand-trigger[data-open='true'],.lcos-workflow-hand-trigger:hover,.lcos-workflow-hand-trigger:focus-visible { color:var(--gen2-text); background:rgba(255,255,255,.92); outline:2px solid var(--gen2-accent); outline-offset:2px; }
++/* Workflow Cards summon light-strip: keep a real production caller without reintroducing the
++   old fixed tile that is absent from unified 5388:22998. */
++.lcos-workflow-hand-trigger { pointer-events:auto; position:fixed; left:24px; bottom:92px; z-index:30; width:44px; height:24px; display:grid; place-items:center; padding:0; border:0; background:transparent; color:var(--gen2-accent); }
++.lcos-workflow-hand-light { width:28px; height:2px; border-radius:999px; background:currentColor; opacity:0; transform:scaleX(.55); transition:opacity 150ms ease,transform 180ms cubic-bezier(.22,1,.36,1),box-shadow 180ms ease; }
++.lcos-workflow-hand-trigger[data-open='true'] .lcos-workflow-hand-light,.lcos-workflow-hand-trigger:hover .lcos-workflow-hand-light,.lcos-workflow-hand-trigger:focus-visible .lcos-workflow-hand-light { opacity:.72; transform:scaleX(1); box-shadow:0 0 12px color-mix(in srgb,var(--gen2-accent) 48%,transparent); }
++.lcos-workflow-hand-trigger:focus-visible { outline:2px solid var(--gen2-accent); outline-offset:4px; border-radius:999px; }
+ 
+ .lcos-workflow-collection-action:empty { display:none; }
+ .lcos-workflow-collection-slot[data-focused='true'] .lcos-workflow-collection-front { outline:2px solid var(--gen2-accent); outline-offset:2px; }
+diff --git a/huabu/apps/web/src/lcos/useLcosCanvasProps.tsx b/huabu/apps/web/src/lcos/useLcosCanvasProps.tsx
+index a1f59e3..cfd380d 100644
+--- a/huabu/apps/web/src/lcos/useLcosCanvasProps.tsx
++++ b/huabu/apps/web/src/lcos/useLcosCanvasProps.tsx
+@@ -36,7 +36,6 @@ import { LcosHostOverlay } from './LcosHostOverlay';
+ import { createLcosRecognizers } from './lcosRecognizers';
+ import { useLcosReferenceStore } from './lcosReferenceState';
+ import { LcosActionArc } from './navigation/LcosActionArc';
+-import { LcosCameraControls } from './navigation/LcosCameraControls';
+ import { LcosCanvasCommands } from './navigation/LcosCanvasCommands';
+ import { LcosEdgeArc } from './navigation/LcosEdgeArc';
+ import { createLcosNodePresentationSeam } from './nodes/createLcosNodePresentationSeam';
+@@ -91,9 +90,8 @@ export function useLcosCanvasProps(projectId: string): LcosCanvasProps {
+     const seam: HostSeam = createHostSeam(() => rt.host, {
+       overlays: [
+         { key: 'lcos/host-overlay', node: <LcosHostOverlay /> },
+-        // Wave 4：canvas-local 相机/命令（唯一 Huabu camera，非第二视图）
++        // Camera command consumer remains canvas-local; the visible HUD control is ProjectShell-level.
+         { key: 'lcos/canvas-commands', node: <LcosCanvasCommands /> },
+-        { key: 'lcos/camera-controls', node: <LcosCameraControls /> },
+         // R2：节点命令菜单（T3 Action Arc）—— 画布内唯一节点命令入口（节点近场）
+         { key: 'lcos/action-arc', node: <LcosActionArc /> },
+         // R2：边命令入口（替换旧 EdgeStyleToolbar 的可见壳）

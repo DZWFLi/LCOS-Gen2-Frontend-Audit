@@ -1,0 +1,51 @@
+{
+  "mode": "after",
+  "note": "Real warehouse rows; cursor/error response are isolated browser fault injection. No Core mutation.",
+  "states": [
+    {
+      "name": "ready",
+      "scrollTop": 0,
+      "gridContentY": 218,
+      "cardContentY": 218,
+      "cards": 6,
+      "bodyText": "6 个集合暂无预览暂无预览施工主线现场 · 组织未标注暂无预览暂无预览施工主线现场画布尚未就绪暂无预览暂无预览Workflow · 行动现场现场画布尚未就绪暂无预览暂无预览Context · 理解现场现场画布尚未就绪暂无预览暂无预览Workflow · 行动现场现场 · 组织未标注暂无预览暂无预览Context · 理解现场现场 · 组织未标注继续读取集合",
+      "first": "施工主线",
+      "rail": 0,
+      "canvas": 1
+    },
+    {
+      "name": "pagination-loading",
+      "scrollTop": 0,
+      "gridContentY": 218,
+      "cardContentY": 218,
+      "cards": 6,
+      "bodyText": "6 个集合暂无预览暂无预览施工主线现场 · 组织未标注暂无预览暂无预览施工主线现场画布尚未就绪暂无预览暂无预览Workflow · 行动现场现场画布尚未就绪暂无预览暂无预览Context · 理解现场现场画布尚未就绪暂无预览暂无预览Workflow · 行动现场现场 · 组织未标注暂无预览暂无预览Context · 理解现场现场 · 组织未标注正在读取更多集合…",
+      "first": "施工主线",
+      "rail": 0,
+      "canvas": 1
+    },
+    {
+      "name": "pagination-failed",
+      "scrollTop": 0,
+      "gridContentY": 218,
+      "cardContentY": 218,
+      "cards": 6,
+      "bodyText": "6 个集合暂无预览暂无预览施工主线现场 · 组织未标注暂无预览暂无预览施工主线现场画布尚未就绪暂无预览暂无预览Workflow · 行动现场现场画布尚未就绪暂无预览暂无预览Context · 理解现场现场画布尚未就绪暂无预览暂无预览Workflow · 行动现场现场 · 组织未标注暂无预览暂无预览Context · 理解现场现场 · 组织未标注后续集合读取失败（分页测试：网络暂时中断），已显示的集合仍可使用。重试",
+      "first": "施工主线",
+      "rail": 0,
+      "canvas": 1
+    },
+    {
+      "name": "pagination-recovered",
+      "scrollTop": 0,
+      "gridContentY": 218,
+      "cardContentY": 218,
+      "cards": 6,
+      "bodyText": "6 个集合暂无预览暂无预览施工主线现场 · 组织未标注暂无预览暂无预览施工主线现场画布尚未就绪暂无预览暂无预览Workflow · 行动现场现场画布尚未就绪暂无预览暂无预览Context · 理解现场现场画布尚未就绪暂无预览暂无预览Workflow · 行动现场现场 · 组织未标注暂无预览暂无预览Context · 理解现场现场 · 组织未标注",
+      "first": "施工主线",
+      "rail": 0,
+      "canvas": 1
+    }
+  ],
+  "errors": []
+}

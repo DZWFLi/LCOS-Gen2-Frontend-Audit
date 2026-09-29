@@ -1,0 +1,53 @@
+{
+  "scope": "NAV-21逐项回执 + NAV-17初次身份等待/Arc旧回归收口",
+  "codeStable": true,
+  "fullDesignComplete": false,
+  "files": [
+    "huabu/apps/web/src/lcos/drop/dropCommitRouter.ts",
+    "huabu/apps/web/src/lcos/drop/dropTypes.ts",
+    "huabu/apps/web/src/lcos/drop/dropAssemblyReceipt.ts",
+    "huabu/apps/web/src/lcos/drop/LcosDropReceipt.tsx",
+    "huabu/apps/web/src/lcos/lcosDropState.ts",
+    "huabu/apps/web/src/lcos/LcosHostOverlay.tsx",
+    "huabu/apps/web/src/lcos/ui/nearfield/drop-feedback.css",
+    "huabu/apps/web/src/lcos/LcosDropPreview.tsx",
+    "huabu/apps/web/src/lcos/drop/dropAssemblyReceipt.test.ts",
+    "huabu/apps/web/src/lcos/drop/dropFoundation.test.ts",
+    "huabu/apps/web/src/lcos/LcosHostOverlay.receipt.test.tsx",
+    "huabu/apps/web/src/lcos/navigation/LcosActionArc.tsx",
+    "huabu/apps/web/src/lcos/navigation/GlythStateActions.test.tsx",
+    "huabu/apps/web/src/lcos/ui/nearfield/LcosActionOrbView.tsx",
+    "huabu/apps/web/src/lcos/ui/nearfield/LcosActionOrbView.test.tsx"
+  ],
+  "tests": {
+    "command": "pnpm exec vitest run --maxWorkers=2 (10 files listed in MD)",
+    "passed": 65,
+    "files": 10,
+    "tsc": "passed",
+    "diffCheck": "passed"
+  },
+  "browser": {
+    "session": "lcos-nav-recovery",
+    "action": "真实现有节点右拖给Glyth；仅原Composer引用草稿，无新canonical实体",
+    "receipt": "引用已交给会话",
+    "receiptRect": {
+      "x": 861.234375,
+      "y": 140.671875,
+      "width": 280,
+      "height": 69
+    },
+    "composerRect": {
+      "x": 1018,
+      "y": 312,
+      "width": 338,
+      "height": 234
+    },
+    "overlap": false,
+    "screenshots": [
+      "drop-real-reference-preview.png",
+      "drop-real-reference-receipt.png"
+    ],
+    "partialEvidence": "HTTP 200真实facade+production Host caller模拟响应；未冒称后端真实partial录屏",
+    "newConsoleErrorsAfterFinalReload": 0
+  }
+}

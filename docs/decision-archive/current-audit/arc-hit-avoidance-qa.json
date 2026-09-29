@@ -1,0 +1,36 @@
+{
+  "date": "2026-09-26T19:47:00+08:00",
+  "figma": "5388:311",
+  "max_local_shift": 48,
+  "measured_shift": {
+    "x": 0,
+    "y": -41
+  },
+  "orb_hit_size": 44,
+  "transparent_gap_hits_arc": false,
+  "desktop_glyth_center_hits_glyth": true,
+  "actual_glyth_window_opened": true,
+  "camera_unchanged": true,
+  "tests": {
+    "files": 3,
+    "passed": 26,
+    "tsc": "passed"
+  },
+  "fresh_reload_errors": [],
+  "small_screen": {
+    "width": 360,
+    "height": 640,
+    "panel": {
+      "x": 53,
+      "y": 292,
+      "width": 280,
+      "height": 294.390625
+    },
+    "arc_hits_in_viewport": true
+  },
+  "known_other_blockers": [
+    "native right-source connection handle covers small Glyth at 360 width",
+    "global dock versus camera expand/collapse handled by root agent"
+  ],
+  "canonical_mutated": false
+}

@@ -1,0 +1,775 @@
+diff --git a/huabu/apps/web/src/lcos/surfaces/context/ContextAtlasStage.tsx b/huabu/apps/web/src/lcos/surfaces/context/ContextAtlasStage.tsx
+index 3aa5a94..8a7bab1 100644
+--- a/huabu/apps/web/src/lcos/surfaces/context/ContextAtlasStage.tsx
++++ b/huabu/apps/web/src/lcos/surfaces/context/ContextAtlasStage.tsx
+@@ -5,7 +5,6 @@
+ 
+ 
+ import { CoreAssemblyClient, HttpError } from '@local-creative-os/web-gen2';
+-import { ArrowRight, X } from 'lucide-react';
+ import { useIsPresent } from 'motion/react';
+ import { useEffect, useMemo, useRef, useState } from 'react';
+ 
+@@ -20,6 +19,8 @@ import { LcosSurfaceFeedback } from '../../ui/LcosSurfaceFeedback';
+ import { lcosTokens } from '../../ui/lcosTokens';
+ import { ContextAtlasView } from '../../ui/context/ContextAtlasView';
+ import { ContextCollectionView } from '../../ui/context/ContextCollectionView';
++import { ContextCollectionActionGlyph } from '../../ui/context/ContextCollectionFace';
++import atlasCloseIcon from '../../ui/context/assets/atlas-close.svg';
+ import '../../ui/context/context-spatial.css';
+ 
+ import type { WarehouseItemV1 } from '@local-creative-os/contracts';
+@@ -81,7 +82,7 @@ export function ContextAtlasStage({ projectId, workspaces, onClose, onEnterSurfa
+     <ContextAtlasView onClose={onClose} header={<>
+           <span>{items.length} 个集合</span>
+           <button type="button" aria-label="收回集合总览" onClick={onClose} className="lcos-atlas-close">
+-            <X className="h-[22px] w-[22px]" aria-hidden />
++            <img src={atlasCloseIcon} width={22} height={22} alt="" draggable={false} />
+           </button>
+         </>}>
+         {state === 'loading' && <div className="py-16"><LcosSurfaceFeedback presentation="loading" message="正在读取集合…" /></div>}
+@@ -112,17 +113,17 @@ export function ContextAtlasStage({ projectId, workspaces, onClose, onEnterSurfa
+                         action={<span style={{ color: projected(item) || childTargets.length > 0 ? lcosTokens.color.info : lcosTokens.color.muted }}>
+                           {childTargets.length === 1 ? (
+                             <button type="button" aria-label={`进入 ${item.title ?? '集合'} 现场`} disabled={!childTargets[0]?.canvasId} onClick={() => { onEnterSurface(item, childTargets[0]); }}>
+-                              <ArrowRight className="h-4 w-4" aria-hidden />
++                              <ContextCollectionActionGlyph />
+                             </button>
+                           ) : childTargets.length > 1 ? (
+-                            <DropdownMenu trigger={<button type="button" aria-label={`选择 ${item.title ?? '集合'} 的现场`}><ArrowRight className="h-4 w-4" aria-hidden /></button>}>
++                            <DropdownMenu trigger={<button type="button" aria-label={`选择 ${item.title ?? '集合'} 的现场`}><ContextCollectionActionGlyph /></button>}>
+                               {childTargets.map((workspace) => (
+                                 <DropdownMenuItem key={String(workspace.id)} disabled={!workspace.canvasId} onClick={() => { onEnterSurface(item, workspace); }}>
+                                   {workspace.name}{workspace.canvasId ? '' : ' · 画布尚未就绪'}
+                                 </DropdownMenuItem>
+                               ))}
+                             </DropdownMenu>
+-                          ) : projected(item) ? <button type="button" aria-label={`定位 ${item.title ?? kindLabel(item)}`} onClick={() => { focusOnCanvas(item); }}><ArrowRight className="h-4 w-4" aria-hidden /></button> : <span aria-hidden>↗</span>}
++                          ) : projected(item) ? <button type="button" aria-label={`定位 ${item.title ?? kindLabel(item)}`} onClick={() => { focusOnCanvas(item); }}><ContextCollectionActionGlyph /></button> : <span aria-hidden>↗</span>}
+                         </span>}
+                       />
+                     );
+diff --git a/huabu/apps/web/src/lcos/surfaces/context/ContextWorksite.tsx b/huabu/apps/web/src/lcos/surfaces/context/ContextWorksite.tsx
+index e07fa31..99a0364 100644
+--- a/huabu/apps/web/src/lcos/surfaces/context/ContextWorksite.tsx
++++ b/huabu/apps/web/src/lcos/surfaces/context/ContextWorksite.tsx
+@@ -81,7 +81,7 @@ export function ContextWorksite({
+   };
+ 
+   return (
+-    <div data-lcos-context-worksite className="relative h-full w-full">
++    <div data-lcos-context-worksite data-atlas-open={atlasOpen ? 'true' : undefined} className="relative h-full w-full">
+       <LcosWorksiteStage
+         projectId={projectId}
+         surface={surface}
+diff --git a/huabu/apps/web/src/lcos/surfaces/workflow/WorkflowWorksite.tsx b/huabu/apps/web/src/lcos/surfaces/workflow/WorkflowWorksite.tsx
+index bd4274e..8ed29c7 100644
+--- a/huabu/apps/web/src/lcos/surfaces/workflow/WorkflowWorksite.tsx
++++ b/huabu/apps/web/src/lcos/surfaces/workflow/WorkflowWorksite.tsx
+@@ -50,7 +50,7 @@ export function WorkflowWorksite({
+   const [handOpen, setHandOpen] = useState(false);
+ 
+   return (
+-    <div data-lcos-workflow-worksite className="relative h-full w-full">
++    <div data-lcos-workflow-worksite data-hand-open={handOpen ? 'true' : undefined} className="relative h-full w-full">
+       <LcosWorksiteStage
+         projectId={projectId}
+         surface={surface}
+diff --git a/huabu/apps/web/src/lcos/ui/context/ContextAtlasLayout.tsx b/huabu/apps/web/src/lcos/ui/context/ContextAtlasLayout.tsx
+new file mode 100644
+index 0000000..84a0ecf
+--- /dev/null
++++ b/huabu/apps/web/src/lcos/ui/context/ContextAtlasLayout.tsx
+@@ -0,0 +1,13 @@
++import './context-spatial.css';
++import type { ReactNode } from 'react';
++
++/** Layout only. ContextAtlasView retains presence and the existing close action. */
++export function ContextAtlasLayout({header, children}: {
++  readonly header: ReactNode;
++  readonly children: ReactNode;
++}): React.JSX.Element {
++  return <div className="lcos-atlas-light-curtain-inner">
++    <div className="lcos-atlas-light-curtain-head">{header}</div>
++    {children}
++  </div>;
++}
+diff --git a/huabu/apps/web/src/lcos/ui/context/ContextAtlasView.tsx b/huabu/apps/web/src/lcos/ui/context/ContextAtlasView.tsx
+index 508094a..77ff713 100644
+--- a/huabu/apps/web/src/lcos/ui/context/ContextAtlasView.tsx
++++ b/huabu/apps/web/src/lcos/ui/context/ContextAtlasView.tsx
+@@ -3,6 +3,7 @@ import { motion, useIsPresent, useReducedMotion } from 'motion/react';
+ import { LightCurtainBackdrop, LightCurtainDismissPlane } from '../spatial/LightCurtainBackdrop';
+ import { PRESENTATION_EXIT } from '../spatial/presentationMotion';
+ 
++import { ContextAtlasLayout } from './ContextAtlasLayout';
+ import './context-spatial.css';
+ import type { ReactNode } from 'react';
+ 
+@@ -32,10 +33,7 @@ export function ContextAtlasView({ header, children, onClose }: ContextAtlasView
+     >
+       <LightCurtainBackdrop kind="atlas" />
+       <LightCurtainDismissPlane disabled={!present} onClose={onClose} />
+-      <div className="lcos-atlas-light-curtain-inner">
+-        <div className="lcos-atlas-light-curtain-head">{header}</div>
+-        {children}
+-      </div>
++      <ContextAtlasLayout header={header}>{children}</ContextAtlasLayout>
+     </motion.div>
+   );
+ }
+diff --git a/huabu/apps/web/src/lcos/ui/context/ContextCollectionFace.tsx b/huabu/apps/web/src/lcos/ui/context/ContextCollectionFace.tsx
+new file mode 100644
+index 0000000..46ac984
+--- /dev/null
++++ b/huabu/apps/web/src/lcos/ui/context/ContextCollectionFace.tsx
+@@ -0,0 +1,74 @@
++import { PreviewMedia } from '../spatial/PreviewMedia';
++
++import thingIcon from './assets/context-thing.svg';
++import timeIcon from './assets/context-time.svg';
++import enterIcon from './assets/collection-enter.svg';
++import './context-spatial.css';
++
++import type { PreviewMediaProps } from '../spatial/PreviewMedia';
++import type { ReactNode } from 'react';
++
++export type ContextCollectionOrganization = '事情' | '时间' | '未指定';
++export type ContextCollectionRendition = '总览' | '主画布' | '装配';
++
++export interface ContextCollectionFaceProps {
++  readonly title: string;
++  readonly organization: ContextCollectionOrganization;
++  readonly rendition?: ContextCollectionRendition;
++  readonly previewUrl?: string;
++  readonly secondaryPreviewUrl?: string;
++  readonly previewFit?: PreviewMediaProps['fit'];
++  readonly secondaryPreviewFit?: PreviewMediaProps['fit'];
++  readonly disabled?: boolean;
++  readonly disabledReason?: string;
++  readonly action?: ReactNode;
++  readonly onActivate?: () => void;
++  readonly activationLabel?: string;
++  /** Supplied by the existing host; not an inferred organization. */
++  readonly unspecifiedGlyph?: ReactNode;
++}
++
++/** Exact Figma-exported Noto Sans SC arrow glyph; the original text node line box is 20×23. */
++export function ContextCollectionActionGlyph(): React.JSX.Element {
++  return <img src={enterIcon} width={11} height={11} alt="" draggable={false} />;
++}
++
++/**
++ * Figma-derived face shared by the production Motion host and static visual regression.
++ * Identity, membership, activation and attention remain inputs, not a second store.
++ */
++export function ContextCollectionFace({
++  title, organization, rendition = '总览', previewUrl, secondaryPreviewUrl,
++  previewFit, secondaryPreviewFit, disabled = false, disabledReason,
++  action, onActivate, activationLabel, unspecifiedGlyph,
++}: ContextCollectionFaceProps): React.JSX.Element {
++  const label = organization === '未指定' ? '组织未标注' : `按${organization}组织`;
++  return <>
++    {onActivate && !disabled ? <button type="button" className="lcos-context-collection-hit"
++      aria-label={activationLabel ?? `进入集合 · ${title}`} onClick={onActivate} /> : null}
++    <div className="lcos-context-collection-back" aria-hidden />
++    <div className="lcos-context-collection-tab" aria-hidden />
++    <div className="lcos-context-collection-cover cover-a">
++      <PreviewMedia src={previewUrl} label={`${title} 封面`}
++        {...(previewFit === undefined ? {} : { fit: previewFit })} />
++    </div>
++    <div className="lcos-context-collection-cover cover-b">
++      <PreviewMedia src={secondaryPreviewUrl} label={`${title} 第二份材料预览`}
++        {...(secondaryPreviewFit === undefined ? {} : { fit: secondaryPreviewFit })} />
++    </div>
++    <div className="lcos-context-collection-pocket-base" aria-hidden />
++    <div className="lcos-context-collection-pocket" aria-hidden />
++    <div className="lcos-context-collection-copy">
++      <span className="lcos-context-collection-icon" aria-hidden>
++        {organization === '事情' ? <img src={thingIcon} alt="" draggable={false} />
++          : organization === '时间' ? <img src={timeIcon} alt="" draggable={false} />
++            : unspecifiedGlyph}
++      </span>
++      <div><strong title={title}>{title}</strong><span title={disabled ? disabledReason : label}>
++        {disabled ? disabledReason ?? '目标当前不可用' : label}
++      </span></div>
++    </div>
++    <div className="lcos-context-collection-action">{!disabled ? action : null}</div>
++    {rendition === '总览' ? <div className="lcos-context-collection-depth" aria-hidden /> : null}
++  </>;
++}
+diff --git a/huabu/apps/web/src/lcos/ui/context/ContextCollectionView.tsx b/huabu/apps/web/src/lcos/ui/context/ContextCollectionView.tsx
+index 9bb3daa..e62d51c 100644
+--- a/huabu/apps/web/src/lcos/ui/context/ContextCollectionView.tsx
++++ b/huabu/apps/web/src/lcos/ui/context/ContextCollectionView.tsx
+@@ -1,37 +1,16 @@
+ import { Layers3 } from 'lucide-react';
+ import { motion, useReducedMotion } from 'motion/react';
+-import { PreviewMedia } from '../spatial/PreviewMedia';
++import { ContextCollectionFace } from './ContextCollectionFace';
+ import { useDescendantFocus } from '../spatial/useDescendantFocus';
+ import { PRESENTATION_EXIT, PRESENTATION_SPRING, presentationPose } from '../spatial/presentationMotion';
+ 
+-import type { ReactNode } from 'react';
+-
+-import thingIcon from './assets/context-thing.svg';
+-import timeIcon from './assets/context-time.svg';
+ import './context-spatial.css';
+ 
+-export type ContextCollectionOrganization = '事情' | '时间' | '未指定';
+-export type ContextCollectionRendition = '总览' | '主画布' | '装配';
++import type { ContextCollectionFaceProps } from './ContextCollectionFace';
++export type { ContextCollectionOrganization, ContextCollectionRendition } from './ContextCollectionFace';
+ 
+-export interface ContextCollectionViewProps {
+-  readonly title: string;
+-  readonly organization: ContextCollectionOrganization;
+-  readonly rendition?: ContextCollectionRendition;
+-  readonly previewUrl?: string;
+-  readonly secondaryPreviewUrl?: string;
+-  readonly disabled?: boolean;
+-  readonly disabledReason?: string;
++export interface ContextCollectionViewProps extends ContextCollectionFaceProps {
+   readonly active?: boolean;
+-  readonly action?: ReactNode;
+-  /** Existing owner activation only; absent when the destination is ambiguous/unavailable. */
+-  readonly onActivate?: () => void;
+-  readonly activationLabel?: string;
+-}
+-
+-function OrganizationGlyph({ organization }: { readonly organization: ContextCollectionOrganization }): React.JSX.Element {
+-  if (organization === '事情') return <img src={thingIcon} alt="" draggable={false} />;
+-  if (organization === '时间') return <img src={timeIcon} alt="" draggable={false} />;
+-  return <Layers3 aria-hidden size={21} strokeWidth={1.7} />;
+ }
+ 
+ export function ContextCollectionView({
+@@ -40,6 +19,8 @@ export function ContextCollectionView({
+   rendition = '总览',
+   previewUrl,
+   secondaryPreviewUrl,
++  previewFit,
++  secondaryPreviewFit,
+   disabled = false,
+   disabledReason,
+   active = false,
+@@ -49,7 +30,6 @@ export function ContextCollectionView({
+ }: ContextCollectionViewProps): React.JSX.Element {
+   const reducedMotion = Boolean(useReducedMotion());
+   const focus = useDescendantFocus();
+-  const label = organization === '未指定' ? '组织未标注' : `按${organization}组织`;
+   return (
+     <div
+       data-lcos-context-collection-slot
+@@ -72,23 +52,17 @@ export function ContextCollectionView({
+         whileHover={reducedMotion || disabled ? undefined : { y: -8, scale: 1.025 }}
+         transition={reducedMotion ? { duration: 0 } : PRESENTATION_SPRING}
+       >
+-        {onActivate && !disabled ? <button type="button" className="lcos-context-collection-hit"
+-          aria-label={activationLabel ?? `进入集合 · ${title}`} onClick={onActivate} /> : null}
+-        <div className="lcos-context-collection-back" aria-hidden />
+-        <div className="lcos-context-collection-tab" aria-hidden />
+-        <div className="lcos-context-collection-cover cover-a">
+-          <PreviewMedia src={previewUrl} label={`${title} 封面`} />
+-        </div>
+-        <div className="lcos-context-collection-cover cover-b">
+-          <PreviewMedia src={secondaryPreviewUrl} label={`${title} 第二份材料预览`} />
+-        </div>
+-        <div className="lcos-context-collection-pocket" aria-hidden />
+-        <div className="lcos-context-collection-copy">
+-          <span className="lcos-context-collection-icon" aria-hidden><OrganizationGlyph organization={organization} /></span>
+-          <div><strong title={title}>{title}</strong><span title={disabled ? disabledReason : label}>{disabled ? disabledReason ?? '目标当前不可用' : label}</span></div>
+-        </div>
+-        <div className="lcos-context-collection-action">{!disabled ? action : null}</div>
+-        {rendition === '总览' ? <div className="lcos-context-collection-depth" aria-hidden /> : null}
++        <ContextCollectionFace title={title} organization={organization} rendition={rendition}
++          {...(previewUrl === undefined ? {} : { previewUrl })}
++          {...(secondaryPreviewUrl === undefined ? {} : { secondaryPreviewUrl })}
++          {...(previewFit === undefined ? {} : { previewFit })}
++          {...(secondaryPreviewFit === undefined ? {} : { secondaryPreviewFit })}
++          disabled={disabled}
++          {...(disabledReason === undefined ? {} : { disabledReason })}
++          {...(action === undefined ? {} : { action })}
++          {...(onActivate === undefined ? {} : { onActivate })}
++          {...(activationLabel === undefined ? {} : { activationLabel })}
++          unspecifiedGlyph={<Layers3 aria-hidden size={21} strokeWidth={1.7} />} />
+       </motion.div>
+     </div>
+   );
+diff --git a/huabu/apps/web/src/lcos/ui/context/assets/atlas-close.svg b/huabu/apps/web/src/lcos/ui/context/assets/atlas-close.svg
+new file mode 100644
+index 0000000..9d5b29e
+--- /dev/null
++++ b/huabu/apps/web/src/lcos/ui/context/assets/atlas-close.svg
+@@ -0,0 +1,4 @@
++<svg width="22" height="22" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg">
++<path d="M16.5 5.5L5.5 16.5" stroke="#536C5E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
++<path d="M5.5 5.5L16.5 16.5" stroke="#536C5E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
++</svg>
+diff --git a/huabu/apps/web/src/lcos/ui/context/assets/collection-enter.svg b/huabu/apps/web/src/lcos/ui/context/assets/collection-enter.svg
+new file mode 100644
+index 0000000..6d06dde
+--- /dev/null
++++ b/huabu/apps/web/src/lcos/ui/context/assets/collection-enter.svg
+@@ -0,0 +1,3 @@
++<svg width="11" height="11" viewBox="0 0 11 11" fill="none" xmlns="http://www.w3.org/2000/svg">
++<path d="M8.41569 1.58399C7.94635 1.65866 7.39702 1.69599 6.76769 1.69599C6.14902 1.68533 5.56235 1.63733 5.00769 1.55199L5.34369 0.255994C5.94102 0.33066 6.56502 0.373327 7.21569 0.383993C7.86635 0.383993 8.51169 0.351993 9.15169 0.287993C9.79169 0.213327 10.389 0.117327 10.9437 -6.67572e-06C10.8264 0.55466 10.7304 1.15199 10.6557 1.79199C10.5917 2.43199 10.5597 3.07733 10.5597 3.72799C10.5704 4.37866 10.613 5.00266 10.6877 5.59999L9.39169 5.93599C9.30635 5.38133 9.25835 4.79466 9.24769 4.17599C9.24769 3.54666 9.28502 2.99733 9.35969 2.52799L0.943688 10.944L-0.000312328 9.99999L8.41569 1.58399Z" fill="black"/>
++</svg>
+diff --git a/huabu/apps/web/src/lcos/ui/context/context-spatial.css b/huabu/apps/web/src/lcos/ui/context/context-spatial.css
+index c383bab..a6a1e48 100644
+--- a/huabu/apps/web/src/lcos/ui/context/context-spatial.css
++++ b/huabu/apps/web/src/lcos/ui/context/context-spatial.css
+@@ -2,6 +2,7 @@
+ .lcos-atlas-light-curtain { position:fixed; inset:0; z-index:40; overflow:auto; background:transparent; }
+ .lcos-atlas-light-curtain-inner { position:relative; z-index:1; width:min(892px,calc(100vw - 96px)); margin:0 auto; padding:159px 0 100px; transform:translateX(-34px); pointer-events:none; }
+ .lcos-atlas-light-curtain-head { display:flex; align-items:center; justify-content:space-between; height:44px; margin:0 -58px 15px; color:var(--gen2-muted); font-size:12px; line-height:19px; }
++.lcos-atlas-light-curtain-head > span { position:relative; top:1.5px; width:230px; max-width:calc(100% - 52px); }
+ .lcos-atlas-light-curtain-head > button { pointer-events:auto; position:absolute; left:calc(100% + 127px); }
+ .lcos-atlas-grid .lcos-context-collection-slot, .lcos-atlas-light-curtain-inner [data-lcos-family='surface-feedback'] { pointer-events:auto; }
+ .lcos-atlas-close { width: 44px; height: 44px; display: grid; place-items: center; border: 0; background: transparent; border-radius: 12px; color: var(--gen2-muted); }
+@@ -12,11 +13,11 @@
+ /* Context Collection 5333:96 — same identity, 2 organization × 3 rendition. */
+ .lcos-context-collection-slot { position: relative; width: 248px; height: 244px; transition: opacity 150ms ease, filter 150ms ease, transform 180ms cubic-bezier(.22,1,.36,1); }
+ .lcos-context-collection-slot[data-disabled='true'] { opacity: .65; }
+-.lcos-context-collection { position: relative; width: 248px; height: 244px; color: var(--gen2-text); outline: none; }
+-.lcos-context-collection-back { box-sizing:border-box; position:absolute; left:18px; top:38px; width:212px; height:164px; border-radius:18px; background:var(--gen2-surface); border:1px solid var(--gen2-surface); box-shadow:0 0 1px rgba(40,48,58,.10),0 4px 12px rgba(40,48,58,.08); }
++.lcos-context-collection { position:relative; width:248px; height:244px; color:var(--lcos-text-primary); outline:none; }
++.lcos-context-collection-back { box-sizing:border-box; position:absolute; left:18px; top:38px; width:212px; height:164px; border-radius:18px; background:var(--lcos-surface-base); border:1px solid var(--lcos-surface-base); box-shadow:var(--lcos-glass-shadow); }
+ .lcos-context-collection[data-rendition='总览'] .lcos-context-collection-back { transform:rotate(3deg); transform-origin:0 0; }
+-.lcos-context-collection-tab { position:absolute; left:30px; top:24px; width:82px; height:36px; border-radius:10px; background:var(--lcos-collection-pocket-bg,#def7f9); }
+-.lcos-context-collection-cover { position:absolute; overflow:hidden; background:var(--gen2-raised); border-radius:12px; box-shadow:0 3px 10px rgba(40,48,58,.06); transform-origin:0 0; }
++.lcos-context-collection-tab { position:absolute; left:30px; top:24px; width:82px; height:36px; border-radius:10px; background:var(--lcos-color-palette-blue-bg); }
++.lcos-context-collection-cover { position:absolute; overflow:hidden; background:transparent; border-radius:12px; transform-origin:0 0; }
+ .lcos-context-collection-cover img { width:100%; height:100%; display:block; object-fit:cover; }
+ .lcos-context-collection-cover.cover-a { left:31px; width:108px; height:133px; transform:rotate(6deg); }
+ .lcos-context-collection-cover.cover-b { left:109px; width:104px; height:128px; transform:rotate(-5deg); }
+@@ -24,17 +25,19 @@
+ .lcos-context-collection[data-rendition='总览'] .cover-b { top:26px; }
+ .lcos-context-collection:not([data-rendition='总览']) .cover-a { top:34px; }
+ .lcos-context-collection:not([data-rendition='总览']) .cover-b { top:38px; }
+-.lcos-context-collection-pocket { box-sizing:border-box; position:absolute; left:12px; top:101px; width:224px; height:110px; border-radius:18px; background:var(--lcos-collection-pocket-bg,#def7f9); border:1px solid rgba(255,255,255,.92); box-shadow:0 0 1px rgba(40,48,58,.10),0 4px 12px rgba(40,48,58,.08); backdrop-filter:blur(7px); -webkit-backdrop-filter:blur(7px); }
+-.lcos-context-collection-copy { position:absolute; left:22px; top:136px; width:198px; display:grid; grid-template-columns:21px 1fr; gap:5px; align-items:start; color:#107d98; }
+-.lcos-context-collection-icon { width:21px; height:21px; display:grid; place-items:center; margin-top:1px; color:#107d98; }
++/* Original white carrier and blue frost are separate Figma layers. */
++.lcos-context-collection-pocket-base { box-sizing:border-box; position:absolute; left:12px; top:101px; width:224px; height:110px; border-radius:18px; background:var(--lcos-surface-base); border:1px solid var(--lcos-surface-base); box-shadow:var(--lcos-glass-shadow); }
++.lcos-context-collection-pocket { box-sizing:border-box; position:absolute; left:12px; top:101px; width:224px; height:110px; border-radius:18px; background:var(--lcos-color-palette-blue-bg); border:1px solid var(--lcos-surface-base); backdrop-filter:blur(7px); -webkit-backdrop-filter:blur(7px); }
++.lcos-context-collection-copy { position:absolute; left:22px; top:136px; width:198px; display:grid; grid-template-columns:21px 1fr; gap:5px; align-items:start; color:var(--lcos-color-palette-blue-text); }
++.lcos-context-collection-icon { width:21px; height:21px; display:grid; place-items:center; margin-top:1px; color:var(--lcos-color-palette-blue-text); }
+ .lcos-context-collection-icon img { display:block; width:21px; height:21px; }
+ .lcos-context-collection-copy > div { display:flex; flex-direction:column; gap:8px; min-width:0; width:172px; }
+-.lcos-context-collection-copy strong { color:var(--gen2-text); font-family:'Noto Sans SC',sans-serif; font-size:17px; line-height:25px; font-weight:500; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+-.lcos-context-collection-copy span { color:var(--gen2-muted); font-family:'Noto Sans SC',sans-serif; font-size:12px; line-height:17px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+-.lcos-context-collection-action { position:absolute; left:207px; top:180px; z-index:2; width:20px; height:23px; display:grid; place-items:center; color:var(--gen2-text); font:500 16px/23px 'Noto Sans SC',sans-serif; }
+-.lcos-context-collection-action button { width:32px; height:32px; display:grid; place-items:center; border:0; border-radius:10px; background:transparent; color:inherit; font-size:0; }
+-.lcos-context-collection-action button svg { display:none; }
+-.lcos-context-collection-action button::before { content:'↗'; font:500 16px/23px 'Noto Sans SC',sans-serif; }
++.lcos-context-collection-copy strong { color:var(--lcos-text-primary); font:500 17px/1.45 'Noto Sans SC',sans-serif; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
++.lcos-context-collection-copy span { color:var(--lcos-color-text-secondary); font:400 12px/1.45 'Noto Sans SC',sans-serif; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
++.lcos-context-collection-action { position:absolute; left:195px; top:169.5px; z-index:2; width:44px; height:44px; color:var(--lcos-text-primary); }
++.lcos-context-collection-action > span { display:block; width:44px; height:44px; }
++.lcos-context-collection-action button > img { display:block; width:11px; height:11px; pointer-events:none; }
++.lcos-context-collection-action button { box-sizing:border-box; width:44px; height:44px; display:grid; place-items:center; padding:0; margin:0; border:0; border-radius:10px; background:transparent; color:inherit; }
+ .lcos-context-collection-action button:hover,.lcos-context-collection-action button:focus-visible { background:rgba(255,255,255,.75); outline:2px solid var(--gen2-accent); outline-offset:1px; }
+ .lcos-context-collection-depth { position:absolute; left:20px; top:208px; width:210px; height:4px; border-radius:2px; background:var(--lcos-color-border-default); }
+ .lcos-context-collection-slot[data-active='true'] .lcos-context-collection-pocket,.lcos-context-collection-slot:focus-within .lcos-context-collection-pocket { outline:2px solid var(--gen2-accent); outline-offset:2px; }
+@@ -55,21 +58,21 @@
+ .lcos-temporal-empty-copy { position:absolute; right:8px; top:50%; width:54px; transform:translateY(-50%); text-align:right; color:var(--gen2-muted); font-size:9px; line-height:13px; }
+ 
+ /* Portal: only this chrome is styled; Huabu SpacePreviewViewport keeps its controls. */
+-.lcos-portal-preview-view { position:relative; width:440px; max-width:100%; min-width:0; container: lcos-portal / inline-size; color:var(--gen2-text); }
+-.lcos-portal-preview-frame { position:relative; height:360px; box-sizing:border-box; border-radius:18px; background:var(--gen2-surface); box-shadow:0 0 1px rgba(40,48,58,.10),0 4px 12px rgba(40,48,58,.08); }
+-.lcos-portal-preview-frame::before { content:''; position:absolute; inset:0; pointer-events:none; border:1px solid var(--gen2-surface); border-radius:inherit; }
+-.lcos-portal-preview-title { position:absolute; left:20px; top:18px; width:calc(100% - 160px); max-width:250px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font:500 17px/25px 'Noto Sans SC',sans-serif; }
+-.lcos-portal-preview-frame > button { position:absolute; z-index:3; height:44px; display:flex; align-items:center; justify-content:center; box-sizing:border-box; padding:6px 12px; border:.5px solid var(--lcos-color-border-default); border-radius:8px; background:var(--gen2-surface); color:var(--gen2-text); font:500 14px/20px Inter,sans-serif; }
++.lcos-portal-preview-view { position:relative; width:440px; max-width:100%; min-width:0; container:lcos-portal / inline-size; color:var(--lcos-text-primary); }
++.lcos-portal-preview-frame { position:relative; height:360px; box-sizing:border-box; border-radius:18px; background:color-mix(in srgb,var(--lcos-surface-base) 10%,transparent); box-shadow:var(--lcos-glass-shadow); backdrop-filter:blur(var(--lcos-glass-blur)); -webkit-backdrop-filter:blur(var(--lcos-glass-blur)); }
++.lcos-portal-preview-frame::before { content:''; position:absolute; inset:0; pointer-events:none; border:1px solid var(--lcos-surface-base); border-radius:inherit; }
++.lcos-portal-preview-title { position:absolute; left:20px; top:18px; width:calc(100% - 160px); max-width:250px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font:500 17px/1.45 'Noto Sans SC',sans-serif; }
++.lcos-portal-preview-frame > button { position:absolute; z-index:3; height:44px; display:flex; align-items:center; justify-content:center; box-sizing:border-box; padding:6px 12px; border:.5px solid var(--lcos-color-border-default); border-radius:8px; background:var(--lcos-surface-base); color:var(--lcos-text-primary); font:500 14px/20px Inter,sans-serif; }
+ .lcos-portal-preview-frame > button:hover:not(:disabled),.lcos-portal-preview-frame > button:focus-visible { background:var(--gen2-raised); outline:2px solid var(--gen2-accent); outline-offset:2px; }
+ .lcos-portal-preview-frame > .lcos-portal-open { right:14px; top:12px; width:108px; }
+ .lcos-portal-preview-frame > .lcos-portal-open:disabled { opacity:.35; cursor:not-allowed; }
+-.lcos-portal-preview-stage { position:absolute; left:14px; right:14px; top:71px; height:220px; min-width:0; overflow:hidden; border-radius:12px; background:var(--gen2-canvas); }
++.lcos-portal-preview-stage { position:absolute; left:14px; right:14px; top:71px; height:220px; min-width:0; overflow:hidden; border-radius:12px; background:var(--lcos-surface-base); }
+ /* Stretch the supplied scene host, never its buttons, labels or SVG children. */
+ .lcos-portal-preview-stage > [data-lcos-real-portal-preview] { display:flex; width:100%; height:100%; min-height:0; }
+-.lcos-portal-state-copy { position:absolute; inset:0; box-sizing:border-box; display:flex; flex-direction:column; gap:16px; padding:54px 24px 18px; overflow:auto; color:var(--gen2-text); }
++.lcos-portal-state-copy { position:absolute; inset:0; box-sizing:border-box; display:flex; flex-direction:column; gap:16px; padding:54px 24px 18px; overflow:auto; color:var(--lcos-text-primary); }
+ .lcos-portal-state-copy strong { font:500 20px/29px 'Noto Sans SC',sans-serif; }
+-.lcos-portal-state-copy span { color:var(--gen2-muted); font:400 13px/20px 'Noto Sans SC',sans-serif; overflow-wrap:anywhere; }
+-.lcos-portal-footer-copy { position:absolute; left:20px; top:316px; max-width:calc(100% - 180px); color:var(--gen2-muted); font:400 13px/19px 'Noto Sans SC',sans-serif; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
++.lcos-portal-state-copy span { color:var(--lcos-color-text-secondary); font:400 13px/20px 'Noto Sans SC',sans-serif; overflow-wrap:anywhere; }
++.lcos-portal-footer-copy { position:absolute; left:20px; top:316px; max-width:calc(100% - 180px); color:var(--lcos-color-text-secondary); font:400 13px/1.45 'Noto Sans SC',sans-serif; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+ .lcos-portal-preview-frame > .lcos-portal-retry { top:303px; right:18px; width:136px; }
+ .lcos-portal-preview-view[data-has-retry='true'][data-has-zoom='true'] .lcos-portal-retry { right:165px; width:124px; }
+ .lcos-portal-preview-view[data-has-retry='true'][data-has-zoom='true'] .lcos-portal-footer-copy { max-width:120px; }
+diff --git a/huabu/apps/web/src/lcos/ui/spatial/PreviewMedia.tsx b/huabu/apps/web/src/lcos/ui/spatial/PreviewMedia.tsx
+index 8f97a01..fd1e684 100644
+--- a/huabu/apps/web/src/lcos/ui/spatial/PreviewMedia.tsx
++++ b/huabu/apps/web/src/lcos/ui/spatial/PreviewMedia.tsx
+@@ -4,17 +4,21 @@ import { nextImageLoadPhase } from './imageLoadPhase';
+ import './preview-media.css';
+ 
+ import type { ImageLoadPhase } from './imageLoadPhase';
++import type { CSSProperties } from 'react';
+ 
+ export interface PreviewMediaProps {
+   readonly src?: string;
+   readonly label: string;
++  /** Supplied presentation metadata. Never infer FIT from title or image dimensions. */
++  readonly fit?: 'cover' | 'contain';
++  readonly position?: CSSProperties['objectPosition'];
+ }
+ 
+ /**
+  * THIN_ADAPT GEN1 CanvasNodeVisual.ImageObject: load/error/retry + keyed attempt.
+  * Native img replaces the donor OCR host; no artifact fetch, store or canvas owner.
+  */
+-function LoadedPreview({ src, label }: { readonly src: string; readonly label: string }): React.JSX.Element {
++function LoadedPreview({ src, label, fit = 'cover', position = '50% 50%' }: PreviewMediaProps & { readonly src: string }): React.JSX.Element {
+   const [phase, setPhase] = useState<ImageLoadPhase>('loading');
+   const [attempt, setAttempt] = useState(0);
+   return <div className="lcos-preview-media" data-image-phase={phase} aria-busy={phase === 'loading' || undefined}>
+@@ -29,6 +33,7 @@ function LoadedPreview({ src, label }: { readonly src: string; readonly label: s
+         }}>重试</button>
+     </div> : <>
+       <img key={`${src}#${attempt}`} src={src} alt={label} draggable={false}
++        style={{ objectFit: fit, objectPosition: position }}
+         onLoad={() => setPhase((current) => nextImageLoadPhase(current, 'load'))}
+         onError={() => setPhase((current) => nextImageLoadPhase(current, 'error'))}
+         onDragStart={(event) => event.preventDefault()} />
+@@ -37,8 +42,10 @@ function LoadedPreview({ src, label }: { readonly src: string; readonly label: s
+   </div>;
+ }
+ 
+-export function PreviewMedia({ src, label }: PreviewMediaProps): React.JSX.Element {
++export function PreviewMedia({ src, label, fit, position }: PreviewMediaProps): React.JSX.Element {
+   // Identity of media is its supplied source, not title, fabricated revision or timer.
+-  return src ? <LoadedPreview key={src} src={src} label={label} />
++  return src ? <LoadedPreview key={src} src={src} label={label}
++      {...(fit === undefined ? {} : { fit })}
++      {...(position === undefined ? {} : { position })} />
+     : <div className="lcos-preview-media" data-image-phase="unavailable"><span className="lcos-preview-media-message">暂无预览</span></div>;
+ }
+diff --git a/huabu/apps/web/src/lcos/ui/spatial/light-curtain.css b/huabu/apps/web/src/lcos/ui/spatial/light-curtain.css
+index c8422c5..80d65be 100644
+--- a/huabu/apps/web/src/lcos/ui/spatial/light-curtain.css
++++ b/huabu/apps/web/src/lcos/ui/spatial/light-curtain.css
+@@ -8,3 +8,17 @@
+ /* Native backdrop button: a drag originating in content is not a blank click. */
+ .lcos-atlas-dismiss-plane { position:fixed; inset:0; width:100%; height:100%; padding:0; margin:0; border:0; background:transparent; cursor:default; }
+ [data-presentation-present='false'] { pointer-events:none; }
++
++/* Full-scene Figma layer order: content alpha is separate from the fog alpha.
++   Only the already loaded worksite stage recedes. HUD/Composer/Window siblings
++   and explicit load/error surfaces keep their original treatment. */
++[data-lcos-context-worksite] > [data-lcos-worksite-stage],
++[data-lcos-workflow-worksite] > [data-lcos-worksite-stage] {
++  transition: opacity 200ms ease-out;
++}
++[data-lcos-context-worksite][data-atlas-open='true'] > [data-lcos-worksite-stage] { opacity:.22; }
++[data-lcos-workflow-worksite][data-hand-open='true'] > [data-lcos-worksite-stage] { opacity:.66; }
++@media (prefers-reduced-motion:reduce) {
++  [data-lcos-context-worksite] > [data-lcos-worksite-stage],
++  [data-lcos-workflow-worksite] > [data-lcos-worksite-stage] { transition:none; }
++}
+diff --git a/huabu/apps/web/src/lcos/ui/spatial/preview-media.css b/huabu/apps/web/src/lcos/ui/spatial/preview-media.css
+index a5f3777..c2700ef 100644
+--- a/huabu/apps/web/src/lcos/ui/spatial/preview-media.css
++++ b/huabu/apps/web/src/lcos/ui/spatial/preview-media.css
+@@ -4,3 +4,6 @@
+ .lcos-preview-media-message > button { min-width:44px; min-height:32px; border:1px solid var(--lcos-color-border-subtle); border-radius:8px; color:var(--gen2-text); background:var(--gen2-surface); font:inherit; }
+ .lcos-preview-media-message > button:focus-visible { outline:2px solid var(--gen2-accent); outline-offset:2px; }
+ .lcos-preview-media-loading { position:absolute; inset:0; display:grid; place-items:center; font:400 11px/16px 'Noto Sans SC',sans-serif; color:var(--gen2-muted); pointer-events:none; }
++
++/* A ready FIT image can have transparency; do not add a fabricated gray sheet. */
++.lcos-preview-media[data-image-phase='ready'] { background:transparent; }
+diff --git a/huabu/apps/web/src/lcos/ui/workflow/WorkflowCollectionFace.tsx b/huabu/apps/web/src/lcos/ui/workflow/WorkflowCollectionFace.tsx
+new file mode 100644
+index 0000000..e85316d
+--- /dev/null
++++ b/huabu/apps/web/src/lcos/ui/workflow/WorkflowCollectionFace.tsx
+@@ -0,0 +1,29 @@
++import { PreviewMedia } from '../spatial/PreviewMedia';
++import flowIcon from './assets/workflow-flow-22.svg';
++import './workflow-hand.css';
++import type { ReactNode } from 'react';
++
++export type WorkflowCollectionRendition = '工作流现场' | '主画布' | '装配';
++export interface WorkflowCollectionFaceProps {
++  readonly title: string;
++  readonly rendition: WorkflowCollectionRendition;
++  readonly previewUrl?: string;
++  readonly disabled?: boolean;
++  readonly disabledReason?: string;
++  readonly action?: ReactNode;
++}
++/** Same book face used by the production Motion host and visual regression. */
++export function WorkflowCollectionFace({title, previewUrl, disabled=false, disabledReason, action}: WorkflowCollectionFaceProps): React.JSX.Element {
++  return <>
++        <div className="lcos-workflow-collection-back" aria-hidden />
++        <div className="lcos-workflow-collection-cover">
++          <PreviewMedia src={previewUrl} label={`${title} 封面`} />
++        </div>
++        <div className="lcos-workflow-collection-front" aria-hidden />
++        <div className="lcos-workflow-collection-spine" aria-hidden />
++        <div className="lcos-workflow-collection-tab" aria-hidden />
++        <img className="lcos-workflow-collection-icon" src={flowIcon} alt="" draggable={false} />
++        <div className="lcos-workflow-collection-copy"><strong title={title}>{title}</strong><span title={disabledReason}>{disabled ? disabledReason ?? '目标当前不可用' : '工作流'}</span></div>
++        <div className="lcos-workflow-collection-action">{!disabled ? action : null}</div>
++  </>;
++}
+diff --git a/huabu/apps/web/src/lcos/ui/workflow/WorkflowCollectionView.tsx b/huabu/apps/web/src/lcos/ui/workflow/WorkflowCollectionView.tsx
+index 09d7b31..a12a54e 100644
+--- a/huabu/apps/web/src/lcos/ui/workflow/WorkflowCollectionView.tsx
++++ b/huabu/apps/web/src/lcos/ui/workflow/WorkflowCollectionView.tsx
+@@ -1,22 +1,14 @@
+ import { motion, useReducedMotion } from 'motion/react';
+-import { PreviewMedia } from '../spatial/PreviewMedia';
++import { WorkflowCollectionFace } from './WorkflowCollectionFace';
++import type { WorkflowCollectionFaceProps } from './WorkflowCollectionFace';
++export type { WorkflowCollectionRendition } from './WorkflowCollectionFace';
+ import { useDescendantFocus } from '../spatial/useDescendantFocus';
+ 
+-import type { ReactNode } from 'react';
+ 
+-import flowIcon from './assets/workflow-flow-22.svg';
+ import './workflow-hand.css';
+ 
+-export type WorkflowCollectionRendition = '工作流现场' | '主画布' | '装配';
+-
+-export interface WorkflowCollectionViewProps {
+-  readonly title: string;
+-  readonly rendition: WorkflowCollectionRendition;
+-  readonly previewUrl?: string;
+-  readonly disabled?: boolean;
+-  readonly disabledReason?: string;
++export interface WorkflowCollectionViewProps extends WorkflowCollectionFaceProps {
+   readonly active?: boolean;
+-  readonly action?: ReactNode;
+ }
+ 
+ export function WorkflowCollectionView({
+@@ -49,16 +41,10 @@ export function WorkflowCollectionView({
+         whileHover={reducedMotion || disabled ? undefined : { y: -7, scale: 1.022 }}
+         transition={reducedMotion ? { duration: 0 } : { type: 'spring', stiffness: 400, damping: 25 }}
+       >
+-        <div className="lcos-workflow-collection-back" aria-hidden />
+-        <div className="lcos-workflow-collection-cover">
+-          <PreviewMedia src={previewUrl} label={`${title} 封面`} />
+-        </div>
+-        <div className="lcos-workflow-collection-front" aria-hidden />
+-        <div className="lcos-workflow-collection-spine" aria-hidden />
+-        <div className="lcos-workflow-collection-tab" aria-hidden />
+-        <img className="lcos-workflow-collection-icon" src={flowIcon} alt="" draggable={false} />
+-        <div className="lcos-workflow-collection-copy"><strong title={title}>{title}</strong><span title={disabledReason}>{disabled ? disabledReason ?? '目标当前不可用' : '工作流'}</span></div>
+-        <div className="lcos-workflow-collection-action">{!disabled ? action : null}</div>
++        <WorkflowCollectionFace title={title} rendition={rendition} disabled={disabled}
++          {...(previewUrl === undefined ? {} : {previewUrl})}
++          {...(disabledReason === undefined ? {} : {disabledReason})}
++          {...(action === undefined ? {} : {action})} />
+       </motion.div>
+     </div>
+   );
+diff --git a/huabu/apps/web/src/lcos/ui/workflow/WorkflowTaskCardFace.tsx b/huabu/apps/web/src/lcos/ui/workflow/WorkflowTaskCardFace.tsx
+new file mode 100644
+index 0000000..e0c3bca
+--- /dev/null
++++ b/huabu/apps/web/src/lcos/ui/workflow/WorkflowTaskCardFace.tsx
+@@ -0,0 +1,49 @@
++import { PreviewMedia } from '../spatial/PreviewMedia';
++
++import flowIcon from './assets/workflow-flow-23.svg';
++import paperclipIcon from './assets/workflow-use-paperclip.svg';
++import chevronIcon from './assets/workflow-use-chevron.svg';
++import './workflow-hand.css';
++
++export type WorkflowTaskCardVisualState =
++  | '静息' | '悬停' | '预览' | '已选目标' | '草稿中' | '不可用' | '键盘焦点';
++
++export interface WorkflowTaskCardFaceProps {
++  readonly title: string;
++  readonly summary?: string;
++  readonly disabledReason?: string;
++  readonly previewUrl?: string;
++  readonly state: WorkflowTaskCardVisualState;
++  readonly onUse?: () => void;
++}
++
++/** Inner geometry of the existing card; no state producer or parallel renderer. */
++export function workflowTaskSecondary({state, disabledReason, summary}: WorkflowTaskCardFaceProps): string {
++  return state === '草稿中' ? '已加入草稿 · 未发送'
++    : state === '不可用' ? disabledReason ?? '当前不可用' : summary ?? '工作流';
++}
++
++export function WorkflowTaskCardFace(props: WorkflowTaskCardFaceProps): React.JSX.Element {
++  const {title, previewUrl, state, onUse} = props;
++  const disabled = state === '不可用';
++  const actionAllowed = onUse !== undefined && !disabled && state !== '草稿中' && state !== '已选目标';
++  const secondary = workflowTaskSecondary(props);
++  return <>
++        <div className="lcos-workflow-task-plate" aria-hidden />
++        <div className="lcos-workflow-task-cover">
++          <PreviewMedia src={previewUrl} label={`${title} 封面`} />
++          <span className="lcos-workflow-task-badge" aria-hidden><img src={flowIcon} alt="" draggable={false} /></span>
++          {actionAllowed ? (
++            <button type="button" data-lcos-card-take className="lcos-workflow-task-use" onClick={onUse}>
++              <img src={paperclipIcon} alt="" draggable={false} aria-hidden />
++              <span>用于当前会话</span>
++              <img src={chevronIcon} alt="" draggable={false} aria-hidden />
++            </button>
++          ) : null}
++        </div>
++        <div className="lcos-workflow-task-copy">
++          <strong title={title}>{title}</strong>
++          <span title={secondary}>{secondary}</span>
++        </div>
++  </>;
++}
+diff --git a/huabu/apps/web/src/lcos/ui/workflow/WorkflowTaskCardView.tsx b/huabu/apps/web/src/lcos/ui/workflow/WorkflowTaskCardView.tsx
+index ef077f6..9d0a15e 100644
+--- a/huabu/apps/web/src/lcos/ui/workflow/WorkflowTaskCardView.tsx
++++ b/huabu/apps/web/src/lcos/ui/workflow/WorkflowTaskCardView.tsx
+@@ -1,38 +1,20 @@
+ import { motion, useReducedMotion } from 'motion/react';
+ 
+-import { PreviewMedia } from '../spatial/PreviewMedia';
++import { WorkflowTaskCardFace, workflowTaskSecondary } from './WorkflowTaskCardFace';
++import type { WorkflowTaskCardFaceProps } from './WorkflowTaskCardFace';
++export type { WorkflowTaskCardVisualState } from './WorkflowTaskCardFace';
+ import { useDescendantFocus } from '../spatial/useDescendantFocus';
+ import { PRESENTATION_EXIT, PRESENTATION_SPRING, presentationPose } from '../spatial/presentationMotion';
+ 
+-import flowIcon from './assets/workflow-flow-23.svg';
+-import paperclipIcon from './assets/workflow-use-paperclip.svg';
+-import chevronIcon from './assets/workflow-use-chevron.svg';
+ import './workflow-hand.css';
+ 
+-export type WorkflowTaskCardVisualState =
+-  | '静息'
+-  | '悬停'
+-  | '预览'
+-  | '已选目标'
+-  | '草稿中'
+-  | '不可用'
+-  | '键盘焦点';
+-
+-export interface WorkflowTaskCardViewProps {
+-  readonly title: string;
+-  readonly summary?: string;
+-  readonly disabledReason?: string;
+-  readonly previewUrl?: string;
+-  readonly state: WorkflowTaskCardVisualState;
+-  readonly onUse?: () => void;
+-}
++export type WorkflowTaskCardViewProps = WorkflowTaskCardFaceProps;
+ 
+ export function WorkflowTaskCardView({ title, summary, previewUrl, state, onUse, disabledReason }: WorkflowTaskCardViewProps): React.JSX.Element {
+   const reducedMotion = Boolean(useReducedMotion());
+   const focus = useDescendantFocus();
+   const disabled = state === '不可用';
+-  const actionAllowed = onUse !== undefined && !disabled && state !== '草稿中' && state !== '已选目标';
+-  const secondary = state === '草稿中' ? '已加入草稿 · 未发送' : disabled ? disabledReason ?? '当前不可用' : summary ?? '工作流';
++  const secondary = workflowTaskSecondary({title, state, ...(summary === undefined ? {} : {summary}), ...(disabledReason === undefined ? {} : {disabledReason})});
+   return (
+     <div className="lcos-workflow-task-slot" data-card-state={state} onFocusCapture={focus.onFocusCapture} onBlurCapture={focus.onBlurCapture}>
+       <motion.article
+@@ -48,22 +30,11 @@ export function WorkflowTaskCardView({ title, summary, previewUrl, state, onUse,
+         whileHover={reducedMotion || disabled ? undefined : { y: -8, scale: 1.025 }}
+         transition={reducedMotion ? { duration: 0 } : PRESENTATION_SPRING}
+       >
+-        <div className="lcos-workflow-task-plate" aria-hidden />
+-        <div className="lcos-workflow-task-cover">
+-          <PreviewMedia src={previewUrl} label={`${title} 封面`} />
+-          <span className="lcos-workflow-task-badge" aria-hidden><img src={flowIcon} alt="" draggable={false} /></span>
+-          {actionAllowed ? (
+-            <button type="button" data-lcos-card-take className="lcos-workflow-task-use" onClick={onUse}>
+-              <img src={paperclipIcon} alt="" draggable={false} aria-hidden />
+-              <span>用于当前会话</span>
+-              <img src={chevronIcon} alt="" draggable={false} aria-hidden />
+-            </button>
+-          ) : null}
+-        </div>
+-        <div className="lcos-workflow-task-copy">
+-          <strong title={title}>{title}</strong>
+-          <span title={secondary}>{secondary}</span>
+-        </div>
++        <WorkflowTaskCardFace {...{title, state}}
++          {...(summary === undefined ? {} : {summary})}
++          {...(previewUrl === undefined ? {} : {previewUrl})}
++          {...(onUse === undefined ? {} : {onUse})}
++          {...(disabledReason === undefined ? {} : {disabledReason})} />
+       </motion.article>
+     </div>
+   );
+diff --git a/huabu/apps/web/src/lcos/ui/workflow/workflow-hand.css b/huabu/apps/web/src/lcos/ui/workflow/workflow-hand.css
+index 9401136..f26f6c4 100644
+--- a/huabu/apps/web/src/lcos/ui/workflow/workflow-hand.css
++++ b/huabu/apps/web/src/lcos/ui/workflow/workflow-hand.css
+@@ -1,3 +1,5 @@
++/* Paint/alpha/stroke from Figma 5335:16/18, 5334:5/7, and shared LCOS effects.
++   CSS blur is the existing fallback, NOT a reproduction of Figma GLASS refraction. */
+ /* Workflow Hand / Task Card deep fidelity: Figma 5140:3012 + 5334:46 + 5335:110. */
+ .lcos-workflow-hand-stage { position:fixed; inset:0; z-index:34; pointer-events:none; background:transparent; }
+ .lcos-workflow-hand-shell { pointer-events:auto; position:absolute; left:50%; bottom:0; width:min(1080px,calc(100vw - 80px)); height:min(610px,calc(100vh - 150px)); transform:translateX(-50%); }
+@@ -17,42 +19,41 @@
+ .lcos-workflow-hand-cards:has(.lcos-workflow-task-slot:hover) .lcos-workflow-task-slot:not(:hover),.lcos-workflow-hand-cards:has(.lcos-workflow-task-slot:focus-within) .lcos-workflow-task-slot:not(:focus-within) { opacity:.68; filter:saturate(.74); }
+ 
+ /* Task Card 5335:110 — all seven Figma states. */
+-.lcos-workflow-task-card { position:relative; box-sizing:border-box; width:224px; height:324px; color:var(--gen2-text); background:transparent; border:0; outline:none; transform-origin:50% 100%; }
+-.lcos-workflow-task-plate { position:absolute; box-sizing:border-box; left:4px; top:4px; width:216px; height:312px; border-radius:18px; background:var(--gen2-surface); border:1px solid var(--gen2-surface); box-shadow:0 0 1px rgba(40,48,58,.10),0 4px 12px rgba(40,48,58,.08); pointer-events:none; }
+-.lcos-workflow-task-card:hover > .lcos-workflow-task-plate,.lcos-workflow-task-card[data-state='悬停'] > .lcos-workflow-task-plate { box-shadow:0 10px 24px rgba(31,46,61,.12),0 0 1px rgba(40,48,58,.10),0 4px 12px rgba(40,48,58,.08); }
+-.lcos-workflow-task-card:focus-visible > .lcos-workflow-task-plate,.lcos-workflow-task-card:focus-within > .lcos-workflow-task-plate,.lcos-workflow-task-card[data-state='键盘焦点'] > .lcos-workflow-task-plate { border:2px solid #107d98; }
++.lcos-workflow-task-card { position:relative; box-sizing:border-box; width:224px; height:324px; color:var(--lcos-text-primary); background:transparent; border:0; outline:none; transform-origin:50% 100%; }
++.lcos-workflow-task-plate { position:absolute; box-sizing:border-box; left:4px; top:4px; width:216px; height:312px; border-radius:18px; background:color-mix(in srgb,var(--lcos-surface-base) 10%,transparent); border:1px solid var(--lcos-surface-base); box-shadow:var(--lcos-glass-shadow); backdrop-filter:blur(var(--lcos-glass-blur)); pointer-events:none; }
++.lcos-workflow-task-card:hover > .lcos-workflow-task-plate,.lcos-workflow-task-card[data-state='悬停'] > .lcos-workflow-task-plate { box-shadow:0 10px 24px rgba(31,46,61,.12),var(--lcos-glass-shadow); }
++.lcos-workflow-task-card:focus-visible > .lcos-workflow-task-plate,.lcos-workflow-task-card:focus-within > .lcos-workflow-task-plate,.lcos-workflow-task-card[data-state='键盘焦点'] > .lcos-workflow-task-plate { border:2px solid var(--lcos-color-palette-blue-text); }
+ .lcos-workflow-hand-cards > .lcos-workflow-task-slot:is(:hover,:focus-within) { z-index:2; }
+ .lcos-workflow-task-cover { position:absolute; left:12px; top:12px; width:200px; height:214px; border-radius:12px; overflow:hidden; background:var(--gen2-raised); }
+ .lcos-workflow-task-cover > img,.lcos-workflow-task-cover-fallback { width:100%; height:100%; display:block; object-fit:cover; }
+ .lcos-workflow-task-card[data-state='不可用'] .lcos-workflow-task-cover > .lcos-preview-media { opacity:.4; }
+ .lcos-workflow-task-cover-fallback { background:linear-gradient(145deg,color-mix(in srgb,var(--lcos-pin-teal) 34%,var(--gen2-raised)),var(--gen2-raised)); }
+-.lcos-workflow-task-badge { position:absolute; left:11px; top:11px; width:33px; height:33px; display:grid; place-items:center; border-radius:10px; background:rgba(255,255,255,.94); box-shadow:0 0 1px rgba(40,48,58,.10),0 4px 12px rgba(40,48,58,.08); }
++.lcos-workflow-task-badge { position:absolute; box-sizing:border-box; left:11px; top:11px; width:33px; height:33px; display:grid; place-items:center; border-radius:10px; border:1px solid var(--lcos-surface-base); background:color-mix(in srgb,var(--lcos-surface-base) 10%,transparent); box-shadow:var(--lcos-glass-shadow); backdrop-filter:blur(var(--lcos-glass-blur)); }
+ .lcos-workflow-task-badge img { display:block; width:23px; height:23px; }
+-.lcos-workflow-task-use { position:absolute; left:8px; bottom:15px; width:184px; height:40px; display:flex; align-items:center; justify-content:center; gap:4px; box-sizing:border-box; padding:6px 8px; border:.5px solid var(--lcos-color-border-default); border-radius:8px; background:rgba(255,255,255,.96); color:var(--gen2-text); font:500 14px/20px Inter,sans-serif; opacity:0; visibility:hidden; transform:translateY(8px); transition:opacity 150ms ease,transform 180ms cubic-bezier(.22,1,.36,1),visibility 0s linear 180ms; }
++.lcos-workflow-task-use { position:absolute; left:8px; bottom:15px; width:184px; height:40px; display:flex; align-items:center; justify-content:center; gap:4px; box-sizing:border-box; padding:6px 12px; border:.5px solid var(--lcos-color-border-default); border-radius:8px; background:var(--lcos-surface-base); color:var(--lcos-text-primary); font:500 14px/20px Inter,sans-serif; opacity:0; visibility:hidden; transform:translateY(8px); transition:opacity 150ms ease,transform 180ms cubic-bezier(.22,1,.36,1),visibility 0s linear 180ms; }
+ .lcos-workflow-task-use img { width:16px; height:16px; display:block; }
+ .lcos-workflow-task-card:hover .lcos-workflow-task-use,.lcos-workflow-task-card:focus-within .lcos-workflow-task-use,.lcos-workflow-task-card[data-state='悬停'] .lcos-workflow-task-use,.lcos-workflow-task-card[data-state='预览'] .lcos-workflow-task-use,.lcos-workflow-task-card[data-state='键盘焦点'] .lcos-workflow-task-use { opacity:1; visibility:visible; transform:none; transition-delay:0s; }
+ .lcos-workflow-task-copy { position:absolute; left:22px; top:240px; width:180px; display:flex; flex-direction:column; gap:8px; }
+-.lcos-workflow-task-copy strong { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font:500 17px/25px 'Noto Sans SC',sans-serif; }
+-.lcos-workflow-task-copy span { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--gen2-muted); font:400 12px/17px 'Noto Sans SC',sans-serif; }
++.lcos-workflow-task-copy strong { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font:500 17px/1.45 'Noto Sans SC',sans-serif; }
++.lcos-workflow-task-copy span { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--lcos-color-text-secondary); font:400 12px/1.45 'Noto Sans SC',sans-serif; }
+ 
+ /* Workflow Collection 5334:46 — collection node, explicitly not the vertical retrieval card. */
+ .lcos-workflow-collection-slot { position:relative; width:248px; height:244px; }
+ .lcos-workflow-collection-slot[data-disabled='true'] { opacity:.65; }
+-.lcos-workflow-collection { position:relative; width:248px; height:244px; color:var(--gen2-text); }
+-.lcos-workflow-collection-back { box-sizing:border-box; position:absolute; left:30px; top:30px; width:188px; height:160px; transform:rotate(4deg); transform-origin:center; border:1px solid var(--gen2-surface); border-radius:18px; background:var(--gen2-surface); box-shadow:0 0 1px rgba(40,48,58,.10),0 4px 12px rgba(40,48,58,.08); }
++.lcos-workflow-collection { position:relative; width:248px; height:244px; color:var(--lcos-text-primary); }
++.lcos-workflow-collection-back { box-sizing:border-box; position:absolute; left:30px; top:30px; width:188px; height:160px; transform:rotate(4deg); transform-origin:center; border:1px solid var(--lcos-surface-base); border-radius:18px; background:color-mix(in srgb,var(--lcos-surface-base) 10%,transparent); box-shadow:var(--lcos-glass-shadow); backdrop-filter:blur(var(--lcos-glass-blur)); }
+ .lcos-workflow-collection-cover { position:absolute; left:40px; top:28px; width:176px; height:100px; transform:rotate(-3deg); transform-origin:center; border-radius:12px; overflow:hidden; background:var(--gen2-raised); }
+ .lcos-workflow-collection-cover img { width:100%; height:100%; object-fit:cover; display:block; }
+-.lcos-workflow-collection-front { box-sizing:border-box; position:absolute; left:20px; top:91px; width:210px; height:125px; border:1px solid var(--gen2-surface); border-radius:18px; background:var(--gen2-surface); box-shadow:0 0 1px rgba(40,48,58,.10),0 4px 12px rgba(40,48,58,.08); }
+-.lcos-workflow-collection-spine { position:absolute; left:20px; top:91px; width:9px; height:125px; border-radius:4px; background:#107d98; }
+-.lcos-workflow-collection-tab { position:absolute; left:180px; top:91px; width:34px; height:7px; border-radius:3px; background:#107d98; }
++.lcos-workflow-collection-front { box-sizing:border-box; position:absolute; left:20px; top:91px; width:210px; height:125px; border:1px solid var(--lcos-surface-base); border-radius:18px; background:color-mix(in srgb,var(--lcos-surface-base) 10%,transparent); box-shadow:var(--lcos-glass-shadow); backdrop-filter:blur(var(--lcos-glass-blur)); }
++.lcos-workflow-collection-spine { position:absolute; left:20px; top:91px; width:9px; height:125px; border-radius:4px; background:var(--lcos-color-palette-blue-text); }
++.lcos-workflow-collection-tab { position:absolute; left:180px; top:91px; width:34px; height:7px; border-radius:3px; background:var(--lcos-color-palette-blue-text); }
+ .lcos-workflow-collection-icon { position:absolute; left:32px; top:130px; width:22px; height:22px; display:block; }
+-.lcos-workflow-collection-copy { position:absolute; left:64px; top:151px; width:150px; display:flex; flex-direction:column; gap:4px; }
+-.lcos-workflow-collection-copy strong { font:500 17px/25px 'Noto Sans SC',sans-serif; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+-.lcos-workflow-collection-copy span { color:var(--gen2-muted); font:400 12px/17px 'Noto Sans SC',sans-serif; }
++.lcos-workflow-collection-copy { position:absolute; left:64px; top:151px; width:150px; display:flex; flex-direction:column; gap:8px; }
++.lcos-workflow-collection-copy strong { font:500 17px/1.45 'Noto Sans SC',sans-serif; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
++.lcos-workflow-collection-copy span { color:var(--lcos-color-text-secondary); font:400 12px/1.45 'Noto Sans SC',sans-serif; }
+ .lcos-workflow-collection-action { position:absolute; left:204px; top:186px; width:20px; height:23px; display:grid; place-items:center; font:500 16px/23px 'Noto Sans SC',sans-serif; }
+-.lcos-workflow-collection-action button { width:32px; height:32px; border:0; border-radius:10px; background:transparent; font-size:0; }
+-.lcos-workflow-collection-action button svg { display:none; }
+-.lcos-workflow-collection-action button::before { content:'↗'; font:500 16px/23px 'Noto Sans SC',sans-serif; }
++.lcos-workflow-collection-action button { min-width:44px; min-height:44px; border:0; border-radius:10px; background:transparent; color:inherit; }
++
+ .lcos-workflow-collection-slot[data-active='true'] .lcos-workflow-collection-front,.lcos-workflow-collection-slot:focus-within .lcos-workflow-collection-front { outline:2px solid var(--gen2-accent); outline-offset:2px; }
+ 
+ @media (max-width:760px) {

@@ -1,0 +1,236 @@
+diff --git a/huabu/apps/web/src/lcos/ui/families/LcosWindowChrome.tsx b/huabu/apps/web/src/lcos/ui/families/LcosWindowChrome.tsx
+index d596e07..3e328ec 100644
+--- a/huabu/apps/web/src/lcos/ui/families/LcosWindowChrome.tsx
++++ b/huabu/apps/web/src/lcos/ui/families/LcosWindowChrome.tsx
+@@ -44,7 +44,13 @@ export function LcosWindowChrome({
+ }: LcosWindowChromeProps): React.JSX.Element {
+   const managedOverflow = primaryActions != null && overflowTrigger != null;
+   return (
+-    <div data-lcos-window-managed-overflow={managedOverflow ? 'true' : undefined} data-lcos-family="window-chrome" data-lcos-variant={layout} data-lcos-window-busy={busy ? 'true' : undefined}>
++    <div
++      data-lcos-window-managed-overflow={managedOverflow ? 'true' : undefined}
++      data-lcos-family="window-chrome"
++      data-lcos-variant={layout}
++      data-lcos-window-busy={busy ? 'true' : undefined}
++      aria-busy={busy || undefined}
++    >
+       {tabs.length > 0 ? (
+         <div data-lcos-window-tabs aria-label={title}>{tabs.map((tab) => (
+           <LcosButton
+diff --git a/huabu/apps/web/src/lcos/ui/families/lcos-hud-presentation.css b/huabu/apps/web/src/lcos/ui/families/lcos-hud-presentation.css
+index 987ea5a..7efec39 100644
+--- a/huabu/apps/web/src/lcos/ui/families/lcos-hud-presentation.css
++++ b/huabu/apps/web/src/lcos/ui/families/lcos-hud-presentation.css
+@@ -279,7 +279,7 @@
+   [data-lcos-window-managed-overflow='true'] [data-lcos-window-overflow-trigger] { display: flex; }
+ }
+ 
+-[data-lcos-window-actions]:empty { width: 106px; } /* 640 - 24 - 24 - 8 - 106 = 478 title */
++[data-lcos-window-actions]:empty { width: 106px; } /* Figma 5387:323 title box: 640 - 24 - 24 - 8 - 106 = 478. */
+ [data-lcos-window-icon-button] {
+   appearance: none;
+   display: grid;
+diff --git a/huabu/apps/web/src/lcos/ui/professional/ReaderContentTabsView.test.tsx b/huabu/apps/web/src/lcos/ui/professional/ReaderContentTabsView.test.tsx
+index 6b8520a..f83a7db 100644
+--- a/huabu/apps/web/src/lcos/ui/professional/ReaderContentTabsView.test.tsx
++++ b/huabu/apps/web/src/lcos/ui/professional/ReaderContentTabsView.test.tsx
+@@ -62,6 +62,7 @@ describe('Reader instance skin and existing owner boundaries', () => {
+       id: 'g', label: '正文', content: <p>正文</p>, contentTabs: { label: '正文材料', items, onActivate: vi.fn() },
+     }]} />);
+     expect(h.querySelectorAll('[data-lcos-reader-content-tab]')).toHaveLength(2);
++    expect(h.querySelector('[data-lcos-reader-content-tabs-track]')).not.toBeNull();
+   });
+   it('forwards window instance value even when two tabs share a kind', async () => {
+     const action = vi.fn();
+@@ -71,6 +72,7 @@ describe('Reader instance skin and existing owner boundaries', () => {
+     await act(async () => h.querySelector<HTMLButtonElement>('[data-lcos-window-tab-value="two"]')?.click());
+     expect(action).toHaveBeenCalledTimes(1);
+     expect(action).toHaveBeenCalledWith('two');
++    expect(h.querySelector('[data-lcos-window-busy]')).toBeNull();
+   });
+   it('keeps a real action outside the lightweight feedback body', async () => {
+     const action = vi.fn();
+@@ -80,6 +82,14 @@ describe('Reader instance skin and existing owner boundaries', () => {
+     expect(action).toHaveBeenCalledTimes(1);
+     expect(h.querySelector('[data-lcos-surface-feedback="error"]')).not.toBeNull();
+   });
++  it('keeps split group identity stable for Figma divider geometry', async () => {
++    const h = await render(<ReaderGroupView presentation="split" activeGroupId="left" groups={[
++      { id: 'left', label: '左组', content: <p>左</p>, contentTabs: { label: '左组材料', items, onActivate: vi.fn() } },
++      { id: 'right', label: '右组', content: <p>右</p>, contentTabs: { label: '右组材料', items, onActivate: vi.fn() } },
++    ]} />);
++    expect(h.querySelector('[data-reader-group-index="0"]')).not.toBeNull();
++    expect(h.querySelector('[data-reader-group-index="1"]')).not.toBeNull();
++  });
+   it('leaves feedback without a callback non-actionable', async () => {
+     const h = await render(<LcosSurfaceFeedbackView presentation="disabled" message="没有读取权限" />);
+     expect(h.querySelectorAll('button')).toHaveLength(0);
+diff --git a/huabu/apps/web/src/lcos/ui/professional/ReaderContentTabsView.tsx b/huabu/apps/web/src/lcos/ui/professional/ReaderContentTabsView.tsx
+index 62f3623..df31e24 100644
+--- a/huabu/apps/web/src/lcos/ui/professional/ReaderContentTabsView.tsx
++++ b/huabu/apps/web/src/lcos/ui/professional/ReaderContentTabsView.tsx
+@@ -30,16 +30,18 @@ export function ReaderContentTabsView({ label, items, onActivate,
+   emptyContent = null }: ReaderContentTabsViewProps): React.JSX.Element {
+   return (
+     <nav className="lcos-reader-content-tabs" aria-label={label} data-lcos-reader-content-tabs>
+-      {items.length === 0 ? emptyContent : items.map((item) => (
+-        <LcosButton key={item.id} type="button" appearance="oreo"
+-          variant={item.selected ? 'primary' : 'secondary'}
+-          data-lcos-reader-content-tab={item.id} data-selected={item.selected ? 'true' : undefined}
+-          disabled={item.disabled} aria-current={item.selected ? 'page' : undefined}
+-          aria-controls={item.panelId} title={item.disabledReason ?? item.label}
+-          onClick={() => onActivate(item.id)}>
+-          {item.label}
+-        </LcosButton>
+-      ))}
++      <div className="lcos-reader-content-tabs-track" data-lcos-reader-content-tabs-track>
++        {items.length === 0 ? emptyContent : items.map((item) => (
++          <LcosButton key={item.id} type="button" appearance="oreo"
++            variant={item.selected ? 'primary' : 'secondary'}
++            data-lcos-reader-content-tab={item.id} data-selected={item.selected ? 'true' : undefined}
++            disabled={item.disabled} aria-current={item.selected ? 'page' : undefined}
++            aria-controls={item.panelId} title={item.disabledReason ?? item.label}
++            onClick={() => onActivate(item.id)}>
++            {item.label}
++          </LcosButton>
++        ))}
++      </div>
+     </nav>
+   );
+ }
+diff --git a/huabu/apps/web/src/lcos/ui/professional/ReaderGroupView.tsx b/huabu/apps/web/src/lcos/ui/professional/ReaderGroupView.tsx
+index e28d33d..a1645cf 100644
+--- a/huabu/apps/web/src/lcos/ui/professional/ReaderGroupView.tsx
++++ b/huabu/apps/web/src/lcos/ui/professional/ReaderGroupView.tsx
+@@ -40,9 +40,10 @@ export function ReaderGroupView({
+         <div className="lcos-reader-group-selector">{groupSelector}</div>
+       ) : null}
+       <div className="lcos-reader-group-columns">
+-        {groups.map((group) => (
++        {groups.map((group, index) => (
+           <section
+             key={group.id}
++            data-reader-group-index={index}
+             data-reader-group-id={group.id}
+             aria-label={group.label}
+             hidden={presentation === 'single' && group.id !== activeGroupId}
+diff --git a/huabu/apps/web/src/lcos/ui/professional/professional-reading.css b/huabu/apps/web/src/lcos/ui/professional/professional-reading.css
+index c0b34cb..2d12d59 100644
+--- a/huabu/apps/web/src/lcos/ui/professional/professional-reading.css
++++ b/huabu/apps/web/src/lcos/ui/professional/professional-reading.css
+@@ -93,13 +93,42 @@
+ /* Controlled split/single variant. Never creates or selects a group. */
+ .lcos-reader-groups { container-type: inline-size; inline-size: 100%; block-size: 100%; min-inline-size: 0; min-block-size: 0; display: flex; flex-direction: column; font-family: 'Noto Sans SC', sans-serif; }
+ .lcos-reader-group-columns { display: flex; align-items: stretch; min-inline-size: 0; min-block-size: 0; flex: 1; }
+-.lcos-reader-group { display: flex; flex: 1 1 0; min-inline-size: 0; min-block-size: 0; flex-direction: column; }
++.lcos-reader-group { position: relative; display: flex; flex: 1 1 0; min-inline-size: 0; min-block-size: 0; flex-direction: column; }
+ .lcos-reader-group[hidden] { display: none; }
+-.lcos-reader-group + .lcos-reader-group { border-inline-start: 1px solid var(--gen2-border); }
+-[data-reader-group-layout='single'] .lcos-reader-group { border-inline-start: 0; }
+-.lcos-reader-group-tabs, .lcos-reader-group-selector { box-sizing: border-box; flex: none; display: flex; align-items: center; gap: 6px; padding: 12px 18px; overflow-x: auto; }
+-.lcos-reader-group-content { display: flex; flex-direction: column; min-inline-size: 0; min-block-size: 0; flex: 1; overflow: auto; padding: 24px 32px; }
+-.lcos-reader-group-footer { padding: 12px 18px 24px; }
++/* Figma 5388:27483: divider begins 60px below the 48px chrome and ends 72px above body bottom.
++ * It is not a full-height column border. The second group boundary is optically 2px left of 50%. */
++[data-reader-group-layout='split'] .lcos-reader-group + .lcos-reader-group::before {
++  content: '';
++  position: absolute;
++  z-index: 2;
++  inset-block: 60px 72px;
++  inset-inline-start: -2px;
++  inline-size: 1px;
++  background: var(--gen2-border);
++  pointer-events: none;
++}
++.lcos-reader-group-tabs, .lcos-reader-group-selector {
++  box-sizing: border-box;
++  flex: none;
++  display: flex;
++  align-items: flex-start;
++  gap: 6px;
++  block-size: 46px;
++  padding: 12px 18px 0;
++  overflow: visible;
++}
++[data-reader-group-layout='split'] .lcos-reader-group[data-reader-group-index='1'] > .lcos-reader-group-tabs { padding-inline-start: 24px; }
++.lcos-reader-group-content {
++  display: flex;
++  flex-direction: column;
++  min-inline-size: 0;
++  min-block-size: 0;
++  flex: 1;
++  overflow: auto;
++  padding: 39px 32px 0;
++  overscroll-behavior: contain;
++}
++.lcos-reader-group-footer { box-sizing: border-box; flex: none; min-block-size: 72px; padding: 6px 32px 36px; }
+ @container (max-width: 620px) {
+   .lcos-reader-page, .lcos-reader-media-page { padding-inline: 0; }
+   .lcos-reader-group-content { padding-inline: 18px; }
+@@ -120,3 +149,11 @@
+ 
+ /* Typed content tabs own their one horizontal scroll rail, not a nested one. */
+ .lcos-reader-group-tabs:has(> [data-lcos-reader-content-tabs]) { overflow: visible; }
++
++/* Figma uses split groups only while both columns have a viable reading width. */
++@container (max-width: 860px) {
++  [data-reader-group-layout='split'] .lcos-reader-group-content { padding-inline: 24px; }
++}
++@media (prefers-reduced-motion: reduce) {
++  .lcos-reader-content-tabs-track { scroll-behavior: auto; }
++}
+diff --git a/huabu/apps/web/src/lcos/ui/professional/reader-content-tabs.css b/huabu/apps/web/src/lcos/ui/professional/reader-content-tabs.css
+index 0d6c68c..0a8df10 100644
+--- a/huabu/apps/web/src/lcos/ui/professional/reader-content-tabs.css
++++ b/huabu/apps/web/src/lcos/ui/professional/reader-content-tabs.css
+@@ -2,14 +2,22 @@
+  * Preserve 44px native hit-height. Figma's 30px painted face is centered inside it;
+  * the resulting row is 10px taller than the static 34px Figma label frame. */
+ .lcos-reader-content-tabs {
++  box-sizing: border-box;
++  inline-size: 100%;
++  min-inline-size: 0;
++  block-size: 34px;
++  overflow: visible;
++  position: relative;
++}
++.lcos-reader-content-tabs-track {
+   display: flex;
+   align-items: center;
+   gap: 6px;
+   box-sizing: border-box;
+-  min-inline-size: 0;
+-  max-inline-size: 100%;
+-  min-block-size: 44px;
++  block-size: 44px;
++  margin-block: -5px;
+   overflow-x: auto;
++  overflow-y: hidden;
+   overscroll-behavior-inline: contain;
+   scrollbar-width: thin;
+   scroll-padding-inline: 2px;
+@@ -25,6 +33,7 @@
+   --oreo-border: var(--gen2-border);
+   flex: 0 0 104px;
+   inline-size: 104px;
++  block-size: 44px;
+   min-block-size: 44px;
+   padding: 0;
+   border: 0;
+@@ -37,13 +46,15 @@
+   --oreo-border: transparent;
+ }
+ .lcos-reader-content-tabs [data-lcos-reader-content-tab] > .lcos-oreo-face {
++  box-sizing: border-box;
+   justify-content: flex-start;
++  inline-size: 104px;
+   block-size: 30px;
++  min-block-size: 30px;
+   padding: 6px 10px;
+   border-radius: var(--lcos-radius-control, 8px);
+ }
+ .lcos-reader-content-tabs .lcos-oreo-content { max-inline-size: 100%; }
+-/* Disabled is a supplied accessibility state, not a new Reader Figma variant. */
+ .lcos-reader-content-tabs [data-lcos-reader-content-tab]:disabled {
+   --oreo-fill: var(--lcos-surface-elevated);
+   --oreo-ink: var(--lcos-color-text-disabled);

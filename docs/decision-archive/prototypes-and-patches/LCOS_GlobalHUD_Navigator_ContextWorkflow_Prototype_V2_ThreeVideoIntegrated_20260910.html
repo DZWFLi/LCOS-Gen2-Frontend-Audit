@@ -1,0 +1,699 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>LCOS · Global HUD + Navigator + Context / Workflow Prototype</title>
+<style>
+:root{
+  --bg:#f5f6f7;
+  --ink:#17191d;
+  --muted:#7b8189;
+  --line:rgba(18,21,26,.09);
+  --panel:rgba(255,255,255,.86);
+  --panel-strong:rgba(255,255,255,.96);
+  --shadow:0 18px 54px rgba(24,31,41,.10),0 3px 12px rgba(24,31,41,.05);
+  --ease:cubic-bezier(.22,1,.36,1);
+  --pin-blue:#6b8cff;
+  --pin-amber:#c98b32;
+  --pin-mint:#58a785;
+  --pin-violet:#8a71c7;
+  --safe-right:0px;
+}
+*{box-sizing:border-box}
+html,body{width:100%;height:100%;margin:0;overflow:hidden;background:var(--bg);color:var(--ink);font-family:"DM Sans","PingFang SC","Microsoft YaHei",Inter,system-ui,-apple-system,sans-serif}
+button,input{font:inherit;color:inherit}
+button{cursor:pointer}
+body{background:radial-gradient(circle at 50% 34%,#fff 0,#f9fafb 36%,#f0f2f4 100%)}
+#app{position:relative;width:100vw;height:100vh;overflow:hidden}
+.dots{
+  position:absolute;inset:0;pointer-events:none;opacity:.42;
+  background-image:radial-gradient(circle,rgba(27,31,37,.18) 1px,transparent 1.2px);
+  background-size:24px 24px;
+  mask-image:linear-gradient(to bottom,transparent 0,black 9%,black 93%,transparent);
+}
+
+/* global chrome */
+.global-top{
+  position:absolute;z-index:80;left:22px;right:22px;top:17px;height:44px;
+  display:flex;align-items:center;justify-content:space-between;pointer-events:none
+}
+.brand,.global-actions{pointer-events:auto}
+.brand{display:flex;align-items:center;gap:10px}
+.logo{
+  width:29px;height:29px;border:1px solid rgba(0,0,0,.11);border-radius:9px;background:#fff;
+  display:grid;place-items:center;box-shadow:0 6px 20px rgba(0,0,0,.045)
+}
+.logo:before{content:"";width:11px;height:11px;border:2px solid #181b20;border-right-color:transparent;border-radius:50%;transform:rotate(22deg)}
+.brand b{font-size:12px;font-weight:620}
+.brand span{display:block;margin-top:2px;font-size:7px;color:#9399a1;letter-spacing:.09em}
+.global-actions{display:flex;gap:6px}
+.gbtn{
+  min-width:34px;height:34px;border:1px solid var(--line);border-radius:10px;background:rgba(255,255,255,.76);
+  backdrop-filter:blur(18px);padding:0 10px;font-size:8px;box-shadow:0 7px 22px rgba(25,32,43,.045)
+}
+
+/* app viewport / independent worksite host */
+.viewport{
+  position:absolute;left:18px;right:calc(18px + var(--safe-right));top:69px;bottom:78px;
+  transition:right .32s var(--ease);
+}
+.worksite{
+  position:absolute;inset:0;border:1px solid rgba(0,0,0,.07);border-radius:24px;overflow:hidden;
+  background:rgba(255,255,255,.62);box-shadow:inset 0 1px 0 rgba(255,255,255,.82);
+  opacity:0;pointer-events:none;transform:translateY(5px) scale(.997);
+  transition:opacity .22s var(--ease),transform .28s var(--ease)
+}
+.worksite.active{opacity:1;pointer-events:auto;transform:none}
+.worksite-title{
+  position:absolute;left:19px;top:15px;z-index:12;display:flex;gap:9px;align-items:center;
+  padding:7px 10px;border:1px solid rgba(0,0,0,.065);border-radius:10px;background:rgba(255,255,255,.76);backdrop-filter:blur(16px)
+}
+.worksite-title b{font-size:8.5px}.worksite-title span{font-size:7px;color:#9298a0}
+.ws-canvas{position:absolute;inset:0;overflow:hidden}
+.ws-world{position:absolute;inset:0;transform-origin:50% 50%;transition:transform .5s var(--ease)}
+.ws-node{
+  position:absolute;width:168px;min-height:92px;border:1px solid rgba(0,0,0,.09);border-radius:17px;background:rgba(255,255,255,.95);
+  box-shadow:0 12px 32px rgba(28,35,45,.075);padding:12px;cursor:pointer;transition:box-shadow .18s var(--ease),transform .18s var(--ease),opacity .18s
+}
+.ws-node:hover{box-shadow:0 17px 40px rgba(28,35,45,.12)}
+.ws-node.focused{box-shadow:0 0 0 2px rgba(107,140,255,.28),0 19px 45px rgba(28,35,45,.13);transform:scale(1.025)}
+.ws-node.dim{opacity:.24}
+.ws-node .type{font-size:7px;letter-spacing:.09em;color:#989ea6;text-transform:uppercase}
+.ws-node b{display:block;margin-top:8px;font-size:10px;font-weight:600}
+.ws-node span{display:block;margin-top:5px;font-size:7.5px;color:#858c95;line-height:1.4}
+.ws-node.dark{background:#171a1f;color:white}.ws-node.dark .type,.ws-node.dark span{color:#89919b}
+.ws-node .pin-dot{
+  position:absolute;right:9px;top:9px;width:7px;height:7px;border-radius:50%;box-shadow:0 0 0 3px rgba(255,255,255,.9)
+}
+.pin-blue{background:var(--pin-blue)}.pin-amber{background:var(--pin-amber)}.pin-mint{background:var(--pin-mint)}.pin-violet{background:var(--pin-violet)}
+.ws-link{position:absolute;height:1px;background:repeating-linear-gradient(90deg,rgba(30,35,41,.16) 0 4px,transparent 4px 10px);transform-origin:left center;pointer-events:none}
+
+/* local dense Temporal Rail in Context worksite · right-side / Codex-like */
+.context-local-controls{
+  position:absolute;z-index:16;right:72px;top:15px;display:flex;padding:3px;border:1px solid rgba(0,0,0,.07);
+  border-radius:10px;background:rgba(255,255,255,.72);backdrop-filter:blur(14px)
+}
+.context-local-controls button{border:0;background:transparent;border-radius:7px;padding:6px 8px;font-size:7px;color:#777f88}
+.context-local-controls button.active{background:#fff;color:#171a1f;box-shadow:0 4px 12px rgba(0,0,0,.06)}
+.context-temporal-zone{
+  position:absolute;z-index:18;right:0;top:0;bottom:0;width:68px;touch-action:none
+}
+.context-temporal-zone::before{
+  content:"";position:absolute;right:0;top:0;bottom:0;width:68px;
+  background:linear-gradient(270deg,rgba(250,251,252,.98),rgba(250,251,252,.92) 70%,rgba(250,251,252,0));pointer-events:none
+}
+.context-temporal-rail{
+  --tick-pitch:11px;position:absolute;z-index:2;right:12px;top:50%;width:50px;height:calc(var(--tick-pitch) * 46);transform:translateY(-50%)
+}
+.temporal-tick{
+  position:absolute;right:7px;height:2px;border-radius:99px;background:#cfd3d6;transform:translateY(-50%);
+  transition:width .13s var(--ease),height .13s var(--ease),background-color .13s var(--ease),opacity .13s
+}
+.temporal-tick.in-window{background:#9fa6ad}.temporal-tick.near-hover{background:#b1b7bd}.temporal-tick.hovered{height:4px;background:#202226}
+.temporal-window{position:absolute;right:0;width:5px;border-radius:99px;background:rgba(52,58,67,.08);pointer-events:none;transition:top .18s var(--ease),height .18s var(--ease)}
+.temporal-bubble{
+  position:absolute;z-index:24;right:72px;width:min(480px,calc(100% - 130px));min-height:58px;transform:translateY(-50%) translateX(7px) scale(.993);
+  opacity:0;pointer-events:none;border:1px solid rgba(0,0,0,.10);border-radius:16px;background:rgba(255,255,255,.96);backdrop-filter:blur(18px);
+  box-shadow:0 13px 38px rgba(28,36,47,.10);padding:10px 12px;display:flex;align-items:center;gap:10px;transition:opacity .13s var(--ease),transform .16s var(--ease),top .08s linear
+}
+.temporal-bubble.show{opacity:1;transform:translateY(-50%) translateX(0) scale(1)}
+.temporal-bubble .icon{width:28px;height:28px;border-radius:8px;border:1px solid rgba(0,0,0,.06);background:#f3f5f6;display:grid;place-items:center;flex:none;font-size:10px}
+.temporal-bubble b{display:block;font-size:9px}.temporal-bubble span{display:block;margin-top:3px;font-size:6.5px;color:#8b9199}.temporal-bubble time{margin-left:auto;font-size:6.5px;color:#9ba1a9}
+/* local summon lamp above HUD */
+.local-lamp{
+  position:absolute;z-index:65;left:50%;bottom:66px;transform:translateX(-50%);height:24px;width:260px;
+  display:none;align-items:center;justify-content:center;cursor:pointer
+}
+.local-lamp.visible{display:flex}
+.local-lamp .beam{
+  position:absolute;left:0;right:0;bottom:3px;height:4px;border-radius:999px;
+  background:linear-gradient(90deg,transparent,rgba(106,126,180,.14),rgba(130,145,188,.64) 42%,rgba(232,235,244,.95) 50%,rgba(130,145,188,.64) 58%,rgba(106,126,180,.14),transparent);
+  box-shadow:0 0 13px rgba(106,126,180,.26)
+}
+.local-lamp.workflow .beam{
+  background:linear-gradient(90deg,transparent,rgba(99,122,255,.14),rgba(112,136,255,.66) 42%,rgba(219,225,255,.96) 50%,rgba(112,136,255,.66) 58%,rgba(99,122,255,.14),transparent);
+  box-shadow:0 0 14px rgba(105,130,255,.32)
+}
+.local-lamp span{font-size:7px;color:#8b919a;letter-spacing:.08em;opacity:0;transition:.14s;position:relative;top:-5px}
+.local-lamp:hover span{opacity:1}
+
+/* persistent global HUD */
+.global-hud{
+  position:absolute;z-index:90;left:50%;bottom:16px;transform:translateX(-50%);
+  height:48px;display:flex;align-items:center;gap:7px;padding:4px;
+  border:1px solid rgba(0,0,0,.085);border-radius:15px;background:rgba(255,255,255,.77);backdrop-filter:blur(24px);
+  box-shadow:0 14px 38px rgba(27,35,46,.08);transition:.25s var(--ease)
+}
+.hud-side{
+  width:38px;height:38px;border:0;border-radius:11px;background:transparent;display:grid;place-items:center;font-size:13px;color:#656d77
+}
+.hud-side:hover{background:#fff}
+.worksite-switch{display:flex;gap:2px;padding:2px;border-left:1px solid rgba(0,0,0,.07);border-right:1px solid rgba(0,0,0,.07)}
+.worksite-switch button{
+  height:36px;min-width:78px;border:0;border-radius:10px;background:transparent;font-size:8px;color:#777e88;padding:0 11px
+}
+.worksite-switch button.active{background:#fff;color:#171a1f;box-shadow:0 5px 16px rgba(0,0,0,.07)}
+body.local-layer-open .global-hud,
+body.navigator-open .global-hud{
+  opacity:.16;transform:translateX(-50%) translateY(8px) scale(.96);pointer-events:none
+}
+body.assembly-open .global-hud{margin-left:-155px}
+
+/* global navigator */
+.navigator{
+  position:absolute;z-index:110;inset:0;opacity:0;pointer-events:none;transition:.25s var(--ease)
+}
+body.navigator-open .navigator{opacity:1;pointer-events:auto}
+.nav-backdrop{position:absolute;inset:0;background:rgba(241,244,247,.44);backdrop-filter:blur(4px)}
+.nav-panel{
+  position:absolute;left:50%;top:50%;transform:translate(-50%,-50%) scale(.985);width:min(980px,86vw);height:min(620px,74vh);
+  border:1px solid rgba(0,0,0,.08);border-radius:23px;background:rgba(255,255,255,.9);backdrop-filter:blur(30px);
+  box-shadow:0 28px 90px rgba(26,35,48,.14);padding:18px;transition:.25s var(--ease)
+}
+body.navigator-open .nav-panel{transform:translate(-50%,-50%) scale(1)}
+.nav-head{display:flex;align-items:center;justify-content:space-between}
+.nav-head b{font-size:12px}.nav-head small{display:block;margin-top:2px;font-size:7px;color:#9197a0}
+.nav-search{height:35px;width:280px;border:1px solid rgba(0,0,0,.07);border-radius:10px;background:#f5f7f9;display:flex;align-items:center;padding:0 9px;gap:6px}
+.nav-search input{border:0;background:transparent;outline:none;width:100%;font-size:8px}
+.nav-body{position:absolute;left:18px;right:18px;top:69px;bottom:18px;display:grid;grid-template-columns:180px 1fr;gap:12px}
+.nav-filters{border-right:1px solid rgba(0,0,0,.06);padding-right:12px}
+.nav-filter{
+  width:100%;height:34px;border:0;border-radius:9px;background:transparent;text-align:left;padding:0 10px;font-size:8px;color:#737a84;margin-bottom:3px
+}
+.nav-filter.active{background:#f1f3f5;color:#171a1f}
+.nav-results{overflow:auto;padding-right:4px}
+.nav-row{
+  min-height:58px;border-bottom:1px solid rgba(0,0,0,.06);display:grid;grid-template-columns:13px 1fr 120px 86px;align-items:center;gap:10px;padding:8px 4px
+}
+.color-mark{width:8px;height:8px;border-radius:50%}
+.nav-row b{font-size:8px}.nav-row span{display:block;margin-top:3px;font-size:7px;color:#9197a0}
+.nav-loc{font-size:7px;color:#747b85}
+.nav-actions{display:flex;gap:5px}.nav-actions button{height:28px;border-radius:8px;border:1px solid rgba(0,0,0,.07);background:#fff;padding:0 7px;font-size:6.5px}
+.nav-actions button.locate{background:#171a1f;color:#fff}
+
+/* assembly shelf */
+.assembly{
+  position:absolute;z-index:105;right:14px;top:68px;bottom:14px;width:320px;border:1px solid rgba(0,0,0,.08);border-radius:21px;
+  background:rgba(255,255,255,.91);backdrop-filter:blur(28px);box-shadow:0 22px 70px rgba(27,35,46,.13);
+  transform:translateX(calc(100% + 30px));transition:.3s var(--ease);padding:15px
+}
+body.assembly-open{--safe-right:330px}
+body.assembly-open .assembly{transform:none}
+.assembly-head{display:flex;align-items:center;justify-content:space-between}.assembly-head b{font-size:10px}.assembly-head button{border:0;background:transparent}
+.assembly-search{height:34px;margin-top:10px;border:1px solid rgba(0,0,0,.07);border-radius:10px;background:#f5f7f9;display:flex;align-items:center;padding:0 8px;gap:6px}
+.assembly-search input{border:0;background:transparent;outline:none;width:100%;font-size:8px}
+.assembly-tabs{display:flex;gap:4px;margin:10px 0}.assembly-tabs button{border:1px solid rgba(0,0,0,.06);background:#fff;border-radius:7px;padding:5px 7px;font-size:6.5px;color:#747b85}.assembly-tabs button.active{background:#171a1f;color:#fff}
+.assembly-list{position:absolute;left:15px;right:15px;top:112px;bottom:14px;overflow:auto}
+.assembly-row{display:flex;gap:8px;padding:9px 0;border-bottom:1px solid rgba(0,0,0,.06);cursor:grab}
+.a-thumb{width:40px;height:32px;border-radius:8px;background:linear-gradient(145deg,#dde2e7,#f5f7f9);border:1px solid rgba(0,0,0,.06);flex:none}
+.assembly-row b{display:block;font-size:7.5px}.assembly-row span{display:block;margin-top:3px;font-size:6.5px;color:#9197a0}
+.assembly-row.pinned .a-thumb{box-shadow:inset 0 0 0 2px rgba(107,140,255,.75)}
+
+/* Context Atlas local layer */
+.context-atlas,.workflow-deck{
+  position:absolute;z-index:100;inset:0;opacity:0;pointer-events:none;transition:.25s var(--ease)
+}
+body.context-atlas-open .context-atlas{opacity:1;pointer-events:auto}
+body.workflow-deck-open .workflow-deck{opacity:1;pointer-events:auto}
+.local-backdrop{position:absolute;inset:0;background:rgba(238,242,246,.44);backdrop-filter:blur(4px)}
+.layer-head{position:absolute;left:28px;right:28px;top:20px;display:flex;align-items:flex-start;justify-content:space-between;z-index:6}
+.layer-head h2{margin:0;font-size:24px;font-weight:590;letter-spacing:-.04em}.layer-head p{margin:6px 0 0;font-size:8px;color:#7e858e}
+.layer-controls{display:flex;gap:6px;align-items:center}
+.layer-controls .search{height:34px;width:220px;border:1px solid rgba(0,0,0,.07);border-radius:10px;background:rgba(255,255,255,.76);display:flex;align-items:center;padding:0 8px;gap:5px}
+.layer-controls input{border:0;background:transparent;outline:none;width:100%;font-size:8px}
+.seg{display:flex;padding:3px;border:1px solid rgba(0,0,0,.07);border-radius:10px;background:rgba(255,255,255,.76)}
+.seg button{border:0;background:transparent;border-radius:7px;padding:6px 8px;font-size:7px;color:#777f88}.seg button.active{background:#fff;color:#171a1f;box-shadow:0 4px 12px rgba(0,0,0,.06)}
+.atlas-stage{position:absolute;left:28px;right:28px;top:74px;bottom:38px}
+#atlasCanvas{width:100%;height:100%}
+.atlas-pin{position:absolute;z-index:8;opacity:0;pointer-events:none;transform:translate(-50%,-100%);transition:.16s}.atlas-pin.show{opacity:1}
+.atlas-label{padding:8px 9px;border:1px solid rgba(0,0,0,.08);border-radius:10px;background:rgba(255,255,255,.93);box-shadow:0 12px 30px rgba(27,35,46,.09);min-width:170px}.atlas-label b{font-size:8px}.atlas-label span{display:block;margin-top:3px;font-size:6.5px;color:#868d96}.atlas-label em{font-style:normal;display:inline-block;margin-top:5px;padding:3px 5px;border-radius:5px;background:#eef1f4;font-size:6.5px;color:#69717b}
+.stem{width:1px;height:32px;background:linear-gradient(#161a20,rgba(22,26,32,.15));margin:0 auto}.stemdot{width:7px;height:7px;border-radius:50%;background:#171b20;margin:0 auto;box-shadow:0 0 0 5px rgba(255,255,255,.7),0 0 0 6px rgba(0,0,0,.08)}
+
+/* Workflow deck local layer */
+.deck-stage{position:absolute;left:0;right:0;top:75px;bottom:40px;perspective:1500px}
+.hand{position:absolute;left:50%;bottom:58px;width:0;height:0;transform-style:preserve-3d}
+.wcard{
+  position:absolute;width:145px;height:188px;margin-left:-72.5px;margin-top:-94px;border-radius:17px;cursor:pointer;will-change:transform,opacity
+}
+.wcard .shell{position:absolute;inset:0;border:1px solid rgba(0,0,0,.09);border-radius:17px;background:#fff;box-shadow:0 18px 45px rgba(27,35,46,.13);overflow:hidden}
+.wcover{position:absolute;left:9px;right:9px;top:9px;height:112px;border-radius:11px;background:linear-gradient(145deg,#dce2e7,#f5f7f9);overflow:hidden}.wcover img{width:100%;height:100%;object-fit:cover}
+.wname{position:absolute;left:11px;right:11px;bottom:27px;font-size:8px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.wtag{position:absolute;left:11px;bottom:10px;font-size:6.5px;color:#7d848e}
+.card-pool{
+  position:absolute;z-index:10;left:50%;top:52%;transform:translate(-50%,-50%) scale(.985);width:min(920px,84vw);height:min(600px,72vh);
+  border:1px solid rgba(0,0,0,.08);border-radius:21px;background:rgba(255,255,255,.91);backdrop-filter:blur(28px);box-shadow:0 25px 80px rgba(27,35,46,.13);
+  opacity:0;pointer-events:none;transition:.22s var(--ease);padding:15px
+}
+.card-pool.open{opacity:1;pointer-events:auto;transform:translate(-50%,-50%) scale(1)}
+.pool-head{display:flex;align-items:center;justify-content:space-between}.pool-head b{font-size:10px}.pool-head small{display:block;margin-top:2px;font-size:6.5px;color:#9197a0}
+.pool-grid{position:absolute;left:15px;right:15px;top:60px;bottom:15px;display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:10px;overflow:auto;align-content:start}
+.pool-card{height:155px;border:1px solid rgba(0,0,0,.07);border-radius:14px;background:#fff;padding:7px}.pool-card .pcov{height:101px;border-radius:9px;background:linear-gradient(145deg,#dce2e7,#f4f7f9);overflow:hidden}.pool-card .pcov img{width:100%;height:100%;object-fit:cover}.pool-card b{display:block;margin-top:6px;font-size:7.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.pool-card span{font-size:6.5px;color:#8c939b}
+
+/* status labels */
+.status-chip{
+  position:absolute;z-index:18;right:16px;top:15px;padding:6px 8px;border-radius:8px;background:rgba(255,255,255,.82);border:1px solid rgba(0,0,0,.06);font-size:7px;color:#747b85
+}
+@media(max-width:900px){
+  .worksite-switch button{min-width:58px}.nav-panel{width:92vw}.nav-body{grid-template-columns:130px 1fr}.nav-row{grid-template-columns:10px 1fr}.nav-loc,.nav-actions{display:none}.layer-head p{display:none}.layer-controls .search{width:150px}
+}
+@media(prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div id="app">
+<div class="dots"></div>
+
+<header class="global-top">
+  <div class="brand"><div class="logo"></div><div><b>LCOS · Gen2</b><span>PROJECT TRUTH / THREE INDEPENDENT WORKSITES</span></div></div>
+  <div class="global-actions"><button class="gbtn" id="topSearch">⌕ Search</button><button class="gbtn" id="topAssembly">Assembly</button></div>
+</header>
+
+<div class="viewport">
+  <!-- MAIN -->
+  <section class="worksite active" data-worksite="main">
+    <div class="worksite-title"><b>Main Worksite</b><span>自己的 camera / layout / history</span></div>
+    <div class="ws-canvas"><div class="ws-world" id="mainWorld">
+      <div class="ws-node" data-id="m1" style="left:12%;top:22%"><i class="pin-dot pin-blue"></i><div class="type">Conversation</div><b>当前产品讨论</b><span>Context / Workflow GUI 收敛</span></div>
+      <div class="ws-node dark" data-id="m2" style="left:41%;top:34%"><div class="type">Artifact</div><b>T5 Visual Contract</b><span>正在修改 · 当前主交付</span></div>
+      <div class="ws-node" data-id="m3" style="left:70%;top:19%"><i class="pin-dot pin-amber"></i><div class="type">Reference</div><b>Rhine Motion</b><span>Camera / field / continuity donor</span></div>
+      <div class="ws-node" data-id="m4" style="left:65%;top:64%"><div class="type">Result</div><b>Gen2 Construction</b><span>主体施工准备</span></div>
+      <div class="ws-link" style="left:25%;top:34%;width:20%;transform:rotate(8deg)"></div>
+      <div class="ws-link" style="left:53%;top:43%;width:20%;transform:rotate(-15deg)"></div>
+    </div></div>
+  </section>
+
+  <!-- CONTEXT -->
+  <section class="worksite" data-worksite="context">
+    <div class="worksite-title"><b>Context Worksite</b><span id="contextCurrentLabel">当前子 Context · Context 点线面</span></div>
+    <div class="context-local-controls"><button class="active" data-context-layout="time">时间组织</button><button data-context-layout="concept">概念组织</button></div>
+    <div class="ws-canvas" style="right:58px"><div class="ws-world" id="contextWorld">
+      <div class="ws-node" data-id="c1" style="left:10%;top:22%"><i class="pin-dot pin-mint"></i><div class="type">Conversation</div><b>需求原话</b><span>用户语义与边界</span></div>
+      <div class="ws-node dark" data-id="c2" style="left:34%;top:18%"><div class="type">Artifact</div><b>冻结稿 V2</b><span>当前最高权威</span></div>
+      <div class="ws-node" data-id="c3" style="left:25%;top:49%"><div class="type">Run Result</div><b>源码审计</b><span>实现 / migration / gap</span></div>
+      <div class="ws-node" data-id="c4" style="left:49%;top:42%"><i class="pin-dot pin-violet"></i><div class="type">Decision</div><b>点线面裁决</b><span>Atlas / Evolution / Spatial</span></div>
+      <div class="ws-node" data-id="c5" style="left:71%;top:29%"><div class="type">Reference</div><b>Rhine Motion</b><span>本轮交互 donor</span></div>
+      <div class="ws-node" data-id="c6" style="left:70%;top:62%"><div class="type">Skill</div><b>Context Refinement</b><span>Candidate capability</span></div>
+    </div></div>
+    <aside class="context-temporal-zone" id="contextTemporalZone">
+      <div class="context-temporal-rail" id="contextTemporalRail"><div class="temporal-window" id="contextTemporalWindow"></div></div>
+    </aside>
+    <div class="temporal-bubble" id="contextTemporalBubble"><div class="icon">✦</div><div><b id="contextTemporalTitle"></b><span id="contextTemporalText"></span></div><time id="contextTemporalTime"></time></div>
+  </section>
+
+  <!-- WORKFLOW -->
+  <section class="worksite" data-worksite="workflow">
+    <div class="worksite-title"><b>Workflow Worksite</b><span id="workflowCurrentLabel">当前 Workflow · T5 视觉收敛</span></div>
+    <div class="ws-canvas"><div class="ws-world" id="workflowWorld">
+      <div class="ws-node" data-id="w1" style="left:9%;top:20%"><div class="type">Reference</div><b>设计 baseline</b><span>Figma component library</span></div>
+      <div class="ws-node" data-id="w2" style="left:28%;top:43%"><i class="pin-dot pin-blue"></i><div class="type">Feedback</div><b>用户纠偏</b><span>去流程化 / 更直觉</span></div>
+      <div class="ws-node dark" data-id="w3" style="left:49%;top:28%"><div class="type">Run</div><b>T5 GUI Build</b><span>当前施工 Run</span></div>
+      <div class="ws-node" data-id="w4" style="left:68%;top:46%"><div class="type">Result</div><b>Frontend Prototype</b><span>Acceptance candidate</span></div>
+      <div class="ws-node" data-id="w5" style="left:77%;top:19%"><i class="pin-dot pin-amber"></i><div class="type">Skill</div><b>Visual System</b><span>Motion / donor / baseline</span></div>
+      <div class="ws-link" style="left:22%;top:34%;width:18%;transform:rotate(16deg)"></div>
+      <div class="ws-link" style="left:43%;top:43%;width:16%;transform:rotate(-12deg)"></div>
+      <div class="ws-link" style="left:59%;top:40%;width:15%;transform:rotate(7deg)"></div>
+    </div></div>
+  </section>
+</div>
+
+<!-- Local summon lamps -->
+<div class="local-lamp" id="contextLamp"><div class="beam"></div><span>CONTEXT ATLAS · A</span></div>
+<div class="local-lamp workflow" id="workflowLamp"><div class="beam"></div><span>WORKFLOW CARDS · D</span></div>
+
+<!-- Global HUD -->
+<nav class="global-hud" id="globalHud">
+  <button class="hud-side" id="navigatorBtn" title="Global Navigator">⌖</button>
+  <div class="worksite-switch">
+    <button class="active" data-switch="main">Main</button>
+    <button data-switch="context">Context</button>
+    <button data-switch="workflow">Workflow</button>
+  </div>
+  <button class="hud-side" id="assemblyBtn" title="Assembly">▤</button>
+</nav>
+
+<!-- GLOBAL NAVIGATOR -->
+<section class="navigator">
+  <div class="nav-backdrop" id="navBackdrop"></div>
+  <div class="nav-panel">
+    <div class="nav-head">
+      <div><b>Global Navigator</b><small>Pin / Color Pin / Glyth / Focus · 跨三个 Worksite 的统一地址系统</small></div>
+      <div class="nav-search"><span>⌕</span><input id="navSearch" placeholder="搜索标记、对象、区域"/></div>
+    </div>
+    <div class="nav-body">
+      <div class="nav-filters">
+        <button class="nav-filter active" data-navfilter="marked">Pinned / Marked</button>
+        <button class="nav-filter" data-navfilter="all">全部地址</button>
+        <button class="nav-filter" data-navfilter="main">Main</button>
+        <button class="nav-filter" data-navfilter="context">Context</button>
+        <button class="nav-filter" data-navfilter="workflow">Workflow</button>
+      </div>
+      <div class="nav-results" id="navResults"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ASSEMBLY -->
+<aside class="assembly">
+  <div class="assembly-head"><b>Project Warehouse</b><button id="assemblyClose">×</button></div>
+  <div class="assembly-search"><span>⌕</span><input id="assemblySearch" placeholder="RAG / 名称 / 标签"/></div>
+  <div class="assembly-tabs">
+    <button class="active" data-atab="pinned">Pinned</button>
+    <button data-atab="recent">Recent</button>
+    <button data-atab="all">全部</button>
+    <button data-atab="context">Context</button>
+    <button data-atab="workflow">Workflow</button>
+  </div>
+  <div class="assembly-list" id="assemblyList"></div>
+</aside>
+
+<!-- CONTEXT ATLAS LOCAL LAYER -->
+<section class="context-atlas">
+  <div class="local-backdrop" id="atlasBackdrop"></div>
+  <div class="layer-head">
+    <div><h2>Project Context Atlas</h2><p>只属于 Context Worksite 的集合级呼出层。规整、可搜、可 Focus；进入后回到真实 Context 子画布。</p></div>
+    <div class="layer-controls">
+      <div class="search"><span>⌕</span><input id="atlasSearch" placeholder="搜索 Context"/></div>
+      <div class="seg"><button class="active" data-atlas-sort="time">时间</button><button data-atlas-sort="nature">性质</button></div>
+    </div>
+  </div>
+  <div class="atlas-stage" id="atlasStage">
+    <canvas id="atlasCanvas"></canvas>
+    <div class="atlas-pin" id="atlasPin"><div class="atlas-label"><b id="atlasPinTitle">Context</b><span id="atlasPinMeta"></span><em id="atlasPinGlyph">GLYTH / PIN</em></div><div class="stem"></div><div class="stemdot"></div></div>
+  </div>
+</section>
+
+<!-- WORKFLOW DECK LOCAL LAYER -->
+<section class="workflow-deck">
+  <div class="local-backdrop" id="deckBackdrop"></div>
+  <div class="layer-head">
+    <div><h2>Workflows</h2><p>一张轻卡就是一个完整 Workflow。单击看一点信息；双击 / Enter 回到真实 Workflow Worksite。</p></div>
+    <div class="layer-controls"><div class="search"><span>⌕</span><input id="deckSearch" placeholder="搜索 Workflow"/></div><button class="iconbtn" id="openPool">▦</button><button class="iconbtn" id="uploadWorkflowCover" title="为当前卡上传图片">▧</button><input id="workflowCoverInput" type="file" accept="image/*" hidden></div>
+  </div>
+  <div class="deck-stage"><div class="hand" id="hand"></div></div>
+  <div class="card-pool" id="cardPool"><div class="pool-head"><div><b>Workflow Card Pool</b><small>卡很多时直接扫池，不必一张张轮</small></div><button class="iconbtn" id="closePool">×</button></div><div class="pool-grid" id="poolGrid"></div></div>
+</section>
+
+</div>
+
+<script>
+const body=document.body;
+
+/* ---------- worksite switching: three independent canvases ---------- */
+let activeWorksite='main';
+const worksiteEls=[...document.querySelectorAll('.worksite')];
+const switchBtns=[...document.querySelectorAll('[data-switch]')];
+function setWorksite(name){
+  activeWorksite=name;
+  worksiteEls.forEach(x=>x.classList.toggle('active',x.dataset.worksite===name));
+  switchBtns.forEach(x=>x.classList.toggle('active',x.dataset.switch===name));
+  document.getElementById('contextLamp').classList.toggle('visible',name==='context'&&!body.classList.contains('local-layer-open'));
+  document.getElementById('workflowLamp').classList.toggle('visible',name==='workflow'&&!body.classList.contains('local-layer-open'));
+}
+switchBtns.forEach(b=>b.onclick=()=>{closeLocalLayers();setWorksite(b.dataset.switch)});
+setWorksite('main');
+
+/* ---------- node focus helpers ---------- */
+function focusNode(worksite,id){
+  setWorksite(worksite);
+  const ws=document.querySelector(`.worksite[data-worksite="${worksite}"]`);
+  ws.querySelectorAll('.ws-node').forEach(n=>{n.classList.toggle('focused',n.dataset.id===id);n.classList.toggle('dim',n.dataset.id!==id)});
+  setTimeout(()=>ws.querySelectorAll('.ws-node').forEach(n=>n.classList.remove('dim')),950);
+}
+document.querySelectorAll('.ws-node').forEach(n=>n.onclick=()=>{const ws=n.closest('.worksite').dataset.worksite;focusNode(ws,n.dataset.id)});
+
+/* ---------- Context local Temporal Rail V4 · dense episodes + fisheye hover ---------- */
+const contextTemporalEvents=[
+ {time:'09:08',title:'需求原话',text:'Context 保持直觉，不做流程页面。',weight:.26,targets:['c1']},
+ {time:'09:21',title:'边界澄清',text:'三 Worksite 独立 runtime state。',weight:.42,targets:['c2']},
+ {time:'09:44',title:'集合语义',text:'集合操作不删除真实 canonical objects。',weight:.18,targets:['c1','c2']},
+ {time:'10:07',title:'子 Context Canvas',text:'Agent 可按当前任务自由安排节点空间。',weight:.58,targets:['c4']},
+ {time:'10:31',title:'时间导航',text:'Temporal Rail 只索引当前子 Context。',weight:.38,targets:['c4']},
+ {time:'10:48',title:'Global Pin',text:'Pin / Color Pin / Glyth 承担跨 Worksite 定位。',weight:.21,targets:['c2','c4']},
+ {time:'11:12',title:'Assembly',text:'不移动 Camera 也可根据标记从仓库找到目标。',weight:.34,targets:['c4']},
+ {time:'11:46',title:'Rhine Motion',text:'波浪、Focus、Camera continuity 进入 donor。',weight:.73,targets:['c5']},
+ {time:'12:20',title:'Motion Source Audit',text:'源码反查 field / damp / camera。',weight:.54,targets:['c5']},
+ {time:'13:04',title:'Temporal Rail Reference',text:'录屏确认 hover 局部鱼眼，不存在永久黑游标。',weight:1,targets:['c4','c5']},
+ {time:'14:02',title:'Figma Baseline',text:'成熟组件库成为 T5 视觉 baseline。',weight:.46,targets:['c6']},
+ {time:'14:26',title:'Rail 纠偏',text:'Rail 移到右侧，波动向 Canvas 内伸。',weight:.94,targets:['c4']},
+ {time:'14:51',title:'交互定义',text:'滚轮改时间窗口；hover 预览；click 正式 Focus。',weight:.79,targets:['c3','c4']},
+ {time:'15:18',title:'Temporal Rail V4',text:'Episode 多尺度索引 + 五档静态长度 + 独立鱼眼。',weight:.70,targets:['c4','c6']}
+];
+const CTOTAL=46,contextEventSlices=contextTemporalEvents.map((_,i)=>Math.round(2+i*(CTOTAL-5)/(contextTemporalEvents.length-1)));
+let contextTemporalCenter=9,contextTemporalHover=-1;
+function contextGaussian(d,s=2.1){return Math.exp(-(d*d)/(2*s*s))}
+function temporalTier(weight){return [7,10,14,20,28][Math.min(4,Math.floor(weight*5))]}
+function renderContextTemporal(){
+ const rail=document.getElementById('contextTemporalRail');rail.querySelectorAll('.temporal-tick').forEach(x=>x.remove());
+ const reverse=new Map(contextEventSlices.map((s,i)=>[s,i]));
+ for(let slice=0;slice<CTOTAL;slice++){
+   const i=reverse.has(slice)?reverse.get(slice):-1,e=i>=0?contextTemporalEvents[i]:null;
+   const t=document.createElement('div');t.className='temporal-tick';t.dataset.slice=slice;t.dataset.event=i;t.dataset.base=e?temporalTier(e.weight):(slice%5===0?9:7);
+   t.style.top=((slice+.5)/CTOTAL*100)+'%';rail.appendChild(t)
+ }
+ updateContextTemporal();
+}
+function updateContextTemporal(){
+ const ticks=[...document.querySelectorAll('#contextTemporalRail .temporal-tick')],centerSlice=contextEventSlices[contextTemporalCenter],hoverSlice=contextTemporalHover>=0?contextEventSlices[contextTemporalHover]:-999;
+ ticks.forEach((t,slice)=>{
+   const base=Number(t.dataset.base),viewDist=Math.abs(slice-centerSlice),band=Math.max(0,1-viewDist/8.5),eventI=Number(t.dataset.event);
+   t.classList.toggle('in-window',viewDist<7.5);t.classList.toggle('hovered',eventI===contextTemporalHover&&contextTemporalHover>=0);
+   if(contextTemporalHover>=0){const d=Math.abs(slice-hoverSlice),lens=contextGaussian(d);t.style.width=Math.round(base+lens*35)+'px';t.classList.toggle('near-hover',d>0&&d<5)}
+   else{t.style.width=Math.round(base+band*7)+'px';t.classList.remove('near-hover')}
+ });
+ const top=Math.max(0,(centerSlice-7)/CTOTAL*100),win=document.getElementById('contextTemporalWindow');win.style.top=top+'%';win.style.height=Math.min(100-top,14/CTOTAL*100)+'%';
+}
+function nearestContextEvent(clientY){
+ const r=document.getElementById('contextTemporalRail').getBoundingClientRect(),slice=Math.floor(Math.max(0,Math.min(.999,(clientY-r.top)/r.height))*CTOTAL);let best=0,dist=1e9;
+ contextEventSlices.forEach((s,i)=>{const d=Math.abs(s-slice);if(d<dist){dist=d;best=i}});return best
+}
+function showContextTemporal(i){
+ const e=contextTemporalEvents[i],rail=document.getElementById('contextTemporalRail').getBoundingClientRect(),slice=contextEventSlices[i],y=rail.top+(slice+.5)/CTOTAL*rail.height,b=document.getElementById('contextTemporalBubble');
+ document.getElementById('contextTemporalTitle').textContent=e.title;document.getElementById('contextTemporalText').textContent=e.text;document.getElementById('contextTemporalTime').textContent=e.time;b.style.top=y+'px';b.classList.add('show')
+}
+function contextTemporalPreview(i,commit=false){
+ const ids=new Set(contextTemporalEvents[i].targets),ws=document.querySelector('.worksite[data-worksite="context"]');
+ ws.querySelectorAll('.ws-node').forEach(n=>{n.classList.toggle('focused',ids.has(n.dataset.id));n.classList.toggle('dim',ids.size&&!ids.has(n.dataset.id))});
+ if(commit){setTimeout(()=>ws.querySelectorAll('.ws-node').forEach(n=>n.classList.remove('dim')),900)}
+}
+const ctz=document.getElementById('contextTemporalZone');
+ctz.onpointermove=e=>{const i=nearestContextEvent(e.clientY);if(i!==contextTemporalHover){contextTemporalHover=i;updateContextTemporal();showContextTemporal(i);contextTemporalPreview(i,false)}};
+ctz.onpointerleave=()=>{contextTemporalHover=-1;updateContextTemporal();document.getElementById('contextTemporalBubble').classList.remove('show');document.querySelector('.worksite[data-worksite="context"]').querySelectorAll('.ws-node').forEach(n=>n.classList.remove('dim','focused'))};
+ctz.onclick=e=>{const i=nearestContextEvent(e.clientY);contextTemporalCenter=i;updateContextTemporal();showContextTemporal(i);contextTemporalPreview(i,true)};
+ctz.onwheel=e=>{e.preventDefault();contextTemporalCenter=Math.max(0,Math.min(contextTemporalEvents.length-1,contextTemporalCenter+Math.sign(e.deltaY||e.deltaX)));updateContextTemporal();showContextTemporal(contextTemporalCenter);contextTemporalPreview(contextTemporalCenter,true)};
+renderContextTemporal();
+
+/* Context child-canvas visual organization is Agent-provided presentation, not truth. */
+const contextLayoutPos={
+ time:{c1:['10%','22%'],c2:['34%','18%'],c3:['25%','49%'],c4:['49%','42%'],c5:['71%','29%'],c6:['70%','62%']},
+ concept:{c1:['11%','26%'],c2:['31%','25%'],c3:['55%','22%'],c4:['34%','53%'],c5:['64%','49%'],c6:['75%','31%']}
+};
+document.querySelectorAll('[data-context-layout]').forEach(btn=>btn.onclick=()=>{
+ document.querySelectorAll('[data-context-layout]').forEach(x=>x.classList.toggle('active',x===btn));const mode=btn.dataset.contextLayout,ws=document.querySelector('.worksite[data-worksite="context"]');
+ Object.entries(contextLayoutPos[mode]).forEach(([id,[left,top]])=>{const n=ws.querySelector(`.ws-node[data-id="${id}"]`);n.style.left=left;n.style.top=top})
+});
+
+/* ---------- global navigator ---------- */
+const navItems=[
+ {id:'m1',title:'当前产品讨论',type:'Conversation',ws:'main',loc:'Main · 当前讨论',color:'pin-blue',marked:true},
+ {id:'m3',title:'Rhine Motion',type:'Reference',ws:'main',loc:'Main · Donor 区',color:'pin-amber',marked:true},
+ {id:'c1',title:'需求原话',type:'Conversation',ws:'context',loc:'Context · Context 点线面',color:'pin-mint',marked:true},
+ {id:'c4',title:'点线面裁决',type:'Decision',ws:'context',loc:'Context · Context 点线面',color:'pin-violet',marked:true},
+ {id:'w2',title:'用户纠偏',type:'Feedback',ws:'workflow',loc:'Workflow · T5 视觉收敛',color:'pin-blue',marked:true},
+ {id:'w5',title:'Visual System',type:'Skill',ws:'workflow',loc:'Workflow · T5 视觉收敛',color:'pin-amber',marked:true},
+ {id:'m2',title:'T5 Visual Contract',type:'Artifact',ws:'main',loc:'Main · Current',color:'pin-mint',marked:false},
+ {id:'c3',title:'源码审计',type:'Run Result',ws:'context',loc:'Context · 审计片段',color:'pin-blue',marked:false},
+ {id:'w3',title:'T5 GUI Build',type:'Run',ws:'workflow',loc:'Workflow · Run 04',color:'pin-violet',marked:false}
+];
+let navFilter='marked';
+function openNavigator(){closeLocalLayers();body.classList.add('navigator-open');renderNav()}
+function closeNavigator(){body.classList.remove('navigator-open')}
+document.getElementById('navigatorBtn').onclick=openNavigator;
+document.getElementById('navBackdrop').onclick=closeNavigator;
+document.querySelectorAll('[data-navfilter]').forEach(b=>b.onclick=()=>{document.querySelectorAll('[data-navfilter]').forEach(x=>x.classList.remove('active'));b.classList.add('active');navFilter=b.dataset.navfilter;renderNav()});
+document.getElementById('navSearch').oninput=renderNav;
+function renderNav(){
+  const q=document.getElementById('navSearch').value.toLowerCase();
+  const list=navItems.filter(x=>(navFilter==='all'||navFilter==='marked'&&x.marked||x.ws===navFilter)&&(!q||(x.title+x.type+x.loc).toLowerCase().includes(q)));
+  document.getElementById('navResults').innerHTML=list.map((x,i)=>`
+    <div class="nav-row">
+      <div class="color-mark ${x.color}"></div>
+      <div><b>${x.title}</b><span>${x.type}${x.marked?' · Marked':''}</span></div>
+      <div class="nav-loc">${x.loc}</div>
+      <div class="nav-actions"><button class="locate" data-locate="${x.ws}:${x.id}">定位</button><button data-find="${x.title}">仓库</button></div>
+    </div>`).join('');
+  document.querySelectorAll('[data-locate]').forEach(b=>b.onclick=()=>{const [ws,id]=b.dataset.locate.split(':');closeNavigator();focusNode(ws,id)});
+  document.querySelectorAll('[data-find]').forEach(b=>b.onclick=()=>{closeNavigator();openAssembly('pinned',b.dataset.find)})
+}
+
+/* ---------- Assembly ---------- */
+const assemblyData=[
+ {title:'产品冻结 V2',type:'artifact',meta:'Global Pin · Artifact',pinned:true,recent:true},
+ {title:'Rhine Motion',type:'artifact',meta:'Color Pin · Reference',pinned:true,recent:true},
+ {title:'点线面裁决',type:'context',meta:'Glyth · Context target',pinned:true,recent:false},
+ {title:'用户纠偏',type:'workflow',meta:'Pin · Workflow feedback',pinned:true,recent:true},
+ {title:'Visual System',type:'workflow',meta:'Pin · Workflow Skill',pinned:true,recent:false},
+ {title:'Context 点线面',type:'context',meta:'26 objects',pinned:false,recent:true},
+ {title:'T5 视觉收敛',type:'workflow',meta:'Current Workflow',pinned:false,recent:true},
+ {title:'施工蓝图',type:'artifact',meta:'Markdown · source',pinned:false,recent:false},
+ {title:'Skill Intelligence',type:'context',meta:'Foundation',pinned:false,recent:false}
+];
+let aTab='pinned';
+function openAssembly(tab='pinned',query=''){
+  body.classList.add('assembly-open');aTab=tab;
+  document.querySelectorAll('[data-atab]').forEach(x=>x.classList.toggle('active',x.dataset.atab===tab));
+  document.getElementById('assemblySearch').value=query;renderAssembly()
+}
+function closeAssembly(){body.classList.remove('assembly-open')}
+document.getElementById('assemblyBtn').onclick=()=>body.classList.contains('assembly-open')?closeAssembly():openAssembly();
+document.getElementById('topAssembly').onclick=()=>openAssembly();
+document.getElementById('assemblyClose').onclick=closeAssembly;
+document.querySelectorAll('[data-atab]').forEach(b=>b.onclick=()=>{aTab=b.dataset.atab;document.querySelectorAll('[data-atab]').forEach(x=>x.classList.toggle('active',x===b));renderAssembly()});
+document.getElementById('assemblySearch').oninput=renderAssembly;
+function renderAssembly(){
+  const q=document.getElementById('assemblySearch').value.toLowerCase();
+  const list=assemblyData.filter(x=>(aTab==='all'||aTab==='pinned'&&x.pinned||aTab==='recent'&&x.recent||x.type===aTab)&&(!q||(x.title+x.meta+x.type).toLowerCase().includes(q)));
+  document.getElementById('assemblyList').innerHTML=list.map(x=>`<div class="assembly-row ${x.pinned?'pinned':''}" draggable="true"><div class="a-thumb"></div><div><b>${x.title}</b><span>${x.meta}</span></div></div>`).join('')
+}
+
+/* ---------- local layers ---------- */
+function closeLocalLayers(){
+  body.classList.remove('local-layer-open','context-atlas-open','workflow-deck-open');
+  document.getElementById('contextLamp').classList.toggle('visible',activeWorksite==='context');
+  document.getElementById('workflowLamp').classList.toggle('visible',activeWorksite==='workflow');
+}
+function openContextAtlas(){
+  closeNavigator();body.classList.add('local-layer-open','context-atlas-open');
+  document.getElementById('contextLamp').classList.remove('visible');
+  setTimeout(resizeAtlas,30)
+}
+function openWorkflowDeck(){
+  closeNavigator();body.classList.add('local-layer-open','workflow-deck-open');
+  document.getElementById('workflowLamp').classList.remove('visible')
+}
+document.getElementById('contextLamp').onclick=openContextAtlas;
+document.getElementById('workflowLamp').onclick=openWorkflowDeck;
+document.getElementById('atlasBackdrop').onclick=closeLocalLayers;
+document.getElementById('deckBackdrop').onclick=closeLocalLayers;
+
+/* ---------- Context Atlas canvas ---------- */
+const contextCollections=[
+ {title:'项目启动',nature:'Brief',date:'08/12',items:8,act:34,glyph:'◆'},
+ {title:'产品冻结',nature:'Decision',date:'08/18',items:21,act:70,glyph:'●'},
+ {title:'架构审计',nature:'Architecture',date:'08/23',items:17,act:58,glyph:'◇'},
+ {title:'Context 点线面',nature:'Context',date:'08/29',items:26,act:92,glyph:'✦'},
+ {title:'Workflow 语义',nature:'Workflow',date:'09/01',items:19,act:67,glyph:'▰'},
+ {title:'Donor Census',nature:'Research',date:'09/03',items:24,act:82,glyph:'⌘'},
+ {title:'Rhine Motion',nature:'Interaction',date:'09/05',items:15,act:54,glyph:'◉'},
+ {title:'Skill Intelligence',nature:'Skill',date:'09/07',items:22,act:76,glyph:'✣'},
+ {title:'T5 Visual',nature:'Design',date:'09/08',items:12,act:47,glyph:'◫'},
+ {title:'主体施工',nature:'Construction',date:'09/09',items:29,act:96,glyph:'▣'},
+ {title:'T7 专项',nature:'Future',date:'09/10',items:10,act:41,glyph:'◎'},
+ {title:'复盘与归档',nature:'Review',date:'09/10',items:13,act:50,glyph:'□'}
+];
+const atlasStage=document.getElementById('atlasStage'),atlasCanvas=document.getElementById('atlasCanvas'),ctx=atlasCanvas.getContext('2d'),atlasPin=document.getElementById('atlasPin');
+let AW=0,AH=0,dpr=1,atlasSort='time',atlasOrder=[...contextCollections.keys()],atlasSel=3,atlasHover=-1,atlasQuery='';
+let panX=0,panY=0,zoom=1,tpanX=0,tpanY=0,tzoom=1,waveI=3,waveT=performance.now()/1000,hits=[];
+const apos=contextCollections.map(()=>({x:0,y:0,tx:0,ty:0,vx:0,vy:0,focus:0,vf:0}));
+function resizeAtlas(){
+ const r=atlasStage.getBoundingClientRect();AW=r.width;AH=r.height;dpr=Math.min(devicePixelRatio,1.5);atlasCanvas.width=AW*dpr;atlasCanvas.height=AH*dpr;atlasCanvas.style.width=AW+'px';atlasCanvas.style.height=AH+'px';ctx.setTransform(dpr,0,0,dpr,0,0);layoutAtlas(true)
+}
+function layoutAtlas(snap=false){
+ const cols=AW<800?3:4,rows=Math.ceil(atlasOrder.length/cols),sx=Math.min(190,AW/(cols+1.1)),sy=Math.min(128,AH/(rows+1.08));
+ atlasOrder.forEach((idx,pos)=>{const row=Math.floor(pos/cols),col=pos%cols;let x=(col-(cols-1)/2)*sx,y=(row-(rows-1)/2)*sy;if(atlasSort==='nature'){x+=((idx%3)-1)*9;y+=(idx%2)*7}apos[idx].tx=x;apos[idx].ty=y;if(snap){apos[idx].x=x;apos[idx].y=y}})
+}
+function damp(o,k,vk,target,rate,dt){const d=o[k]-target,imp=o[vk]+rate*d,dec=Math.exp(-rate*dt);o[k]=target+(d+imp*dt)*dec;o[vk]=(o[vk]-rate*imp*dt)*dec}
+function proj(x,y,z){return[AW/2+(x-y*.28+panX)*zoom,AH*.55+(y*.54+panY-z)*zoom]}
+function poly(pts,fill){ctx.beginPath();pts.forEach((p,i)=>i?ctx.lineTo(...p):ctx.moveTo(...p));ctx.closePath();ctx.fillStyle=fill;ctx.fill();ctx.strokeStyle='rgba(17,21,27,.10)';ctx.stroke()}
+function pointIn(x,y,p){let c=false;for(let i=0,j=p.length-1;i<p.length;j=i++){const a=p[i],b=p[j];if(((a[1]>y)!=(b[1]>y))&&(x<(b[0]-a[0])*(y-a[1])/(b[1]-a[1]+1e-9)+a[0]))c=!c}return c}
+const palettes=[['#f4f5f6','#ced6dc','#b5c0c9'],['#f4efe8','#d9ccb9','#b9aa91'],['#eff2f4','#cbd5dc','#aebbc6'],['#eef3ef','#cad7cb','#a8b9aa'],['#f0f1f6','#cbd0df','#adb7cf'],['#f3f0f5','#d6cce0','#bcadc8']];
+function gridDist(a,b){const cols=AW<800?3:4,pa=atlasOrder.indexOf(a),pb=atlasOrder.indexOf(b);return Math.hypot(Math.floor(pa/cols)-Math.floor(pb/cols),((pa%cols)-(pb%cols))*1.12)}
+function drawAtlas(t){
+ ctx.clearRect(0,0,AW,AH);hits=[];
+ // avenues
+ ctx.save();ctx.globalAlpha=.26;ctx.strokeStyle='rgba(26,32,40,.12)';ctx.lineCap='round';ctx.lineWidth=15;
+ let a=proj(-400,-10,-10),b=proj(410,-10,-10);ctx.beginPath();ctx.moveTo(...a);ctx.lineTo(...b);ctx.stroke();
+ ctx.lineWidth=1;for(let i=-4;i<=4;i++){let p1=proj(i*150,-300,0),p2=proj(i*150,300,0);ctx.beginPath();ctx.moveTo(...p1);ctx.lineTo(...p2);ctx.stroke()}
+ for(let i=-3;i<=3;i++){let p1=proj(-470,i*120,0),p2=proj(470,i*120,0);ctx.beginPath();ctx.moveTo(...p1);ctx.lineTo(...p2);ctx.stroke()}ctx.restore();
+ const q=atlasQuery.toLowerCase();
+ [...contextCollections.keys()].sort((i,j)=>apos[i].y-apos[j].y).forEach(i=>{
+  const d=contextCollections[i],p=apos[i],match=!q||(d.title+d.nature+d.date).toLowerCase().includes(q),age=t-waveT,dist=gridDist(i,waveI);
+  const wave=age>=0&&age<3?Math.exp(-Math.pow(dist-age*2.45,2)/1.3)*Math.exp(-age*.72)*Math.cos((dist-age*2.45)*1.05)*16:0;
+  const h=32+d.act*.64+wave+p.focus*52,w=110,dep=40,[cx,cy]=proj(p.x,p.y,0),ty=cy-h*zoom;
+  const top=[[cx-w/2*zoom,ty],[cx+w/2*zoom,ty],[cx+w/2*zoom+dep*.32*zoom,ty-dep*.25*zoom],[cx-w/2*zoom+dep*.32*zoom,ty-dep*.25*zoom]];
+  const front=[[cx-w/2*zoom,ty],[cx+w/2*zoom,ty],[cx+w/2*zoom,cy],[cx-w/2*zoom,cy]];
+  const side=[[cx+w/2*zoom,ty],[cx+w/2*zoom+dep*.32*zoom,ty-dep*.25*zoom],[cx+w/2*zoom+dep*.32*zoom,cy-dep*.25*zoom],[cx+w/2*zoom,cy]];
+  ctx.save();ctx.globalAlpha=(atlasSel>=0&&i!==atlasSel?.68:1)*(match?1:.11);
+  ctx.filter='blur(7px)';ctx.fillStyle='rgba(27,36,48,.1)';ctx.beginPath();ctx.ellipse(cx+8,cy+7,w*.46*zoom,8*zoom,0,0,6.28);ctx.fill();ctx.filter='none';
+  const c=palettes[i%palettes.length];poly(front,c[0]);poly(side,c[2]);poly(top,c[1]);
+  if(i===atlasSel||i===atlasHover){ctx.strokeStyle=i===atlasSel?'rgba(16,19,24,.7)':'rgba(16,19,24,.3)';ctx.lineWidth=i===atlasSel?2:1.2;ctx.beginPath();ctx.moveTo(...top[0]);top.slice(1).forEach(v=>ctx.lineTo(...v));ctx.closePath();ctx.stroke()}
+  if(zoom>.82){ctx.fillStyle='#1d2025';ctx.font=`${Math.max(8,9*zoom)}px system-ui`;ctx.fillText(d.title,cx-w/2*zoom+7,Math.min(cy-10,ty+18));ctx.fillStyle='rgba(75,82,91,.68)';ctx.font=`${Math.max(7,7*zoom)}px system-ui`;ctx.fillText(`${d.date} · ${d.items}`,cx-w/2*zoom+7,Math.min(cy+1,ty+30))}
+  ctx.restore();hits.push({i,pts:front.concat(side,top),anchor:[cx+dep*.08*zoom,ty-dep*.12*zoom]})
+ });
+ updateAtlasPin()
+}
+function atlasHit(x,y){for(let k=hits.length-1;k>=0;k--)if(pointIn(x,y,hits[k].pts))return hits[k].i;return-1}
+function setAtlasFocus(i){
+ atlasSel=i;waveI=i;waveT=performance.now()/1000;tzoom=1.07;
+ const d=contextCollections[i];document.getElementById('atlasPinTitle').textContent=d.title;document.getElementById('atlasPinMeta').textContent=`${d.nature} · ${d.date} · ${d.items} items`;document.getElementById('atlasPinGlyph').textContent=`${d.glyph} GLYTH / PIN`
+}
+function updateAtlasPin(){if(atlasSel<0){atlasPin.classList.remove('show');return}const h=hits.find(x=>x.i===atlasSel);if(!h)return;atlasPin.style.left=h.anchor[0]+'px';atlasPin.style.top=(h.anchor[1]-3)+'px';atlasPin.classList.add('show')}
+document.getElementById('atlasSearch').oninput=e=>atlasQuery=e.target.value;
+document.querySelectorAll('[data-atlas-sort]').forEach(b=>b.onclick=()=>{document.querySelectorAll('[data-atlas-sort]').forEach(x=>x.classList.remove('active'));b.classList.add('active');atlasSort=b.dataset.atlasSort;atlasOrder=atlasSort==='time'?[...contextCollections.keys()]:[...contextCollections.keys()].sort((a,b)=>contextCollections[a].nature.localeCompare(contextCollections[b].nature));layoutAtlas()});
+atlasStage.onpointermove=e=>{const r=atlasStage.getBoundingClientRect(),i=atlasHit(e.clientX-r.left,e.clientY-r.top);if(i!==atlasHover){atlasHover=i;if(i>=0){waveI=i;waveT=performance.now()/1000}}};
+atlasStage.onclick=e=>{const r=atlasStage.getBoundingClientRect(),i=atlasHit(e.clientX-r.left,e.clientY-r.top);if(i>=0)setAtlasFocus(i)};
+atlasStage.ondblclick=e=>{const r=atlasStage.getBoundingClientRect(),i=atlasHit(e.clientX-r.left,e.clientY-r.top);if(i>=0){document.getElementById('contextCurrentLabel').textContent=`当前子 Context · ${contextCollections[i].title}`;closeLocalLayers();setWorksite('context')}};
+atlasStage.onwheel=e=>{e.preventDefault();tzoom=Math.max(.75,Math.min(1.3,tzoom-e.deltaY*.0007))};
+
+/* ---------- Workflow deck ---------- */
+const workflowCards=Array.from({length:18},(_,i)=>({
+ title:['T5 视觉收敛','Gen2 主体施工','Context Refinement','Skill Intelligence','Donor Audit','素材研究','产品冻结','Workflow 复盘','Assembly 整理','T6 GUI','Run Review','Motion Lab','界面验收','交付工作流','快速研究','视觉探索','用户反馈','质量检查'][i],
+ tag:['Design','Build','Context','Skill','Audit','Research'][i%6],
+ bg:[['#dde2e7','#f5f7f9'],['#ded6cb','#f5f1eb'],['#d3ddd5','#f4f7f4'],['#d8d0e1','#f6f2f8'],['#cdd6df','#f0f4f7']][i%5],image:null
+}));
+const hand=document.getElementById('hand');let deckPos=0,deckTarget=0,deckSel=0,deckEls=[];
+function renderDeck(){
+ hand.innerHTML='';deckEls=[];
+ workflowCards.forEach((d,i)=>{const el=document.createElement('div');el.className='wcard';el.innerHTML=`<div class="shell"><div class="wcover" style="${d.image?`background-image:url('${d.image}');background-size:cover;background-position:center`:`background:linear-gradient(145deg,${d.bg[0]},${d.bg[1]})`}"></div><div class="wname">${d.title}</div><div class="wtag">${d.tag}</div></div>`;el.onclick=()=>{deckSel=deckTarget=i};el.ondblclick=()=>openWorkflow(i);hand.appendChild(el);deckEls.push(el)})
+}
+function updateDeck(){deckEls.forEach((el,i)=>{const d=i-deckPos,abs=Math.abs(d);el.style.transform=`translate3d(${d*102}px,${abs*14-(i===deckSel?16:0)}px,${-abs*44}px) rotate(${d*6.5}deg) scale(${1-Math.min(abs,1.4)*.075})`;el.style.opacity=Math.max(.18,1-abs*.17);el.style.zIndex=60-Math.round(abs*4)})}
+function openWorkflow(i){document.getElementById('workflowCurrentLabel').textContent=`当前 Workflow · ${workflowCards[i].title}`;closeLocalLayers();setWorksite('workflow')}
+renderDeck();
+document.getElementById('deckSearch').oninput=e=>{const q=e.target.value.toLowerCase(),i=workflowCards.findIndex(x=>(x.title+x.tag).toLowerCase().includes(q));if(i>=0){deckSel=deckTarget=i}};
+document.querySelector('.workflow-deck').onwheel=e=>{if(document.getElementById('cardPool').classList.contains('open'))return;e.preventDefault();deckTarget=Math.max(0,Math.min(workflowCards.length-1,deckTarget+Math.sign(e.deltaY)));deckSel=Math.round(deckTarget)};
+document.getElementById('openPool').onclick=()=>{renderPool();document.getElementById('cardPool').classList.add('open')};
+document.getElementById('closePool').onclick=()=>document.getElementById('cardPool').classList.remove('open');
+function renderPool(){document.getElementById('poolGrid').innerHTML=workflowCards.map((d,i)=>`<div class="pool-card" data-i="${i}"><div class="pcov" style="${d.image?`background-image:url('${d.image}');background-size:cover;background-position:center`:`background:linear-gradient(145deg,${d.bg[0]},${d.bg[1]})`}"></div><b>${d.title}</b><span>${d.tag}</span></div>`).join('');document.querySelectorAll('.pool-card').forEach(el=>{el.onclick=()=>{deckSel=deckTarget=Number(el.dataset.i);document.getElementById('cardPool').classList.remove('open')};el.ondblclick=()=>openWorkflow(Number(el.dataset.i))})}
+
+document.getElementById('uploadWorkflowCover').onclick=()=>document.getElementById('workflowCoverInput').click();
+document.getElementById('workflowCoverInput').onchange=e=>{const f=e.target.files?.[0];if(!f)return;const r=new FileReader();r.onload=()=>{workflowCards[deckSel].image=r.result;renderDeck();renderPool()};r.readAsDataURL(f)};
+
+/* ---------- keyboard ---------- */
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape'){
+    if(body.classList.contains('navigator-open'))closeNavigator();
+    else if(body.classList.contains('local-layer-open'))closeLocalLayers();
+    else if(body.classList.contains('assembly-open'))closeAssembly();
+  }
+  if((e.key==='g'||e.key==='G')&&!['INPUT','TEXTAREA'].includes(document.activeElement.tagName))openNavigator();
+  if(activeWorksite==='context'&&(e.key==='a'||e.key==='A')&&!['INPUT','TEXTAREA'].includes(document.activeElement.tagName))openContextAtlas();
+  if(activeWorksite==='workflow'&&(e.key==='d'||e.key==='D')&&!['INPUT','TEXTAREA'].includes(document.activeElement.tagName))openWorkflowDeck();
+  if(body.classList.contains('workflow-deck-open')&&e.key==='Enter')openWorkflow(deckSel)
+});
+
+/* ---------- animation ---------- */
+let last=performance.now()/1000;
+function frame(ms){
+  const t=ms/1000,dt=Math.min(.04,t-last);last=t;
+  panX+=(tpanX-panX)*(1-Math.exp(-dt*8));panY+=(tpanY-panY)*(1-Math.exp(-dt*8));zoom+=(tzoom-zoom)*(1-Math.exp(-dt*8));
+  apos.forEach((p,i)=>{damp(p,'x','vx',p.tx,7.5,dt);damp(p,'y','vy',p.ty,7.5,dt);damp(p,'focus','vf',i===atlasSel?1:0,8,dt)});
+  if(body.classList.contains('context-atlas-open'))drawAtlas(t);
+  deckPos+=(deckTarget-deckPos)*(1-Math.exp(-dt*11));if(body.classList.contains('workflow-deck-open'))updateDeck();
+  requestAnimationFrame(frame)
+}
+requestAnimationFrame(frame);
+
+/* init */
+renderNav();renderAssembly();
+</script>
+</body>
+</html>

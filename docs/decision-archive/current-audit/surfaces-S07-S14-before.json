@@ -1,0 +1,348 @@
+{
+  "states": [
+    {
+      "phase": "before-drag",
+      "windows": [
+        {
+          "id": "region-assembly",
+          "x": 864,
+          "y": 120,
+          "width": 640,
+          "height": 648
+        }
+      ],
+      "hud": [
+        {
+          "name": "data-lcos-spatial-navigator-host",
+          "x": 24,
+          "y": 1028,
+          "width": 52,
+          "height": 48
+        },
+        {
+          "name": "data-lcos-shell-project-cluster",
+          "x": 24,
+          "y": 24,
+          "width": 256,
+          "height": 44
+        },
+        {
+          "name": "data-lcos-navigator-island",
+          "x": 752,
+          "y": 24,
+          "width": 96,
+          "height": 48
+        },
+        {
+          "name": "data-lcos-surface-dock",
+          "x": 711,
+          "y": 1018,
+          "width": 178,
+          "height": 58
+        },
+        {
+          "name": "data-lcos-main-tools",
+          "x": 1472,
+          "y": 1028,
+          "width": 104,
+          "height": 48
+        }
+      ],
+      "viewportTransform": "transform: translate(310.079px, 522.099px) scale(0.336634);",
+      "selected": 1
+    },
+    {
+      "phase": "pointer-held",
+      "requested": {
+        "x": 460,
+        "y": 90
+      },
+      "windows": [
+        {
+          "id": "region-assembly",
+          "x": 459,
+          "y": 89,
+          "width": 640,
+          "height": 648
+        }
+      ],
+      "hud": [
+        {
+          "name": "data-lcos-spatial-navigator-host",
+          "x": 24,
+          "y": 1028,
+          "width": 52,
+          "height": 48
+        },
+        {
+          "name": "data-lcos-shell-project-cluster",
+          "x": 24,
+          "y": 24,
+          "width": 256,
+          "height": 44
+        },
+        {
+          "name": "data-lcos-navigator-island",
+          "x": 752,
+          "y": 24,
+          "width": 96,
+          "height": 48
+        },
+        {
+          "name": "data-lcos-surface-dock",
+          "x": 711,
+          "y": 1018,
+          "width": 178,
+          "height": 58
+        },
+        {
+          "name": "data-lcos-main-tools",
+          "x": 1472,
+          "y": 1028,
+          "width": 104,
+          "height": 48
+        }
+      ],
+      "viewportTransform": "transform: translate(310.079px, 522.099px) scale(0.336634);",
+      "selected": 1
+    },
+    {
+      "phase": "pointer-held",
+      "requested": {
+        "x": 220,
+        "y": 25
+      },
+      "windows": [
+        {
+          "id": "region-assembly",
+          "x": 219,
+          "y": 88,
+          "width": 640,
+          "height": 648
+        }
+      ],
+      "hud": [
+        {
+          "name": "data-lcos-spatial-navigator-host",
+          "x": 24,
+          "y": 1028,
+          "width": 52,
+          "height": 48
+        },
+        {
+          "name": "data-lcos-shell-project-cluster",
+          "x": 24,
+          "y": 24,
+          "width": 256,
+          "height": 44
+        },
+        {
+          "name": "data-lcos-navigator-island",
+          "x": 752,
+          "y": 24,
+          "width": 96,
+          "height": 48
+        },
+        {
+          "name": "data-lcos-surface-dock",
+          "x": 711,
+          "y": 1018,
+          "width": 178,
+          "height": 58
+        },
+        {
+          "name": "data-lcos-main-tools",
+          "x": 1472,
+          "y": 1028,
+          "width": 104,
+          "height": 48
+        }
+      ],
+      "viewportTransform": "transform: translate(310.079px, 522.099px) scale(0.336634);",
+      "selected": 1
+    },
+    {
+      "phase": "pointer-held",
+      "requested": {
+        "x": 30,
+        "y": 25
+      },
+      "windows": [
+        {
+          "id": "region-assembly",
+          "x": 29,
+          "y": 88,
+          "width": 640,
+          "height": 648
+        }
+      ],
+      "hud": [
+        {
+          "name": "data-lcos-spatial-navigator-host",
+          "x": 24,
+          "y": 1028,
+          "width": 52,
+          "height": 48
+        },
+        {
+          "name": "data-lcos-shell-project-cluster",
+          "x": 24,
+          "y": 24,
+          "width": 256,
+          "height": 44
+        },
+        {
+          "name": "data-lcos-navigator-island",
+          "x": 752,
+          "y": 24,
+          "width": 96,
+          "height": 48
+        },
+        {
+          "name": "data-lcos-surface-dock",
+          "x": 711,
+          "y": 1018,
+          "width": 178,
+          "height": 58
+        },
+        {
+          "name": "data-lcos-main-tools",
+          "x": 1472,
+          "y": 1028,
+          "width": 104,
+          "height": 48
+        }
+      ],
+      "viewportTransform": "transform: translate(310.079px, 522.099px) scale(0.336634);",
+      "selected": 1
+    },
+    {
+      "phase": "pointer-held",
+      "requested": {
+        "x": 350,
+        "y": 340
+      },
+      "windows": [
+        {
+          "id": "region-assembly",
+          "x": 349,
+          "y": 339,
+          "width": 640,
+          "height": 648
+        }
+      ],
+      "hud": [
+        {
+          "name": "data-lcos-spatial-navigator-host",
+          "x": 24,
+          "y": 1028,
+          "width": 52,
+          "height": 48
+        },
+        {
+          "name": "data-lcos-shell-project-cluster",
+          "x": 24,
+          "y": 24,
+          "width": 256,
+          "height": 44
+        },
+        {
+          "name": "data-lcos-navigator-island",
+          "x": 752,
+          "y": 24,
+          "width": 96,
+          "height": 48
+        },
+        {
+          "name": "data-lcos-surface-dock",
+          "x": 711,
+          "y": 1018,
+          "width": 178,
+          "height": 58
+        },
+        {
+          "name": "data-lcos-main-tools",
+          "x": 1472,
+          "y": 1028,
+          "width": 104,
+          "height": 48
+        }
+      ],
+      "viewportTransform": "transform: translate(310.079px, 522.099px) scale(0.336634);",
+      "selected": 1
+    },
+    {
+      "phase": "drag-ended",
+      "windows": [
+        {
+          "id": "region-assembly",
+          "x": 349,
+          "y": 339,
+          "width": 640,
+          "height": 648
+        }
+      ],
+      "hud": [
+        {
+          "name": "data-lcos-spatial-navigator-host",
+          "x": 24,
+          "y": 1028,
+          "width": 52,
+          "height": 48
+        },
+        {
+          "name": "data-lcos-shell-project-cluster",
+          "x": 24,
+          "y": 24,
+          "width": 256,
+          "height": 44
+        },
+        {
+          "name": "data-lcos-navigator-island",
+          "x": 752,
+          "y": 24,
+          "width": 96,
+          "height": 48
+        },
+        {
+          "name": "data-lcos-surface-dock",
+          "x": 711,
+          "y": 1018,
+          "width": 178,
+          "height": 58
+        },
+        {
+          "name": "data-lcos-main-tools",
+          "x": 1472,
+          "y": 1028,
+          "width": 104,
+          "height": 48
+        }
+      ],
+      "viewportTransform": "transform: translate(310.079px, 522.099px) scale(0.336634);",
+      "selected": 1
+    },
+    {
+      "phase": "selected-a",
+      "selected": "越过边界，\n看见下一座"
+    },
+    {
+      "phase": "wrong-reader-cite",
+      "selectedBefore": "越过边界，\n看见下一座",
+      "selectedAfter": "越过边界，\n看见下一座",
+      "note": "先选中正文再摘录（未选中时不生成无来源引用）",
+      "traces": [],
+      "draft": "0"
+    },
+    {
+      "phase": "correct-reader-cite",
+      "selectedBefore": "越过边界，\n看见下一座",
+      "note": "摘录已作为引用进入 Composer 草稿（带 Source Trace）",
+      "traces": [
+        "Source Trace · artifact:artifact-statement@revision-statement-initial"
+      ],
+      "draft": "1"
+    }
+  ],
+  "errors": []
+}

@@ -1,0 +1,3233 @@
+diff --git a/apps/web-gen2/src/host/projectionFacade.ts b/apps/web-gen2/src/host/projectionFacade.ts
+index c5445fd..87f4a66 100644
+--- a/apps/web-gen2/src/host/projectionFacade.ts
++++ b/apps/web-gen2/src/host/projectionFacade.ts
+@@ -315,10 +315,11 @@ export class Gen2Host {
+     fileRecordById: ReadonlyMap<string, { mimeType: string; size: number }>,
+   ): Promise<string | undefined> {
+     if (fileRecordId === undefined) return undefined;
+-    if (!TEXT_PREVIEW_KINDS.has(kind)) return undefined;
++    const record = fileRecordById.get(fileRecordId);
++    const textLike = TEXT_PREVIEW_KINDS.has(kind) || record?.mimeType.startsWith('text/') === true;
++    if (!textLike) return undefined;
+     const cached = this.previewCache.get(fileRecordId);
+     if (cached !== undefined) return cached === '' ? undefined : cached;
+-    const record = fileRecordById.get(fileRecordId);
+     if (record !== undefined && record.size > MAX_PREVIEW_BYTES) return undefined;
+     try {
+       const preview = buildContentPreview(
+diff --git a/apps/web-gen2/src/index.ts b/apps/web-gen2/src/index.ts
+index fd2e00b..8595631 100644
+--- a/apps/web-gen2/src/index.ts
++++ b/apps/web-gen2/src/index.ts
+@@ -57,6 +57,11 @@ export type { HuabuCanvasHostExtension, HuabuCanvasHostOverlay } from './integra
+ export { resolvePresentationDensity, projectScreenSize, SCREEN_DENSITY_THRESHOLDS } from './presentation/nodePresentation.js';
+ export type { PresentationDensity, InteractionPhase, ExplicitPresentationMode, NodePresentationInput } from './presentation/nodePresentation.js';
+ 
++export { resolveLcosNodeHostPresentation, resolveLcosInitialGeometryPreset } from './presentation/nodeHostPresentation.js';
++export type { LcosHostSurface, LcosNodeHostPresentation, LcosInitialGeometryPreset } from './presentation/nodeHostPresentation.js';
++export { stableGlythHash, resolveGlythIdentity, resolveGlythPresentation, GLYTH_SHAPE_KEYS, GLYTH_IDENTITY_TONES } from './presentation/glythPresentation.js';
++export type { GlythShapeKey, GlythIdentityTone, GlythPresentationPose, GlythIdentity, GlythPresentationInput } from './presentation/glythPresentation.js';
++
+ export { pointerModifiersOf, isAdditiveSelection, isReferencePick, isAdditiveSelectionExclusively } from './interaction/pointerIntent.js';
+ export type { PointerModifiers } from './interaction/pointerIntent.js';
+ 
+diff --git a/apps/web-gen2/src/presentation/glythPresentation.ts b/apps/web-gen2/src/presentation/glythPresentation.ts
+new file mode 100644
+index 0000000..9256fbf
+--- /dev/null
++++ b/apps/web-gen2/src/presentation/glythPresentation.ts
+@@ -0,0 +1,66 @@
++import type { InteractionPhase } from './nodePresentation.js';
++
++export const GLYTH_SHAPE_KEYS = [
++  'blob',
++  'pebble',
++  'squircle',
++  'tablet',
++  'wedge',
++  'hex',
++  'cloud',
++  'teardrop',
++] as const;
++export type GlythShapeKey = (typeof GLYTH_SHAPE_KEYS)[number];
++
++export const GLYTH_IDENTITY_TONES = ['ink', 'violet', 'teal', 'amber'] as const;
++export type GlythIdentityTone = (typeof GLYTH_IDENTITY_TONES)[number];
++
++export type GlythPresentationPose = 'idle' | 'listening' | 'working' | 'curious';
++
++export interface GlythIdentity {
++  readonly shape: GlythShapeKey;
++  readonly tone: GlythIdentityTone;
++}
++
++export interface GlythPresentationInput {
++  readonly active?: boolean;
++  readonly waiting?: boolean;
++  readonly phase?: InteractionPhase;
++}
++
++export function stableGlythHash(value: string): number {
++  let hash = 2166136261;
++  for (let index = 0; index < value.length; index += 1) {
++    hash ^= value.charCodeAt(index);
++    hash = Math.imul(hash, 16777619);
++  }
++  return hash >>> 0;
++}
++
++/**
++ * Donor mechanism retained for a future Figma identity-variant surface.
++ * Current Main production visual is deliberately NOT driven by this function:
++ * Figma 5388:119 only authorizes the dark blob anchor today.
++ */
++export function resolveGlythIdentity(conversationId: string): GlythIdentity {
++  const hash = stableGlythHash(conversationId);
++  return {
++    shape: GLYTH_SHAPE_KEYS[hash % GLYTH_SHAPE_KEYS.length] ?? 'blob',
++    tone: GLYTH_IDENTITY_TONES[(hash >>> 3) % GLYTH_IDENTITY_TONES.length] ?? 'ink',
++  };
++}
++
++export function resolveGlythPresentation(
++  input: GlythPresentationInput,
++): GlythPresentationPose {
++  if (input.waiting === true) return 'curious';
++  if (input.active === true) return 'working';
++  if (
++    input.phase === 'selected' ||
++    input.phase === 'hover' ||
++    input.phase === 'editing'
++  ) {
++    return 'listening';
++  }
++  return 'idle';
++}
+diff --git a/apps/web-gen2/src/presentation/nodeHostPresentation.ts b/apps/web-gen2/src/presentation/nodeHostPresentation.ts
+new file mode 100644
+index 0000000..863a962
+--- /dev/null
++++ b/apps/web-gen2/src/presentation/nodeHostPresentation.ts
+@@ -0,0 +1,71 @@
++import {
++  resolveVisualFamily,
++  type LcosVisualFamily,
++  type VisualFamilySource,
++} from './visualFamily.js';
++
++export type LcosHostSurface = 'transparent' | 'paper' | 'media' | 'card';
++
++/**
++ * Presentation-only instructions consumed by the existing Huabu NodeWrapper.
++ * They never own selection/drag/resize/geometry truth; they only remove native
++ * chrome that would visually contradict an LCOS replacement body.
++ */
++export interface LcosNodeHostPresentation {
++  readonly surface: LcosHostSurface;
++  readonly showAiBadge: boolean;
++  readonly allowOverflow: boolean;
++}
++
++/**
++ * Initial geometry for a NEW projection only. Existing bound Huabu nodes keep
++ * their persisted geometry forever. For adopted LCOS species this Figma preset
++ * is the new-projection visual contract; Core ArtifactView size is only fallback
++ * when no exact preset exists.
++ */
++export interface LcosInitialGeometryPreset {
++  readonly width: number;
++  readonly height: number;
++  readonly figmaNodeId: string;
++}
++
++export interface LcosGeometryPresentationSource extends VisualFamilySource {
++  readonly displayMode?: 'card' | 'thumbnail' | 'compact' | string;
++}
++
++const HOST_BY_FAMILY: Readonly<
++  Partial<Record<LcosVisualFamily, LcosNodeHostPresentation>>
++> = {
++  text: { surface: 'transparent', showAiBadge: false, allowOverflow: true },
++  document: { surface: 'paper', showAiBadge: false, allowOverflow: true },
++  image: { surface: 'media', showAiBadge: false, allowOverflow: true },
++  audio: { surface: 'transparent', showAiBadge: false, allowOverflow: true },
++  conversation: { surface: 'transparent', showAiBadge: false, allowOverflow: true },
++};
++
++const GEOMETRY_BY_FAMILY: Readonly<
++  Partial<Record<LcosVisualFamily, LcosInitialGeometryPreset>>
++> = {
++  text: { width: 385, height: 142, figmaNodeId: '5388:102' },
++  document: { width: 206, height: 154, figmaNodeId: '5388:106' },
++  image: { width: 410, height: 273, figmaNodeId: '5388:98' },
++  audio: { width: 171, height: 96, figmaNodeId: '5388:121' },
++  conversation: { width: 121, height: 142, figmaNodeId: '5388:118' },
++};
++
++export function resolveLcosNodeHostPresentation(
++  source: VisualFamilySource,
++): LcosNodeHostPresentation | undefined {
++  const family = resolveVisualFamily(source);
++  return HOST_BY_FAMILY[family];
++}
++
++export function resolveLcosInitialGeometryPreset(
++  source: LcosGeometryPresentationSource,
++): LcosInitialGeometryPreset | undefined {
++  const family = resolveVisualFamily(source);
++  if (family === 'image' && source.displayMode === 'thumbnail') {
++    return { width: 205, height: 127, figmaNodeId: '5388:111' };
++  }
++  return GEOMETRY_BY_FAMILY[family];
++}
+diff --git a/apps/web-gen2/src/spatial/projectToSpaceProjection.ts b/apps/web-gen2/src/spatial/projectToSpaceProjection.ts
+index b9d2dff..d7faf18 100644
+--- a/apps/web-gen2/src/spatial/projectToSpaceProjection.ts
++++ b/apps/web-gen2/src/spatial/projectToSpaceProjection.ts
+@@ -14,6 +14,7 @@ import { HuabuRfsClient } from './huabuRfsClient.js';
+ import { ProjectionBinding, ProjectionBindingRegistry, type EntityType } from './projectionBinding.js';
+ import type { AgentCreatableNodeType, Point, NodeGeometrySize } from './types.js';
+ import { resolveVisualFamily, huabuNodeTypeForFamily, type VisualFamilySource } from '../presentation/visualFamily.js';
++import { resolveLcosInitialGeometryPreset } from '../presentation/nodeHostPresentation.js';
+ import {
+   PLACEMENT_GAP,
+   placeNewNodesIncrementally,
+@@ -22,16 +23,22 @@ import {
+   type PlacementItem,
+ } from './gen1Placement.js';
+ 
+-export type ArtifactKind = 'text' | 'image' | 'pdf' | 'file';
++export type ArtifactKind = 'text' | 'markdown' | 'image' | 'pdf' | 'file' | 'presentation' | 'other';
+ 
+ export interface ArtifactProjectionSource {
+   projectId: string;
+   artifactId: string;
+   kind: ArtifactKind;
+   title: string;
++  /** Authoritative FileRecord MIME when available; used only for presentation family resolution. */
++  mimeType?: string;
++  /** Core managed fact when available. */
++  managed?: boolean;
++  /** Existing Core presentation mode; used only to choose an adopted initial morphology size. */
++  displayMode?: 'card' | 'thumbnail' | 'compact' | string;
+   /**
+-   * R2：Core 侧的呈现尺寸（来自 `ArtifactView.size` / `displayMode`）。
+-   * 有就给 Huabu 作为创建尺寸，让 Main 首屏形成真实主次分组；没有则用机械默认值。
++   * Core 侧已有呈现尺寸（ArtifactView）。新 LCOS 投影若存在 Figma exact preset，
++   * 由 preset 决定初始 footprint；未采用的 family 才回退此尺寸。既有 Huabu geometry 永不改写。
+    */
+   size?: NodeGeometrySize;
+ }
+@@ -47,12 +54,13 @@ export interface SpaceEntityProjectionSource {
+   sourceKind?: string;
+   sourceRunId?: string;
+   managed?: boolean;
++  displayMode?: 'card' | 'thumbnail' | 'compact' | string;
+   /**
+    * 创建时的机械落位（T1-G05：正式落位由 Huabu layout owner 接管；此处只是
+    * 避免同一批投影全部叠在 DEFAULT_POSITION）。binding 复用时忽略。
+    */
+   position?: Point;
+-  /** R2：创建尺寸（来自 ArtifactView / displayMode）；缺省用机械默认值。 */
++  /** 创建尺寸 fallback（Figma exact preset 优先；既有 binding 永不改写）。 */
+   size?: NodeGeometrySize;
+ }
+ 
+@@ -61,14 +69,36 @@ const DEFAULT_SIZE: NodeGeometrySize = { width: 280, height: 220 };
+ /** 落位用的确定性尺寸（与 DEFAULT_SIZE 同值；NodeGeometrySize 允许 'auto'，落位需要纯数字）。 */
+ const DEFAULT_PLACEMENT_SIZE: PlacementItem = { width: 280, height: 220 };
+ 
+-/** 该投影源请求的落位尺寸（缺省用机械默认值；'auto' 不参与落位）。 */
++function figmaInitialSize(input: SpaceEntityProjectionSource): PlacementItem | undefined {
++  const preset = resolveLcosInitialGeometryPreset({
++    entityType: input.entityType,
++    artifactKind: input.kind,
++    ...(input.mimeType === undefined ? {} : { mimeType: input.mimeType }),
++    ...(input.sourceKind === undefined ? {} : { sourceKind: input.sourceKind }),
++    ...(input.sourceRunId === undefined ? {} : { sourceRunId: input.sourceRunId }),
++    ...(input.managed === undefined ? {} : { managed: input.managed }),
++    ...(input.displayMode === undefined ? {} : { displayMode: input.displayMode }),
++  });
++  return preset ? { width: preset.width, height: preset.height } : undefined;
++}
++
++/**
++ * New-projection size precedence: exact LCOS/Figma family preset > explicit
++ * Core ArtifactView size > mechanical fallback. The current Figma adoption is
++ * the visual contract for a newly projected LCOS species; Core view size remains
++ * a fallback for families that do not yet have an exact adopted geometry.
++ * Existing bindings never call
++ * this creation path, so persisted user geometry is never rewritten.
++ */
+ function requestedPlacementSize(input: SpaceEntityProjectionSource): PlacementItem {
+   const width = input.size?.width;
+   const height = input.size?.height;
+-  return {
+-    width: typeof width === 'number' && width > 0 ? width : DEFAULT_PLACEMENT_SIZE.width,
+-    height: typeof height === 'number' && height > 0 ? height : DEFAULT_PLACEMENT_SIZE.height,
+-  };
++  const figma = figmaInitialSize(input);
++  if (figma) return figma;
++  if (typeof width === 'number' && width > 0 && typeof height === 'number' && height > 0) {
++    return { width, height };
++  }
++  return DEFAULT_PLACEMENT_SIZE;
+ }
+ 
+ /** 同一 canvas 上的投影批次队列（见 ProjectToSpaceProjection.projectBatch 注释）。 */
+@@ -138,6 +168,9 @@ export class ProjectToSpaceProjection {
+         entityId: artifact.artifactId,
+         kind: artifact.kind,
+         title: artifact.title,
++        ...(artifact.mimeType === undefined ? {} : { mimeType: artifact.mimeType }),
++        ...(artifact.managed === undefined ? {} : { managed: artifact.managed }),
++        ...(artifact.displayMode === undefined ? {} : { displayMode: artifact.displayMode }),
+         ...(artifact.size === undefined ? {} : { size: artifact.size }),
+       })),
+     );
+@@ -202,15 +235,11 @@ export class ProjectToSpaceProjection {
+       const lattice: PlacementItem = {
+         width: Math.max(
+           DEFAULT_PLACEMENT_SIZE.width,
+-          ...newcomers.map((target) =>
+-            typeof target.input.size?.width === 'number' ? target.input.size.width : 0,
+-          ),
++          ...newcomers.map((target) => requestedPlacementSize(target.input).width),
+         ),
+         height: Math.max(
+           DEFAULT_PLACEMENT_SIZE.height,
+-          ...newcomers.map((target) =>
+-            typeof target.input.size?.height === 'number' ? target.input.size.height : 0,
+-          ),
++          ...newcomers.map((target) => requestedPlacementSize(target.input).height),
+         ),
+       };
+       const placementObstacles: PlacementBounds[] = [...obstacles];
+@@ -355,7 +384,7 @@ export class ProjectToSpaceProjection {
+             nodeType,
+             data: { label: input.title },
+             position: input.position === undefined ? { ...DEFAULT_POSITION } : { ...input.position },
+-            size: input.size === undefined ? { ...DEFAULT_SIZE } : { ...input.size },
++            size: { ...(figmaInitialSize(input) ?? input.size ?? DEFAULT_SIZE) },
+           },
+         ],
+       },
+diff --git a/apps/web-gen2/src/spatial/reconciliationRunner.ts b/apps/web-gen2/src/spatial/reconciliationRunner.ts
+index c673fc9..2c38c72 100644
+--- a/apps/web-gen2/src/spatial/reconciliationRunner.ts
++++ b/apps/web-gen2/src/spatial/reconciliationRunner.ts
+@@ -49,11 +49,13 @@ function projectionArtifactKind(kind: unknown): ArtifactProjectionSource['kind']
+     case 'pdf':
+       return 'pdf';
+     case 'presentation':
+-      return 'file';
++      return 'presentation';
+     case 'markdown':
+-      return 'text';
++      return 'markdown';
++    case 'other':
++      return 'other';
+     default:
+-      return 'text'; // 'other' / unknown -> text (safe default)
++      return 'other';
+   }
+ }
+ 
+@@ -61,12 +63,20 @@ function artifactSource(
+   projectId: string,
+   value: unknown,
+   viewSize?: { width: number; height: number },
++  mimeType?: string,
++  displayMode?: string,
+ ): ArtifactProjectionSource | undefined {
+   if (typeof value === 'string') {
+     return value ? { projectId, artifactId: value, kind: 'text', title: value } : undefined;
+   }
+   if (typeof value === 'object' && value !== null) {
+-    const artifact = value as { id?: unknown; artifactId?: unknown; title?: unknown; kind?: unknown };
++    const artifact = value as {
++      id?: unknown;
++      artifactId?: unknown;
++      title?: unknown;
++      kind?: unknown;
++      managed?: unknown;
++    };
+     const artifactId = String(artifact.id ?? artifact.artifactId ?? '');
+     if (!artifactId) return undefined;
+     const title = typeof artifact.title === 'string' && artifact.title.trim() !== '' ? artifact.title : artifactId;
+@@ -75,6 +85,9 @@ function artifactSource(
+       artifactId,
+       kind: projectionArtifactKind(artifact.kind),
+       title,
++      ...(mimeType === undefined || mimeType === '' ? {} : { mimeType }),
++      ...(typeof artifact.managed === 'boolean' ? { managed: artifact.managed } : {}),
++      ...(displayMode === undefined || displayMode === '' ? {} : { displayMode }),
+       // R2：带上 Core 侧呈现尺寸（ArtifactView.size），让 Main 首屏有真实主次分组。
+       ...(viewSize === undefined ? {} : { size: viewSize }),
+     };
+@@ -83,24 +96,55 @@ function artifactSource(
+ }
+ 
+ /**
+- * R2：artifact → Core 呈现尺寸。取该 artifact 的第一个 ArtifactView 的 size
+- * （Core 是 view 几何的 owner；这里只读，不发明尺寸）。
++ * artifact → 第一个 Core ArtifactView 的呈现事实。这里只读取 size/displayMode，
++ * 供新投影选择 Figma exact preset 或未采用 family 的 fallback；Huabu 仍是持久 geometry owner。
+  */
+-function viewSizeByArtifact(
+-  views: readonly { artifactId?: unknown; size?: { width?: unknown; height?: unknown } }[],
+-): ReadonlyMap<string, { width: number; height: number }> {
+-  const map = new Map<string, { width: number; height: number }>();
++function viewPresentationByArtifact(
++  views: readonly {
++    artifactId?: unknown;
++    size?: { width?: unknown; height?: unknown };
++    displayMode?: unknown;
++  }[],
++): ReadonlyMap<string, {
++  size: { width: number; height: number };
++  displayMode?: string;
++}> {
++  const map = new Map<string, { size: { width: number; height: number }; displayMode?: string }>();
+   for (const view of views) {
+     const artifactId = String(view.artifactId ?? '');
+     const width = Number(view.size?.width);
+     const height = Number(view.size?.height);
+     if (artifactId === '' || !Number.isFinite(width) || !Number.isFinite(height)) continue;
+-    if (width <= 0 || height <= 0) continue;
+-    if (!map.has(artifactId)) map.set(artifactId, { width, height });
++    if (width <= 0 || height <= 0 || map.has(artifactId)) continue;
++    const displayMode = String(view.displayMode ?? '');
++    map.set(artifactId, {
++      size: { width, height },
++      ...(displayMode === '' ? {} : { displayMode }),
++    });
+   }
+   return map;
+ }
+ 
++function mimeTypeByArtifact(graph: {
++  artifactRevisions?: readonly { artifactId?: unknown; fileRecordId?: unknown }[];
++  fileRecords?: readonly { id?: unknown; mimeType?: unknown }[];
++}): ReadonlyMap<string, string> {
++  const recordMime = new Map<string, string>();
++  for (const record of graph.fileRecords ?? []) {
++    const id = String(record.id ?? '');
++    const mime = String(record.mimeType ?? '');
++    if (id !== '' && mime !== '') recordMime.set(id, mime);
++  }
++  const out = new Map<string, string>();
++  for (const revision of graph.artifactRevisions ?? []) {
++    const artifactId = String(revision.artifactId ?? '');
++    const fileRecordId = String(revision.fileRecordId ?? '');
++    const mime = recordMime.get(fileRecordId);
++    if (artifactId !== '' && mime !== undefined && !out.has(artifactId)) out.set(artifactId, mime);
++  }
++  return out;
++}
++
+ function toSemanticRelation(relation: {
+   id: unknown;
+   kind: unknown;
+@@ -130,17 +174,29 @@ export class ReconciliationRunner {
+     const { projectId, canvasId } = this.deps;
+     const graph = await this.deps.projects.getProjectGraph(projectId);
+     const rawArtifacts = Array.isArray(graph?.artifacts) ? (graph.artifacts as unknown[]) : [];
+-    const viewSizes = viewSizeByArtifact(
++    const viewPresentation = viewPresentationByArtifact(
+       (Array.isArray(graph?.artifactViews) ? graph.artifactViews : []) as readonly {
+         artifactId?: unknown;
+         size?: { width?: unknown; height?: unknown };
++        displayMode?: unknown;
+       }[],
+     );
++    const mimeTypes = mimeTypeByArtifact({
++      ...(graph?.artifactRevisions === undefined ? {} : { artifactRevisions: graph.artifactRevisions }),
++      ...(graph?.fileRecords === undefined ? {} : { fileRecords: graph.fileRecords }),
++    });
+ 
+     const sources = rawArtifacts
+       .map((a) => {
+         const artifactId = String((a as { id?: unknown; artifactId?: unknown }).id ?? (a as { artifactId?: unknown }).artifactId ?? '');
+-        return artifactSource(projectId, a, viewSizes.get(artifactId));
++        const view = viewPresentation.get(artifactId);
++        return artifactSource(
++          projectId,
++          a,
++          view?.size,
++          mimeTypes.get(artifactId),
++          view?.displayMode,
++        );
+       })
+       .filter((s): s is ArtifactProjectionSource => s !== undefined);
+     const artifactBindings = await this.deps.nodeProjector.projectArtifacts(sources);
+diff --git a/apps/web-gen2/test/figma-projection-geometry.test.ts b/apps/web-gen2/test/figma-projection-geometry.test.ts
+new file mode 100644
+index 0000000..70081fd
+--- /dev/null
++++ b/apps/web-gen2/test/figma-projection-geometry.test.ts
+@@ -0,0 +1,172 @@
++import assert from 'node:assert/strict';
++import { test } from 'node:test';
++
++import { HuabuRfsClient } from '../src/spatial/huabuRfsClient.js';
++import { ProjectToSpaceProjection } from '../src/spatial/projectToSpaceProjection.js';
++import {
++  MemoryBindingStore,
++  ProjectionBindingRegistry,
++} from '../src/spatial/projectionBinding.js';
++
++const BASE = 'http://huabu.test';
++const CANVAS = 'figma-geometry';
++
++function jsonResponse(data: unknown): Response {
++  return new Response(JSON.stringify(data), {
++    status: 200,
++    headers: { 'Content-Type': 'application/json' },
++  });
++}
++
++function makeRfs(onCreate: (node: {
++  nodeType: string;
++  size: { width: number; height: number };
++}) => void): HuabuRfsClient {
++  let nextId = 0;
++  const fetchMock = async (_input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
++    const body = init?.body ? JSON.parse(init.body.toString()) : undefined;
++    if (body?.type === 'GET_SPACE_OUTLINE') {
++      return jsonResponse({
++        type: 'GET_SPACE_OUTLINE',
++        result: { version: 1, bbox: null, nodes: [], edges: [], spatial: { clusters: [] } },
++      });
++    }
++    if (body?.type === 'INSPECT_NODES') {
++      return jsonResponse({
++        type: 'INSPECT_NODES',
++        result: { count: 0, total: 0, truncated: false, nodes: [] },
++      });
++    }
++    const node = body?.commands?.[0]?.nodes?.[0];
++    if (!node) throw new Error(`unexpected RFS body: ${JSON.stringify(body)}`);
++    onCreate(node);
++    nextId += 1;
++    return jsonResponse({
++      canvasId: CANVAS,
++      runId: `run-${nextId}`,
++      fromVersion: nextId - 1,
++      toVersion: nextId,
++      commands: [],
++      results: [
++        {
++          index: 0,
++          type: 'CREATE_NODES',
++          applied: true,
++          nodes: [{ nodeId: `node-${nextId}`, width: node.size.width, height: node.size.height }],
++        },
++      ],
++      revisions: [],
++      affected: { nodeIds: [`node-${nextId}`], edgeIds: [], deletedNodeIds: [], deletedEdgeIds: [] },
++    });
++  };
++  return new HuabuRfsClient({
++    canvasId: CANVAS,
++    baseUrl: BASE,
++    bearerToken: 'token',
++    fetch: fetchMock,
++  });
++}
++
++test('new LCOS projections use exact Figma initial geometry, including image thumbnail variant', async () => {
++  const created: { nodeType: string; size: { width: number; height: number } }[] = [];
++  const bindings = new ProjectionBindingRegistry(new MemoryBindingStore());
++  const projector = new ProjectToSpaceProjection(makeRfs((node) => created.push(node)), bindings);
++
++  await projector.projectArtifacts([
++    {
++      projectId: 'p1',
++      artifactId: 'image-main',
++      kind: 'image',
++      title: 'Main image',
++      displayMode: 'card',
++      size: { width: 360, height: 260 },
++    },
++    {
++      projectId: 'p1',
++      artifactId: 'image-thumb',
++      kind: 'image',
++      title: 'Material image',
++      displayMode: 'thumbnail',
++      size: { width: 240, height: 160 },
++    },
++    {
++      projectId: 'p1',
++      artifactId: 'brand-text',
++      kind: 'other',
++      mimeType: 'text/plain',
++      title: 'Brand statement',
++    },
++    {
++      projectId: 'p1',
++      artifactId: 'audio',
++      kind: 'other',
++      mimeType: 'audio/wav',
++      title: 'Ambient audio',
++    },
++  ]);
++
++  assert.deepEqual(created.map((entry) => entry.size), [
++    { width: 410, height: 273 },
++    { width: 205, height: 127 },
++    { width: 385, height: 142 },
++    { width: 171, height: 96 },
++  ]);
++  assert.deepEqual(created.map((entry) => entry.nodeType), ['image', 'image', 'note', 'audio']);
++});
++
++test('existing binding keeps persisted Huabu geometry instead of reapplying Figma preset', async () => {
++  const bindings = new ProjectionBindingRegistry(new MemoryBindingStore());
++  await bindings.bind({
++    projectId: 'p1',
++    canvasId: CANVAS,
++    spatialKind: 'node',
++    spatialId: 'persisted-image',
++    entityType: 'artifact',
++    entityId: 'image-main',
++  });
++  let createCount = 0;
++  const fetchMock = async (_input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
++    const body = init?.body ? JSON.parse(init.body.toString()) : undefined;
++    if (body?.type === 'INSPECT_NODES') {
++      return jsonResponse({
++        type: 'INSPECT_NODES',
++        result: {
++          count: 1,
++          total: 1,
++          truncated: false,
++          nodes: [
++            {
++              id: 'persisted-image',
++              type: 'image',
++              filename: 'image.json',
++              position: { x: 10, y: 20 },
++              absolutePosition: { x: 10, y: 20 },
++              size: { width: 250, height: 180 },
++            },
++          ],
++        },
++      });
++    }
++    createCount += 1;
++    throw new Error(`unexpected create: ${JSON.stringify(body)}`);
++  };
++  const rfs = new HuabuRfsClient({
++    canvasId: CANVAS,
++    baseUrl: BASE,
++    bearerToken: 'token',
++    fetch: fetchMock,
++  });
++  const projector = new ProjectToSpaceProjection(rfs, bindings);
++  const result = await projector.projectArtifacts([
++    {
++      projectId: 'p1',
++      artifactId: 'image-main',
++      kind: 'image',
++      title: 'Main image',
++      displayMode: 'card',
++    },
++  ]);
++
++  assert.equal(result[0]?.spatialId, 'persisted-image');
++  assert.equal(createCount, 0, 'existing node must never be resized/recreated by Figma preset reconciliation');
++});
+diff --git a/apps/web-gen2/test/glyth-presentation.test.ts b/apps/web-gen2/test/glyth-presentation.test.ts
+new file mode 100644
+index 0000000..a5b6648
+--- /dev/null
++++ b/apps/web-gen2/test/glyth-presentation.test.ts
+@@ -0,0 +1,19 @@
++import assert from 'node:assert/strict';
++import { test } from 'node:test';
++
++import {
++  resolveGlythIdentity,
++  resolveGlythPresentation,
++} from '../src/presentation/glythPresentation.js';
++
++test('Glyth donor identity is deterministic but remains presentation-only', () => {
++  assert.deepEqual(resolveGlythIdentity('conversation-1'), resolveGlythIdentity('conversation-1'));
++  assert.notEqual(resolveGlythIdentity('conversation-1').shape, undefined);
++});
++
++test('Glyth pose uses real waiting/active facts before local attention', () => {
++  assert.equal(resolveGlythPresentation({ waiting: true, active: true, phase: 'selected' }), 'curious');
++  assert.equal(resolveGlythPresentation({ active: true, phase: 'selected' }), 'working');
++  assert.equal(resolveGlythPresentation({ phase: 'selected' }), 'listening');
++  assert.equal(resolveGlythPresentation({ phase: 'rest' }), 'idle');
++});
+diff --git a/apps/web-gen2/test/node-host-presentation.test.ts b/apps/web-gen2/test/node-host-presentation.test.ts
+new file mode 100644
+index 0000000..5226374
+--- /dev/null
++++ b/apps/web-gen2/test/node-host-presentation.test.ts
+@@ -0,0 +1,57 @@
++import assert from 'node:assert/strict';
++import { test } from 'node:test';
++
++import {
++  resolveLcosInitialGeometryPreset,
++  resolveLcosNodeHostPresentation,
++} from '../src/presentation/nodeHostPresentation.js';
++
++test('Figma Main exact geometry presets map only authoritative visual families', () => {
++  assert.deepEqual(resolveLcosInitialGeometryPreset({ entityType: 'conversation' }), {
++    width: 121,
++    height: 142,
++    figmaNodeId: '5388:118',
++  });
++  assert.deepEqual(resolveLcosInitialGeometryPreset({ entityType: 'artifact', artifactKind: 'image' }), {
++    width: 410,
++    height: 273,
++    figmaNodeId: '5388:98',
++  });
++  assert.deepEqual(
++    resolveLcosInitialGeometryPreset({
++      entityType: 'artifact',
++      artifactKind: 'image',
++      displayMode: 'thumbnail',
++    }),
++    { width: 205, height: 127, figmaNodeId: '5388:111' },
++  );
++  assert.deepEqual(resolveLcosInitialGeometryPreset({ entityType: 'artifact', artifactKind: 'markdown' }), {
++    width: 206,
++    height: 154,
++    figmaNodeId: '5388:106',
++  });
++  assert.deepEqual(resolveLcosInitialGeometryPreset({ entityType: 'artifact', artifactKind: 'other', mimeType: 'text/plain' }), {
++    width: 385,
++    height: 142,
++    figmaNodeId: '5388:102',
++  });
++  assert.deepEqual(resolveLcosInitialGeometryPreset({ entityType: 'artifact', artifactKind: 'other', mimeType: 'audio/wav' }), {
++    width: 171,
++    height: 96,
++    figmaNodeId: '5388:121',
++  });
++});
++
++test('Core-bound LCOS morphology suppresses native wrapper chrome but keeps native fallback undefined', () => {
++  assert.deepEqual(resolveLcosNodeHostPresentation({ entityType: 'conversation' }), {
++    surface: 'transparent',
++    showAiBadge: false,
++    allowOverflow: true,
++  });
++  assert.deepEqual(resolveLcosNodeHostPresentation({ entityType: 'artifact', artifactKind: 'image' }), {
++    surface: 'media',
++    showAiBadge: false,
++    allowOverflow: true,
++  });
++  assert.equal(resolveLcosNodeHostPresentation({}), undefined);
++});
+diff --git a/huabu/apps/web/src/components/Nodes/NodeWrapper.tsx b/huabu/apps/web/src/components/Nodes/NodeWrapper.tsx
+index 478a9e6..5e33ff0 100644
+--- a/huabu/apps/web/src/components/Nodes/NodeWrapper.tsx
++++ b/huabu/apps/web/src/components/Nodes/NodeWrapper.tsx
+@@ -49,6 +49,7 @@ import { useIsNotMouse } from '@/hooks/useInputMode.ts';
+ import { useMultiSelectModifierHeld } from '@/hooks/useMultiSelectModifier.ts';
+ import { useNodeLOD } from '@/hooks/useNodeLOD.ts';
+ import { shouldStandDownLegacyNodeToolbar, useCanvasChromeMode } from '@/lcos-seam/chromeModeSlot';
++import { useResolvedNodeHostPresentation } from '@/lcos-seam/nodeBodySlot';
+ import {
+   LcosNodePresentationProvider,
+   resolveInteractionPhase,
+@@ -403,6 +404,16 @@ export const NodeWrapper = memo(
+       return (node?.style?.height as number) || node?.measured?.height || 200;
+     });
+ 
++    // Same binding-aware presentation seam that resolves the replacement body.
++    // It controls only visible host chrome; Huabu still owns mechanics and geometry.
++    const hostPresentation = useResolvedNodeHostPresentation({
++      nodeId: id,
++      nodeType: type,
++      data: data as Readonly<Record<string, unknown>>,
++    });
++    const effectiveAllowOverflow = hostPresentation?.allowOverflow ?? allowOverflow;
++    const nativeSurfaceEnabled = hostPresentation === undefined || hostPresentation.surface === 'card';
++
+     // Deliberately *not* `resolveHeightMode`: this asks whether a layout
+     // height exists to fill, not who owns it. An auto note now carries a
+     // materialized number and must stretch to it exactly like a pinned
+@@ -447,7 +458,9 @@ export const NodeWrapper = memo(
+     // Check if this node was generated by AI
+     const isAIGenerated = data.origin?.type?.startsWith('ai-');
+     const showAIBadge =
+-      isAIGenerated && nodeWidth * zoom >= AI_BADGE_MIN_SCREEN_WIDTH;
++      (hostPresentation?.showAiBadge ?? true) &&
++      isAIGenerated &&
++      nodeWidth * zoom >= AI_BADGE_MIN_SCREEN_WIDTH;
+ 
+     // Compute provenance summary for note nodes (Phase 4 shape).
+     const provenanceSummary = useMemo(() => {
+@@ -648,6 +661,7 @@ export const NodeWrapper = memo(
+     // applies to card-like content nodes; text, sketch, question, and frame
+     // nodes retain their deliberately flat visual language.
+     const hasCardSurface =
++      nativeSurfaceEnabled &&
+       type !== 'text' &&
+       type !== 'sketch' &&
+       type !== 'question' &&
+@@ -736,7 +750,7 @@ export const NodeWrapper = memo(
+             hasCardSurface && 'hover:shadow-sm',
+             hasCardSurface && editing && 'shadow-sm',
+             hasCardSurface && isDragging && 'shadow-md',
+-            !accentTokens && !fillColor && 'bg-transparent',
++            (!nativeSurfaceEnabled || (!accentTokens && !fillColor)) && 'bg-transparent',
+             // Selection outline is rendered as a screen-space HUD overlay
+             // by `<SelectionOutlines />` (Canvas-level), not as a ring on
+             // the node DOM. Mirroring common design tools: clicking a node MUST NOT
+@@ -746,7 +760,7 @@ export const NodeWrapper = memo(
+             // tracks `:hover`, which the overlay cannot observe.
+             !selected && type !== 'sketch' && 'ring-edge-default hover:ring',
+ 
+-            type !== 'sketch' && 'border-3 border-transparent',
++            nativeSurfaceEnabled && type !== 'sketch' && 'border-3 border-transparent',
+             // Question nodes need visible overflow for status badges and progress bar
+             type === 'question' && 'overflow-visible',
+             className,
+@@ -755,19 +769,20 @@ export const NodeWrapper = memo(
+             // Fill priority: explicit override (`fillColor`, used by
+             // QuestionNode) > accent-derived tint > nothing (let the
+             // `bg-transparent` class above show the canvas through).
+-            ...(fillColor
+-              ? { backgroundColor: fillColor }
+-              : accentTokens
+-                ? { backgroundColor: accentTokens.bg }
+-                : {}),
+-            ...(accentTokens && {
+-              borderColor: accentTokens.border,
+-            }),
++            ...(nativeSurfaceEnabled
++              ? fillColor
++                ? { backgroundColor: fillColor }
++                : accentTokens
++                  ? { backgroundColor: accentTokens.bg }
++                  : {}
++              : { backgroundColor: 'transparent', borderColor: 'transparent', boxShadow: 'none' }),
++            ...(nativeSurfaceEnabled && accentTokens ? { borderColor: accentTokens.border } : {}),
+             ...(type === 'question' && {
+               borderColor: 'transparent',
+             }),
+           }}
+           data-lod={renderMode}
++          data-lcos-host-surface={hostPresentation?.surface}
+           onDoubleClick={onDoubleClick}
+           onPointerEnter={() => setHovered(true)}
+           onPointerLeave={() => setHovered(false)}
+@@ -806,6 +821,7 @@ export const NodeWrapper = memo(
+               }
+             >
+               <div
++                data-lcos-ai-badge
+                 className={clsx(
+                   'absolute top-1 right-1 z-10 flex items-center gap-0.5 rounded px-1 py-0.5 text-[10px] leading-none font-medium',
+                   'bg-ai-bg text-ai',
+@@ -875,7 +891,7 @@ export const NodeWrapper = memo(
+ 
+               hasLayoutHeight ? 'min-h-0 flex-1' : 'min-h-0',
+ 
+-              allowOverflow ? 'overflow-visible' : 'overflow-hidden rounded-md',
++              effectiveAllowOverflow ? 'overflow-visible' : 'overflow-hidden rounded-md',
+             )}
+           >
+             {/*
+diff --git a/huabu/apps/web/src/lcos/navigation/LcosActionArc.tsx b/huabu/apps/web/src/lcos/navigation/LcosActionArc.tsx
+index 6912301..02b17d8 100644
+--- a/huabu/apps/web/src/lcos/navigation/LcosActionArc.tsx
++++ b/huabu/apps/web/src/lcos/navigation/LcosActionArc.tsx
+@@ -13,29 +13,49 @@
+ //     否则会与仍在挂载的旧工具条重复；
+ //   - 每个动作都有真实 owner（canvas store / shell store / preview workspace），不写第二套 store。
+ 
+-import { buildLcosNodeCommands, descriptorFor, primaryNodeCommands } from '@local-creative-os/web-gen2';
+-import { X } from 'lucide-react';
+-import { useEffect, useMemo, useState } from 'react';
+-
++import {
++  buildLcosNodeCommands,
++  descriptorFor,
++  primaryNodeCommands,
++  type EntityType,
++  type LcosNodeCommand,
++} from '@local-creative-os/web-gen2';
+ import { ACCENT_PALETTE } from '@huabu/shared';
++import type { Node } from '@xyflow/react';
++import {
++  ChevronsUpDown,
++  Ellipsis,
++  Expand,
++  FileText,
++  Link2,
++  Maximize2,
++  Move,
++  Sparkles,
++  TextCursorInput,
++  Trash2,
++} from 'lucide-react';
++import { useEffect, useMemo, useState } from 'react';
+ 
+-
+-import { CanvasFloatingPopover } from '@/components/Common/CanvasFloatingPopover';
++import {
++  CanvasFloatingPopover,
++  type CanvasAnchorRect,
++} from '@/components/Common/CanvasFloatingPopover';
+ import { useHeightMode } from '@/components/Nodes/shared/height/useHeightMode';
+ import { LCOS_STANDDOWN_TOOLBAR_TYPES } from '@/lcos-seam/chromeModeSlot';
+ import useCanvasStore from '@/store/canvasStore';
+ import { openPreviewNode } from '@/store/previewWorkspace/actions';
+ 
++import {
++  ACTION_ARC_HIT_INSET,
++  ACTION_ARC_HIT_SIZE,
++  ACTION_ARC_VISUAL_SIZE,
++  resolveActionArcGeometry,
++  type ActionArcPoint,
++} from './actionArcGeometry';
+ import { useLcosReferenceStore } from '../lcosReferenceState';
+ import { useLcosShellStore } from '../shell/lcosShellStore';
+ import { lcosGlassStyle, lcosTokens } from '../ui/lcosTokens';
+ 
+-
+-import type { CanvasAnchorRect } from '@/components/Common/CanvasFloatingPopover';
+-import type { LcosNodeCommand } from '@local-creative-os/web-gen2';
+-import type { EntityType } from '@local-creative-os/web-gen2';
+-import type { Node } from '@xyflow/react';
+-
+ const ARC_GROUPS = ['进入', '关系', '编辑', '外观', '空间'] as const;
+ 
+ interface NodeBox {
+@@ -60,6 +80,90 @@ function flowBoxOf(node: Node): NodeBox {
+   return { width, height };
+ }
+ 
++function primaryCommandIcon(command: LcosNodeCommand): React.JSX.Element {
++  switch (command.id) {
++    case 'open':
++      return <Sparkles size={17} strokeWidth={1.8} aria-hidden />;
++    case 'reference':
++      return <Link2 size={17} strokeWidth={1.8} aria-hidden />;
++    case 'auto-height':
++      return <ChevronsUpDown size={17} strokeWidth={1.8} aria-hidden />;
++    case 'convert-text':
++      return <TextCursorInput size={17} strokeWidth={1.8} aria-hidden />;
++    case 'convert-note':
++      return <FileText size={17} strokeWidth={1.8} aria-hidden />;
++    case 'open-large':
++      return <Expand size={17} strokeWidth={1.8} aria-hidden />;
++    case 'move-space':
++      return <Move size={17} strokeWidth={1.8} aria-hidden />;
++    case 'fit':
++      return <Maximize2 size={17} strokeWidth={1.8} aria-hidden />;
++    case 'delete':
++      return <Trash2 size={17} strokeWidth={1.8} aria-hidden />;
++    default:
++      return <Sparkles size={17} strokeWidth={1.8} aria-hidden />;
++  }
++}
++
++function ActionArcOrb({
++  point,
++  label,
++  disabledReason,
++  expanded,
++  onClick,
++  children,
++}: {
++  readonly point: ActionArcPoint;
++  readonly label: string;
++  readonly disabledReason?: string;
++  readonly expanded?: boolean;
++  readonly onClick: () => void;
++  readonly children: React.ReactNode;
++}): React.JSX.Element {
++  const disabled = disabledReason !== undefined;
++  return (
++    <button
++      type="button"
++      data-lcos-action-orb-hit
++      aria-label={label}
++      aria-expanded={expanded}
++      disabled={disabled}
++      title={disabledReason ?? label}
++      onClick={onClick}
++      className="grid place-items-center rounded-full bg-transparent p-0 focus-visible:outline-2 focus-visible:outline-offset-2"
++      style={{
++        position: 'absolute',
++        left: point.x - ACTION_ARC_HIT_INSET,
++        top: point.y - ACTION_ARC_HIT_INSET,
++        width: ACTION_ARC_HIT_SIZE,
++        height: ACTION_ARC_HIT_SIZE,
++        outlineColor: lcosTokens.color.accent,
++        cursor: disabled ? 'not-allowed' : 'pointer',
++      }}
++    >
++      <span
++        data-lcos-action-orb
++        style={{
++          display: 'grid',
++          placeItems: 'center',
++          width: ACTION_ARC_VISUAL_SIZE,
++          height: ACTION_ARC_VISUAL_SIZE,
++          borderRadius: 15,
++          background: lcosTokens.actionOrb.background,
++          border: `0.6px solid ${lcosTokens.actionOrb.border}`,
++          boxShadow: lcosTokens.actionOrb.shadow,
++          color: disabled ? lcosTokens.color.muted : lcosTokens.color.text,
++          opacity: disabled ? 0.48 : 1,
++          transform: expanded ? 'scale(0.96)' : undefined,
++          transition: 'transform 120ms ease, opacity 120ms ease',
++        }}
++      >
++        {children}
++      </span>
++    </button>
++  );
++}
++
+ export function LcosActionArc(): React.JSX.Element | null {
+   const nodes = useCanvasStore((s) => s.nodes);
+   const [moreOpen, setMoreOpen] = useState(false);
+@@ -179,49 +283,62 @@ export function LcosActionArc(): React.JSX.Element | null {
+     items: commands.filter((command) => command.group === group).filter((c) => !primary.includes(c)),
+   })).filter((entry) => entry.items.length > 0);
+ 
++  const arcGeometry = resolveActionArcGeometry(primary.length + 1);
++  const arcPoints = arcGeometry.points;
++  const arcMode = arcGeometry.mode;
++  const arcWidth = arcGeometry.width;
++  const arcHeight = arcGeometry.height;
++
+   return (
+     <CanvasFloatingPopover anchor={anchor} open side="top" offset={10}>
+       <div
+         data-lcos-action-arc
+         data-lcos-arc-node={nodeId}
+-        className="pointer-events-auto flex flex-col gap-2"
+-        style={{ ...lcosGlassStyle, padding: 6, maxWidth: 320 }}
++        data-lcos-arc-mode={arcMode}
++        data-figma-node-id="5388:311"
++        className="pointer-events-auto flex flex-col items-start gap-2"
++        style={{ maxWidth: 320 }}
+       >
+-        {/* 近场一排：3 个常规动作 + 更多 */}
+-        <div className="flex items-center gap-1">
+-          {primary.map((command) => (
+-            <button
++        {/* Figma 5388:311：每个动作是独立 30×30 玻璃圆，沿节点近场弧线展开。 */}
++        <div
++          data-lcos-action-arc-orbit
++          className="relative"
++          style={{ width: arcWidth, height: arcHeight }}
++        >
++          {primary.map((command, index) => (
++            <ActionArcOrb
+               key={command.id}
+-              type="button"
+-              data-lcos-arc-primary={command.id}
+-              title={command.label}
+-              aria-label={command.label}
++              point={arcPoints[index]}
++              label={command.label}
++              disabledReason={command.disabledReason}
+               onClick={() => dispatch(command)}
+-              className="rounded-full px-2.5 text-[11px] font-medium"
+-              style={{ minHeight: 32, color: lcosTokens.color.text }}
+             >
+-              {command.label}
+-            </button>
++              <span data-lcos-arc-primary={command.id}>{primaryCommandIcon(command)}</span>
++            </ActionArcOrb>
+           ))}
+-          <button
+-            type="button"
+-            data-lcos-arc-more
+-            aria-expanded={moreOpen}
+-            title="更多命令"
++          <ActionArcOrb
++            point={arcPoints[primary.length]}
++            label={moreOpen ? '收起更多命令' : '更多命令'}
++            expanded={moreOpen}
+             onClick={() => setMoreOpen((v) => !v)}
+-            className="ml-1 flex items-center justify-center rounded-full px-2.5 text-[11px] font-medium"
+-            style={{
+-              minHeight: 32,
+-              background: lcosTokens.color.raised,
+-              color: lcosTokens.color.text,
+-            }}
+           >
+-            {moreOpen ? <X className="h-3.5 w-3.5" /> : '更多'}
+-          </button>
++            <span data-lcos-arc-more>
++              <Ellipsis size={17} strokeWidth={1.8} aria-hidden />
++            </span>
++          </ActionArcOrb>
+         </div>
+ 
+         {moreOpen && (
+-          <div data-lcos-arc-panel className="flex max-h-[46vh] flex-col gap-1.5 overflow-y-auto">
++          <div
++            data-lcos-arc-panel
++            className="flex max-h-[46vh] flex-col gap-1.5 overflow-y-auto"
++            style={{
++              ...lcosGlassStyle,
++              width: 280,
++              maxWidth: 'min(320px, 78vw)',
++              padding: 6,
++            }}
++          >
+             {grouped.map(({ group, items }) => (
+               <div key={group} data-lcos-command-group={group} className="flex flex-col gap-0.5">
+                 <span className="px-1 text-[10px]" style={{ color: lcosTokens.color.muted }}>
+diff --git a/huabu/apps/web/src/lcos/navigation/actionArcGeometry.test.ts b/huabu/apps/web/src/lcos/navigation/actionArcGeometry.test.ts
+new file mode 100644
+index 0000000..f786b1e
+--- /dev/null
++++ b/huabu/apps/web/src/lcos/navigation/actionArcGeometry.test.ts
+@@ -0,0 +1,35 @@
++import { describe, expect, it } from 'vitest';
++
++import {
++  ACTION_ARC_HIT_SIZE,
++  ACTION_ARC_VISUAL_SIZE,
++  EXTENDED_ACTION_ARC_FOUR,
++  FIGMA_ACTION_ARC_THREE,
++  resolveActionArcGeometry,
++} from './actionArcGeometry';
++
++describe('Action Arc geometry', () => {
++  it('keeps Figma 5388:311 three-orb geometry exact', () => {
++    expect(FIGMA_ACTION_ARC_THREE).toEqual([
++      { x: 0, y: 0 },
++      { x: 46, y: 6 },
++      { x: 52, y: 52 },
++    ]);
++    expect(resolveActionArcGeometry(3)).toMatchObject({
++      mode: 'figma-three',
++      width: 82,
++      height: 82,
++    });
++    expect(ACTION_ARC_VISUAL_SIZE).toBe(30);
++    expect(ACTION_ARC_HIT_SIZE).toBe(44);
++  });
++
++  it('separately validates the four-orb production adaptation', () => {
++    expect(EXTENDED_ACTION_ARC_FOUR).toHaveLength(4);
++    expect(resolveActionArcGeometry(4)).toMatchObject({
++      mode: 'extended-four',
++      width: 102,
++      height: 100,
++    });
++  });
++});
+diff --git a/huabu/apps/web/src/lcos/navigation/actionArcGeometry.ts b/huabu/apps/web/src/lcos/navigation/actionArcGeometry.ts
+new file mode 100644
+index 0000000..0bd837e
+--- /dev/null
++++ b/huabu/apps/web/src/lcos/navigation/actionArcGeometry.ts
+@@ -0,0 +1,59 @@
++export interface ActionArcPoint {
++  readonly x: number;
++  readonly y: number;
++}
++
++export type ActionArcMode = 'figma-three' | 'extended-four' | 'adaptive';
++
++export const ACTION_ARC_VISUAL_SIZE = 30;
++export const ACTION_ARC_HIT_SIZE = 44;
++export const ACTION_ARC_HIT_INSET =
++  (ACTION_ARC_HIT_SIZE - ACTION_ARC_VISUAL_SIZE) / 2;
++
++/** Figma 5388:311 exact three-orb geometry: frame 82×82. */
++export const FIGMA_ACTION_ARC_THREE: readonly ActionArcPoint[] = [
++  { x: 0, y: 0 },
++  { x: 46, y: 6 },
++  { x: 52, y: 52 },
++] as const;
++
++/** Product adaptation: T3-A02 3 primary actions + More, preserving the same arc language. */
++export const EXTENDED_ACTION_ARC_FOUR: readonly ActionArcPoint[] = [
++  { x: 0, y: 0 },
++  { x: 42, y: 4 },
++  { x: 72, y: 30 },
++  { x: 56, y: 70 },
++] as const;
++
++const ADAPTIVE_POINTS: Readonly<Record<1 | 2, readonly ActionArcPoint[]>> = {
++  1: [{ x: 0, y: 0 }],
++  2: [
++    { x: 0, y: 0 },
++    { x: 44, y: 14 },
++  ],
++};
++
++export interface ActionArcGeometry {
++  readonly mode: ActionArcMode;
++  readonly points: readonly ActionArcPoint[];
++  readonly width: number;
++  readonly height: number;
++}
++
++export function resolveActionArcGeometry(itemCount: number): ActionArcGeometry {
++  const count = Math.max(1, Math.min(4, Math.trunc(itemCount))) as 1 | 2 | 3 | 4;
++  const points =
++    count === 3
++      ? FIGMA_ACTION_ARC_THREE
++      : count === 4
++        ? EXTENDED_ACTION_ARC_FOUR
++        : ADAPTIVE_POINTS[count];
++  const mode: ActionArcMode =
++    count === 3 ? 'figma-three' : count === 4 ? 'extended-four' : 'adaptive';
++  return {
++    mode,
++    points,
++    width: Math.max(...points.map((point) => point.x)) + ACTION_ARC_VISUAL_SIZE,
++    height: Math.max(...points.map((point) => point.y)) + ACTION_ARC_VISUAL_SIZE,
++  };
++}
+diff --git a/huabu/apps/web/src/lcos/nodes/GlythNodeBody.tsx b/huabu/apps/web/src/lcos/nodes/GlythNodeBody.tsx
+index 10fa9d4..080a992 100644
+--- a/huabu/apps/web/src/lcos/nodes/GlythNodeBody.tsx
++++ b/huabu/apps/web/src/lcos/nodes/GlythNodeBody.tsx
+@@ -1,34 +1,74 @@
+-// GlythNodeBody — Conversation/Glyth 物种 body（Figma Glyth 语义；T7-A01 donor 机制）。
+-// 双击（无 binding 不响应）打开同一 Conversation 的 Professional Work View；
+-// 单击仍是选择（selection 归 Huabu，body 不抢）。打开是 local UI intent（shellStore.openWindow），
+-// 不创建第二 conversation/session truth。
++// GlythNodeBody — Conversation/Glyth exact Main anchor.
++// Figma visual truth: 5388:118 group 121×142; 5388:119 body 92×92 at x=9/y=0.
++// Donor geometry is retained, but production Main stays on the single dark blob
++// authorized by current Figma until identity variants are explicitly designed.
+ 
+-import { useLcosReferenceStore } from '../lcosReferenceState';
+-import { LcosSpeciesBodyContent, SPECIES_ACCENT } from './LcosSpeciesBodies';
++import {
++  resolveGlythPresentation,
++  type GlythPresentationPose,
++} from '@local-creative-os/web-gen2';
++
++import { useLcosNodePresentation } from '@/lcos-seam/nodePresentation';
++
++import {
++  GLYTH_CENTER,
++  GLYTH_IDLE_EYE_PATHS,
++  GLYTH_SHAPE_PATHS,
++  GLYTH_VIEW_BOX,
++} from './glythGeometry';
+ import { useLcosDensity } from './useLcosDensity';
++import { useLcosReferenceStore } from '../lcosReferenceState';
+ import { useLcosShellStore } from '../shell/lcosShellStore';
+ import { lcosTokens } from '../ui/lcosTokens';
+ 
+ import type { CanvasNodeBodySlotInput } from '@/lcos-seam/types';
+ import type { JSX } from 'react';
+ 
++function titleOf(data: Readonly<Record<string, unknown>>): string {
++  const raw = data.label ?? data.title;
++  return typeof raw === 'string' && raw.trim() !== '' ? raw.trim() : 'Glyth';
++}
++
++function bodyPoseTransform(pose: GlythPresentationPose): string | undefined {
++  switch (pose) {
++    case 'listening': return 'translate(0 -2)';
++    case 'working': return `rotate(-2 ${GLYTH_CENTER} ${GLYTH_CENTER})`;
++    case 'curious': return `rotate(4 ${GLYTH_CENTER} ${GLYTH_CENTER})`;
++    case 'idle':
++    default: return undefined;
++  }
++}
++
+ export function GlythNodeBody(input: CanvasNodeBodySlotInput): JSX.Element {
+   const density = useLcosDensity();
+-  const data = input.data as Readonly<Record<string, unknown>> | undefined;
+-  const raw = data?.label ?? data?.title;
+-  const title = typeof raw === 'string' && raw.trim() !== '' ? raw.trim() : '未命名';
++  const presentation = useLcosNodePresentation();
++  const ref = useLcosReferenceStore((state) => state.nodeEntityRefs.get(input.nodeId));
++  const title = titleOf(input.data as Readonly<Record<string, unknown>>);
++  const pose = resolveGlythPresentation({
++    ...(ref?.descriptor?.active === undefined ? {} : { active: ref.descriptor.active }),
++    ...(ref?.descriptor?.waiting === undefined ? {} : { waiting: ref.descriptor.waiting }),
++    ...(presentation?.phase === undefined ? {} : { phase: presentation.phase }),
++  });
++  const isMark = density === 'mark';
++  const size = isMark ? 34 : 92;
++  const left = isMark ? (121 - size) / 2 : 9;
++  const top = isMark ? 16 : 0;
+ 
+   const openWorkView = (): void => {
+-    const ref = useLcosReferenceStore.getState().nodeEntityRefs.get(input.nodeId);
+-    if (!ref || ref.entityType !== 'conversation') return; // 无 binding 不响应
++    if (!ref || ref.entityType !== 'conversation') return;
+     useLcosShellStore.getState().openWindow('conversation', `工作台 · ${title}`, ref.entityId);
+   };
+ 
+   return (
+     <div
+       data-lcos-species-body
++      data-lcos-species="glyth"
+       data-lcos-glyth-body
++      data-lcos-glyth-shape="blob"
++      data-lcos-glyth-tone="ink"
++      data-lcos-glyth-pose={pose}
+       data-lcos-density={density}
++      data-figma-node-id="5388:118"
+       onDoubleClick={(event) => {
+         event.stopPropagation();
+         openWorkView();
+@@ -41,17 +81,54 @@ export function GlythNodeBody(input: CanvasNodeBodySlotInput): JSX.Element {
+       }}
+       role="button"
+       tabIndex={0}
+-      aria-label={`${title} · 双击打开会话工作台`}
+-      className="flex h-full w-full flex-col overflow-hidden"
+-      style={{
+-        background: lcosTokens.color.surface,
+-        border: `1px solid ${SPECIES_ACCENT.glyth}2E`,
+-        borderRadius: lcosTokens.radius.cardSmall,
+-        boxShadow: lcosTokens.shadow.default,
+-        padding: 10,
+-      }}
++      aria-label={`${title} · ${pose} · 双击打开会话工作台`}
++      className="relative h-full w-full overflow-visible"
++      style={{ background: 'transparent', border: 0, boxShadow: 'none' }}
+     >
+-      <LcosSpeciesBodyContent species="glyth" title={title} density={density} />
++      <svg
++        data-lcos-glyth-vector
++        data-figma-node-id="5388:119"
++        viewBox={GLYTH_VIEW_BOX}
++        width={size}
++        height={size}
++        preserveAspectRatio="xMidYMid meet"
++        aria-hidden
++        style={{
++          position: 'absolute',
++          left,
++          top,
++          display: 'block',
++          overflow: 'visible',
++          color: lcosTokens.color.text,
++        }}
++      >
++        <g transform={bodyPoseTransform(pose)}>
++          <path d={GLYTH_SHAPE_PATHS.blob} fill="currentColor" />
++          <g data-lcos-glyth-eyes fill={lcosTokens.color.textOnInverse}>
++            <path d={GLYTH_IDLE_EYE_PATHS[0]} />
++            <path d={GLYTH_IDLE_EYE_PATHS[1]} />
++          </g>
++        </g>
++      </svg>
++      {!isMark && (
++        <span
++          data-lcos-glyth-label
++          className="truncate"
++          style={{
++            position: 'absolute',
++            left: 20,
++            top: 108,
++            width: 88,
++            color: lcosTokens.color.muted,
++            fontFamily: "'DM Sans', sans-serif",
++            fontSize: 11,
++            lineHeight: '18px',
++            fontWeight: 400,
++          }}
++        >
++          {title}
++        </span>
++      )}
+     </div>
+   );
+-}
+\ No newline at end of file
++}
+diff --git a/huabu/apps/web/src/lcos/nodes/LcosSpeciesBodies.test.tsx b/huabu/apps/web/src/lcos/nodes/LcosSpeciesBodies.test.tsx
+new file mode 100644
+index 0000000..e471013
+--- /dev/null
++++ b/huabu/apps/web/src/lcos/nodes/LcosSpeciesBodies.test.tsx
+@@ -0,0 +1,60 @@
++// S2b Figma Main source morphology — pure view contract tests.
++// These tests verify exact Figma adoption markers and, more importantly, that
++// Core visual families no longer collapse into one generic card.
++
++import { renderToStaticMarkup } from 'react-dom/server';
++import { describe, expect, it } from 'vitest';
++
++import { LcosSpeciesBodyContent } from './LcosSpeciesBodies';
++
++function renderSource(
++  visualFamily: 'text' | 'document' | 'image' | 'audio',
++  options: { preview?: string; mediaSrc?: string; durationSec?: number; worldWidth?: number } = {},
++): string {
++  return renderToStaticMarkup(
++    <LcosSpeciesBodyContent
++      species="source"
++      title="测试对象"
++      density="reading"
++      secondary="真实次级行"
++      preview={options.preview}
++      mediaSrc={options.mediaSrc}
++      durationSec={options.durationSec}
++      worldWidth={options.worldWidth}
++      visualFamily={visualFamily}
++    />,
++  );
++}
++
++describe('LcosSpeciesBodies / Main source morphology', () => {
++  it('text → Figma 5388:102 typography object, not generic material card', () => {
++    const html = renderSource('text', { preview: '越过边界，看见下一座山。' });
++    expect(html).toContain('data-lcos-source-visual="text"');
++    expect(html).toContain('data-figma-node-id="5388:102"');
++    expect(html).toContain('越过边界，看见下一座山。');
++    expect(html).not.toContain('>材料<');
++  });
++
++  it('document → Figma 5388:106 paper morphology with real preview', () => {
++    const html = renderSource('document', { preview: '不是为了抵达更远，而是重新发现自己。' });
++    expect(html).toContain('data-lcos-source-visual="document"');
++    expect(html).toContain('data-figma-node-id="5388:106"');
++    expect(html).toContain('不是为了抵达更远');
++  });
++
++  it('image → Figma 5388:98 media-first morphology and real src', () => {
++    const html = renderSource('image', { mediaSrc: 'https://example.test/ridge.png' });
++    expect(html).toContain('data-lcos-source-visual="image"');
++    expect(html).toContain('data-figma-node-id="5388:98"');
++    expect(html).toContain('src="https://example.test/ridge.png"');
++  });
++
++  it('audio → Figma 5388:121 waveform morphology, explicitly decorative', () => {
++    const html = renderSource('audio', { durationSec: 38 });
++    expect(html).toContain('data-lcos-source-visual="audio"');
++    expect(html).toContain('data-figma-node-id="5388:121"');
++    expect(html).toContain('data-lcos-waveform="exact"');
++    expect(html).toContain('00:38');
++    expect((html.match(/data-lcos-wave-bar/g) ?? [])).toHaveLength(64);
++  });
++});
+diff --git a/huabu/apps/web/src/lcos/nodes/LcosSpeciesBodies.tsx b/huabu/apps/web/src/lcos/nodes/LcosSpeciesBodies.tsx
+index 295daf2..45b1048 100644
+--- a/huabu/apps/web/src/lcos/nodes/LcosSpeciesBodies.tsx
++++ b/huabu/apps/web/src/lcos/nodes/LcosSpeciesBodies.tsx
+@@ -3,11 +3,15 @@
+ // 所有 body 只接收中性 slot input（nodeId/nodeType/data），不直连 Core/Huabu store（只读 data）。
+ // unknown 不静默降级——显示诊断原因。
+ 
+-import { NODE_SPECIES_LABEL, type LcosNodeSpecies } from '@local-creative-os/web-gen2';
++import {
++  NODE_SPECIES_LABEL,
++  resolveVisualFamily,
++  type LcosNodeSpecies,
++  type LcosVisualFamily,
++} from '@local-creative-os/web-gen2';
+ import {
+   Bookmark,
+   CircleDot,
+-  FileText,
+   Folder,
+   Grip,
+   Puzzle,
+@@ -16,12 +20,15 @@ import {
+   Sparkles,
+ } from 'lucide-react';
+ 
++import { useLcosNodePresentation } from '@/lcos-seam/nodePresentation';
++import type { CanvasNodeBodySlotInput } from '@/lcos-seam/types';
+ 
++import { SourceMorphology } from './source/SourceMorphology';
+ import { useLcosDensity } from './useLcosDensity';
+ import { useLcosReferenceStore } from '../lcosReferenceState';
++import { useLcosShellStore } from '../shell/lcosShellStore';
+ import { lcosTokens } from '../ui/lcosTokens';
+ 
+-import type { CanvasNodeBodySlotInput } from '@/lcos-seam/types';
+ import type { ComponentType, JSX } from 'react';
+ 
+ /** 物种 → 主识别色（边缘/角标；浓度统一收敛，不作为唯一区分）。 */
+@@ -51,8 +58,8 @@ function SpeciesChip({ label, accent }: { label: string; accent: string }): JSX.
+       className="inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-medium leading-none"
+       style={{
+         color: accent,
+-        background: `${accent}14`,
+-        border: `1px solid ${accent}33`,
++        background: `color-mix(in srgb, ${accent} 10%, transparent)`,
++        border: `1px solid color-mix(in srgb, ${accent} 20%, transparent)`,
+         minHeight: 18,
+       }}
+     >
+@@ -91,10 +98,18 @@ export function LcosSpeciesBodyContent({
+   density,
+   secondary,
+   preview,
++  visualFamily = 'unknown',
++  mediaSrc,
++  durationSec,
++  worldWidth,
+ }: {
+   species: LcosNodeSpecies;
+   title: string;
+   density: 'mark' | 'summary' | 'working' | 'reading';
++  visualFamily?: LcosVisualFamily;
++  mediaSrc?: string;
++  durationSec?: number;
++  worldWidth?: number;
+   /**
+    * 真实次级行（来自 Core 元数据：kind/受管/可用性/revision）。
+    * 有真实事实就显示真实事实；没有就退回该物种的**形态说明**（说清这是什么，不假装有数据）。
+@@ -106,33 +121,22 @@ export function LcosSpeciesBodyContent({
+    */
+   preview?: string;
+ }): JSX.Element {
+-  const root = { display: 'flex', flexDirection: 'column' as const, gap: 6, width: '100%', minWidth: 0 };
++  const root = { display: 'flex', flex: 1, minHeight: 0, flexDirection: 'column' as const, gap: 6, width: '100%', minWidth: 0 };
+   const meta = (fallback: string): JSX.Element => <MetaLine text={secondary ?? fallback} />;
+-  // 正文预览只接在**有正文语义**的物种上；当前只有 source（Core 文本/文档族落到这里）。
+-  const bodyPreview = (): JSX.Element | null =>
+-    density !== 'mark' && preview !== undefined && preview !== '' ? (
+-      <span
+-        data-lcos-node-preview
+-        className="line-clamp-4 text-[11px] leading-relaxed"
+-        style={{ color: lcosTokens.color.muted }}
+-      >
+-        {preview}
+-      </span>
+-    ) : null;
+-
+   switch (species) {
+     case 'source':
+       return (
+-        <div style={root} data-lcos-species="source">
+-          {density !== 'mark' && <SpeciesChip label="材料" accent={SPECIES_ACCENT.source} />}
+-          <div className="flex items-start gap-2">
+-            <FileText className="mt-0.5 h-4 w-4 shrink-0" style={{ color: SPECIES_ACCENT.source }} aria-hidden />
+-            <div className="flex min-w-0 flex-1 flex-col gap-1.5">
+-              <TitleLine text={title} density={density} />
+-              {bodyPreview()}
+-              {density !== 'mark' && meta('来源文件 · 只读原始')}
+-            </div>
+-          </div>
++        <div style={root} data-lcos-species="source" data-lcos-visual-family={visualFamily}>
++          <SourceMorphology
++            family={visualFamily}
++            title={title}
++            secondary={secondary}
++            preview={preview}
++            mediaSrc={mediaSrc}
++            durationSec={durationSec}
++            density={density}
++            worldWidth={worldWidth}
++          />
+         </div>
+       );
+ 
+@@ -289,30 +293,70 @@ function LcosSpeciesBody({
+   input: CanvasNodeBodySlotInput;
+ }): JSX.Element {
+   const density = useLcosDensity();
++  const presentation = useLcosNodePresentation();
+   const title = titleOf(input.data as Readonly<Record<string, unknown>> | undefined);
+-  // R2 真实内容位：次级行与正文预览都来自 host 在 reconcile 后派生的 Core 事实
+-  // （kind/受管/可用性/revision + FileRecord 正文），读不到就不显示，不编造。
+-  const secondary = useLcosReferenceStore((s) => s.nodeEntityRefs.get(input.nodeId)?.descriptor?.secondaryLine);
+-  const preview = useLcosReferenceStore((s) => s.nodeEntityRefs.get(input.nodeId)?.descriptor?.preview);
++  // R2 真实内容位：次级行与正文预览都来自 host 在 reconcile 后派生的 Core 事实。
++  // S2b 再用同一份 metadata 解析 visual family；不按标题猜，也不新造物种 enum。
++  const ref = useLcosReferenceStore((s) => s.nodeEntityRefs.get(input.nodeId));
++  const descriptor = ref?.descriptor;
++  const visualFamily = species === 'source'
++    ? resolveVisualFamily({
++        entityType: ref?.entityType,
++        artifactKind: descriptor?.artifactKind,
++        mimeType: descriptor?.mimeType,
++        sourceKind: descriptor?.sourceKind,
++        managed: descriptor?.managed,
++      })
++    : 'unknown';
++  const presentationMediaSrc = input.data.presentationMediaSrc;
++  const rawMediaSrc = input.data.src;
++  // Native media callers may contribute a browser-fetchable URL as an ephemeral
++  // presentation fact. If they do not, already-fetchable external/data/blob URLs
++  // remain usable; bare Huabu artifact keys are deliberately NOT guessed here.
++  const mediaSrc =
++    typeof presentationMediaSrc === 'string' && presentationMediaSrc !== ''
++      ? presentationMediaSrc
++      : typeof rawMediaSrc === 'string' && /^(?:https?:|data:|blob:)/.test(rawMediaSrc)
++        ? rawMediaSrc
++        : undefined;
++  const rawDuration = input.data.presentationDurationSec;
++  const durationSec = typeof rawDuration === 'number' && Number.isFinite(rawDuration) ? rawDuration : undefined;
++  const isFreeformSource = species === 'source';
++
+   return (
+     <div
+       data-lcos-species-body
+       data-lcos-density={density}
+-      className="flex h-full w-full flex-col overflow-hidden"
+-      style={{
+-        background: lcosTokens.color.surface,
+-        border: `1px solid ${SPECIES_ACCENT[species]}2E`,
+-        borderRadius: lcosTokens.radius.cardSmall,
+-        boxShadow: lcosTokens.shadow.default,
+-        padding: 10,
+-      }}
++      data-lcos-visual-family={visualFamily}
++      className={`flex h-full w-full flex-col ${isFreeformSource ? 'overflow-visible' : 'overflow-hidden'}`}
++      onDoubleClick={
++        species === 'source' && ref?.entityType === 'artifact'
++          ? (event) => {
++              event.stopPropagation();
++              useLcosShellStore.getState().openWindow('reader', `阅读 · ${title}`, ref.entityId);
++            }
++          : undefined
++      }
++      style={isFreeformSource
++        ? { background: 'transparent', border: 0, borderRadius: 0, boxShadow: 'none', padding: 0 }
++        : {
++            background: lcosTokens.color.surface,
++            border: `1px solid color-mix(in srgb, ${SPECIES_ACCENT[species]} 18%, transparent)`,
++            borderRadius: lcosTokens.radius.cardSmall,
++            boxShadow: lcosTokens.shadow.default,
++            padding: 10,
++          }}
+     >
+       <LcosSpeciesBodyContent
+         species={species}
+         title={title}
+         density={density}
+-        secondary={secondary}
+-        preview={preview}
++        secondary={descriptor?.secondaryLine}
++        preview={descriptor?.preview}
++        visualFamily={visualFamily}
++        mediaSrc={mediaSrc}
++        durationSec={durationSec}
++        worldWidth={presentation?.worldWidth}
+       />
+     </div>
+   );
+diff --git a/huabu/apps/web/src/lcos/nodes/createLcosNodePresentationSeam.test.tsx b/huabu/apps/web/src/lcos/nodes/createLcosNodePresentationSeam.test.tsx
+index b7e86c5..95d954b 100644
+--- a/huabu/apps/web/src/lcos/nodes/createLcosNodePresentationSeam.test.tsx
++++ b/huabu/apps/web/src/lcos/nodes/createLcosNodePresentationSeam.test.tsx
+@@ -2,6 +2,7 @@
+ // resolve 依赖 reference store（binding）；未绑定 → native fallback（undefined）；
+ // late binding 通知 → 组件重解析（reactive）。
+ 
++import { describeProjectedEntity } from '@local-creative-os/web-gen2';
+ import { beforeEach, describe, expect, it } from 'vitest';
+ 
+ import { useLcosReferenceStore } from '../lcosReferenceState';
+@@ -17,6 +18,9 @@ describe('createLcosNodePresentationSeam', () => {
+   it('unbound node → undefined（native fallback，诚实）', () => {
+     const body = SEAM.resolve({ nodeId: 'n-unknown', nodeType: 'note', data: {} });
+     expect(body).toBeUndefined();
++    expect(SEAM.resolve({ nodeId: 'n-image-native', nodeType: 'image', data: { src: 'native.png' } })).toBeUndefined();
++    expect(SEAM.resolve({ nodeId: 'n-audio-native', nodeType: 'audio', data: { src: 'native.webm' } })).toBeUndefined();
++    expect(SEAM.resolveHostPresentation?.({ nodeId: 'n-unknown', nodeType: 'note', data: {} })).toBeUndefined();
+   });
+ 
+   it('conversation binding → glyth body', () => {
+@@ -35,6 +39,50 @@ describe('createLcosNodePresentationSeam', () => {
+     expect(SEAM.resolve({ nodeId: 'n-art', nodeType: 'note', data: {} })).toBeDefined();
+   });
+ 
++  it('Core-bound image/audio native callers → same source body junction', () => {
++    useLcosReferenceStore.getState().registerNodeEntity('n-image-bound', {
++      entityType: 'artifact',
++      entityId: 'a-image',
++      descriptor: describeProjectedEntity({
++        entityType: 'artifact',
++        entityId: 'a-image',
++        title: '山脊 · 主视觉',
++        artifactKind: 'image',
++        mimeType: 'image/png',
++      }),
++    });
++    useLcosReferenceStore.getState().registerNodeEntity('n-audio-bound', {
++      entityType: 'artifact',
++      entityId: 'a-audio',
++      descriptor: describeProjectedEntity({
++        entityType: 'artifact',
++        entityId: 'a-audio',
++        title: '山野环境声',
++        artifactKind: 'file',
++        mimeType: 'audio/webm',
++      }),
++    });
++
++    expect(
++      SEAM.resolve({ nodeId: 'n-image-bound', nodeType: 'image', data: { src: 'art_image.png' } }),
++    ).toBeDefined();
++    expect(
++      SEAM.resolve({ nodeId: 'n-audio-bound', nodeType: 'audio', data: {} }),
++    ).toBeDefined();
++  });
++
++  it('Core binding resolves host chrome from the same seam', () => {
++    useLcosReferenceStore.getState().registerNodeEntity('n-glyth-host', {
++      entityType: 'conversation',
++      entityId: 'c-host',
++    });
++    expect(SEAM.resolveHostPresentation?.({ nodeId: 'n-glyth-host', nodeType: 'note', data: {} })).toEqual({
++      surface: 'transparent',
++      showAiBadge: false,
++      allowOverflow: true,
++    });
++  });
++
+   it('bizarre entityType binding → native（不静默降级为其它物种）', () => {
+     useLcosReferenceStore.getState().registerNodeEntity('n-x', { entityType: 'mystery', entityId: 'x' });
+     expect(SEAM.resolve({ nodeId: 'n-x', nodeType: 'note', data: {} })).toBeUndefined();
+diff --git a/huabu/apps/web/src/lcos/nodes/createLcosNodePresentationSeam.ts b/huabu/apps/web/src/lcos/nodes/createLcosNodePresentationSeam.ts
+index f6d0965..4e7319e 100644
+--- a/huabu/apps/web/src/lcos/nodes/createLcosNodePresentationSeam.ts
++++ b/huabu/apps/web/src/lcos/nodes/createLcosNodePresentationSeam.ts
+@@ -9,7 +9,7 @@
+ // 诚实回退：未绑定 / 物种不在注册表 → undefined（native body），不静默降级成别的物种。
+ // reactive：store 变更时 notify，late binding 就位后原位换 body（同节点 geometry 不变）。
+ 
+-import { resolveNodeSpeciesFromFacts } from '@local-creative-os/web-gen2';
++import { resolveLcosNodeHostPresentation, resolveNodeSpeciesFromFacts } from '@local-creative-os/web-gen2';
+ 
+ import { useLcosReferenceStore } from '../lcosReferenceState';
+ import { lcosNodeCardRegistry } from './lcosNodeCardRegistry';
+@@ -34,6 +34,18 @@ export function createLcosNodePresentationSeam(): CanvasNodeBodySeam {
+       if (card === undefined) return undefined; // 未注册 → native（诚实回退）
+       return card;
+     },
++    resolveHostPresentation(input: CanvasNodeBodySlotInput) {
++      const ref = useLcosReferenceStore.getState().nodeEntityRefs.get(input.nodeId);
++      if (!ref) return undefined;
++      const descriptor = ref.descriptor;
++      return resolveLcosNodeHostPresentation({
++        entityType: ref.entityType,
++        ...(descriptor?.artifactKind === undefined ? {} : { artifactKind: descriptor.artifactKind }),
++        ...(descriptor?.mimeType === undefined ? {} : { mimeType: descriptor.mimeType }),
++        ...(descriptor?.sourceKind === undefined ? {} : { sourceKind: descriptor.sourceKind }),
++        ...(descriptor?.managed === undefined ? {} : { managed: descriptor.managed }),
++      });
++    },
+     subscribe(listener: () => void) {
+       return useLcosReferenceStore.subscribe(listener);
+     },
+diff --git a/huabu/apps/web/src/lcos/nodes/glythGeometry.test.ts b/huabu/apps/web/src/lcos/nodes/glythGeometry.test.ts
+new file mode 100644
+index 0000000..96cfb6c
+--- /dev/null
++++ b/huabu/apps/web/src/lcos/nodes/glythGeometry.test.ts
+@@ -0,0 +1,26 @@
++import { GLYTH_SHAPE_KEYS } from '@local-creative-os/web-gen2';
++import { describe, expect, it } from 'vitest';
++
++import {
++  GLYTH_IDLE_EYE_PATHS,
++  GLYTH_SHAPE_FACES,
++  GLYTH_SHAPE_PATHS,
++  GLYTH_VIEW_BOX,
++} from './glythGeometry';
++
++describe('Glyth donor geometry', () => {
++  it('contains exactly the eight shapes approved by the donor contract', () => {
++    expect(Object.keys(GLYTH_SHAPE_PATHS)).toEqual([...GLYTH_SHAPE_KEYS]);
++    expect(Object.keys(GLYTH_SHAPE_FACES)).toEqual([...GLYTH_SHAPE_KEYS]);
++  });
++
++  it('keeps vector paths + Figma-size-independent viewBox', () => {
++    expect(GLYTH_VIEW_BOX).toBe('-15 -15 259 259');
++    for (const shape of GLYTH_SHAPE_KEYS) {
++      expect(GLYTH_SHAPE_PATHS[shape].startsWith('M')).toBe(true);
++      expect(GLYTH_SHAPE_PATHS[shape].length).toBeGreaterThan(100);
++    }
++    expect(GLYTH_IDLE_EYE_PATHS).toHaveLength(2);
++    expect(GLYTH_IDLE_EYE_PATHS.every((path) => path.startsWith('M') && path.endsWith('Z'))).toBe(true);
++  });
++});
+diff --git a/huabu/apps/web/src/lcos/nodes/glythGeometry.ts b/huabu/apps/web/src/lcos/nodes/glythGeometry.ts
+new file mode 100644
+index 0000000..14c171b
+--- /dev/null
++++ b/huabu/apps/web/src/lcos/nodes/glythGeometry.ts
+@@ -0,0 +1,54 @@
++// Glyth vector geometry — DIRECT LIFT from the user-provided donor package.
++//
++// Provenance:
++//   package: LCOS_GEN2_前端源码Donor精选包_20260914.zip
++//   source: 04_BLOUB_AND_GLYTH/grok_icon_verified_replica/geometry-data.js
++//   donor contract: 40_Glyth_Final_Renderer_Donor_and_Motion_Contract_v1.md
++//
++// Only the 8 shapes explicitly approved by the contract are included here.
++// The renderer remains LCOS-owned; no donor scheduler, pointer loop or domain
++// state is copied into production.
++
++import type { GlythShapeKey } from '@local-creative-os/web-gen2';
++
++export const GLYTH_VIEW_BOX = '-15 -15 259 259';
++export const GLYTH_CENTER = 114.2705;
++
++export interface GlythFacePlacement {
++  readonly x: number;
++  readonly y: number;
++  readonly sx: number;
++  readonly sy: number;
++  readonly eye: number;
++}
++
++export const GLYTH_SHAPE_PATHS: Readonly<Record<GlythShapeKey, string>> = {
++  "blob": "M228.541 114.228C228.541 130.133 225.184 145.994 218.738 160.534C212.674 174.217 203.904 186.669 193.065 196.988C155.933 232.34 99.497 238.596 55.5255 212.24C45.097 205.99 35.6851 198.072 27.7451 188.866C19.1926 178.953 12.3686 167.569 7.65781 155.351C2.60712 142.264 0 128.257 0 114.228C0 98.3219 3.35751 82.4611 9.80315 67.9215C15.8672 54.2382 24.6377 41.7862 35.4767 31.4668C72.6081 -3.88483 129.044 -10.1413 173.016 16.2153C183.444 22.4653 192.856 30.3829 200.796 39.5896C209.349 49.5018 216.173 60.8859 220.883 73.1037C225.934 86.1906 228.541 100.198 228.541 114.228Z",
++  "pebble": "M228.11 115.24C228.26 117.02 228.36 118.81 228.42 120.6C228.49 122.4 228.51 124.19 228.48 126C228.46 127.8 228.39 129.6 228.27 131.41C228.16 133.22 228 135.02 227.78 136.83C227.58 138.64 227.32 140.45 227.01 142.24C226.71 144.04 226.34 145.84 225.93 147.62C225.53 149.41 225.07 151.19 224.56 152.95C224.05 154.72 223.49 156.47 222.87 158.21C222.26 159.95 221.59 161.67 220.87 163.38C220.15 165.08 219.38 166.77 218.56 168.43C217.72 170.09 216.85 171.73 215.92 173.34C214.99 174.95 214.01 176.53 212.98 178.08C211.95 179.63 210.87 181.15 209.73 182.63C208.61 184.12 207.43 185.57 206.2 186.98C204.98 188.38 203.71 189.75 202.39 191.08C201.08 192.41 199.72 193.69 198.33 194.93C196.93 196.17 195.49 197.36 194.02 198.51C192.55 199.65 191.04 200.75 189.5 201.8C187.96 202.84 186.38 203.84 184.78 204.78C183.18 205.73 181.54 206.62 179.9 207.46C178.24 208.31 176.56 209.1 174.86 209.84C173.17 210.57 171.45 211.25 169.73 211.89C167.99 212.52 166.25 213.1 164.5 213.63C162.74 214.15 160.98 214.63 159.2 215.06C157.43 215.48 155.65 215.86 153.87 216.18C152.08 216.52 150.3 216.79 148.52 217.03C146.74 217.26 144.95 217.45 143.17 217.59C141.4 217.75 139.62 217.85 137.85 217.91C136.09 217.97 134.32 217.99 132.56 217.98C130.81 217.96 129.06 217.91 127.33 217.82C125.58 217.74 123.85 217.61 122.14 217.46C120.42 217.31 118.71 217.12 117.01 216.91C115.32 216.7 113.63 216.46 111.96 216.18C110.27 215.92 108.61 215.63 106.95 215.31C105.3 215 103.65 214.65 102.02 214.29C100.38 213.92 98.76 213.53 97.15 213.13C95.52 212.72 93.92 212.3 92.32 211.85C90.72 211.4 89.13 210.94 87.54 210.45C85.96 209.96 84.38 209.45 82.8 208.93C81.24 208.4 79.67 207.85 78.11 207.29C76.55 206.72 75 206.13 73.44 205.52C71.89 204.92 70.35 204.29 68.8 203.63C67.26 202.98 65.73 202.3 64.2 201.6C62.66 200.9 61.14 200.16 59.63 199.41C58.11 198.66 56.59 197.88 55.09 197.07C53.58 196.26 52.09 195.42 50.59 194.55C49.1 193.69 47.62 192.78 46.16 191.85C44.7 190.92 43.23 189.95 41.79 188.96C40.35 187.95 38.92 186.92 37.52 185.85C36.11 184.78 34.72 183.67 33.35 182.53C31.99 181.39 30.64 180.2 29.32 178.98C28 177.76 26.7 176.5 25.44 175.2C24.17 173.91 22.93 172.57 21.73 171.2C20.54 169.83 19.37 168.42 18.25 166.97C17.12 165.53 16.04 164.05 14.99 162.52C13.96 161.01 12.95 159.45 12.01 157.86C11.05 156.28 10.15 154.66 9.3 153.01C8.46 151.36 7.65 149.68 6.91 147.97C6.17 146.26 5.48 144.53 4.85 142.77C4.22 141.01 3.64 139.24 3.14 137.44C2.63 135.64 2.18 133.82 1.8 131.99C1.41 130.16 1.09 128.3 0.83 126.46C0.57 124.6 0.38 122.73 0.24 120.86C0.12 119 0.05 117.12 0.05 115.24C0.05 113.36 0.12 111.48 0.24 109.62C0.38 107.75 0.57 105.88 0.82 104.02C1.08 102.18 1.39 100.32 1.78 98.49C2.15 96.65 2.59 94.84 3.09 93.03C3.58 91.23 4.14 89.45 4.75 87.68C5.36 85.92 6.02 84.18 6.74 82.46C7.45 80.74 8.22 79.04 9.03 77.38C9.86 75.71 10.72 74.08 11.63 72.46C12.54 70.85 13.49 69.27 14.49 67.72C15.48 66.17 16.52 64.65 17.58 63.15C18.66 61.67 19.76 60.21 20.91 58.79C22.05 57.37 23.23 55.98 24.43 54.62C25.63 53.26 26.87 51.94 28.13 50.64C29.39 49.35 30.68 48.09 31.99 46.86C33.31 45.63 34.64 44.44 36 43.28C37.35 42.11 38.73 40.98 40.12 39.89C41.52 38.79 42.93 37.72 44.36 36.68C45.79 35.64 47.24 34.64 48.71 33.66C50.17 32.69 51.64 31.75 53.13 30.83C54.62 29.92 56.14 29.03 57.65 28.17C59.17 27.32 60.7 26.49 62.25 25.7C63.79 24.89 65.34 24.12 66.92 23.38C68.48 22.64 70.06 21.93 71.66 21.25C73.24 20.57 74.84 19.92 76.46 19.29C78.07 18.67 79.7 18.08 81.33 17.51C82.97 16.96 84.62 16.43 86.27 15.93C87.93 15.42 89.59 14.96 91.27 14.52C92.94 14.09 94.63 13.69 96.32 13.32C98.02 12.96 99.73 12.62 101.43 12.32C103.15 12.02 104.86 11.76 106.59 11.54C108.31 11.31 110.05 11.12 111.78 10.98C113.52 10.82 115.27 10.71 117.01 10.64C118.76 10.58 120.51 10.55 122.26 10.56C124.01 10.57 125.76 10.63 127.52 10.72C129.27 10.82 131.02 10.97 132.77 11.15C134.51 11.33 136.26 11.57 138.01 11.83C139.74 12.1 141.48 12.43 143.2 12.78C144.93 13.15 146.64 13.56 148.35 14.01C150.05 14.46 151.75 14.96 153.42 15.49C155.11 16.04 156.77 16.63 158.43 17.26C160.07 17.89 161.71 18.56 163.32 19.28C164.94 19.99 166.54 20.75 168.11 21.55C169.68 22.36 171.24 23.21 172.76 24.09C174.29 24.98 175.8 25.9 177.27 26.85C178.75 27.82 180.2 28.82 181.62 29.86C183.06 30.89 184.46 31.97 185.82 33.08C187.19 34.18 188.53 35.33 189.84 36.5C191.15 37.67 192.43 38.88 193.67 40.11C194.92 41.35 196.14 42.62 197.32 43.91C198.51 45.21 199.65 46.53 200.78 47.87C201.9 49.22 202.98 50.59 204.04 51.99C205.09 53.38 206.12 54.8 207.1 56.24C208.1 57.68 209.05 59.15 209.98 60.64C210.9 62.12 211.79 63.62 212.65 65.14C213.51 66.67 214.33 68.21 215.12 69.76C215.92 71.33 216.68 72.9 217.4 74.49C218.13 76.08 218.82 77.69 219.48 79.31C220.14 80.93 220.76 82.57 221.35 84.22C221.95 85.87 222.49 87.54 223.02 89.22C223.54 90.9 224.03 92.59 224.48 94.29C224.93 95.99 225.35 97.71 225.72 99.43C226.11 101.16 226.45 102.91 226.76 104.65C227.06 106.4 227.33 108.15 227.55 109.92C227.77 111.69 227.97 113.46 228.11 115.24Z",
++  "squircle": "M228.49 114.27C228.49 123.33 228.47 135.16 228.43 141.46C228.38 147.76 228.32 148.96 228.22 152.06C228.14 155.17 228.03 157.62 227.9 160.07C227.76 162.51 227.62 164.66 227.44 166.73C227.26 168.8 227.07 170.68 226.85 172.5C226.63 174.33 226.39 176.01 226.12 177.65C225.85 179.28 225.57 180.82 225.27 182.31C224.96 183.8 224.62 185.2 224.26 186.56C223.91 187.93 223.54 189.23 223.13 190.49C222.73 191.74 222.31 192.94 221.86 194.11C221.41 195.27 220.93 196.39 220.44 197.48C219.95 198.56 219.43 199.59 218.88 200.61C218.34 201.61 217.76 202.58 217.18 203.52C216.58 204.46 215.96 205.36 215.31 206.23C214.67 207.11 213.99 207.95 213.29 208.76C212.6 209.57 211.87 210.35 211.11 211.11C210.35 211.87 209.57 212.6 208.76 213.29C207.95 213.99 207.11 214.67 206.23 215.31C205.36 215.96 204.46 216.58 203.52 217.18C202.58 217.76 201.61 218.34 200.61 218.88C199.59 219.43 198.56 219.95 197.48 220.44C196.39 220.93 195.27 221.41 194.11 221.86C192.94 222.31 191.74 222.73 190.49 223.13C189.23 223.54 187.93 223.91 186.56 224.26C185.2 224.62 183.8 224.96 182.31 225.27C180.82 225.57 179.28 225.85 177.65 226.12C176.01 226.39 174.33 226.63 172.5 226.85C170.68 227.07 168.8 227.26 166.73 227.44C164.66 227.62 162.51 227.76 160.07 227.9C157.62 228.03 155.17 228.14 152.06 228.22C148.96 228.32 147.76 228.38 141.46 228.43C135.16 228.47 123.33 228.49 114.27 228.49C105.21 228.49 93.39 228.47 87.08 228.43C80.78 228.38 79.58 228.32 76.48 228.22C73.38 228.14 70.92 228.03 68.48 227.9C66.03 227.76 63.9 227.62 61.81 227.44C59.74 227.26 57.87 227.07 56.04 226.85C54.21 226.63 52.53 226.39 50.89 226.12C49.26 225.85 47.72 225.57 46.24 225.27C44.75 224.96 43.34 224.62 41.98 224.26C40.61 223.91 39.31 223.54 38.06 223.13C36.8 222.73 35.6 222.31 34.43 221.86C33.27 221.41 32.15 220.93 31.07 220.44C29.98 219.95 28.95 219.43 27.93 218.88C26.93 218.34 25.96 217.76 25.02 217.18C24.08 216.58 23.18 215.96 22.31 215.31C21.43 214.67 20.59 213.99 19.78 213.29C18.97 212.6 18.19 211.87 17.43 211.11C16.67 210.35 15.95 209.57 15.25 208.76C14.55 207.95 13.87 207.11 13.23 206.23C12.58 205.36 11.96 204.46 11.37 203.52C10.78 202.58 10.2 201.61 9.66 200.61C9.11 199.59 8.6 198.56 8.1 197.48C7.61 196.39 7.13 195.27 6.69 194.11C6.24 192.94 5.81 191.74 5.41 190.49C5.01 189.23 4.63 187.93 4.28 186.56C3.93 185.2 3.59 183.8 3.28 182.31C2.98 180.82 2.69 179.28 2.42 177.65C2.15 176.01 1.92 174.33 1.69 172.5C1.47 170.68 1.28 168.8 1.1 166.73C0.93 164.66 0.78 162.51 0.64 160.07C0.51 157.62 0.4 155.17 0.32 152.06C0.22 148.96 0.16 147.76 0.11 141.46C0.07 135.16 0.05 123.33 0.05 114.27C0.05 105.21 0.07 93.39 0.11 87.08C0.16 80.78 0.22 79.58 0.32 76.48C0.4 73.38 0.51 70.92 0.64 68.48C0.78 66.03 0.93 63.9 1.1 61.81C1.28 59.74 1.47 57.87 1.69 56.04C1.92 54.21 2.15 52.53 2.42 50.89C2.69 49.26 2.98 47.72 3.28 46.24C3.59 44.75 3.93 43.34 4.28 41.98C4.63 40.61 5.01 39.31 5.41 38.06C5.81 36.8 6.24 35.6 6.69 34.43C7.13 33.27 7.61 32.15 8.1 31.07C8.6 29.98 9.11 28.95 9.66 27.93C10.2 26.93 10.78 25.96 11.37 25.02C11.96 24.08 12.58 23.18 13.23 22.31C13.87 21.43 14.55 20.59 15.25 19.78C15.95 18.97 16.67 18.19 17.43 17.43C18.19 16.67 18.97 15.95 19.78 15.25C20.59 14.55 21.43 13.87 22.31 13.23C23.18 12.58 24.08 11.96 25.02 11.37C25.96 10.78 26.93 10.2 27.93 9.66C28.95 9.11 29.98 8.6 31.07 8.1C32.15 7.61 33.27 7.13 34.43 6.69C35.6 6.24 36.8 5.81 38.06 5.41C39.31 5.01 40.61 4.63 41.98 4.28C43.34 3.93 44.75 3.59 46.24 3.28C47.72 2.98 49.26 2.69 50.89 2.42C52.53 2.15 54.21 1.92 56.04 1.69C57.87 1.47 59.74 1.28 61.81 1.1C63.9 0.93 66.03 0.78 68.48 0.64C70.92 0.51 73.38 0.4 76.48 0.32C79.58 0.22 80.78 0.16 87.08 0.11C93.39 0.07 105.21 0.05 114.27 0.05C123.33 0.05 135.16 0.07 141.46 0.11C147.76 0.16 148.96 0.22 152.06 0.32C155.17 0.4 157.62 0.51 160.07 0.64C162.51 0.78 164.66 0.93 166.73 1.1C168.8 1.28 170.68 1.47 172.5 1.69C174.33 1.92 176.01 2.15 177.65 2.42C179.28 2.69 180.82 2.98 182.31 3.28C183.8 3.59 185.2 3.93 186.56 4.28C187.93 4.63 189.23 5.01 190.49 5.41C191.74 5.81 192.94 6.24 194.11 6.69C195.27 7.13 196.39 7.61 197.48 8.1C198.56 8.6 199.59 9.11 200.61 9.66C201.61 10.2 202.58 10.78 203.52 11.37C204.46 11.96 205.36 12.58 206.23 13.23C207.11 13.87 207.95 14.55 208.76 15.25C209.57 15.95 210.35 16.67 211.11 17.43C211.87 18.19 212.6 18.97 213.29 19.78C213.99 20.59 214.67 21.43 215.31 22.31C215.96 23.18 216.58 24.08 217.18 25.02C217.76 25.96 218.34 26.93 218.88 27.93C219.43 28.95 219.95 29.98 220.44 31.07C220.93 32.15 221.41 33.27 221.86 34.43C222.31 35.6 222.73 36.8 223.13 38.06C223.54 39.31 223.91 40.61 224.26 41.98C224.62 43.34 224.96 44.75 225.27 46.24C225.57 47.72 225.85 49.26 226.12 50.89C226.39 52.53 226.63 54.21 226.85 56.04C227.07 57.87 227.26 59.74 227.44 61.81C227.62 63.9 227.76 66.03 227.9 68.48C228.03 70.92 228.14 73.38 228.22 76.48C228.32 79.58 228.38 80.78 228.43 87.08C228.47 93.39 228.49 105.21 228.49 114.27Z",
++  "tablet": "M74.27 40.27L154.27 40.27C195.14 40.27 228.27 73.4 228.27 114.27C228.27 155.14 195.14 188.27 154.27 188.27L74.27 188.27C33.4 188.27 0.27 155.14 0.27 114.27C0.27 73.4 33.4 40.27 74.27 40.27Z",
++  "wedge": "M77.26 42.06Q114.27 -22.05 151.28 42.06L216.15 154.43Q253.17 218.53 179.14 218.53L49.4 218.53Q-24.62 218.53 12.39 154.43Z",
++  "hex": "M217.73 153.04Q217.73 174 199.58 184.48L132.42 223.25Q114.27 233.73 96.12 223.25L28.96 184.48Q10.81 174 10.81 153.04L10.81 75.5Q10.81 54.54 28.96 44.06L96.12 5.29Q114.27 -5.19 132.42 5.29L199.58 44.06Q217.73 54.54 217.73 75.5Z",
++  "cloud": "M221.98 112.32C222.74 113.71 223.45 115.15 224.08 116.59C224.71 118.05 225.28 119.52 225.79 121.02C226.29 122.51 226.72 124.03 227.08 125.56C227.44 127.08 227.73 128.62 227.96 130.17C228.18 131.72 228.33 133.28 228.41 134.83C228.5 136.38 228.51 137.94 228.46 139.5C228.41 141.05 228.29 142.6 228.1 144.14C227.91 145.69 227.65 147.22 227.32 148.73C227 150.25 226.61 151.76 226.15 153.23C225.7 154.72 225.17 156.18 224.59 157.61C224 159.04 223.36 160.46 222.65 161.83C221.94 163.21 221.17 164.56 220.34 165.87C219.51 167.17 218.62 168.45 217.69 169.68C216.74 170.91 215.74 172.11 214.7 173.26C213.64 174.41 212.54 175.51 211.4 176.56C210.25 177.62 209.05 178.62 207.81 179.57C206.57 180.52 205.29 181.42 203.96 182.26C202.63 183.09 201.27 183.88 199.87 184.59C198.47 185.31 197.03 185.97 195.56 186.56C194.1 187.16 192.6 187.68 191.08 188.15C189.56 188.61 188.01 189 186.44 189.32C184.86 189.66 183.27 189.91 181.67 190.09C180.06 190.27 178.44 190.38 176.81 190.41C175.18 190.44 173.53 190.4 171.89 190.27C170.24 190.15 168.58 189.95 166.93 189.68C165.28 189.39 163.49 188.79 161.98 188.58C160.48 188.38 159 188.07 157.89 188.47C156.78 188.86 156.18 190.11 155.28 190.91C154.4 191.69 153.48 192.46 152.53 193.19C151.59 193.93 150.62 194.64 149.63 195.33C148.65 196.01 147.63 196.67 146.6 197.29C145.56 197.92 144.51 198.51 143.43 199.08C142.37 199.63 141.28 200.17 140.16 200.67C139.06 201.17 137.94 201.63 136.79 202.07C135.66 202.5 134.5 202.9 133.34 203.27C132.18 203.64 131 203.97 129.81 204.26C128.62 204.55 127.42 204.82 126.22 205.03C125.02 205.26 123.81 205.44 122.59 205.59C121.37 205.73 120.15 205.85 118.93 205.93C117.7 206 116.48 206.04 115.25 206.04C114.02 206.04 112.8 206 111.57 205.93C110.35 205.85 109.13 205.73 107.91 205.59C106.7 205.44 105.48 205.26 104.28 205.03C103.07 204.82 101.87 204.55 100.68 204.26C99.5 203.97 98.32 203.64 97.16 203.27C96 202.9 94.84 202.5 93.7 202.07C92.56 201.63 91.44 201.17 90.33 200.67C89.22 200.17 88.13 199.63 87.06 199.08C85.99 198.51 84.94 197.92 83.9 197.29C82.87 196.67 81.86 196.01 80.87 195.33C79.88 194.64 78.91 193.93 77.97 193.19C77.02 192.46 76.21 191.5 75.21 190.91C74.21 190.3 73.34 189.57 71.98 189.58C70.62 189.59 68.7 190.57 67.06 190.96C65.41 191.35 63.75 191.65 62.09 191.87C60.44 192.1 58.77 192.24 57.12 192.32C55.47 192.39 53.82 192.39 52.18 192.31C50.55 192.23 48.92 192.09 47.31 191.86C45.7 191.65 44.1 191.35 42.53 190.99C40.95 190.63 39.39 190.2 37.86 189.7C36.33 189.21 34.83 188.65 33.35 188.03C31.88 187.4 30.43 186.71 29.03 185.96C27.62 185.2 26.24 184.39 24.92 183.54C23.59 182.67 22.29 181.74 21.04 180.76C19.79 179.79 18.59 178.75 17.43 177.68C16.28 176.6 15.16 175.47 14.11 174.3C13.06 173.13 12.04 171.91 11.09 170.65C10.15 169.39 9.25 168.09 8.41 166.75C7.58 165.43 6.8 164.05 6.08 162.64C5.36 161.25 4.7 159.81 4.1 158.36C3.51 156.9 2.98 155.41 2.51 153.91C2.04 152.4 1.64 150.88 1.3 149.34C0.97 147.8 0.7 146.24 0.5 144.68C0.3 143.12 0.17 141.54 0.1 139.97C0.03 138.38 0.03 136.8 0.11 135.22C0.18 133.64 0.33 132.06 0.53 130.49C0.74 128.91 1.02 127.35 1.36 125.8C1.71 124.25 2.12 122.71 2.61 121.18C3.09 119.66 3.64 118.16 4.26 116.68C4.87 115.2 5.56 113.74 6.3 112.32C7.05 110.89 7.86 109.5 8.74 108.13C9.61 106.77 10.56 105.45 11.55 104.16C12.55 102.87 13.61 101.62 14.73 100.42C15.86 99.23 17.04 98.06 18.27 96.96C19.51 95.86 20.8 94.79 22.14 93.8C23.49 92.8 24.89 91.86 26.34 90.98C27.8 90.09 30.02 89.5 30.85 88.52C31.68 87.53 31.25 86.24 31.33 85.05C31.4 83.86 31.28 82.59 31.31 81.35C31.35 80.12 31.42 78.88 31.54 77.64C31.64 76.4 31.79 75.16 31.98 73.93C32.17 72.69 32.39 71.46 32.66 70.24C32.92 69.01 33.22 67.79 33.58 66.58C33.92 65.36 34.3 64.16 34.72 62.97C35.14 61.78 35.59 60.59 36.08 59.43C36.58 58.25 37.11 57.1 37.69 55.96C38.25 54.83 38.86 53.7 39.5 52.6C40.14 51.5 40.82 50.41 41.52 49.35C42.24 48.3 42.99 47.25 43.76 46.24C44.54 45.22 45.35 44.22 46.19 43.26C47.03 42.29 47.91 41.35 48.81 40.45C49.71 39.53 50.64 38.65 51.6 37.8C52.56 36.94 53.55 36.12 54.56 35.33C55.57 34.54 56.61 33.79 57.67 33.06C58.72 32.33 59.81 31.65 60.91 31C62.01 30.33 63.14 29.72 64.28 29.13C65.41 28.56 66.57 28.01 67.74 27.49C68.92 26.98 70.11 26.52 71.31 26.09C72.51 25.66 73.73 25.26 74.95 24.91C76.17 24.54 77.41 24.23 78.65 23.96C79.89 23.68 81.14 23.44 82.39 23.25C83.64 23.05 84.9 22.88 86.16 22.77C87.41 22.65 88.68 22.57 89.92 22.53C91.18 22.49 92.44 22.49 93.69 22.53C94.94 22.57 96.19 22.65 97.43 22.77C98.67 22.88 99.91 23.03 101.14 23.23C102.36 23.42 103.58 23.65 104.78 23.91C105.99 24.17 107.18 24.48 108.37 24.81C109.54 25.14 110.71 25.51 111.85 25.92C113 26.32 114.14 26.76 115.25 27.22C116.36 27.69 117.45 28.2 118.54 28.72C119.61 29.25 120.67 29.81 121.7 30.39C122.73 30.98 123.74 31.59 124.73 32.24C125.71 32.87 126.68 33.54 127.62 34.23C128.55 34.91 129.44 35.75 130.36 36.36C131.28 36.96 132.09 37.8 133.12 37.85C134.17 37.89 135.43 36.99 136.6 36.63C137.77 36.26 138.96 35.93 140.16 35.64C141.36 35.36 142.58 35.12 143.8 34.91C145.02 34.72 146.26 34.56 147.5 34.44C148.74 34.33 149.99 34.26 151.25 34.23C152.5 34.21 153.75 34.22 155.01 34.29C156.26 34.35 157.52 34.46 158.77 34.61C160.02 34.77 161.27 34.96 162.5 35.2C163.74 35.45 164.98 35.74 166.2 36.07C167.42 36.41 168.63 36.78 169.82 37.21C171.02 37.63 172.2 38.08 173.37 38.59C174.54 39.1 175.69 39.65 176.81 40.24C177.93 40.83 179.05 41.46 180.13 42.14C181.21 42.8 182.27 43.51 183.3 44.26C184.34 45.02 185.34 45.81 186.32 46.63C187.3 47.45 188.24 48.31 189.15 49.19C190.07 50.09 190.96 51.02 191.8 51.97C192.65 52.92 193.47 53.92 194.24 54.93C195.01 55.95 195.75 56.99 196.45 58.06C197.16 59.13 197.81 60.23 198.43 61.34C199.05 62.46 199.64 63.6 200.17 64.76C200.71 65.92 201.21 67.1 201.66 68.29C202.11 69.48 202.52 70.7 202.88 71.92C203.25 73.14 203.56 74.38 203.83 75.62C204.11 76.87 204.34 78.13 204.52 79.39C204.7 80.65 204.84 81.91 204.93 83.18C205.02 84.45 205.06 85.72 205.06 86.98C205.06 88.25 204.81 89.57 204.93 90.79C205.03 92.01 204.94 93.22 205.73 94.32C206.53 95.42 208.44 96.29 209.71 97.36C210.98 98.43 212.19 99.55 213.33 100.71C214.48 101.87 215.57 103.09 216.59 104.34C217.62 105.59 218.58 106.89 219.48 108.23C220.38 109.56 221.21 110.92 221.98 112.32Z",
++  "teardrop": "M125.97 7.2Q114.27 -7.28 102.57 7.2L43.49 80.31C13.46 117.46 17.28 171.51 52.23 204.08C87.17 236.65 141.37 236.65 176.32 204.08C211.26 171.51 215.08 117.46 185.05 80.31Z",
++};
++
++export const GLYTH_SHAPE_FACES: Readonly<Record<GlythShapeKey, GlythFacePlacement>> = {
++  "blob": { x: 0, y: 0, sx: 1, sy: 1, eye: 1 },
++  "pebble": { x: 2, y: 0, sx: 0.97, sy: 0.86, eye: 1 },
++  "squircle": { x: 0, y: 0, sx: 1, sy: 1, eye: 1 },
++  "tablet": { x: 0, y: 0, sx: 0.94, sy: 0.65, eye: 0.82 },
++  "wedge": { x: 0, y: 24, sx: 0.7, sy: 0.7, eye: 0.79 },
++  "hex": { x: 0, y: 0, sx: 0.91, sy: 0.91, eye: 1 },
++  "cloud": { x: 0, y: 4, sx: 0.79, sy: 0.7, eye: 0.81 },
++  "teardrop": { x: 0, y: 22, sx: 0.79, sy: 0.79, eye: 0.88 },
++};
++
++/**
++ * Donor idle eye topology #0. For the Figma 5388:119 blob this is the exact
++ * two-eye silhouette rather than the old LCOS initial-letter placeholder.
++ */
++export const GLYTH_IDLE_EYE_PATHS = [
++  "M130.36 45.98L132.71 46.19L134.98 46.81L137.11 47.83L138.97 49.28L140.47 51.09L141.68 53.12L142.73 55.23L143.76 57.36L144.78 59.49L145.79 61.62L146.79 63.76L147.76 65.91L148.71 68.07L149.63 70.25L150.52 72.43L151.37 74.63L151.99 76.91L152.1 79.26L151.64 81.57L150.59 83.68L149.04 85.45L147.1 86.78L144.9 87.62L142.56 87.93L140.22 87.71L137.98 86.99L135.93 85.82L134.17 84.24L132.78 82.34L131.69 80.25L130.77 78.08L129.87 75.89L128.94 73.72L128 71.56L127.03 69.4L126.05 67.26L125.05 65.12L124.03 62.99L122.93 60.9L121.87 58.79L121.03 56.59L120.72 54.26L121.1 51.93L122.15 49.83L123.75 48.1L125.76 46.89L128.01 46.19Z",
++  "M176.61 37.08L178.72 37.59L180.7 38.48L182.52 39.65L184.2 41.03L185.71 42.59L187.03 44.31L188.2 46.14L189.26 48.03L190.27 49.96L191.26 51.89L192.23 53.84L193.16 55.8L194.05 57.78L194.92 59.77L195.74 61.78L196.53 63.8L197.27 65.84L197.97 67.9L198.47 70.01L198.63 72.18L198.4 74.33L197.58 76.33L195.95 77.72L193.83 78.08L191.71 77.65L189.76 76.69L188.03 75.38L186.53 73.82L185.28 72.05L184.25 70.13L183.4 68.14L182.63 66.11L181.87 64.07L181.07 62.05L180.25 60.04L179.39 58.05L178.49 56.07L177.57 54.1L176.61 52.15L175.62 50.22L174.59 48.31L173.53 46.41L172.54 44.48L171.86 42.42L171.76 40.26L172.62 38.3L174.45 37.19Z",
++] as const;
+diff --git a/huabu/apps/web/src/lcos/nodes/source/AudioSourceMorphology.tsx b/huabu/apps/web/src/lcos/nodes/source/AudioSourceMorphology.tsx
+new file mode 100644
+index 0000000..d1285d4
+--- /dev/null
++++ b/huabu/apps/web/src/lcos/nodes/source/AudioSourceMorphology.tsx
+@@ -0,0 +1,105 @@
++import { useEffect, useState } from 'react';
++
++import { lcosTokens } from '../../ui/lcosTokens';
++import {
++  FIGMA_AUDIO_ACTIVE_BAR_COUNT,
++  FIGMA_AUDIO_BAR_HEIGHTS,
++  FIGMA_AUDIO_USED_WIDTH,
++  FIGMA_SOURCE_GEOMETRY,
++  FIGMA_SOURCE_NODE_IDS,
++} from './sourceFigmaGeometry';
++
++import type { SourceMorphologyProps } from './sourceTypes';
++import type { JSX } from 'react';
++
++function formatDuration(seconds: number | undefined): string | undefined {
++  if (seconds === undefined || !Number.isFinite(seconds) || seconds <= 0) {
++    return undefined;
++  }
++  const whole = Math.floor(seconds);
++  const minutes = Math.floor(whole / 60);
++  const rest = whole % 60;
++  return `${minutes.toString().padStart(2, '0')}:${rest.toString().padStart(2, '0')}`;
++}
++
++export function AudioSourceMorphology(props: SourceMorphologyProps): JSX.Element {
++  const [mediaDurationSec, setMediaDurationSec] = useState<number | undefined>(
++    props.durationSec,
++  );
++  useEffect(() => {
++    setMediaDurationSec(props.durationSec);
++  }, [props.durationSec, props.mediaSrc]);
++  const duration = formatDuration(mediaDurationSec);
++
++  return (
++    <div
++      data-lcos-source-visual="audio"
++      data-figma-node-id={FIGMA_SOURCE_NODE_IDS.audio}
++      className="relative h-full w-full overflow-visible"
++    >
++      <div
++        data-lcos-waveform="exact"
++        aria-hidden
++        className="absolute left-0 top-0 flex h-[50px] items-center overflow-visible"
++        style={{
++          width: FIGMA_AUDIO_USED_WIDTH,
++          gap: FIGMA_SOURCE_GEOMETRY.audio.barGap,
++        }}
++      >
++        {FIGMA_AUDIO_BAR_HEIGHTS.map((height, index) => (
++          <span
++            key={index}
++            data-lcos-wave-bar
++            style={{
++              display: 'block',
++              flex: '0 0 2px',
++              width: 2,
++              height,
++              borderRadius: 1,
++              background:
++                index < FIGMA_AUDIO_ACTIVE_BAR_COUNT
++                  ? lcosTokens.color.mainWaveActive
++                  : lcosTokens.color.mainWaveTail,
++            }}
++          />
++        ))}
++      </div>
++      {props.mediaSrc && (
++        <audio
++          data-lcos-audio-metadata
++          src={props.mediaSrc}
++          preload="metadata"
++          aria-hidden="true"
++          className="hidden"
++          onLoadedMetadata={(event) => {
++            const value = event.currentTarget.duration;
++            if (Number.isFinite(value) && value > 0) setMediaDurationSec(value);
++          }}
++          onDurationChange={(event) => {
++            const value = event.currentTarget.duration;
++            if (Number.isFinite(value) && value > 0) setMediaDurationSec(value);
++          }}
++        >
++          <track kind="captions" />
++        </audio>
++      )}
++      {props.density !== 'mark' && (
++        <span
++          className="line-clamp-1"
++          style={{
++            position: 'absolute',
++            left: 0,
++            top: FIGMA_SOURCE_GEOMETRY.audio.captionTop,
++            width: 220,
++            color: lcosTokens.color.muted,
++            fontSize: 12,
++            lineHeight: '19px',
++          }}
++        >
++          {props.title}
++          {duration ? ` · ${duration}` : ''}
++        </span>
++      )}
++    </div>
++  );
++}
+diff --git a/huabu/apps/web/src/lcos/nodes/source/DocumentSourceMorphology.tsx b/huabu/apps/web/src/lcos/nodes/source/DocumentSourceMorphology.tsx
+new file mode 100644
+index 0000000..6804082
+--- /dev/null
++++ b/huabu/apps/web/src/lcos/nodes/source/DocumentSourceMorphology.tsx
+@@ -0,0 +1,72 @@
++import { lcosTokens } from '../../ui/lcosTokens';
++import { FIGMA_SOURCE_NODE_IDS } from './sourceFigmaGeometry';
++
++import type { SourceMorphologyProps } from './sourceTypes';
++import type { JSX } from 'react';
++
++export function DocumentSourceMorphology(props: SourceMorphologyProps): JSX.Element {
++  const isMark = props.density === 'mark';
++
++  return (
++    <div
++      data-lcos-source-visual="document"
++      data-figma-node-id={FIGMA_SOURCE_NODE_IDS.document}
++      className="relative h-full w-full overflow-hidden"
++      style={{
++        borderRadius: 2,
++        background: lcosTokens.color.mainPaper,
++        boxShadow: lcosTokens.color.mainPaperShadow,
++      }}
++    >
++      <span
++        className="line-clamp-1"
++        style={{
++          position: 'absolute',
++          left: 18,
++          top: 15,
++          width: 186,
++          color: lcosTokens.color.text,
++          fontSize: isMark ? 13 : 16,
++          lineHeight: isMark ? '20px' : '25px',
++          fontWeight: 500,
++        }}
++      >
++        {props.title}
++      </span>
++      {!isMark && props.preview && (
++        <span
++          data-lcos-node-preview
++          className="line-clamp-2"
++          style={{
++            position: 'absolute',
++            left: 18,
++            top: 51,
++            width: 173,
++            color: lcosTokens.color.muted,
++            fontSize: 13,
++            lineHeight: '21px',
++            whiteSpace: 'pre-line',
++          }}
++        >
++          {props.preview}
++        </span>
++      )}
++      {!isMark && (
++        <span
++          className="line-clamp-1"
++          style={{
++            position: 'absolute',
++            left: 18,
++            top: 122,
++            width: 178,
++            color: lcosTokens.color.muted,
++            fontSize: 11,
++            lineHeight: '18px',
++          }}
++        >
++          {props.secondary || '文档 · 只读投影'}
++        </span>
++      )}
++    </div>
++  );
++}
+diff --git a/huabu/apps/web/src/lcos/nodes/source/ImageSourceMorphology.tsx b/huabu/apps/web/src/lcos/nodes/source/ImageSourceMorphology.tsx
+new file mode 100644
+index 0000000..15b0678
+--- /dev/null
++++ b/huabu/apps/web/src/lcos/nodes/source/ImageSourceMorphology.tsx
+@@ -0,0 +1,81 @@
++import { Image as ImageIcon } from 'lucide-react';
++
++import { lcosTokens } from '../../ui/lcosTokens';
++import { SourceMarker } from './SourceMarker';
++import { FIGMA_SOURCE_GEOMETRY, FIGMA_SOURCE_NODE_IDS } from './sourceFigmaGeometry';
++
++import type { SourceMorphologyProps } from './sourceTypes';
++import type { JSX } from 'react';
++
++export function ImageSourceMorphology(props: SourceMorphologyProps): JSX.Element {
++  const compact =
++    (props.worldWidth ?? FIGMA_SOURCE_GEOMETRY.image.width) <= 240;
++  const markerSize = compact ? 9 : 11;
++  const mediaRadius = compact
++    ? FIGMA_SOURCE_GEOMETRY.imageThumbnail.radius
++    : FIGMA_SOURCE_GEOMETRY.image.radius;
++
++  return (
++    <div
++      data-lcos-source-visual="image"
++      data-figma-node-id={
++        compact
++          ? FIGMA_SOURCE_NODE_IDS.imageThumbnail
++          : FIGMA_SOURCE_NODE_IDS.image
++      }
++      className="relative h-full w-full overflow-visible"
++    >
++      <div
++        data-lcos-source-media
++        className="absolute inset-0 overflow-hidden"
++        style={{
++          borderRadius: mediaRadius,
++          background: lcosTokens.color.elevated,
++          boxShadow: compact
++            ? lcosTokens.color.mainImageShadowSmall
++            : lcosTokens.color.mainImageShadow,
++        }}
++      >
++        {props.mediaSrc ? (
++          <img
++            src={props.mediaSrc}
++            alt={props.title}
++            className="pointer-events-none h-full w-full border-0 object-cover"
++          />
++        ) : (
++          <div
++            className="flex h-full w-full items-center justify-center"
++            style={{ color: lcosTokens.color.muted }}
++          >
++            <ImageIcon size={28} strokeWidth={1.5} aria-hidden />
++          </div>
++        )}
++      </div>
++      <SourceMarker
++        size={markerSize}
++        tone={compact ? 'green' : 'amber'}
++        right={compact ? 0 : -3}
++        top={compact ? -4 : -5}
++      />
++      {props.density !== 'mark' && (
++        <span
++          className="line-clamp-1"
++          style={{
++            position: 'absolute',
++            left: 0,
++            top: compact
++              ? FIGMA_SOURCE_GEOMETRY.imageThumbnail.captionTop
++              : FIGMA_SOURCE_GEOMETRY.image.captionTop,
++            width: '100%',
++            color: lcosTokens.color.muted,
++            fontSize: 12,
++            lineHeight: '19px',
++          }}
++        >
++          {props.title}
++          {props.secondary ? ` · ${props.secondary}` : ''}
++        </span>
++      )}
++    </div>
++  );
++}
+diff --git a/huabu/apps/web/src/lcos/nodes/source/SourceMarker.tsx b/huabu/apps/web/src/lcos/nodes/source/SourceMarker.tsx
+new file mode 100644
+index 0000000..67c3c61
+--- /dev/null
++++ b/huabu/apps/web/src/lcos/nodes/source/SourceMarker.tsx
+@@ -0,0 +1,37 @@
++import { lcosTokens } from '../../ui/lcosTokens';
++
++import type { JSX } from 'react';
++
++export function SourceMarker({
++  size,
++  tone,
++  right,
++  top,
++}: {
++  readonly size: number;
++  readonly tone: 'amber' | 'green';
++  readonly right: number;
++  readonly top: number;
++}): JSX.Element {
++  return (
++    <span
++      data-lcos-source-corner-marker
++      aria-hidden
++      style={{
++        position: 'absolute',
++        right,
++        top,
++        width: size,
++        height: size,
++        borderRadius: 3,
++        background:
++          tone === 'amber'
++            ? lcosTokens.color.mainMarkerAmber
++            : lcosTokens.color.mainMarkerGreen,
++        border: `1.5px solid ${lcosTokens.color.surface}`,
++        boxSizing: 'border-box',
++        zIndex: 2,
++      }}
++    />
++  );
++}
+diff --git a/huabu/apps/web/src/lcos/nodes/source/SourceMorphology.tsx b/huabu/apps/web/src/lcos/nodes/source/SourceMorphology.tsx
+new file mode 100644
+index 0000000..e77fef2
+--- /dev/null
++++ b/huabu/apps/web/src/lcos/nodes/source/SourceMorphology.tsx
+@@ -0,0 +1,68 @@
++import { FileText, Film, Link2 } from 'lucide-react';
++
++import { lcosTokens } from '../../ui/lcosTokens';
++import { AudioSourceMorphology } from './AudioSourceMorphology';
++import { DocumentSourceMorphology } from './DocumentSourceMorphology';
++import { ImageSourceMorphology } from './ImageSourceMorphology';
++import { TextSourceMorphology } from './TextSourceMorphology';
++
++import type { SourceMorphologyProps } from './sourceTypes';
++import type { JSX } from 'react';
++
++function GenericSourceMorphology(props: SourceMorphologyProps): JSX.Element {
++  const icon =
++    props.family === 'web' ? (
++      <Link2 className="h-4 w-4" aria-hidden />
++    ) : props.family === 'video' ? (
++      <Film className="h-4 w-4" aria-hidden />
++    ) : (
++      <FileText className="h-4 w-4" aria-hidden />
++    );
++  return (
++    <div
++      data-lcos-source-visual={props.family}
++      className="flex h-full w-full flex-col gap-2 rounded-xl p-3"
++      style={{
++        background: lcosTokens.color.surface,
++        border: `1px solid ${lcosTokens.color.borderSubtle}`,
++      }}
++    >
++      <div className="flex items-center gap-2" style={{ color: lcosTokens.color.muted }}>
++        {icon}
++        <span className="text-[10px] uppercase tracking-[0.08em]">
++          {props.family}
++        </span>
++      </div>
++      <span
++        className="line-clamp-2 text-sm font-semibold"
++        style={{ color: lcosTokens.color.text }}
++      >
++        {props.title}
++      </span>
++      {props.preview && (
++        <span
++          data-lcos-node-preview
++          className="line-clamp-3 text-[11px]"
++          style={{ color: lcosTokens.color.muted }}
++        >
++          {props.preview}
++        </span>
++      )}
++    </div>
++  );
++}
++
++export function SourceMorphology(props: SourceMorphologyProps): JSX.Element {
++  switch (props.family) {
++    case 'text':
++      return <TextSourceMorphology {...props} />;
++    case 'document':
++      return <DocumentSourceMorphology {...props} />;
++    case 'image':
++      return <ImageSourceMorphology {...props} />;
++    case 'audio':
++      return <AudioSourceMorphology {...props} />;
++    default:
++      return <GenericSourceMorphology {...props} />;
++  }
++}
+diff --git a/huabu/apps/web/src/lcos/nodes/source/TextSourceMorphology.tsx b/huabu/apps/web/src/lcos/nodes/source/TextSourceMorphology.tsx
+new file mode 100644
+index 0000000..d6cd51c
+--- /dev/null
++++ b/huabu/apps/web/src/lcos/nodes/source/TextSourceMorphology.tsx
+@@ -0,0 +1,58 @@
++import { lcosTokens } from '../../ui/lcosTokens';
++import { SourceMarker } from './SourceMarker';
++import { FIGMA_SOURCE_GEOMETRY, FIGMA_SOURCE_NODE_IDS } from './sourceFigmaGeometry';
++
++import type { SourceMorphologyProps } from './sourceTypes';
++import type { JSX } from 'react';
++
++export function TextSourceMorphology(props: SourceMorphologyProps): JSX.Element {
++  const isMark = props.density === 'mark';
++  const statement = props.preview?.trim() || props.title;
++  const exactTypography =
++    props.density === 'summary' ||
++    props.density === 'working' ||
++    props.density === 'reading';
++
++  return (
++    <div
++      data-lcos-source-visual="text"
++      data-figma-node-id={FIGMA_SOURCE_NODE_IDS.text}
++      className="relative h-full w-full overflow-visible"
++    >
++      <span
++        data-lcos-node-preview
++        className={isMark ? 'line-clamp-1' : 'line-clamp-2'}
++        style={{
++          position: 'absolute',
++          left: 0,
++          top: 0,
++          width: '100%',
++          color: lcosTokens.color.text,
++          fontSize: exactTypography ? 37 : 14,
++          lineHeight: exactTypography ? '58px' : '20px',
++          fontWeight: 500,
++          letterSpacing: '-0.02em',
++          whiteSpace: 'pre-line',
++        }}
++      >
++        {statement}
++      </span>
++      {!isMark && (
++        <span
++          style={{
++            position: 'absolute',
++            left: 0,
++            top: FIGMA_SOURCE_GEOMETRY.text.captionTop,
++            width: '100%',
++            color: lcosTokens.color.muted,
++            fontSize: 12,
++            lineHeight: '19px',
++          }}
++        >
++          {props.secondary || props.title}
++        </span>
++      )}
++      <SourceMarker size={11} tone="green" right={0} top={3} />
++    </div>
++  );
++}
+diff --git a/huabu/apps/web/src/lcos/nodes/source/sourceFigmaGeometry.test.ts b/huabu/apps/web/src/lcos/nodes/source/sourceFigmaGeometry.test.ts
+new file mode 100644
+index 0000000..c1890b0
+--- /dev/null
++++ b/huabu/apps/web/src/lcos/nodes/source/sourceFigmaGeometry.test.ts
+@@ -0,0 +1,25 @@
++import { describe, expect, it } from 'vitest';
++
++import {
++  FIGMA_AUDIO_ACTIVE_BAR_COUNT,
++  FIGMA_AUDIO_BAR_HEIGHTS,
++  FIGMA_AUDIO_USED_WIDTH,
++  FIGMA_SOURCE_GEOMETRY,
++} from './sourceFigmaGeometry';
++
++describe('Main source exact Figma geometry', () => {
++  it('keeps the five exact source anchors', () => {
++    expect(FIGMA_SOURCE_GEOMETRY.image).toMatchObject({ width: 410, height: 273, marker: 11 });
++    expect(FIGMA_SOURCE_GEOMETRY.imageThumbnail).toMatchObject({ width: 205, height: 127, marker: 9 });
++    expect(FIGMA_SOURCE_GEOMETRY.text).toMatchObject({ width: 385, height: 142, marker: 11 });
++    expect(FIGMA_SOURCE_GEOMETRY.document).toMatchObject({ width: 206, height: 154 });
++    expect(FIGMA_SOURCE_GEOMETRY.audio).toMatchObject({ width: 171, height: 96, barWidth: 2, barGap: 0.671875 });
++  });
++
++  it('fits all 64 audio bars inside 171px and preserves the 45/19 tone split', () => {
++    expect(FIGMA_AUDIO_BAR_HEIGHTS).toHaveLength(64);
++    expect(FIGMA_AUDIO_ACTIVE_BAR_COUNT).toBe(45);
++    expect(FIGMA_AUDIO_USED_WIDTH).toBeCloseTo(170.328125, 6);
++    expect(FIGMA_AUDIO_USED_WIDTH).toBeLessThanOrEqual(171);
++  });
++});
+diff --git a/huabu/apps/web/src/lcos/nodes/source/sourceFigmaGeometry.ts b/huabu/apps/web/src/lcos/nodes/source/sourceFigmaGeometry.ts
+new file mode 100644
+index 0000000..bacadc7
+--- /dev/null
++++ b/huabu/apps/web/src/lcos/nodes/source/sourceFigmaGeometry.ts
+@@ -0,0 +1,89 @@
++export const FIGMA_SOURCE_NODE_IDS = {
++  image: '5388:98',
++  imageThumbnail: '5388:111',
++  text: '5388:102',
++  document: '5388:106',
++  audio: '5388:121',
++} as const;
++
++export const FIGMA_SOURCE_GEOMETRY = {
++  image: { width: 410, height: 273, marker: 11, radius: 7, captionTop: 282 },
++  imageThumbnail: { width: 205, height: 127, marker: 9, radius: 6, captionTop: 136 },
++  text: { width: 385, height: 142, marker: 11, captionTop: 117 },
++  document: { width: 206, height: 154, paddingX: 18 },
++  audio: { width: 171, height: 96, barWidth: 2, barGap: 0.671875, captionTop: 79 },
++} as const;
++
++/** Exact 64 bar heights from Figma 5388:122–185. */
++export const FIGMA_AUDIO_BAR_HEIGHTS = [
++  9,
++  14.04728889465332,
++  24.035158157348633,
++  27.754798889160156,
++  17.390165328979492,
++  22.244905471801758,
++  42.50642395019531,
++  47.503173828125,
++  32.22801208496094,
++  13.328797340393066,
++  37.28276062011719,
++  44.562374114990234,
++  33.46464920043945,
++  13.937732696533203,
++  18.35732078552246,
++  20.089786529541016,
++  12.885066986083984,
++  10.723970413208008,
++  11.38886833190918,
++  23.767263412475586,
++  34.03667068481445,
++  31.0217227935791,
++  12.103338241577148,
++  31.503646850585938,
++  48.3752555847168,
++  45.50540542602539,
++  24.169282913208008,
++  20.804643630981445,
++  37.8657341003418,
++  37.22407913208008,
++  23.391796112060547,
++  9.296109199523926,
++  14.510190963745117,
++  9.535882949829102,
++  15.039982795715332,
++  13.10236644744873,
++  17.978681564331055,
++  34.274818420410156,
++  40.77833938598633,
++  29.424610137939453,
++  13.973907470703125,
++  39.3492546081543,
++  49.66203308105469,
++  39.18208312988281,
++  15.276572227478027,
++  25.016271591186523,
++  33.560691833496094,
++  27.055747985839844,
++  14.65433406829834,
++  10.081823348999023,
++  11.492745399475098,
++  19.711231231689453,
++  21.6660213470459,
++  10.702693939208984,
++  27.175952911376953,
++  43.20396423339844,
++  42.91107940673828,
++  23.6500244140625,
++  22.641666412353516,
++  43.73583221435547,
++  46.02480697631836,
++  30.15431022644043,
++  10.093860626220703,
++  24.65760612487793,
++] as const;
++
++export const FIGMA_AUDIO_ACTIVE_BAR_COUNT = 45;
++
++export const FIGMA_AUDIO_USED_WIDTH =
++  FIGMA_AUDIO_BAR_HEIGHTS.length * FIGMA_SOURCE_GEOMETRY.audio.barWidth +
++  (FIGMA_AUDIO_BAR_HEIGHTS.length - 1) * FIGMA_SOURCE_GEOMETRY.audio.barGap;
+diff --git a/huabu/apps/web/src/lcos/nodes/source/sourceTypes.ts b/huabu/apps/web/src/lcos/nodes/source/sourceTypes.ts
+new file mode 100644
+index 0000000..211df64
+--- /dev/null
++++ b/huabu/apps/web/src/lcos/nodes/source/sourceTypes.ts
+@@ -0,0 +1,12 @@
++import type { LcosVisualFamily, PresentationDensity } from '@local-creative-os/web-gen2';
++
++export interface SourceMorphologyProps {
++  readonly family: LcosVisualFamily;
++  readonly title: string;
++  readonly secondary?: string;
++  readonly preview?: string;
++  readonly mediaSrc?: string;
++  readonly durationSec?: number;
++  readonly density: PresentationDensity;
++  readonly worldWidth?: number;
++}
+diff --git a/huabu/apps/web/src/lcos/nodes/stageProjectedSources.ts b/huabu/apps/web/src/lcos/nodes/stageProjectedSources.ts
+index 1440b2a..8147387 100644
+--- a/huabu/apps/web/src/lcos/nodes/stageProjectedSources.ts
++++ b/huabu/apps/web/src/lcos/nodes/stageProjectedSources.ts
+@@ -18,12 +18,12 @@
+ //   - 本模块只读 Core 字节、只写 Huabu 节点 `data.src`，**不做任何 Core 写操作**，
+ //     也不新建 store / 不改 ProjectionBinding。
+ //
+-// 覆盖范围（GAP，如实标注）：当前**只处理 image**。pdf / video / audio / office 的同类
+-// 落成依赖各自的 Huabu 节点形态与资产类型，尚未接线 —— 未接线即不可用，不假装支持。
++// 覆盖范围：image + audio。两者都有现成 Huabu asset API / native node consumer。
++// pdf / video / office 仍保持 GAP，不把未接 producer 写成成功。
+ 
+ import { HttpClient } from '@local-creative-os/web-gen2';
+ 
+-import { uploadImage } from '@/api/artifact';
++import { uploadAudio, uploadImage } from '@/api/artifact';
+ import { readLcosHostConfig } from '@/lcos/lcosHost';
+ import useCanvasStore from '@/store/canvasStore';
+ 
+@@ -64,9 +64,27 @@ const IMAGE_EXT_BY_MIME: Readonly<Record<string, string>> = {
+   'image/bmp': '.bmp',
+ };
+ 
+-function imageExtensionFor(mimeType: string): string {
++const AUDIO_EXT_BY_MIME: Readonly<Record<string, string>> = {
++  'audio/wav': '.wav',
++  'audio/x-wav': '.wav',
++  'audio/webm': '.webm',
++  'audio/ogg': '.ogg',
++  'audio/mpeg': '.mp3',
++  'audio/mp4': '.m4a',
++};
++
++type StageKind = 'image' | 'audio';
++
++function stageKindOf(binding: ProjectedSourceBinding): StageKind | undefined {
++  const mime = (binding.descriptor?.mimeType ?? '').toLowerCase();
++  if (binding.descriptor?.artifactKind === 'image' || mime.startsWith('image/')) return 'image';
++  if (mime.startsWith('audio/')) return 'audio';
++  return undefined;
++}
++
++function extensionFor(kind: StageKind, mimeType: string): string {
+   const bare = mimeType.toLowerCase().split(';')[0].trim();
+-  return IMAGE_EXT_BY_MIME[bare] ?? '.png';
++  return kind === 'image' ? IMAGE_EXT_BY_MIME[bare] ?? '.png' : AUDIO_EXT_BY_MIME[bare] ?? '.webm';
+ }
+ 
+ /** `data.src` 为空（缺省 / null / 空串）才需要落成；已有内容一律不覆盖。 */
+@@ -102,11 +120,10 @@ async function waitForNodesInStore(ids: readonly string[], timeoutMs: number): P
+ }
+ 
+ /**
+- * 为绑定的图片 artifact 落成画布内容，返回本次**真正落成**的节点数。
++ * 为绑定的 image/audio artifact 落成画布内容，返回本次**真正落成**的节点数。
+  *
+- * 只处理：`entityType === 'artifact'` 且 `descriptor.artifactKind === 'image'` 且带
+- * `descriptor.fileRecordId`。节点侧还要求：节点存在、`node.type === 'image'`、
+- * `node.data.src` 为空。
++ * 只处理真实 MIME 能确定为 image/audio 且带 `descriptor.fileRecordId` 的 artifact。
++ * 节点侧还要求 native node type 与 MIME 家族一致，且 `data.src` 为空。
+  *
+  * 绝不抛出：每个绑定独立 try/catch，失败只 warn 并继续下一个。
+  */
+@@ -117,7 +134,7 @@ export async function stageProjectedSources(
+   const candidates = bindings.filter(
+     (binding) =>
+       binding.entityType === 'artifact' &&
+-      binding.descriptor?.artifactKind === 'image' &&
++      stageKindOf(binding) !== undefined &&
+       (binding.descriptor?.fileRecordId ?? '') !== '',
+   );
+   if (candidates.length === 0) return 0;
+@@ -147,7 +164,8 @@ export async function stageProjectedSources(
+     const node = useCanvasStore
+       .getState()
+       .nodes.find((candidate) => candidate.id === binding.spatialId);
+-    if (!node || node.type !== 'image' || !isEmptySource(node.data?.src)) continue;
++    const stageKind = stageKindOf(binding);
++    if (!node || stageKind === undefined || node.type !== stageKind || !isEmptySource(node.data?.src)) continue;
+ 
+     const dedupeKey = `${node.id}:${fileRecordId}`;
+     if (stagedSources.has(dedupeKey)) continue;
+@@ -165,14 +183,16 @@ export async function stageProjectedSources(
+           fileRecordId,
+         )}/content`,
+       );
+-      // 字节的 MIME 以 Core 响应头为准，其次用投影描述里的 mimeType。
+-      const mimeType = blob.type || binding.descriptor?.mimeType || 'image/png';
++      // 字节的 MIME 以 Core 响应头为准，其次用投影描述里的真实 mimeType。
++      const mimeType = blob.type || binding.descriptor?.mimeType || (stageKind === 'image' ? 'image/png' : 'audio/webm');
+       const file = new File(
+         [blob],
+-        `${fileRecordId}${imageExtensionFor(mimeType)}`,
++        `${fileRecordId}${extensionFor(stageKind, mimeType)}`,
+         { type: mimeType },
+       );
+-      const artifactKey = await uploadImage(file, canvasId);
++      const artifactKey = stageKind === 'image'
++        ? await uploadImage(file, canvasId)
++        : await uploadAudio(file, canvasId);
+       useCanvasStore.getState().updateNodeData(node.id, { src: artifactKey });
+       staged += 1;
+     } catch (error) {
+diff --git a/huabu/apps/web/src/lcos/ui/lcos.css b/huabu/apps/web/src/lcos/ui/lcos.css
+index 51ffea3..984db03 100644
+--- a/huabu/apps/web/src/lcos/ui/lcos.css
++++ b/huabu/apps/web/src/lcos/ui/lcos.css
+@@ -9,6 +9,19 @@
+   /* 专业窗口浮起的投影与描边：Figma 没有对应的 EFFECT 样式（Shadow/Default 是 4/16 的近距投影）。 */
+   --lcos-window-shadow: 0 12px 40px rgba(40, 48, 58, 0.14);
+   --lcos-window-border: var(--lcos-color-border-subtle);
++  /* Main exact-node local colors not present in the exported variable manifest. */
++  --lcos-main-paper: #fffef9; /* Figma 5388:107 */
++  --lcos-main-wave-active: #55786c; /* Figma 5388:122–166 */
++  --lcos-main-wave-tail: #c6d2ce; /* Figma 5388:167–185 */
++  --lcos-main-marker-amber: #d3a16e; /* Figma 5388:100 */
++  --lcos-main-marker-green: #82a793; /* Figma 5388:105 / 5388:114 */
++  --lcos-main-image-shadow: 0 10px 12.5px rgba(33,48,56,0.11); /* 5388:98 */
++  --lcos-main-image-shadow-small: 0 8px 10px rgba(33,48,56,0.10); /* 5388:111 */
++  --lcos-main-paper-shadow: 0 7px 9.5px rgba(33,48,56,0.07); /* 5388:106 */
++  /* Figma 5388:312/319/322 — Action Arc visible orb material. */
++  --lcos-action-orb-bg: rgba(255,255,255,0.13);
++  --lcos-action-orb-border: rgba(255,255,255,0.78);
++  --lcos-action-orb-shadow: 0 0 0.5px rgba(40,48,58,0.10), 0 4px 6px rgba(40,48,58,0.08);
+ }
+ 
+ /* 玻璃岛底色：跟随主题的 surface（Figma 变量），避免深色模式下仍用浅色底。 */
+diff --git a/huabu/apps/web/src/lcos/ui/lcosTokens.ts b/huabu/apps/web/src/lcos/ui/lcosTokens.ts
+index 93af5a7..57d3354 100644
+--- a/huabu/apps/web/src/lcos/ui/lcosTokens.ts
++++ b/huabu/apps/web/src/lcos/ui/lcosTokens.ts
+@@ -33,6 +33,14 @@ export const lcosTokens = {
+     pinAmber: 'var(--lcos-pin-amber)',
+     // Figma manifest 无 danger 变量：在 lcos.css 显式声明为 LCOS 状态色（ledger honest remainder）
+     danger: 'var(--lcos-status-danger)',
++    mainPaper: 'var(--lcos-main-paper)',
++    mainWaveActive: 'var(--lcos-main-wave-active)',
++    mainWaveTail: 'var(--lcos-main-wave-tail)',
++    mainMarkerAmber: 'var(--lcos-main-marker-amber)',
++    mainMarkerGreen: 'var(--lcos-main-marker-green)',
++    mainImageShadow: 'var(--lcos-main-image-shadow)',
++    mainImageShadowSmall: 'var(--lcos-main-image-shadow-small)',
++    mainPaperShadow: 'var(--lcos-main-paper-shadow)',
+   },
+   radius: {
+     control: 'var(--lcos-radius-control)',
+@@ -58,6 +66,11 @@ export const lcosTokens = {
+   shadow: {
+     default: 'var(--lcos-shadow-default)',
+   },
++  actionOrb: {
++    background: 'var(--lcos-action-orb-bg)',
++    border: 'var(--lcos-action-orb-border)',
++    shadow: 'var(--lcos-action-orb-shadow)',
++  },
+   typography: {
+     fontFamily: `'Noto Sans SC', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif`,
+     lineHeight: 'var(--lcos-line-height-12)',
+diff --git a/scripts/e2e/r2-figma-exact-acceptance.mjs b/scripts/e2e/r2-figma-exact-acceptance.mjs
+new file mode 100644
+index 0000000..fa279be
+--- /dev/null
++++ b/scripts/e2e/r2-figma-exact-acceptance.mjs
+@@ -0,0 +1,303 @@
++#!/usr/bin/env node
++import { mkdirSync } from 'node:fs';
++import { resolve } from 'node:path';
++
++import { runScenario } from './_harness.mjs';
++
++const BASE = process.env.LCOS_E2E_WEB_URL ?? 'http://localhost:5273';
++const PROJECT = process.env.LCOS_E2E_PROJECT ?? 'lcos-gen2-dev';
++const SHOTS = resolve(process.env.LCOS_E2E_SHOT_DIR ?? '.e2e-data/shots');
++mkdirSync(SHOTS, { recursive: true });
++
++function near(actual, expected, tolerance = 1.25) {
++  return Number.isFinite(actual) && Math.abs(actual - expected) <= tolerance;
++}
++
++const exact = await runScenario({
++  name: 'R2-figma-exact-main-morphology',
++  baseUrl: BASE,
++  viewport: { width: 1440, height: 900 },
++  async body(h) {
++    await h.goto(`/projects/${PROJECT}/main`);
++    await h.requireSelector('[data-lcos-project-shell]', { timeout: 30000 });
++    await h.requireSelector('.react-flow__node', { timeout: 60000 });
++    await h.requireSelector('[data-lcos-source-visual="image"][data-figma-node-id="5388:98"]', { timeout: 60000 });
++    await h.requireSelector('[data-lcos-source-visual="image"][data-figma-node-id="5388:111"]', { timeout: 60000 });
++    await h.requireSelector('[data-lcos-source-visual="document"]', { timeout: 60000 });
++    await h.requireSelector('[data-lcos-source-visual="text"]', { timeout: 60000 });
++    await h.requireSelector('[data-lcos-source-visual="audio"]', { timeout: 60000 });
++    await h.requireSelector('[data-lcos-glyth-body]', { timeout: 60000 });
++    // Audio duration is real media metadata, never a static success string.
++    await h.page.waitForFunction(
++      () => document.querySelector('[data-lcos-source-visual="audio"]')?.textContent?.includes('00:38') === true,
++      undefined,
++      { timeout: 30000 },
++    );
++    await h.wait(500);
++
++    const metrics = await h.evaluate(() => {
++      const viewport = document.querySelector('.react-flow__viewport');
++      const zoom = Number(/scale\(([^)]+)\)/.exec(viewport?.style.transform ?? '')?.[1] ?? '1');
++      const world = (rect) => ({
++        width: rect.width / zoom,
++        height: rect.height / zoom,
++        left: rect.left / zoom,
++        top: rect.top / zoom,
++        right: rect.right / zoom,
++        bottom: rect.bottom / zoom,
++      });
++      const by = (selector) => document.querySelector(selector);
++      const nearestNode = (child) => child?.closest('.react-flow__node') ?? null;
++      const hostOf = (node) => node?.querySelector('[data-lcos-host-surface]') ?? null;
++      const hostFacts = (node) => {
++        const host = hostOf(node);
++        return {
++          surface: host?.getAttribute('data-lcos-host-surface') ?? null,
++          background: host ? getComputedStyle(host).backgroundColor : null,
++          aiBadge: node?.querySelectorAll('[data-lcos-ai-badge]').length ?? -1,
++        };
++      };
++      const nodeFacts = (selector) => {
++        const visual = by(selector);
++        const node = nearestNode(visual);
++        return {
++          visual,
++          node,
++          rect: node ? world(node.getBoundingClientRect()) : null,
++          host: hostFacts(node),
++        };
++      };
++
++      const glythVisual = by('[data-lcos-glyth-body]');
++      const glythNode = nearestNode(glythVisual);
++      const glythVector = by('[data-lcos-glyth-vector]');
++      const glythShape = glythVector?.querySelector('path') ?? null;
++      const glythEyes = Array.from(glythVector?.querySelectorAll('[data-lcos-glyth-eyes] path') ?? []);
++      const image = nodeFacts('[data-lcos-source-visual="image"][data-figma-node-id="5388:98"]');
++      const material = nodeFacts('[data-lcos-source-visual="image"][data-figma-node-id="5388:111"]');
++      const documentNode = nodeFacts('[data-lcos-source-visual="document"]');
++      const text = nodeFacts('[data-lcos-source-visual="text"]');
++      const audio = nodeFacts('[data-lcos-source-visual="audio"]');
++
++      const imageMedia = image.visual?.querySelector('[data-lcos-source-media]') ?? null;
++      const imageMarker = image.visual?.querySelector('[data-lcos-source-corner-marker]') ?? null;
++      const materialMedia = material.visual?.querySelector('[data-lcos-source-media]') ?? null;
++      const materialMarker = material.visual?.querySelector('[data-lcos-source-corner-marker]') ?? null;
++      const textMarker = text.visual?.querySelector('[data-lcos-source-corner-marker]') ?? null;
++      const bars = Array.from(audio.visual?.querySelectorAll('[data-lcos-wave-bar]') ?? []);
++      const barRects = bars.map((element) => element.getBoundingClientRect());
++      const waveWidth = barRects.length > 0
++        ? (barRects.at(-1).right - barRects[0].left) / zoom
++        : 0;
++      const firstGap = barRects.length >= 2
++        ? (barRects[1].left - barRects[0].left) / zoom - barRects[0].width / zoom
++        : Number.NaN;
++
++      const imageMediaWorld = imageMedia ? world(imageMedia.getBoundingClientRect()) : null;
++      const imageMarkerWorld = imageMarker ? world(imageMarker.getBoundingClientRect()) : null;
++      const materialMediaWorld = materialMedia ? world(materialMedia.getBoundingClientRect()) : null;
++      const materialMarkerWorld = materialMarker ? world(materialMarker.getBoundingClientRect()) : null;
++      const textMarkerWorld = textMarker ? world(textMarker.getBoundingClientRect()) : null;
++      const textWorld = text.visual ? world(text.visual.getBoundingClientRect()) : null;
++
++      return {
++        zoom,
++        nativeEditorsInsideLcosBodies: document.querySelectorAll('[data-lcos-species-body] .milkdown').length,
++        glyth: {
++          node: glythNode ? world(glythNode.getBoundingClientRect()) : null,
++          vector: glythVector ? world(glythVector.getBoundingClientRect()) : null,
++          host: hostFacts(glythNode),
++          shape: glythVisual?.getAttribute('data-lcos-glyth-shape') ?? null,
++          tone: glythVisual?.getAttribute('data-lcos-glyth-tone') ?? null,
++          bodyFill: glythShape ? getComputedStyle(glythShape).fill : null,
++          eyeFills: glythEyes.map((eye) => getComputedStyle(eye).fill),
++        },
++        image: {
++          node: image.rect,
++          host: image.host,
++          media: imageMediaWorld,
++          mediaRadius: imageMedia ? getComputedStyle(imageMedia).borderRadius : null,
++          marker: imageMarkerWorld,
++          markerVisible: imageMarker ? imageMarker.getClientRects().length > 0 : false,
++          markerLeftFromMedia: imageMarkerWorld && imageMediaWorld ? imageMarkerWorld.left - imageMediaWorld.left : null,
++          markerTopFromMedia: imageMarkerWorld && imageMediaWorld ? imageMarkerWorld.top - imageMediaWorld.top : null,
++        },
++        material: {
++          node: material.rect,
++          host: material.host,
++          media: materialMediaWorld,
++          mediaRadius: materialMedia ? getComputedStyle(materialMedia).borderRadius : null,
++          marker: materialMarkerWorld,
++          markerVisible: materialMarker ? materialMarker.getClientRects().length > 0 : false,
++          markerLeftFromMedia: materialMarkerWorld && materialMediaWorld ? materialMarkerWorld.left - materialMediaWorld.left : null,
++          markerTopFromMedia: materialMarkerWorld && materialMediaWorld ? materialMarkerWorld.top - materialMediaWorld.top : null,
++        },
++        document: {
++          node: documentNode.rect,
++          host: documentNode.host,
++          radius: documentNode.visual ? getComputedStyle(documentNode.visual).borderRadius : null,
++          background: documentNode.visual ? getComputedStyle(documentNode.visual).backgroundColor : null,
++        },
++        text: {
++          node: text.rect,
++          host: text.host,
++          fontSize: text.visual
++            ? getComputedStyle(text.visual.querySelector('[data-lcos-node-preview]')).fontSize
++            : null,
++          lineHeight: text.visual
++            ? getComputedStyle(text.visual.querySelector('[data-lcos-node-preview]')).lineHeight
++            : null,
++          marker: textMarkerWorld,
++          markerLeft: textMarkerWorld && textWorld ? textMarkerWorld.left - textWorld.left : null,
++          markerTop: textMarkerWorld && textWorld ? textMarkerWorld.top - textWorld.top : null,
++        },
++        audio: {
++          node: audio.rect,
++          host: audio.host,
++          bars: bars.length,
++          waveWidth,
++          firstGap,
++          caption: audio.visual?.textContent?.replace(/\s+/g, ' ').trim() ?? '',
++          firstBarColor: bars[0] ? getComputedStyle(bars[0]).backgroundColor : null,
++          lastBarColor: bars.at(-1) ? getComputedStyle(bars.at(-1)).backgroundColor : null,
++        },
++      };
++    });
++
++    console.log('[figma-exact]', JSON.stringify(metrics));
++    const transparent = (value) => value === 'rgba(0, 0, 0, 0)' || value === 'transparent';
++
++    h.requireEqual(metrics.nativeEditorsInsideLcosBodies, 0, 'Core-bound LCOS bodies must not mount native Milkdown editors underneath');
++    h.requireTrue(metrics.glyth.node !== null, 'Glyth node bbox missing');
++    h.requireTrue(near(metrics.glyth.node.width, 121) && near(metrics.glyth.node.height, 142), 'Glyth node must be 121×142 world px');
++    h.requireTrue(metrics.glyth.vector !== null && near(metrics.glyth.vector.width, 92) && near(metrics.glyth.vector.height, 92), 'Glyth body must be 92×92');
++    h.requireEqual(metrics.glyth.host.surface, 'transparent', 'Glyth host surface must be transparent');
++    h.requireTrue(transparent(metrics.glyth.host.background), `Glyth host still paints a native background: ${metrics.glyth.host.background}`);
++    h.requireEqual(metrics.glyth.host.aiBadge, 0, 'Glyth must not carry native Huabu AI badge');
++    h.requireEqual(metrics.glyth.shape, 'blob', 'Current Figma only authorizes the dark blob anchor');
++    h.requireEqual(metrics.glyth.tone, 'ink', 'Current Figma Glyth anchor is dark/ink');
++    h.requireEqual(metrics.glyth.bodyFill, 'rgb(36, 38, 37)', 'Glyth body must use the current Figma dark anchor');
++    h.requireTrue(metrics.glyth.eyeFills.length === 2 && metrics.glyth.eyeFills.every((fill) => fill === 'rgb(255, 255, 255)'), `Glyth eyes must stay white: ${JSON.stringify(metrics.glyth.eyeFills)}`);
++
++    h.requireTrue(metrics.image.node !== null && near(metrics.image.node.width, 410) && near(metrics.image.node.height, 273), 'Main image node must start at 410×273');
++    h.requireEqual(metrics.image.host.surface, 'media', 'Main image host surface must be media');
++    h.requireTrue(transparent(metrics.image.host.background), `Image host still paints a native background: ${metrics.image.host.background}`);
++    h.requireEqual(metrics.image.host.aiBadge, 0, 'Core image must not carry native Huabu AI badge');
++    h.requireTrue(metrics.image.media !== null && near(metrics.image.media.width, 410) && near(metrics.image.media.height, 273), 'Main image media must be 410×273');
++    h.requireEqual(metrics.image.mediaRadius, '7px', 'Main image media radius must match Figma');
++    h.requireTrue(metrics.image.marker !== null && near(metrics.image.marker.width, 11) && near(metrics.image.marker.height, 11), 'Main image marker must be visible 11×11');
++    h.requireTrue(metrics.image.markerVisible, 'Main image marker is clipped/hidden');
++    h.requireTrue(near(metrics.image.markerLeftFromMedia, 402) && near(metrics.image.markerTopFromMedia, -5), 'Main image marker must keep Figma x=402/y=-5');
++
++    h.requireTrue(metrics.material.node !== null && near(metrics.material.node.width, 205) && near(metrics.material.node.height, 127), 'Material image node must start at 205×127');
++    h.requireEqual(metrics.material.host.surface, 'media', 'Material image host surface must be media');
++    h.requireTrue(metrics.material.media !== null && near(metrics.material.media.width, 205) && near(metrics.material.media.height, 127), 'Material image media must be 205×127');
++    h.requireEqual(metrics.material.mediaRadius, '6px', 'Material image media radius must match Figma');
++    h.requireTrue(metrics.material.marker !== null && near(metrics.material.marker.width, 9) && near(metrics.material.marker.height, 9), 'Material image marker must be 9×9');
++    h.requireTrue(metrics.material.markerVisible, 'Material image marker is clipped/hidden');
++    h.requireTrue(near(metrics.material.markerLeftFromMedia, 196) && near(metrics.material.markerTopFromMedia, -4), 'Material image marker must keep Figma x=196/y=-4');
++
++    h.requireTrue(metrics.document.node !== null && near(metrics.document.node.width, 206) && near(metrics.document.node.height, 154), 'Document node must be 206×154');
++    h.requireEqual(metrics.document.host.surface, 'paper', 'Document host surface must be paper');
++    h.requireEqual(metrics.document.host.aiBadge, 0, 'Core document must not carry native Huabu AI badge');
++    h.requireEqual(metrics.document.radius, '2px', 'Document paper radius must match Figma');
++    h.requireEqual(metrics.document.background, 'rgb(255, 254, 249)', 'Document paper color must match Figma');
++
++    h.requireTrue(metrics.text.node !== null && near(metrics.text.node.width, 385) && near(metrics.text.node.height, 142), 'Text node must be 385×142');
++    h.requireEqual(metrics.text.host.surface, 'transparent', 'Text host surface must be transparent');
++    h.requireTrue(transparent(metrics.text.host.background), `Text host still paints a native background: ${metrics.text.host.background}`);
++    h.requireEqual(metrics.text.host.aiBadge, 0, 'Core text must not carry native Huabu AI badge');
++    h.requireEqual(metrics.text.fontSize, '37px', 'Text Main typography must be 37px at readable/working LOD');
++    h.requireEqual(metrics.text.lineHeight, '58px', 'Text Main line height must be 58px');
++    h.requireTrue(metrics.text.marker !== null && near(metrics.text.marker.width, 11) && near(metrics.text.marker.height, 11), 'Text marker must be 11×11');
++    h.requireTrue(near(metrics.text.markerLeft, 374) && near(metrics.text.markerTop, 3), 'Text marker must keep Figma x=374/y=3');
++
++    h.requireTrue(metrics.audio.node !== null && near(metrics.audio.node.width, 171) && near(metrics.audio.node.height, 96), 'Audio node must be 171×96');
++    h.requireEqual(metrics.audio.host.surface, 'transparent', 'Audio host surface must be transparent');
++    h.requireTrue(transparent(metrics.audio.host.background), `Audio host still paints a native background: ${metrics.audio.host.background}`);
++    h.requireEqual(metrics.audio.host.aiBadge, 0, 'Core audio must not carry native Huabu AI badge');
++    h.requireEqual(metrics.audio.bars, 64, 'Audio must render all 64 Figma bars');
++    h.requireTrue(metrics.audio.waveWidth <= 171.01, `Audio waveform overflows: ${metrics.audio.waveWidth}px`);
++    h.requireTrue(near(metrics.audio.firstGap, 0.671875, 0.08), `Audio bar gap differs from Figma: ${metrics.audio.firstGap}px`);
++    h.requireTrue(metrics.audio.caption.includes('00:38'), `Audio caption lacks real 00:38 duration: ${metrics.audio.caption}`);
++    h.requireEqual(metrics.audio.firstBarColor, 'rgb(85, 120, 108)', 'Audio active waveform tone must match Figma');
++    h.requireEqual(metrics.audio.lastBarColor, 'rgb(198, 210, 206)', 'Audio tail waveform tone must match Figma');
++
++    await h.screenshot(resolve(SHOTS, 'r2-figma-exact-main-1440.png'));
++  },
++});
++
++const persisted = await runScenario({
++  name: 'R2-figma-user-geometry-survives-reconcile',
++  baseUrl: BASE,
++  viewport: { width: 1440, height: 900 },
++  async body(h) {
++    await h.goto(`/projects/${PROJECT}/main`);
++    await h.requireSelector('[data-lcos-source-visual="document"]', { timeout: 60000 });
++    const center = await h.evaluate(() => {
++      const visual = document.querySelector('[data-lcos-source-visual="document"]');
++      const node = visual?.closest('.react-flow__node');
++      if (!node) return null;
++      const rect = node.getBoundingClientRect();
++      return { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
++    });
++    h.requireTrue(center !== null, 'Document node center missing');
++    await h.page.mouse.click(center.x, center.y);
++    await h.requireSelector('[data-lcos-action-arc]', { timeout: 8000 });
++    const arcGeometry = await h.evaluate(() => {
++      const arc = document.querySelector('[data-lcos-action-arc]');
++      const orbs = Array.from(document.querySelectorAll('[data-lcos-action-orb]'));
++      const hits = Array.from(document.querySelectorAll('[data-lcos-action-orb-hit]'));
++      const icons = Array.from(document.querySelectorAll('[data-lcos-action-orb] svg'));
++      return {
++        mode: arc?.getAttribute('data-lcos-arc-mode') ?? null,
++        orbs: orbs.map((element) => {
++          const rect = element.getBoundingClientRect();
++          return { width: rect.width, height: rect.height };
++        }),
++        hits: hits.map((element) => {
++          const rect = element.getBoundingClientRect();
++          return { width: rect.width, height: rect.height };
++        }),
++        icons: icons.map((element) => {
++          const rect = element.getBoundingClientRect();
++          return { width: rect.width, height: rect.height };
++        }),
++      };
++    });
++    h.requireEqual(arcGeometry.mode, 'extended-four', 'Production 3-primary + More must use the explicit extended-four Arc mode');
++    h.requireEqual(arcGeometry.orbs.length, 4, 'Extended Action Arc must render 4 visible orbs');
++    h.requireTrue(arcGeometry.orbs.every((rect) => near(rect.width, 30, 0.5) && near(rect.height, 30, 0.5)), `Action Arc visible orb geometry drifted: ${JSON.stringify(arcGeometry.orbs)}`);
++    h.requireTrue(arcGeometry.hits.every((rect) => near(rect.width, 44, 0.5) && near(rect.height, 44, 0.5)), `Action Arc hit target geometry drifted: ${JSON.stringify(arcGeometry.hits)}`);
++    h.requireTrue(arcGeometry.icons.every((rect) => near(rect.width, 17, 0.5) && near(rect.height, 17, 0.5)), `Action Arc icon geometry drifted: ${JSON.stringify(arcGeometry.icons)}`);
++    await h.page.click('[data-lcos-arc-more]');
++    await h.requireSelector('[data-lcos-size-width]', { timeout: 5000 });
++    await h.page.locator('[data-lcos-size-width]').fill('250');
++    await h.page.locator('[data-lcos-size-height]').fill('180');
++    await h.page.click('[data-lcos-size-apply]');
++    await h.wait(900);
++
++    const readWorldSize = async () => h.evaluate(() => {
++      const viewport = document.querySelector('.react-flow__viewport');
++      const zoom = Number(/scale\(([^)]+)\)/.exec(viewport?.style.transform ?? '')?.[1] ?? '1');
++      const node = document.querySelector('[data-lcos-source-visual="document"]')?.closest('.react-flow__node');
++      if (!node) return null;
++      const rect = node.getBoundingClientRect();
++      return { width: rect.width / zoom, height: rect.height / zoom };
++    });
++
++    const resized = await readWorldSize();
++    h.requireTrue(resized !== null && near(resized.width, 250) && near(resized.height, 180), `Resize did not commit: ${JSON.stringify(resized)}`);
++
++    await h.page.reload({ waitUntil: 'domcontentloaded' });
++    await h.requireSelector('[data-lcos-source-visual="document"]', { timeout: 60000 });
++    await h.wait(800);
++    const reloaded = await readWorldSize();
++    h.requireTrue(
++      reloaded !== null && near(reloaded.width, 250) && near(reloaded.height, 180),
++      `Reconcile overwrote persisted user geometry: ${JSON.stringify(reloaded)}`,
++    );
++  },
++});
++
++if (!exact.ok || !persisted.ok) process.exitCode = 1;
+diff --git a/huabu/apps/web/src/lcos-seam/nodeBodySlot.tsx b/huabu/apps/web/src/lcos-seam/nodeBodySlot.tsx
+--- a/huabu/apps/web/src/lcos-seam/nodeBodySlot.tsx
++++ b/huabu/apps/web/src/lcos-seam/nodeBodySlot.tsx
+@@ -15,6 +15,7 @@
+ import type {
+   CanvasNodeBodySeam,
+   CanvasNodeBodySlotInput,
++  CanvasNodeHostPresentation,
+ } from './types';
+ 
+ /**
+@@ -42,3 +43,14 @@
+     () => seam?.resolve(input) ?? undefined,
+   );
+ }
++
++export function useResolvedNodeHostPresentation(
++  input: CanvasNodeBodySlotInput,
++): CanvasNodeHostPresentation | undefined {
++  const seam = useContext(NodeBodyResolverContext);
++  return useSyncExternalStore(
++    seam?.subscribe ?? (() => () => undefined),
++    () => seam?.resolveHostPresentation?.(input),
++    () => seam?.resolveHostPresentation?.(input),
++  );
++}
+diff --git a/huabu/apps/web/src/lcos-seam/types.ts b/huabu/apps/web/src/lcos-seam/types.ts
+--- a/huabu/apps/web/src/lcos-seam/types.ts
++++ b/huabu/apps/web/src/lcos-seam/types.ts
+@@ -37,6 +37,13 @@
+   input: CanvasNodeBodySlotInput,
+ ) => ComponentType<CanvasNodeBodySlotInput> | undefined;
+ 
++/** Presentation-only host chrome. Huabu still owns every mechanical behavior. */
++export interface CanvasNodeHostPresentation {
++  readonly surface: 'transparent' | 'paper' | 'media' | 'card';
++  readonly showAiBadge: boolean;
++  readonly allowOverflow: boolean;
++}
++
+ /**
+  * Reactive handle for the body seam. The resolution may change asynchronously
+  * (e.g. the host app's binding cache is still syncing); the consumer
+@@ -47,6 +54,10 @@
+  */
+ export interface CanvasNodeBodySeam {
+   readonly resolve: CanvasNodeBodyResolver;
++  /** Same binding-aware seam, no second registry/store. Unbound nodes return undefined. */
++  readonly resolveHostPresentation?: (
++    input: CanvasNodeBodySlotInput,
++  ) => CanvasNodeHostPresentation | undefined;
+   readonly subscribe: (listener: () => void) => () => void;
+ }
+ 
+diff --git a/huabu/apps/web/src/components/Nodes/image/ImageNode.tsx b/huabu/apps/web/src/components/Nodes/image/ImageNode.tsx
+--- a/huabu/apps/web/src/components/Nodes/image/ImageNode.tsx
++++ b/huabu/apps/web/src/components/Nodes/image/ImageNode.tsx
+@@ -2,11 +2,12 @@
+ // Licensed under the MIT license.
+ 
+ import { Fullscreen, Image as ImageIcon } from 'lucide-react';
+-import { memo, useEffect, useState } from 'react';
++import { memo, useEffect, useMemo, useState } from 'react';
+ import { useTranslation } from 'react-i18next';
+ 
+ import { resolveArtifactUrl } from '@/api/artifact';
+ import { FloatingToolbar } from '@/components/Common/FloatingToolbar';
++import { useResolvedNodeBody } from '@/lcos-seam/nodeBodySlot';
+ import useCanvasStore from '@/store/canvasStore.ts';
+ import { openPreviewNode } from '@/store/previewWorkspace/actions';
+ 
+@@ -30,6 +31,22 @@
+     const src = data?.src;
+     const missingFileKind = getMissingFileKind(data);
+     const [imgLoaded, setImgLoaded] = useState(false);
++    const resolvedSrc =
++      typeof src === 'string' && src !== ''
++        ? resolveArtifactUrl(src, canvasId)
++        : '';
++    const presentationData = useMemo<Readonly<Record<string, unknown>>>(
++      () => ({
++        ...(data as Readonly<Record<string, unknown>>),
++        ...(resolvedSrc === '' ? {} : { presentationMediaSrc: resolvedSrc }),
++      }),
++      [data, resolvedSrc],
++    );
++    const BodyOverride = useResolvedNodeBody({
++      nodeId: id,
++      nodeType: 'image',
++      data: presentationData,
++    });
+     useEffect(() => {
+       // Reset loading state whenever the source changes so the
+       // placeholder re-appears for the new image.
+@@ -59,13 +76,15 @@
+       >
+         {missingFileKind ? (
+           <MissingFileBanner nodeId={id} />
++        ) : BodyOverride ? (
++          <BodyOverride nodeId={id} nodeType="image" data={presentationData} />
+         ) : (
+           <div className="flex h-full flex-col">
+             <div className="relative h-full w-full overflow-hidden">
+               {src ? (
+                 <>
+                   <img
+-                    src={resolveArtifactUrl(src, canvasId)}
++                    src={resolvedSrc}
+                     alt={data?.label || t('node.nodeImage')}
+                     className="pointer-events-none h-full w-full rounded-lg border-0 object-contain"
+                     onLoad={() => setImgLoaded(true)}
+diff --git a/huabu/apps/web/src/components/Nodes/audio/AudioNode.tsx b/huabu/apps/web/src/components/Nodes/audio/AudioNode.tsx
+--- a/huabu/apps/web/src/components/Nodes/audio/AudioNode.tsx
++++ b/huabu/apps/web/src/components/Nodes/audio/AudioNode.tsx
+@@ -7,6 +7,7 @@ import { useTranslation } from 'react-i18next';
+ 
+ import { resolveArtifactUrl, uploadAudio } from '@/api/artifact';
+ import { cn } from '@/components/Common/cn';
++import { useResolvedNodeBody } from '@/lcos-seam/nodeBodySlot';
+ import useCanvasStore from '@/store/canvasStore.ts';
+ 
+ import { getMissingFileKind, MissingFileBanner } from '../MissingFileBanner';
+@@ -316,7 +317,22 @@ export const AudioNode = memo(
+ 
+     const stopRf = (e: React.SyntheticEvent) => e.stopPropagation();
+     const hasAudio = typeof data?.src === 'string' && data.src.length > 0;
+     const missingFileKind = getMissingFileKind(data);
++    const resolvedSrc = hasAudio
++      ? resolveArtifactUrl(data.src, canvasId)
++      : '';
++    const presentationData = useMemo<Readonly<Record<string, unknown>>>(
++      () => ({
++        ...(data as Readonly<Record<string, unknown>>),
++        ...(resolvedSrc === '' ? {} : { presentationMediaSrc: resolvedSrc }),
++      }),
++      [data, resolvedSrc],
++    );
++    const BodyOverride = useResolvedNodeBody({
++      nodeId: id,
++      nodeType: 'audio',
++      data: presentationData,
++    });
+     const progressRatio =
+       durationSec > 0 ? Math.min(1, currentSec / durationSec) : 0;
+ 
+@@ -380,7 +396,7 @@ export const AudioNode = memo(
+           </span>
+           <audio
+             ref={setAudioRef}
+-            src={resolveArtifactUrl(data.src, canvasId)}
++            src={resolvedSrc}
+             preload="metadata"
+             className="hidden"
+           >
+@@ -453,10 +469,16 @@ export const AudioNode = memo(
+         type={'audio'}
+         selected={selected}
+         minHeight={56}
+-        className={missingFileKind ? undefined : 'bg-surface'}
++        className={missingFileKind || BodyOverride ? undefined : 'bg-surface'}
+       >
+         {missingFileKind ? (
+           <MissingFileBanner nodeId={id} />
++        ) : BodyOverride ? (
++          <BodyOverride
++            nodeId={id}
++            nodeType="audio"
++            data={presentationData}
++          />
+         ) : (
+           <div
+             role="presentation"
+diff --git a/huabu/apps/web/src/components/Nodes/note/NoteNode.tsx b/huabu/apps/web/src/components/Nodes/note/NoteNode.tsx
+--- a/huabu/apps/web/src/components/Nodes/note/NoteNode.tsx
++++ b/huabu/apps/web/src/components/Nodes/note/NoteNode.tsx
+@@ -140,4 +140,8 @@ export const NoteNode = memo(
+     // re-enqueues. Once hydrated we keep the editor mounted (never tear
+     // down) so zooming back out and in again doesn't re-pay the build
+     // cost. See `../shared/nodeHydrationScheduler`.
+-    const hydrated = useDeferredHydration(isMinimalLOD);
++    // Core-bound LCOS projections replace the native note body entirely.
++    // Do not enqueue Milkdown for a body that will never render.
++    const hydrated = useDeferredHydration(
++      isMinimalLOD || BodyOverride !== undefined,
++    );
+@@ -174,5 +178,6 @@ export const NoteNode = memo(
+     // changes with content, and we have to watch the editor's root plus a
+     // MutationObserver for (re)mounts.
+     useEffect(() => {
++      if (BodyOverride !== undefined) return;
+       const host = previewHostRef.current;
+       if (!host) return;
+@@ -220,4 +225,4 @@ export const NoteNode = memo(
+         mo.disconnect();
+         ro.disconnect();
+       };
+-    }, [hydrated, measurementKey]);
++    }, [BodyOverride, hydrated, measurementKey]);
+@@ -226,5 +231,6 @@ export const NoteNode = memo(
+     // surfaces the window between "the content grew" and "the correction
+     // committed", which is the honest signal: the node really is showing
+     // less than it holds right now.
+     const isTruncated =
+-      contentHeight > 0 && hostHeight > 0 && contentHeight - hostHeight > 1;
++      BodyOverride === undefined &&
++      contentHeight > 0 && hostHeight > 0 && contentHeight - hostHeight > 1;
+@@ -245,4 +251,5 @@ export const NoteNode = memo(
+     // `setNoteHeightMode` measures offscreen instead when it needs one.
+     useEffect(() => {
++      if (BodyOverride !== undefined) return;
+       if (!contentMeasurement) return;
+       if (isFixedHeight) return;
+@@ -254,4 +261,4 @@ export const NoteNode = memo(
+         intrinsicHeight: contentMeasurement.height,
+         measuredFor: contentMeasurement.measuredFor,
+       });
+-    }, [contentMeasurement, id, isFixedHeight]);
++    }, [BodyOverride, contentMeasurement, id, isFixedHeight]);
+@@ -268,6 +275,6 @@ export const NoteNode = memo(
+     useAutoHeightInvariant(
+       id,
+       previewHostRef,
+-      hydrated && !isFixedHeight,
++      BodyOverride === undefined && hydrated && !isFixedHeight,
+       contentHeight,
+     );
+@@ -401,8 +408,10 @@ export const NoteNode = memo(
+         // the wrapper's true outer edge plus a translucent
+         // `--info-light` wash over the whole node — same hue family
+         // as NotePreview's insertion bar but softer so it reads as a
+         // "zone" rather than a precise insertion point.
+         className={
+-          isDropTarget ? 'ring-info-light bg-info-light/60 ring-4' : undefined
++          BodyOverride === undefined && isDropTarget
++            ? 'ring-info-light bg-info-light/60 ring-4'
++            : undefined
+         }
+       >
+@@ -414,18 +423,18 @@ export const NoteNode = memo(
+             <div
+               className={clsx(
+                 'relative h-full w-full overflow-hidden',
+-                !hasAccent && 'bg-surface',
++                BodyOverride === undefined && !hasAccent && 'bg-surface',
+               )}
+-              onDragEnter={handleNoteDragEnter}
+-              onDragOver={handleNoteDragOver}
+-              onDragLeave={handleNoteDragLeave}
+-              onDrop={handleNoteDrop}
++              onDragEnter={BodyOverride === undefined ? handleNoteDragEnter : undefined}
++              onDragOver={BodyOverride === undefined ? handleNoteDragOver : undefined}
++              onDragLeave={BodyOverride === undefined ? handleNoteDragLeave : undefined}
++              onDrop={BodyOverride === undefined ? handleNoteDrop : undefined}
+             >
+               <div
+                 style={{
+-                  transform: `scale(${scale})`,
++                  transform: BodyOverride === undefined ? `scale(${scale})` : undefined,
+                   transformOrigin: 'top left',
+-                  width: `${100 / scale}%`,
+-                  height: `${100 / scale}%`,
++                  width: BodyOverride === undefined ? `${100 / scale}%` : '100%',
++                  height: BodyOverride === undefined ? `${100 / scale}%` : '100%',
+                 }}
+               >
+@@ -445,6 +454,8 @@ export const NoteNode = memo(
+                   className={clsx(
+                     NOTE_CONTENT_HOST_CLASS,
+                     'h-full',
+-                    !hasAccent && 'bg-surface',
++                    BodyOverride === undefined &&
++                      !hasAccent &&
++                      'bg-surface',
+                   )}
+                 >
+diff --git a/apps/local-core/src/real-dev-project.ts b/apps/local-core/src/real-dev-project.ts
+--- a/apps/local-core/src/real-dev-project.ts
++++ b/apps/local-core/src/real-dev-project.ts
+@@ -108,6 +108,8 @@ const E2E_VIEW_LAYOUT: Record<string, DevViewLayout> = {
+   milestone: { displayMode: 'thumbnail', size: { width: 240, height: 160 }, position: { x: 0, y: 300 } },
+   reference2: { displayMode: 'thumbnail', size: { width: 240, height: 160 }, position: { x: 280, y: 300 } },
+   decision: { displayMode: 'compact', size: { width: 220, height: 96 }, position: { x: 560, y: 300 } },
++  statement: { displayMode: 'card', size: { width: 385, height: 142 }, position: { x: 840, y: 300 } },
++  ambientAudio: { displayMode: 'compact', size: { width: 171, height: 96 }, position: { x: 1265, y: 300 } },
+ }
+ 
+ /**
+@@ -155,6 +157,36 @@ function createGradientPng(
+   ])
+ }
+ 
++/**
++ * Deterministic 8-bit mono PCM WAV for browser metadata acceptance.
++ * 38 seconds is deliberate: Figma 5388:186 labels the exact Main sample
++ * as `00:38`, so the e2e verifies duration from real media metadata rather
++ * than from a static success string.
++ */
++function createSilentWav(durationSeconds: number, sampleRate = 8000): Buffer {
++  const channels = 1
++  const bitsPerSample = 8
++  const bytesPerSample = bitsPerSample / 8
++  const sampleCount = Math.max(1, Math.round(durationSeconds * sampleRate))
++  const dataSize = sampleCount * channels * bytesPerSample
++  const output = Buffer.alloc(44 + dataSize)
++  output.write('RIFF', 0, 'ascii')
++  output.writeUInt32LE(36 + dataSize, 4)
++  output.write('WAVE', 8, 'ascii')
++  output.write('fmt ', 12, 'ascii')
++  output.writeUInt32LE(16, 16)
++  output.writeUInt16LE(1, 20)
++  output.writeUInt16LE(channels, 22)
++  output.writeUInt32LE(sampleRate, 24)
++  output.writeUInt32LE(sampleRate * channels * bytesPerSample, 28)
++  output.writeUInt16LE(channels * bytesPerSample, 32)
++  output.writeUInt16LE(bitsPerSample, 34)
++  output.write('data', 36, 'ascii')
++  output.writeUInt32LE(dataSize, 40)
++  output.fill(128, 44)
++  return output
++}
++
+ function clampByte(value: number): number {
+   if (value <= 0) return 0
+   if (value >= 255) return 255
+@@ -250,6 +282,22 @@ export function ensureRealDevProject(repository: SqliteMetadataRepository, workspaceRoot: string): boolean {
+       kind: 'image',
+       bytes: createGradientPng(512, 320, [20, 62, 74], [28, 96, 84]),
+     })
++    sourceFiles.push({
++      id: 'statement',
++      title: '品牌主张（e2e fixture）',
++      relativePath: 'brand-statement.e2e-fixture.txt',
++      mimeType: 'text/plain',
++      kind: 'other',
++      bytes: Buffer.from('越过边界，\n看见下一座山。\n', 'utf8'),
++    })
++    sourceFiles.push({
++      id: 'ambientAudio',
++      title: '山野环境声',
++      relativePath: 'ambient.e2e-fixture.wav',
++      mimeType: 'audio/wav',
++      kind: 'other',
++      bytes: createSilentWav(38),
++    })
+   }
+   mkdirSync(workspaceRoot, { recursive: true })
+   const files = sourceFiles.map((file) => {

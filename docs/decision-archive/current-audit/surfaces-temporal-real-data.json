@@ -1,0 +1,174 @@
+{
+  "readOnly": true,
+  "projects": [
+    {
+      "projectId": "lcos-gen2-dev",
+      "scopes": [
+        {
+          "id": "scope-real-root",
+          "kind": "root",
+          "name": "Real Root"
+        },
+        {
+          "id": "scope-workflow-db2d60445c8417d93217",
+          "kind": "workflow",
+          "name": "真实工作流导入验收"
+        }
+      ],
+      "workspaces": [
+        {
+          "id": "workspace-real-main",
+          "name": "施工主线",
+          "scopeId": "scope-real-root",
+          "scopeKind": "root",
+          "preferredSurface": "main",
+          "canvasId": "canvas-5e26c422-466e-4994-9b57-34b8ec5cfcd2",
+          "isRoot": true
+        },
+        {
+          "id": "workspace-real-context",
+          "name": "Context · 理解现场",
+          "scopeId": "scope-real-root",
+          "scopeKind": "root",
+          "preferredSurface": "context",
+          "canvasId": "canvas-7fa2a998-c59e-4ce0-8e00-4b1aa171f53b",
+          "isRoot": true,
+          "temporal": {
+            "facts": 16,
+            "mid": 1,
+            "firstGroups": [
+              {
+                "id": "mid:2026-09-19T14:36:19.289Z:0",
+                "level": "mid",
+                "start": "2026-09-19T14:36:19.289Z",
+                "end": "2026-09-19T14:36:19.289Z",
+                "eventIds": [
+                  "artifact-created:artifact-ambientAudio",
+                  "artifact-created:artifact-decision",
+                  "artifact-created:artifact-milestone",
+                  "artifact-created:artifact-positioning",
+                  "artifact-created:artifact-reference",
+                  "artifact-created:artifact-reference2",
+                  "artifact-created:artifact-rules",
+                  "artifact-created:artifact-statement",
+                  "artifact-revision:revision-ambientAudio-initial",
+                  "artifact-revision:revision-decision-initial",
+                  "artifact-revision:revision-milestone-initial",
+                  "artifact-revision:revision-positioning-initial",
+                  "artifact-revision:revision-reference-initial",
+                  "artifact-revision:revision-reference2-initial",
+                  "artifact-revision:revision-rules-initial",
+                  "artifact-revision:revision-statement-initial"
+                ],
+                "targets": [
+                  {
+                    "type": "artifact_revision",
+                    "id": "revision-ambientAudio-initial"
+                  },
+                  {
+                    "type": "artifact_revision",
+                    "id": "revision-decision-initial"
+                  },
+                  {
+                    "type": "artifact_revision",
+                    "id": "revision-milestone-initial"
+                  },
+                  {
+                    "type": "artifact_revision",
+                    "id": "revision-positioning-initial"
+                  },
+                  {
+                    "type": "artifact_revision",
+                    "id": "revision-reference-initial"
+                  },
+                  {
+                    "type": "artifact_revision",
+                    "id": "revision-reference2-initial"
+                  },
+                  {
+                    "type": "artifact_revision",
+                    "id": "revision-rules-initial"
+                  },
+                  {
+                    "type": "artifact_revision",
+                    "id": "revision-statement-initial"
+                  },
+                  {
+                    "type": "artifact",
+                    "id": "artifact-ambientAudio"
+                  },
+                  {
+                    "type": "artifact",
+                    "id": "artifact-decision"
+                  },
+                  {
+                    "type": "artifact",
+                    "id": "artifact-milestone"
+                  },
+                  {
+                    "type": "artifact",
+                    "id": "artifact-positioning"
+                  },
+                  {
+                    "type": "artifact",
+                    "id": "artifact-reference"
+                  },
+                  {
+                    "type": "artifact",
+                    "id": "artifact-reference2"
+                  },
+                  {
+                    "type": "artifact",
+                    "id": "artifact-rules"
+                  },
+                  {
+                    "type": "artifact",
+                    "id": "artifact-statement"
+                  }
+                ],
+                "eventCount": 16
+              }
+            ],
+            "omissions": [
+              "conversation_timeline_unscoped",
+              "project_event_hub_ephemeral"
+            ]
+          }
+        },
+        {
+          "id": "workspace-real-workflow",
+          "name": "Workflow · 行动现场",
+          "scopeId": "scope-real-root",
+          "scopeKind": "root",
+          "preferredSurface": "workflow",
+          "canvasId": "canvas-6f5e9fe7-4716-4fdf-bf10-49306e514e74",
+          "isRoot": true
+        },
+        {
+          "id": "workspace-workflow-6cf857fa00a7",
+          "name": "施工主线",
+          "scopeId": "scope-workflow-db2d60445c8417d93217",
+          "scopeKind": "workflow",
+          "preferredSurface": "workflow",
+          "isRoot": false
+        },
+        {
+          "id": "workspace-workflow-e38c0c595d4f",
+          "name": "Context · 理解现场",
+          "scopeId": "scope-workflow-db2d60445c8417d93217",
+          "scopeKind": "workflow",
+          "preferredSurface": "workflow",
+          "isRoot": false
+        },
+        {
+          "id": "workspace-workflow-8df4c3041532",
+          "name": "Workflow · 行动现场",
+          "scopeId": "scope-workflow-db2d60445c8417d93217",
+          "scopeKind": "workflow",
+          "preferredSurface": "workflow",
+          "isRoot": false
+        }
+      ]
+    }
+  ]
+}

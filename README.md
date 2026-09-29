@@ -1,5 +1,7 @@
 # local-creative-os-gen2
 
+> 私有前端审计与施工仓库。云端编码请先读 [`START-HERE_CLOUD-CODING.md`](START-HERE_CLOUD-CODING.md)；T1–T7、Figma、HTML、Donor 与交叉审计证据位于 `docs/decision-archive/`。
+
 LCOS Gen2 — 本地创作项目总导演台（Local Core truth + Huabu spatial kernel + LCOS 产品前端）。
 
 ## GEN2 前端产品组合根

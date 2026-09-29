@@ -1,0 +1,59 @@
+{
+  "id": "G02",
+  "date": "2026-09-26",
+  "status": "implemented_and_verified_with_remaining_spatial_issue",
+  "READ_SOURCE": [
+    "R5 Glyth ConversationSession UX §7",
+    "T3-A02",
+    "Figma 5388:118 / 5388:119 / 5388:311",
+    "CollaborationSessionProjectionV1"
+  ],
+  "ADOPTED": [
+    "ready/done→继续、打开、更多",
+    "thinking/working→查看进度、打开、更多",
+    "真实 pendingInputId→回答；pending_review→复核",
+    "capability=false 真实原因留 More；无已知待办不伪造动作",
+    "所有打开动作复用原 WorkView；继续复用原 Composer"
+  ],
+  "VISUAL_SOURCE": [
+    "Figma Main 5388:118/119 Glyth donor",
+    "Figma 5388:311 Arc geometry",
+    "R5 状态化主动作；语义图标和悬停说明"
+  ],
+  "RETIRED": [
+    "conversation 一律围绕此对象工作",
+    "投影未就绪时 descriptor active/waiting 驱动忙碌假态",
+    "业务主动作被 reference/fit 等辅助动作自动顶替"
+  ],
+  "VERIFIED": [
+    "20 项新行为回归通过（真实 caller + store；UI wrapper mocked）",
+    "10 项原 node-command-model 行为测试通过",
+    "web-gen2 typecheck 通过",
+    "Huabu web typecheck 通过",
+    "独立浏览器：thinking fixture→查看进度→原会话工作窗真实时间线，可见原始运行事件"
+  ],
+  "UNRESOLVED": [
+    "运行 fixture 以外的待回答/复核/完成态仅通过真实结构投影的组件回归验证，未造后端状态截图",
+    "缩小态上一集合 Arc 可盖住邻近 Glyth 点击区；空白取消选择能恢复，需统一近场碰撞/缩放专项处理",
+    "G01 Composer 续工 preparation 由 root 并行负责；本批未改其业务",
+    "集合 canonical geometry/ordinary producer 缺口仍在 nodes-implementation.md"
+  ],
+  "files": [
+    "apps/web-gen2/src/interaction/nodeCommandModel.ts",
+    "apps/web-gen2/src/presentation/glythPresentation.ts",
+    "apps/web-gen2/test/node-command-model.test.ts",
+    "huabu/apps/web/src/lcos/navigation/LcosActionArc.tsx",
+    "huabu/apps/web/src/lcos/navigation/focusConversationSection.ts",
+    "huabu/apps/web/src/lcos/navigation/focusConversationSection.test.ts",
+    "huabu/apps/web/src/lcos/navigation/GlythStateActions.test.tsx",
+    "huabu/apps/web/src/lcos/nodes/GlythNodeBody.tsx"
+  ],
+  "evidence": [
+    "glyth-g02-progress.png",
+    "glyth-g02-before.png"
+  ],
+  "tests": {
+    "new": 20,
+    "existing_command_model": 10
+  }
+}
